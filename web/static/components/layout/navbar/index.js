@@ -511,9 +511,9 @@ const navbar_list = [
 export class LayoutNavbar extends CustomElement {
   static properties = {
     layout_gopage: { attribute: "layout-gopage" },
-    layout_appversion: { attribute: "layout-appversion"},
+    layout_appversion: { attribute: "layout-appversion" },
     layout_userpris: { attribute: "layout-userpris", type: Array },
-    _active_name: { state: true},
+    _active_name: { state: true },
     _update_appversion: { state: true },
     _update_url: { state: true },
     _is_update: { state: true },
@@ -528,7 +528,7 @@ export class LayoutNavbar extends CustomElement {
     this._update_appversion = "";
     this._update_url = "https://github.com/NAStool/nas-tools";
     this._is_update = false;
-    this.classList.add("navbar","navbar-vertical","navbar-expand-lg","lit-navbar-fixed","lit-navbar","lit-navbar-hide-scrollbar");
+    this.classList.add("navbar", "navbar-vertical", "navbar-expand-lg", "lit-navbar-fixed", "lit-navbar", "lit-navbar-hide-scrollbar");
   }
 
   firstUpdated() {
@@ -720,20 +720,20 @@ export class LayoutNavbar extends CustomElement {
                 <img src="../static/img/logo-blue.png" alt="NAStool" class="lit-navbar-logo">
               </h1>
               <div class="accordion px-2 py-2 flex-grow-1">
-                ${navbar_list.map((item, index) => ( html`
+                ${navbar_list.map((item, index) => (html`
                   ${this.layout_userpris.includes(item.name)
-                  ? html`
+        ? html`
                     ${item.list?.length > 0
-                    ? html`
+            ? html`
                       <button class="accordion-button lit-navbar-accordion-button collapsed ps-2 pe-1 py-2" style="font-size:1.1rem;" data-bs-toggle="collapse" data-bs-target="#lit-navbar-collapse-${index}" aria-expanded="false">
-                        ${item.also??item.name}
+                        ${item.also ?? item.name}
                       </button>
                       <div class="accordion-collapse collapse" id="lit-navbar-collapse-${index}">
                         ${item.list.map((drop) => (this._render_page_item(drop, true)))}
                       </div>`
-                    : this._render_page_item(item, false)
-                    } `
-                  : nothing }
+            : this._render_page_item(item, false)
+          } `
+        : nothing}
                 `))}
               </div>
               <div class="d-flex align-items-end">
@@ -750,20 +750,20 @@ export class LayoutNavbar extends CustomElement {
                     </strong>
                   </a>
                   ${this._is_update
-                  ? html`
+        ? html`
                     <svg xmlns="http://www.w3.org/2000/svg" class="cursor-pointer icon icon-tabler icon-tabler-arrow-big-up-lines-filled ms-2 text-red" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"
-                      @click=${ (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        update(this._update_appversion);
-                        return false;
-                      }}>
+                      @click=${(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            update(this._update_appversion);
+            return false;
+          }}>
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                       <path d="M9 12h-3.586a1 1 0 0 1 -.707 -1.707l6.586 -6.586a1 1 0 0 1 1.414 0l6.586 6.586a1 1 0 0 1 -.707 1.707h-3.586v3h-6v-3z" fill="currentColor"></path>
                       <path d="M9 21h6"></path>
                       <path d="M9 18h6"></path>
                     </svg>`
-                  : nothing }
+        : nothing}
                 </span>
               </div>
             </div>
@@ -779,14 +779,14 @@ export class LayoutNavbar extends CustomElement {
       href="javascript:void(0)" data-bs-dismiss="offcanvas" aria-label="Close"
       style="${child ? "font-size:1rem" : "font-size:1.1rem;"}"
       data-lit-page=${item.page}
-      @click=${ () => { navmenu(item.page) }}>
+      @click=${() => { navmenu(item.page) }}>
       <span class="nav-link-icon" ?hidden=${!child} style="color:var(--tblr-body-color);">
         ${item.icon ?? nothing}
       </span>
       <span class="nav-link-title">
         ${item.also ?? item.name}
       </span>
-    </a>`    
+    </a>`
   }
 
 }

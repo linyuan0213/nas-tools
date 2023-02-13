@@ -198,7 +198,7 @@ class Downloader:
             download_setting = self.sites.get_site_download_setting(media_info.site)
         if download_setting:
             download_attr = self.get_download_setting(download_setting) \
-                            or self.get_download_setting(self.get_default_download_setting())
+                or self.get_download_setting(self.get_default_download_setting())
         else:
             download_attr = self.get_download_setting(self.get_default_download_setting())
         # 下载器类型

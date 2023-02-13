@@ -46,11 +46,14 @@ class ModuleConf(object):
         "qbittorrent": DownloaderType.QB,
         "transmission": DownloaderType.TR,
         "client115": DownloaderType.Client115,
+        "aria2": DownloaderType.Aria2,
         "pikpak": DownloaderType.PikPak
     }
 
     # 索引器
     INDEXER_DICT = {
+        "prowlarr": IndexerType.PROWLARR,
+        "jackett": IndexerType.JACKETT,
         "builtin": IndexerType.BUILTIN
     }
 
@@ -621,6 +624,36 @@ class ModuleConf(object):
                 }
             }
         },
+        "aria2": {
+            "name": "Aria2",
+            "img_url": "../static/img/aria2.png",
+            "background": "bg-green",
+            "test_command": "app.downloader.client.aria2|Aria2",
+            "config": {
+                "host": {
+                    "id": "aria2.host",
+                    "required": True,
+                    "title": "IP地址",
+                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
+                    "type": "text",
+                    "placeholder": "127.0.0.1"
+                },
+                "port": {
+                    "id": "aria2.port",
+                    "required": True,
+                    "title": "端口",
+                    "type": "text",
+                    "placeholder": "6800"
+                },
+                "secret": {
+                    "id": "aria2.secret",
+                    "required": True,
+                    "title": "令牌",
+                    "type": "text",
+                    "placeholder": ""
+                }
+            }
+        },
         "pikpak": {
             "name": "PikPak",
             "img_url": "../static/img/pikpak.png",
@@ -754,7 +787,64 @@ class ModuleConf(object):
     }
 
     # 索引器
-    INDEXER_CONF = {}
+    INDEXER_CONF = {
+        "jackett": {
+            "name": "Jackett",
+            "img_url": "./static/img/jackett.png",
+            "background": "bg-black",
+            "test_command": "app.indexer.client.jackett|Jackett",
+            "config": {
+                "host": {
+                    "id": "jackett.host",
+                    "required": True,
+                    "title": "Jackett地址",
+                    "tooltip": "Jackett访问地址和端口，如为https需加https://前缀。注意需要先在Jackett中添加indexer，才能正常测试通过和使用",
+                    "type": "text",
+                    "placeholder": "http://127.0.0.1:9117"
+                },
+                "api_key": {
+                    "id": "jackett.api_key",
+                    "required": True,
+                    "title": "Api Key",
+                    "tooltip": "Jackett管理界面右上角复制API Key",
+                    "type": "text",
+                    "placeholder": ""
+                },
+                "password": {
+                    "id": "jackett.password",
+                    "required": False,
+                    "title": "密码",
+                    "tooltip": "Jackett管理界面中配置的Admin password，如未配置可为空",
+                    "type": "password",
+                    "placeholder": ""
+                }
+            }
+        },
+        "prowlarr": {
+            "name": "Prowlarr",
+            "img_url": "../static/img/prowlarr.png",
+            "background": "bg-orange",
+            "test_command": "app.indexer.client.prowlarr|Prowlarr",
+            "config": {
+                "host": {
+                    "id": "prowlarr.host",
+                    "required": True,
+                    "title": "Prowlarr地址",
+                    "tooltip": "Prowlarr访问地址和端口，如为https需加https://前缀。注意需要先在Prowlarr中添加搜刮器，同时勾选所有搜刮器后搜索一次，才能正常测试通过和使用",
+                    "type": "text",
+                    "placeholder": "http://127.0.0.1:9696"
+                },
+                "api_key": {
+                    "id": "prowlarr.api_key",
+                    "required": True,
+                    "title": "Api Key",
+                    "tooltip": "在Prowlarr->Settings->General->Security-> API Key中获取",
+                    "type": "text",
+                    "placeholder": ""
+                }
+            }
+        }
+    }
 
     # 发现过滤器
     DISCOVER_FILTER_CONF = {
