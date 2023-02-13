@@ -47,7 +47,7 @@ jobs:
         name: windows
         path: D:/a/nas-tools/nas-tools/nas-tools/windows/dist/nas-tools.exe
 
-  Create-release_Send-message:
+  Create-release:
     runs-on: ubuntu-latest
     needs: [Windows-build]
     steps:
@@ -86,13 +86,3 @@ jobs:
         release_id: ${{ steps.create_release.outputs.id }}
         assets_path: |
             /home/runner/work/nas-tools/nas-tools/releases/
-    - name: Send telegram message (release informations)
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: markdown
-        message: |
-            *v${{ env.app_version }}*
-
-            ${{ github.event.commits[0].message }}
