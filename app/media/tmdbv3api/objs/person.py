@@ -96,7 +96,7 @@ class Person(TMDb):
         :param person_id:
         :return:
         """
-        return AsObj(**self._call(self._urls["combined_credits"] % person_id, ""))
+        return self._get_obj(self._call(self._urls["combined_credits"] % person_id, ""), "cast")
 
     def external_ids(self, person_id):
         """
@@ -112,7 +112,6 @@ class Person(TMDb):
         """
         Get the images for a person.
         :param person_id:
-        :param include_image_language:
         :return:
         """
         return AsObj(**self._call(self._urls['images'] % person_id, ""))
@@ -121,7 +120,6 @@ class Person(TMDb):
         """
         Get the images that this person has been tagged in.
         :param person_id:
-        :param include_image_language:
         :return:
         """
         return AsObj(**self._call(self._urls['tagged_images'] % person_id, ""))

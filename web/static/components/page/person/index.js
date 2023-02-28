@@ -7,6 +7,7 @@ export class PagePerson extends CustomElement {
     page_subtitle: { attribute: "page-subtitle"},
     media_type: { attribute: "media-type" },
     tmdbid: { attribute: "media-tmdbid" },
+    keyword: { attribute: "keyword" },
     person_list: { type: Array },
   };
 
@@ -17,7 +18,7 @@ export class PagePerson extends CustomElement {
 
   // 仅执行一次  界面首次刷新后
   firstUpdated() {
-    Golbal.get_cache_or_ajax("media_person", this.media_type, { "tmdbid": this.tmdbid, "type": this.media_type},
+    Golbal.get_cache_or_ajax("media_person", this.media_type, { tmdbid: this.tmdbid, type: this.media_type, keyword: this.keyword },
       (ret) => {
         if (ret.code === 0) {
           this.person_list = ret.data;

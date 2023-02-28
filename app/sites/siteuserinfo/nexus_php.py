@@ -57,6 +57,8 @@ class NexusPhpSiteUserInfo(_ISiteUserInfo):
 
             if message_unread_match and len(message_unread_match[-1]) == 2:
                 self.message_unread = StringUtils.str_int(message_unread_match[-1][1])
+            elif message_text.isdigit():
+                self.message_unread = StringUtils.str_int(message_text)
 
     def _parse_user_base_info(self, html_text):
         # 合并解析，减少额外请求调用

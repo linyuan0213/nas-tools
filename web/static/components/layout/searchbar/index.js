@@ -21,6 +21,14 @@ const search_source_icon = {
       <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
       <path d="M10 8v8h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-2z"></path>
     </svg>
+  `,
+  person: html`
+    <!-- https://tabler-icons.io/i/square-rounded-letter-p -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-square-rounded-letter-p text-purple" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+       <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+       <path d="M10 12h2a2 2 0 1 0 0 -4h-2v8"></path>
+       <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z"></path>
+    </svg>
   `
 }
 
@@ -28,8 +36,9 @@ export class LayoutSearchbar extends CustomElement {
   static properties = {
     layout_systemflag: { attribute: "layout-systemflag" },
     layout_username: { attribute: "layout-username" },
+    layout_userlevel: { attribute: "layout-userlevel" },
+    layout_useradmin: { attribute: "layout-useradmin" },
     layout_search_source: { attribute: "layout-search-source" },
-    layout_userpris: { attribute: "layout-userpris", type: Array },
     _search_source: { state: true },
   };
 
@@ -37,7 +46,6 @@ export class LayoutSearchbar extends CustomElement {
     super();
     this.layout_systemflag = "Docker";
     this.layout_username = "admin";
-    this.layout_userpris = ["系统设置"];
     this.layout_search_source = "tmdb";
     this._search_source = "tmdb";
     this.classList.add("navbar", "fixed-top", "lit-searchbar");
@@ -60,7 +68,6 @@ export class LayoutSearchbar extends CustomElement {
        this.classList.remove("lit-searchbar-blur");
       }
     });
-
   }
 
   // 卸载事件
@@ -105,21 +112,30 @@ export class LayoutSearchbar extends CustomElement {
             <span class="input-group-text form-control-rounded">
               <a href="#" class="link-secondary"
                 @click=${ () => {
-                  this._search_source = this._search_source === "tmdb" ? "douban" : "tmdb";
+                  let source_dict = {
+                    tmdb: "douban",
+                    douban: "person",
+                    person: "tmdb"
+                  };
+                  this._search_source = source_dict[this._search_source];
                   localStorage.setItem("SearchSource", this._search_source);
                 }}>
                 ${search_source_icon[this._search_source]}
               </a>
             </span>
-            <input type="text" class="home_search_bar form-control form-control-rounded" placeholder="搜索电影、电视剧" autocomplete="new-password"
+            <input type="text" class="home_search_bar form-control form-control-rounded" placeholder=${this._search_source === "person" ? "搜索人物" : "搜索电影、电视剧"} autocomplete="new-password" ?readonly=${this.layout_userlevel < 2}
               @keypress=${ (e) => {
                 if(e.which === 13 && this.input.value){
-                  navmenu("recommend?type=SEARCH&title=搜索结果&subtitle=" + this.input.value + "&keyword=" + this.input.value + "&source=" + this._search_source);
+                  if (this._search_source === "person") {
+                    navmenu("discovery_person?&type=ALL&title=演员搜索&subtitle=" + this.input.value + "&keyword=" + this.input.value);
+                  } else {
+                    navmenu("recommend?type=SEARCH&title=搜索结果&subtitle=" + this.input.value + "&keyword=" + this.input.value + "&source=" + this._search_source);                   
+                  }
                   this.input.value = "";
                 }
               }}>
             <span class="input-group-text form-control-rounded">
-              <a href="javascript:show_search_advanced_modal()" class="link-secondary">
+              <a href="${this.layout_userlevel > 1 ? "javascript:show_search_advanced_modal()":"javascript:void(0)"}" class="link-secondary">
                 <!-- http://tabler-icons.io/i/adjustments -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2"
                     stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -153,7 +169,7 @@ export class LayoutSearchbar extends CustomElement {
                 <a class="dropdown-item hide-theme-dark" href="?theme=dark" role="button">暗黑风格</a>
                 <a class="dropdown-item hide-theme-light" href="?theme=light" role="button">明亮风格</a>
                 <div class="dropdown-divider"></div>
-                ${this.layout_userpris.includes("系统设置")
+                ${this.layout_useradmin === "1"
                 ? html`
                     <a class="dropdown-item" data-bs-toggle="offcanvas" href="#offcanvasEnd" role="button"
                       aria-controls="offcanvasEnd">消息中心</a>

@@ -45,7 +45,7 @@ class Chanify(_IMessageClient):
                     'title': title,
                     'text': text
                  }).encode()
-            res = RequestUtils().post_res(sc_url, params=data)
+            res = RequestUtils().post_res(sc_url, data=data)
             if res:
                 if res.status_code == 200:
                     return True, "发送成功"

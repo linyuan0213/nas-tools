@@ -386,27 +386,27 @@ class Scraper:
                 if scraper_tv_pic.get("background"):
                     background_image = media.fanart.get_background(media_type=media.type, queryid=media.tvdb_id)
                     if background_image:
-                        self.__save_image(background_image, dir_path, "show")
+                        self.__save_image(background_image, os.path.dirname(dir_path), "show")
                 # logo
                 if scraper_tv_pic.get("logo"):
                     logo_image = media.fanart.get_logo(media_type=media.type, queryid=media.tvdb_id)
                     if logo_image:
-                        self.__save_image(logo_image, dir_path, "logo")
+                        self.__save_image(logo_image, os.path.dirname(dir_path), "logo")
                 # clearart
                 if scraper_tv_pic.get("clearart"):
                     clearart_image = media.fanart.get_disc(media_type=media.type, queryid=media.tvdb_id)
                     if clearart_image:
-                        self.__save_image(clearart_image, dir_path, "clearart")
+                        self.__save_image(clearart_image, os.path.dirname(dir_path), "clearart")
                 # banner
                 if scraper_tv_pic.get("banner"):
                     banner_image = media.fanart.get_banner(media_type=media.type, queryid=media.tvdb_id)
                     if banner_image:
-                        self.__save_image(banner_image, dir_path, "banner")
+                        self.__save_image(banner_image, os.path.dirname(dir_path), "banner")
                 # thumb
                 if scraper_tv_pic.get("thumb"):
                     thumb_image = media.fanart.get_thumb(media_type=media.type, queryid=media.tvdb_id)
                     if thumb_image:
-                        self.__save_image(thumb_image, dir_path, "thumb")
+                        self.__save_image(thumb_image, os.path.dirname(dir_path), "thumb")
                 # season nfo
                 if scraper_tv_nfo.get("season_basic"):
                     if not os.path.exists(os.path.join(dir_path, "season.nfo")):
@@ -475,12 +475,13 @@ class Scraper:
                         if episode_image:
                             self.__save_image(episode_image, episode_thumb)
                         else:
-                            # 从视频文件生成缩略图
-                            video_path = os.path.join(dir_path, file_name + file_ext)
-                            log.info(f"【Scraper】正在生成缩略图：{video_path} ...")
-                            FfmpegHelper().get_thumb_image_from_video(video_path=video_path,
-                                                                      image_path=episode_thumb)
-                            log.info(f"【Scraper】缩略图生成完成：{episode_thumb}")
+                            # 开启ffmpeg，则从视频文件生成缩略图
+                            if scraper_tv_pic.get("episode_thumb_ffmpeg"):
+                                video_path = os.path.join(dir_path, file_name + file_ext)
+                                log.info(f"【Scraper】正在生成缩略图：{video_path} ...")
+                                FfmpegHelper().get_thumb_image_from_video(video_path=video_path,
+                                                                          image_path=episode_thumb)
+                                log.info(f"【Scraper】缩略图生成完成：{episode_thumb}")
 
         except Exception as e:
             ExceptionUtils.exception_traceback(e)

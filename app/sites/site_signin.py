@@ -8,9 +8,9 @@ from selenium.webdriver.support import expected_conditions as es
 from selenium.webdriver.support.wait import WebDriverWait
 
 import log
-from app.conf import SiteConf
 from app.helper import ChromeHelper, SubmoduleHelper, DbHelper, SiteHelper
 from app.message import Message
+from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
 from app.utils import RequestUtils, ExceptionUtils, StringUtils
 from app.utils.commons import singleton
@@ -24,6 +24,7 @@ class SiteSignin(object):
     sites = None
     dbhelper = None
     message = None
+    siteconf = None
 
     _MAX_CONCURRENCY = 10
 
@@ -38,6 +39,7 @@ class SiteSignin(object):
         self.sites = Sites()
         self.dbhelper = DbHelper()
         self.message = Message()
+        self.siteconf = SiteConf()
 
     def __build_class(self, url):
         for site_schema in self._site_schema:
@@ -70,8 +72,7 @@ class SiteSignin(object):
         else:
             return self.__signin_base(site_info)
 
-    @staticmethod
-    def __signin_base(site_info):
+    def __signin_base(self, site_info):
         """
         通用签到处理
         :param site_info: 站点信息
@@ -108,7 +109,7 @@ class SiteSignin(object):
                 # 查找签到按钮
                 html = etree.HTML(html_text)
                 xpath_str = None
-                for xpath in SiteConf.SITE_CHECKIN_XPATH:
+                for xpath in self.siteconf.get_checkin_conf():
                     if html.xpath(xpath):
                         xpath_str = xpath
                         break

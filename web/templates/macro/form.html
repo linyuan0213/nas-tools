@@ -69,7 +69,7 @@
                 {% endfor %}
               </select>
             {% else %}
-            <input type="text" id="{{ FieldAttr.id }}" class="form-control" value="{{ FieldAttr.default or '' }}" placeholder="{{ FieldAttr.placeholder }}">
+            <input type="{{ FieldAttr.type }}" id="{{ FieldAttr.id }}" class="form-control" value="{{ FieldAttr.default or '' }}" placeholder="{{ FieldAttr.placeholder }}">
             {% endif %}
           {% endif %}
         </div>

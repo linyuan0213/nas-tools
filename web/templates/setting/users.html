@@ -103,42 +103,12 @@
           <div class="mb-3">
             <label class="form-label required">权限</label>
             <div class="form-selectgroup">
+              {% for Menu in TopMenus %}
               <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="我的媒体库" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">我的媒体库</span>
+                <input type="checkbox" name="user_pris" value="{{ Menu }}" class="form-selectgroup-input">
+                <span class="form-selectgroup-label">{{ Menu }}</span>
               </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="资源搜索" class="form-selectgroup-input" checked>
-                <span class="form-selectgroup-label">资源搜索</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="探索" class="form-selectgroup-input" checked>
-                <span class="form-selectgroup-label">探索</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="站点管理" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">站点管理</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="订阅管理" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">订阅管理</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="下载管理" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">下载管理</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="媒体整理" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">媒体整理</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="服务" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">服务</span>
-              </label>
-              <label class="form-selectgroup-item">
-                <input type="checkbox" name="user_pris" value="系统设置" class="form-selectgroup-input">
-                <span class="form-selectgroup-label">系统设置</span>
-              </label>
+              {% endfor %}
             </div>
           </div>
         </div>

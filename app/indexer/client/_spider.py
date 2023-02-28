@@ -8,6 +8,7 @@ from pyquery import PyQuery
 
 import feapder
 import log
+from app.helper import RedisHelper
 from app.utils import StringUtils, SystemUtils
 from app.utils.exception_utils import ExceptionUtils
 from app.utils.types import MediaType
@@ -17,6 +18,7 @@ from feapder.utils.tools import urlencode
 
 class TorrentSpider(feapder.AirSpider):
     _webdriver_path = SystemUtils.get_webdriver_path()
+    _redis_valid = RedisHelper.is_valid()
     __custom_setting__ = dict(
         USE_SESSION=True,
         SPIDER_THREAD_COUNT=1,
@@ -25,6 +27,12 @@ class TorrentSpider(feapder.AirSpider):
         RETRY_FAILED_REQUESTS=False,
         LOG_LEVEL="ERROR",
         RANDOM_HEADERS=False,
+        REDISDB_IP_PORTS="127.0.0.1:6379",
+        REDISDB_USER_PASS="",
+        REDISDB_DB=0,
+        RESPONSE_CACHED_ENABLE=_redis_valid,
+        RESPONSE_CACHED_EXPIRE_TIME=300,
+        RESPONSE_CACHED_USED=_redis_valid,
         WEBDRIVER=dict(
             pool_size=1,
             load_images=False,
@@ -198,7 +206,8 @@ class TorrentSpider(feapder.AirSpider):
                         if self.category.get("field"):
                             value = params.get(self.category.get("field"), "")
                             params.update({
-                                "%s" % self.category.get("field"): value + self.category.get("delimiter", ' ') + cat.get("id")
+                                "%s" % self.category.get("field"): value + self.category.get("delimiter",
+                                                                                             ' ') + cat.get("id")
                             })
                         else:
                             params.update({

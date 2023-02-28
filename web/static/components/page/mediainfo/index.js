@@ -15,6 +15,8 @@ export class PageMediainfo extends CustomElement {
     similar_media: { type: Array },
     // 推荐影片
     recommend_media: { type: Array },
+    // 季集
+    seasons_data: { type: Array }
   };
 
   constructor() {
@@ -22,6 +24,7 @@ export class PageMediainfo extends CustomElement {
     this.media_info = {};
     this.similar_media = [];
     this.recommend_media = [];
+    this.seasons_data = [];
     this.fav = undefined;
   }
 
@@ -33,6 +36,7 @@ export class PageMediainfo extends CustomElement {
           this.media_info = ret.data;
           this.tmdbid = ret.data.tmdbid;
           this.fav = ret.data.fav;
+          this.seasons_data = ret.data.seasons;
           // 类似
           Golbal.get_cache_or_ajax("get_recommend", "sim", { "type": this.media_type, "subtype": "sim", "tmdbid": ret.data.tmdbid, "page": 1},
             (ret) => {
@@ -75,11 +79,21 @@ export class PageMediainfo extends CustomElement {
         .theme-light .lit-media-info-page-bg {
           background-color: rgb(231, 235, 239);
         }
+        .custom-media-info-height {
+          height: calc(env(safe-area-inset-top) + var(--safe-area-inset-top) + 541px);
+          border: none;
+        }
+        @media (max-width: 768px) {
+          .custom-media-info-height {
+          height: calc(env(safe-area-inset-top) + var(--safe-area-inset-top) + 610px);
+          border: none;
+        }
+        }
       </style>
       <div class="container-xl placeholder-glow page-wrapper-top-off lit-media-info-page-bg">
         <!-- 渲染媒体信息 -->
-        <div class="card rounded-0 lit-media-info-background" style="border:none;height:calc(env(safe-area-inset-top) + var(--safe-area-inset-top) + 541px);">
-          <custom-img style="border:none;height:calc(env(safe-area-inset-top) + var(--safe-area-inset-top) + 541px);"
+        <div class="card rounded-0 lit-media-info-background custom-media-info-height">
+          <custom-img class="custom-media-info-height"
             div-style="display:inline;"
             img-placeholder="0"
             img-error="0"
@@ -95,25 +109,23 @@ export class PageMediainfo extends CustomElement {
                 img-src=${this.media_info.image}>
               </custom-img>
               <div class="d-flex justify-content-center">
-                <div class="d-flex flex-column justify-content-end ms-2 mt-2">
-                  ${this.fav == "2"
-                  ? html`
-                    <div class="align-self-center align-self-md-start me-1 mb-1">
-                      <strong class="badge badge-pill bg-green text-white">已下载</strong>
-                    </div>`
-                  : nothing }
+                <div class="d-flex flex-column justify-content-end ms-4 me-4 mt-2">
+                  <div class="align-self-center align-self-md-start mb-1">
+                  <a href="${this.media_info.link}" target="_blank" ?hidden=${!this.media_info.tmdbid}><span class="badge badge-outline text-green">${this.media_info.tmdbid}</span></a>
+                  <a href="${this.media_info.douban_link}" target="_blank" ?hidden=${!this.media_info.douban_id}><span class="badge badge-outline text-orange">${this.media_info.douban_id}</span></a>
+                  ${this.fav == "2" ? html`<strong class="badge badge-pill bg-green text-white">已下载</strong>` : nothing }
+                  </div>  
                   <h1 class="align-self-center align-self-md-start display-6">
                     <strong>${this.media_info.title ?? this._render_placeholder("200px")}</strong>
                     <strong class="h1" ?hidden=${!this.media_info.year}>(${this.media_info.year})</strong>
                   </h1>
                   <div class="align-self-center align-self-md-start">
-                    <a href="${this.media_info.link}" target="_blank" ?hidden=${!this.media_info.tmdbid}><span class="badge badge-outline text-green">${this.media_info.tmdbid}</span></a>
-                    <a href="${this.media_info.douban_link}" target="_blank" ?hidden=${!this.media_info.douban_id}><span class="badge badge-outline text-orange">${this.media_info.douban_id}</span></a>
-                    <span class="ms-1" ?hidden=${!this.media_info.runtime}>${this.media_info.runtime}</span>
-                    <span ?hidden=${!this.media_info.genres}>| ${this.media_info.genres}</span>
+                    <span class="h3 ms-1" ?hidden=${!this.media_info.runtime}>${this.media_info.runtime}</span>
+                    <span class="h3" ?hidden=${!this.media_info.genres}>| ${this.media_info.genres}</span>
+                    <span class="h3" ?hidden=${!this.seasons_data.length}>| ${this.seasons_data.length} 季</span>
                     ${Object.keys(this.media_info).length === 0 ? this._render_placeholder("205px") : nothing }
                   </div>
-                  <div class="align-self-center align-self-md-start me-1 mt-2">
+                  <div class="align-self-center align-self-md-start mt-2">
                     ${Object.keys(this.media_info).length !== 0
                     ? html`
                       <span class="btn btn-primary btn-pill me-1"
@@ -153,11 +165,11 @@ export class PageMediainfo extends CustomElement {
           </div>
         </div>
         <div class="row">
-          <div class="col-lg-8">
+          <div class="col-lg-9">
             <h2 class="text-muted ms-4 me-2">
               <small>${this.media_info.overview ?? this._render_placeholder("200px", "", "col-12", 7)}</small>
             </h2>
-            <div class="row mx-2 mt-4">
+            <div class="row mx-2 mt-4 d-none d-md-flex">
               ${this.media_info.crews
               ? this.media_info.crews.map((item, index) => ( html`
                 <div class="col-12 col-md-6 col-lg-4">
@@ -171,11 +183,17 @@ export class PageMediainfo extends CustomElement {
                 `) )
               : nothing }
             </div>
+            <accordion-seasons
+              .seasons_data=${this.seasons_data}
+              .tmdbid=${this.tmdbid}
+              .title=${this.media_info.title}
+              .year=${this.media_info.year}
+            ></accordion-seasons>
           </div>
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             ${this.media_info.fact
             ? html`
-              <div class="ms-3 me-2 mt-1">
+              <div class="ms-2 me-2 mt-1">
                 <div class="card rounded-3" style="background: none">
                   ${this.media_info.fact.map((item) => ( html`
                     <div class="card-body p-2">

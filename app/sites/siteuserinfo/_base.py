@@ -146,7 +146,6 @@ class _ISiteUserInfo(metaclass=ABCMeta):
                 unread_msg_links.extend(msg_links)
 
         for msg_link in unread_msg_links:
-            print(msg_link)
             log.debug(f"【Sites】{self.site_name} 信息链接 {msg_link}")
             head, date, content = self._parse_message_content(self._get_page_content(urljoin(self._base_url, msg_link)))
             log.debug(f"【Sites】{self.site_name} 标题 {head} 时间 {date} 内容 {content}")
@@ -233,13 +232,15 @@ class _ISiteUserInfo(metaclass=ABCMeta):
                 req_headers.update(self._addition_headers)
 
         if params:
-            res = RequestUtils(cookies=self._site_cookie, session=self._session, timeout=60,
-                               headers=req_headers).post_res(
-                url=url, params=params)
+            res = RequestUtils(cookies=self._site_cookie,
+                               session=self._session,
+                               timeout=60,
+                               headers=req_headers).post_res(url=url, data=params)
         else:
-            res = RequestUtils(cookies=self._site_cookie, session=self._session, timeout=60,
-                               headers=req_headers).get_res(
-                url=url)
+            res = RequestUtils(cookies=self._site_cookie,
+                               session=self._session,
+                               timeout=60,
+                               headers=req_headers).get_res(url=url)
         if res is not None and res.status_code in (200, 500):
             if "charset=utf-8" in res.text or "charset=UTF-8" in res.text:
                 res.encoding = "UTF-8"

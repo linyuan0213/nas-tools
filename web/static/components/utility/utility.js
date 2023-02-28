@@ -86,6 +86,14 @@ export class Golbal {
   static get_page_data(name) {
     return window.history.state?.extra ? window.history.state.extra[name] : undefined;
   }
+
+  static del_page_data(api, name) {
+    if (window.history.state?.extra){
+      window.history.state.extra[api + name] = undefined;
+      return true;
+    }
+    return false;
+  }
   
   // 判断直接获取缓存或ajax_post
   static get_cache_or_ajax(api, name, data, func) {

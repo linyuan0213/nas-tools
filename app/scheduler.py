@@ -1,23 +1,21 @@
 import datetime
 import math
 import random
-import traceback
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import log
 from app.doubansync import DoubanSync
-from app.downloader import Downloader
 from app.helper import MetaHelper
 from app.mediaserver import MediaServer
 from app.rss import Rss
-from app.sites import Sites, SiteUserInfo, SiteSignin
+from app.sites import SiteUserInfo, SiteSignin
 from app.subscribe import Subscribe
 from app.sync import Sync
 from app.utils import ExceptionUtils
 from app.utils.commons import singleton
-from config import PT_TRANSFER_INTERVAL, METAINFO_SAVE_INTERVAL, \
+from config import METAINFO_SAVE_INTERVAL, \
     SYNC_TRANSFER_INTERVAL, RSS_CHECK_INTERVAL, REFRESH_PT_DATA_INTERVAL, \
     RSS_REFRESH_TMDB_INTERVAL, META_DELETE_UNKNOWN_INTERVAL, REFRESH_WALLPAPER_INTERVAL, Config
 from web.backend.wallpaper import get_login_wallpaper
@@ -99,12 +97,6 @@ class Scheduler:
                                                "interval",
                                                hours=hours)
                         log.info("站点自动签到服务启动")
-
-            # 下载文件转移
-            pt_monitor = self._pt.get('pt_monitor')
-            if pt_monitor:
-                self.SCHEDULER.add_job(Downloader().transfer, 'interval', seconds=PT_TRANSFER_INTERVAL)
-                log.info("下载文件转移服务启动")
 
             # RSS下载器
             pt_check_interval = self._pt.get('pt_check_interval')
@@ -217,6 +209,13 @@ class Scheduler:
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
 
+    def restart_service(self):
+        """
+        重启定时服务
+        """
+        self.stop_service()
+        self.start_service()
+
     def start_data_site_signin_job(self, hour, minute):
         year = datetime.datetime.now().year
         month = datetime.datetime.now().month
@@ -235,31 +234,3 @@ class Scheduler:
         self.SCHEDULER.add_job(SiteSignin().signin,
                                "date",
                                run_date=datetime.datetime(year, month, day, hour, minute, second))
-
-
-def run_scheduler():
-    """
-    启动定时服务
-    """
-    try:
-        Scheduler().run_service()
-    except Exception as err:
-        log.error("启动定时服务失败：%s - %s" % (str(err), traceback.format_exc()))
-
-
-def stop_scheduler():
-    """
-    停止定时服务
-    """
-    try:
-        Scheduler().stop_service()
-    except Exception as err:
-        log.debug("停止定时服务失败：%s" % str(err))
-
-
-def restart_scheduler():
-    """
-    重启定时服务
-    """
-    stop_scheduler()
-    run_scheduler()

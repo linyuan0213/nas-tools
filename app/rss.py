@@ -8,7 +8,7 @@ from app.filter import Filter
 from app.helper import DbHelper
 from app.media import Media
 from app.media.meta import MetaInfo
-from app.sites import Sites
+from app.sites import Sites, SiteConf
 from app.subscribe import Subscribe
 from app.utils import DomUtils, RequestUtils, StringUtils, ExceptionUtils, RssTitleUtils, Torrent
 from app.utils.types import MediaType, SearchType
@@ -20,21 +20,24 @@ class Rss:
     _sites = []
     filter = None
     media = None
+    sites = None
+    siteconf = None
     downloader = None
     searcher = None
     dbhelper = None
     subscribe = None
 
     def __init__(self):
-        self.media = Media()
-        self.downloader = Downloader()
-        self.sites = Sites()
-        self.filter = Filter()
-        self.dbhelper = DbHelper()
-        self.subscribe = Subscribe()
         self.init_config()
 
     def init_config(self):
+        self.media = Media()
+        self.downloader = Downloader()
+        self.sites = Sites()
+        self.siteconf = SiteConf()
+        self.filter = Filter()
+        self.dbhelper = DbHelper()
+        self.subscribe = Subscribe()
         self._sites = self.sites.get_sites(rss=True)
 
     def rssdownload(self):
@@ -500,10 +503,10 @@ class Rss:
             # 解析种子详情
             if site_parse:
                 # 检测Free
-                torrent_attr = self.sites.check_torrent_attr(torrent_url=media_info.page_url,
-                                                             cookie=site_cookie,
-                                                             ua=site_ua,
-                                                             proxy=site_proxy)
+                torrent_attr = self.siteconf.check_torrent_attr(torrent_url=media_info.page_url,
+                                                                cookie=site_cookie,
+                                                                ua=site_ua,
+                                                                proxy=site_proxy)
                 if torrent_attr.get('2xfree'):
                     download_volume_factor = 0.0
                     upload_volume_factor = 2.0

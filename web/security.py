@@ -1,5 +1,6 @@
 import datetime
 from functools import wraps
+from cryptography.fernet import Fernet
 
 import jwt
 from flask import request
@@ -116,3 +117,12 @@ def login_required(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def encrypt_message(message, key):
+    """
+    使用给定的key对消息进行加密，并返回加密后的字符串
+    """
+    f = Fernet(key)
+    encrypted_message = f.encrypt(message.encode())
+    return encrypted_message.decode()

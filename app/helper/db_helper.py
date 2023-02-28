@@ -212,6 +212,19 @@ class DbHelper:
                                                      TRANSFERHISTORY.DEST_FILENAME == dest_filename).count()
         return True if ret > 0 else False
 
+    def update_transfer_history_date(self, source_path, source_filename, dest_path, dest_filename, date):
+        """
+        更新历史转移记录时间
+        """
+        self._db.query(TRANSFERHISTORY).filter(TRANSFERHISTORY.SOURCE_PATH == source_path,
+                                               TRANSFERHISTORY.SOURCE_FILENAME == source_filename,
+                                               TRANSFERHISTORY.DEST_PATH == dest_path,
+                                               TRANSFERHISTORY.DEST_FILENAME == dest_filename).update(
+            {
+                "DATE": date
+            }
+        )
+
     @DbPersist(_db)
     def insert_transfer_history(self, in_from: Enum, rmt_mode: RmtMode, in_path, out_path, dest, media_info):
         """
@@ -235,10 +248,12 @@ class DbHelper:
             dest_filename = ""
             season_episode = media_info.get_season_string()
         title = media_info.title
+        timestr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         if self.is_transfer_history_exists(source_path, source_filename, dest_path, dest_filename):
+            # 更新历史转移记录的时间
+            self.update_transfer_history_date(source_path, source_filename, dest_path, dest_filename, timestr)
             return
         dest = dest or ""
-        timestr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         self._db.insert(
             TRANSFERHISTORY(
                 MODE=str(rmt_mode.value),
@@ -279,11 +294,11 @@ class DbHelper:
             return self._db.query(TRANSFERHISTORY).count(), self._db.query(TRANSFERHISTORY).order_by(
                 TRANSFERHISTORY.DATE.desc()).limit(int(rownum)).offset(begin_pos).all()
 
-    def get_transfer_path_by_id(self, logid):
+    def get_transfer_info_by_id(self, logid):
         """
         据logid查询PATH
         """
-        return self._db.query(TRANSFERHISTORY).filter(TRANSFERHISTORY.ID == int(logid)).all()
+        return self._db.query(TRANSFERHISTORY).filter(TRANSFERHISTORY.ID == int(logid)).first()
 
     def is_transfer_history_exists_by_source_full_path(self, source_full_path):
         """
@@ -312,6 +327,27 @@ class DbHelper:
         """
         return self._db.query(TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.STATE == 'N').all()
 
+    def get_transfer_unknown_paths_by_page(self, search, page, rownum):
+        """
+        按页查询未识别的记录列表
+        """
+        if int(page) == 1:
+            begin_pos = 0
+        else:
+            begin_pos = (int(page) - 1) * int(rownum)
+        if search:
+            search = f"%{search}%"
+            count = self._db.query(TRANSFERUNKNOWN).filter((TRANSFERUNKNOWN.STATE == 'N')
+                                                           & (TRANSFERUNKNOWN.PATH.like(search))).count()
+            data = self._db.query(TRANSFERUNKNOWN).filter((TRANSFERUNKNOWN.STATE == 'N')
+                                                          & (TRANSFERUNKNOWN.PATH.like(search))).order_by(
+                TRANSFERUNKNOWN.ID.desc()).limit(int(rownum)).offset(begin_pos).all()
+            return count, data
+        else:
+            return self._db.query(TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.STATE == 'N').count(), self._db.query(
+                TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.STATE == 'N').order_by(
+                TRANSFERUNKNOWN.ID.desc()).limit(int(rownum)).offset(begin_pos).all()
+
     @DbPersist(_db)
     def update_transfer_unknown_state(self, path):
         """
@@ -334,13 +370,13 @@ class DbHelper:
             return []
         self._db.query(TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.ID == int(tid)).delete()
 
-    def get_unknown_path_by_id(self, tid):
+    def get_unknown_info_by_id(self, tid):
         """
         查询未识别记录
         """
         if not tid:
             return []
-        return self._db.query(TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.ID == int(tid)).all()
+        return self._db.query(TRANSFERUNKNOWN).filter(TRANSFERUNKNOWN.ID == int(tid)).first()
 
     def get_transfer_unknown_by_path(self, path):
         """
@@ -453,6 +489,14 @@ class DbHelper:
             self._db.insert(TRANSFERBLACKLIST(
                 PATH=os.path.normpath(path)
             ))
+
+    @DbPersist(_db)
+    def delete_transfer_blacklist(self, path):
+        """
+        删除黑名单记录
+        """
+        self._db.query(TRANSFERBLACKLIST).filter(TRANSFERBLACKLIST.PATH == str(path)).delete()
+        self._db.query(SYNCHISTORY).filter(SYNCHISTORY.PATH == str(path)).delete()
 
     @DbPersist(_db)
     def truncate_transfer_blacklist(self, ):
@@ -1112,10 +1156,14 @@ class DbHelper:
                 DEST=os.path.normpath(dest)
             ))
 
-    def get_users(self, ):
+    def get_users(self, uid=None, name=None):
         """
         查询用户列表
         """
+        if uid:
+            return self._db.query(CONFIGUSERS).filter(CONFIGUSERS.ID == uid).first()
+        elif name:
+            return self._db.query(CONFIGUSERS).filter(CONFIGUSERS.NAME == name).first()
         return self._db.query(CONFIGUSERS).all()
 
     def is_user_exists(self, name):
@@ -1516,26 +1564,26 @@ class DbHelper:
         else:
             return 0, 0, [], [], []
 
-    def is_exists_download_history(self, title, tmdbid, mtype=None):
+    def is_exists_download_history(self, enclosure, downloader, download_id):
         """
         查询下载历史是否存在
         """
-        if not title or not tmdbid:
-            return False
-        if mtype:
+        if enclosure:
             count = self._db.query(DOWNLOADHISTORY).filter(
-                (DOWNLOADHISTORY.TITLE == title) | (DOWNLOADHISTORY.TMDBID == tmdbid),
-                DOWNLOADHISTORY.TYPE == mtype).count()
+                DOWNLOADHISTORY.ENCLOSURE == enclosure
+            ).count()
         else:
             count = self._db.query(DOWNLOADHISTORY).filter(
-                (DOWNLOADHISTORY.TITLE == title) | (DOWNLOADHISTORY.TMDBID == tmdbid)).count()
+                DOWNLOADHISTORY.DOWNLOADER == downloader,
+                DOWNLOADHISTORY.DOWNLOAD_ID == download_id
+            ).count()
         if count > 0:
             return True
         else:
             return False
 
     @DbPersist(_db)
-    def insert_download_history(self, media_info):
+    def insert_download_history(self, media_info, downloader, download_id):
         """
         新增下载历史
         """
@@ -1543,16 +1591,20 @@ class DbHelper:
             return
         if not media_info.title or not media_info.tmdb_id:
             return
-        if self.is_exists_download_history(media_info.title, media_info.tmdb_id, media_info.type.value):
-            self._db.query(DOWNLOADHISTORY).filter(DOWNLOADHISTORY.TITLE == media_info.title,
-                                                   DOWNLOADHISTORY.TMDBID == media_info.tmdb_id,
-                                                   DOWNLOADHISTORY.TYPE == media_info.type.value).update(
+        if self.is_exists_download_history(enclosure=media_info.enclosure,
+                                           downloader=downloader,
+                                           download_id=download_id):
+            self._db.query(DOWNLOADHISTORY).filter(DOWNLOADHISTORY.ENCLOSURE == media_info.enclosure,
+                                                   DOWNLOADHISTORY.DOWNLOADER == downloader,
+                                                   DOWNLOADHISTORY.DOWNLOAD_ID == download_id).update(
                 {
                     "TORRENT": media_info.org_string,
                     "ENCLOSURE": media_info.enclosure,
                     "DESC": media_info.description,
+                    "SITE": media_info.site,
+                    "DOWNLOADER": downloader,
+                    "DOWNLOAD_ID": download_id,
                     "DATE": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())),
-                    "SITE": media_info.site
                 }
             )
         else:
@@ -1568,7 +1620,9 @@ class DbHelper:
                 ENCLOSURE=media_info.enclosure,
                 DESC=media_info.description,
                 DATE=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())),
-                SITE=media_info.site
+                SITE=media_info.site,
+                DOWNLOADER=downloader,
+                DOWNLOAD_ID=download_id,
             ))
 
     def get_download_history(self, date=None, hid=None, num=30, page=1):
@@ -1585,17 +1639,11 @@ class DbHelper:
             return self._db.query(DOWNLOADHISTORY).order_by(
                 DOWNLOADHISTORY.DATE.desc()).limit(num).offset(offset).all()
 
-    def is_media_downloaded(self, title, tmdbid):
+    def get_download_history_by_title(self, title):
         """
-        根据标题和年份检查是否下载过
+        根据标题查找下载历史
         """
-        if self.is_exists_download_history(title, tmdbid):
-            return True
-        count = self._db.query(TRANSFERHISTORY).filter(TRANSFERHISTORY.TITLE == title).count()
-        if count > 0:
-            return True
-        else:
-            return False
+        return self._db.query(DOWNLOADHISTORY).filter(DOWNLOADHISTORY.TITLE == title).all()
 
     @DbPersist(_db)
     def insert_brushtask(self, brush_id, item):
@@ -1612,15 +1660,15 @@ class DbHelper:
                 SEED_SIZE=item.get('seed_size'),
                 INTEVAL=item.get('interval'),
                 DOWNLOADER=item.get('downloader'),
+                LABEL=item.get('label'),
                 TRANSFER=item.get('transfer'),
-                DOWNLOAD_COUNT='0',
-                REMOVE_COUNT='0',
-                DOWNLOAD_SIZE='0',
-                UPLOAD_SIZE='0',
+                DOWNLOAD_COUNT=0,
+                REMOVE_COUNT=0,
+                DOWNLOAD_SIZE=0,
+                UPLOAD_SIZE=0,
                 STATE=item.get('state'),
                 LST_MOD_DATE=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())),
-                SENDMESSAGE=item.get('sendmessage'),
-                FORCEUPLOAD=item.get('forceupload')
+                SENDMESSAGE=item.get('sendmessage')
             ))
         else:
             self._db.query(SITEBRUSHTASK).filter(SITEBRUSHTASK.ID == int(brush_id)).update(
@@ -1633,11 +1681,11 @@ class DbHelper:
                     "SEED_SIZE": item.get('seed_size'),
                     "INTEVAL": item.get('interval'),
                     "DOWNLOADER": item.get('downloader'),
+                    "LABEL": item.get('label'),
                     "TRANSFER": item.get('transfer'),
                     "STATE": item.get('state'),
                     "LST_MOD_DATE": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())),
-                    "SENDMESSAGE": item.get('sendmessage'),
-                    "FORCEUPLOAD": item.get('forceupload')
+                    "SENDMESSAGE": item.get('sendmessage')
                 }
             )
 
@@ -1797,52 +1845,6 @@ class DbHelper:
             return
         self._db.query(SITEBRUSHTORRENTS).filter(SITEBRUSHTORRENTS.TASK_ID == brush_id,
                                                  SITEBRUSHTORRENTS.DOWNLOAD_ID == download_id).delete()
-
-    def get_user_downloaders(self, did=None):
-        """
-        查询自定义下载器
-        """
-        if did:
-            return self._db.query(SITEBRUSHDOWNLOADERS).filter(SITEBRUSHDOWNLOADERS.ID == int(did)).first()
-        else:
-            return self._db.query(SITEBRUSHDOWNLOADERS).all()
-
-    @DbPersist(_db)
-    def update_user_downloader(self, did, name, dtype, user_config, note):
-        """
-        新增自定义下载器
-        """
-        if did:
-            self._db.query(SITEBRUSHDOWNLOADERS).filter(SITEBRUSHDOWNLOADERS.ID == int(did)).update(
-                {
-                    "NAME": name,
-                    "TYPE": dtype,
-                    "HOST": user_config.get("host"),
-                    "PORT": user_config.get("port"),
-                    "USERNAME": user_config.get("username"),
-                    "PASSWORD": user_config.get("password"),
-                    "SAVE_DIR": user_config.get("save_dir"),
-                    "NOTE": note
-                }
-            )
-        else:
-            self._db.insert(SITEBRUSHDOWNLOADERS(
-                NAME=name,
-                TYPE=dtype,
-                HOST=user_config.get("host"),
-                PORT=user_config.get("port"),
-                USERNAME=user_config.get("username"),
-                PASSWORD=user_config.get("password"),
-                SAVE_DIR=user_config.get("save_dir"),
-                NOTE=note
-            ))
-
-    @DbPersist(_db)
-    def delete_user_downloader(self, did):
-        """
-        删除自定义下载器
-        """
-        self._db.query(SITEBRUSHDOWNLOADERS).filter(SITEBRUSHDOWNLOADERS.ID == int(did)).delete()
 
     @DbPersist(_db)
     def add_filter_group(self, name, default='N'):
@@ -2096,6 +2098,22 @@ class DbHelper:
         if not rssid:
             return False
         count = self._db.query(RSSHISTORY).filter(RSSHISTORY.RSSID == rssid).count()
+        if count > 0:
+            return True
+        else:
+            return False
+
+    def check_rss_history(self, media_info):
+        """
+        检查RSS历史是否存在
+        """
+        if not media_info:
+            return False
+        count = self._db.query(RSSHISTORY).filter(
+            TYPE="MOV" if media_info.type == MediaType.MOVIE else "TV",
+            NAME=media_info.title,
+            YEAR=media_info.year,
+            SEASON=media_info.get_season_string()).count()
         if count > 0:
             return True
         else:
@@ -2490,3 +2508,83 @@ class DbHelper:
         查询豆瓣同步记录
         """
         return self._db.query(DOUBANMEDIAS).order_by(DOUBANMEDIAS.ADD_TIME.desc()).all()
+
+    @DbPersist(_db)
+    def update_downloader(self,
+                          did,
+                          name,
+                          enabled,
+                          dtype,
+                          transfer,
+                          only_nastool,
+                          rmt_mode,
+                          config,
+                          download_dir):
+        """
+        更新下载器
+        """
+        if did:
+            self._db.query(DOWNLOADER).filter(DOWNLOADER.ID == int(did)).update(
+                {
+                    "NAME": name,
+                    "ENABLED": int(enabled),
+                    "TYPE": dtype,
+                    "TRANSFER": int(transfer),
+                    "ONLY_NASTOOL": int(only_nastool),
+                    "RMT_MODE": rmt_mode,
+                    "CONFIG": config,
+                    "DOWNLOAD_DIR": download_dir
+                }
+            )
+        else:
+            self._db.insert(DOWNLOADER(
+                NAME=name,
+                ENABLED=int(enabled),
+                TYPE=dtype,
+                TRANSFER=int(transfer),
+                ONLY_NASTOOL=int(only_nastool),
+                RMT_MODE=rmt_mode,
+                CONFIG=config,
+                DOWNLOAD_DIR=download_dir
+            ))
+
+    @DbPersist(_db)
+    def delete_downloader(self, did):
+        """
+        删除下载器
+        """
+        if not did:
+            return
+        self._db.query(DOWNLOADER).filter(DOWNLOADER.ID == int(did)).delete()
+
+    @DbPersist(_db)
+    def check_downloader(self, did=None, transfer=None, only_nastool=None, enabled=None):
+        """
+        设置下载器状态
+        """
+        if not did:
+            return
+        if transfer is not None:
+            self._db.query(DOWNLOADER).filter(DOWNLOADER.ID == int(did)).update(
+                {
+                    "TRANSFER": int(transfer)
+                }
+            )
+        elif only_nastool is not None:
+            self._db.query(DOWNLOADER).filter(DOWNLOADER.ID == int(did)).update(
+                {
+                    "ONLY_NASTOOL": int(only_nastool)
+                }
+            )
+        elif enabled is not None:
+            self._db.query(DOWNLOADER).filter(DOWNLOADER.ID == int(did)).update(
+                {
+                    "ENABLED": int(enabled)
+                }
+            )
+
+    def get_downloaders(self):
+        """
+        查询下载器
+        """
+        return self._db.query(DOWNLOADER).order_by(DOWNLOADER.TYPE.desc()).all()

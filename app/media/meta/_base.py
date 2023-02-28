@@ -71,6 +71,8 @@ class MetaBase(object):
     original_title = None
     # 媒体发行日期
     release_date = None
+    # 媒体发行流媒体
+    networks = None
     # 播放时长
     runtime = 0
     # 媒体年份
@@ -138,8 +140,8 @@ class MetaBase(object):
     _subtitle_flag = False
     _subtitle_season_re = r"[第\s]+([0-9一二三四五六七八九十S\-]+)\s*季"
     _subtitle_season_all_re = r"全\s*([0-9一二三四五六七八九十]+)\s*季|([0-9一二三四五六七八九十]+)\s*季全"
-    _subtitle_episode_re = r"[第\s]+([0-9一二三四五六七八九十EP\-]+)\s*[集话話期]"
-    _subtitle_episode_all_re = r"([0-9一二三四五六七八九十]+)\s*集全|全\s*([0-9一二三四五六七八九十]+)\s*[集话話期]"
+    _subtitle_episode_re = r"[第\s]+([0-9一二三四五六七八九十百零EP\-]+)\s*[集话話期]"
+    _subtitle_episode_all_re = r"([0-9一二三四五六七八九十百零]+)\s*集全|全\s*([0-9一二三四五六七八九十百零]+)\s*[集话話期]"
 
     def __init__(self, title, subtitle=None, fileflag=False):
         self.category_handler = Category()
@@ -495,10 +497,11 @@ class MetaBase(object):
         self.tmdb_info = info
         self.vote_average = round(float(info.get('vote_average')), 1) if info.get('vote_average') else 0
         self.overview = info.get('overview')
+        self.original_language = info.get('original_language')
+        self.networks = [network.get("name") for network in info.get('networks') or []]
         if self.type == MediaType.MOVIE:
             self.title = info.get('title')
             self.original_title = info.get('original_title')
-            self.original_language = info.get('original_language')
             self.runtime = info.get("runtime")
             self.release_date = info.get('release_date')
             if self.release_date:
@@ -507,7 +510,6 @@ class MetaBase(object):
         else:
             self.title = info.get('name')
             self.original_title = info.get('original_name')
-            self.original_language = info.get('original_language')
             self.runtime = info.get("episode_run_time")[0] if info.get("episode_run_time") else None
             self.release_date = info.get('first_air_date')
             if self.release_date:
@@ -706,5 +708,53 @@ class MetaBase(object):
             "imdb_id": self.imdb_id,
             "tmdb_id": self.tmdb_id,
             "overview": str(self.overview).strip() if self.overview else '',
-            "link": self.get_detail_url()
+            "link": self.get_detail_url(),
+            "season": self.get_season_list(),
+            "episode": self.get_episode_list(),
+            "backdrop": self.get_backdrop_image(),
+            "poster": self.get_poster_image(),
+            "org_string": self.org_string,
+            "subtitle": self.subtitle,
+            "cn_name": self.cn_name,
+            "en_name": self.en_name,
+            "total_seasons": self.total_seasons,
+            "total_episodes": self.total_episodes,
+            "part": self.part,
+            "resource_type": self.resource_type,
+            "resource_effect": self.resource_effect,
+            "resource_pix": self.resource_pix,
+            "resource_team": self.resource_team,
+            "video_encode": self.video_encode,
+            "audio_encode": self.audio_encode,
+            "category": self.category,
+            "douban_id": self.douban_id,
+            "keyword": self.keyword,
+            "original_language": self.original_language,
+            "original_title": self.original_title,
+            "release_date": self.release_date,
+            "networks": self.networks,
+            "runtime": self.runtime,
+            "fav": self.fav,
+            "rss_sites": self.rss_sites,
+            "search_sites": self.search_sites,
+            "site": self.site,
+            "site_order": self.site_order,
+            "user_name": self.user_name,
+            "enclosure": self.enclosure,
+            "res_order": self.res_order,
+            "filter_rule": self.filter_rule,
+            "over_edition": self.over_edition,
+            "size": self.size,
+            "seeders": self.seeders,
+            "peers": self.peers,
+            "page_url": self.page_url,
+            "upload_volume_factor": self.upload_volume_factor,
+            "download_volume_factor": self.download_volume_factor,
+            "hit_and_run": self.hit_and_run,
+            "rssid": self.rssid,
+            "save_path": self.save_path,
+            "download_setting": self.download_setting,
+            "ignored_words": self.ignored_words,
+            "replaced_words": self.replaced_words,
+            "offset_words": self.offset_words
         }

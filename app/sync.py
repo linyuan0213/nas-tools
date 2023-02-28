@@ -321,7 +321,15 @@ class Sync(object):
         if self._observer:
             for observer in self._observer:
                 observer.stop()
+                observer.join()
         self._observer = []
+
+    def restart_service(self):
+        """
+        重启监控服务
+        """
+        self.stop_service()
+        self.run_service()
 
     def transfer_all_sync(self, sid=None):
         """
@@ -362,33 +370,3 @@ class Sync(object):
                                                                     rmt_mode=sync_mode)
                     if not ret:
                         log.error("【Sync】%s 处理失败：%s" % (monpath, ret_msg))
-
-
-def run_monitor():
-    """
-    启动监控
-    """
-    try:
-        Sync().run_service()
-    except Exception as err:
-        ExceptionUtils.exception_traceback(err)
-        log.error("启动目录同步服务失败：%s" % str(err))
-
-
-def stop_monitor():
-    """
-    停止监控
-    """
-    try:
-        Sync().stop_service()
-    except Exception as err:
-        ExceptionUtils.exception_traceback(err)
-        log.error("停止目录同步服务失败：%s" % str(err))
-
-
-def restart_monitor():
-    """
-    重启监控
-    """
-    stop_monitor()
-    run_monitor()

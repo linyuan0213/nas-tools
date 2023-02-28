@@ -18,13 +18,6 @@
           <a href="javascript:show_brushtask_modal()" class="btn btn-primary d-sm-none btn-icon">
             {{ SVG.plus() }}
           </a>
-          <a href="javascript:navmenu('userdownloader')" class="btn d-none d-sm-inline-block" title="自定义下载器">
-            {{ SVG.apps() }}
-            自定义下载器
-          </a>
-          <a href="javascript:navmenu('userdownloader')" class="btn d-sm-none btn-icon" title="自定义下载器">
-            {{ SVG.apps() }}
-          </a>
         </div>
       </div>
     </div>
@@ -37,16 +30,13 @@
         {% for Task in Tasks %}
           <div class="card">
             <div class="card-header">
-              <a href="javascript:show_brushtask_detail('{{ Task.id }}')"
-                 title="展开/折叠" data-bs-toggle="tooltip">
-                <div>
-                  {% if Task.state == 'Y' %}
-                  <span class="badge bg-green"></span>
-                  {% else %}
-                  <span class="badge bg-red"></span>
-                  {% endif %}
-                </div>
-              </a>
+              <div>
+                {% if Task.state %}
+                <span class="badge bg-green"></span>
+                {% else %}
+                <span class="badge bg-red"></span>
+                {% endif %}
+              </div>
               <a href="javascript:show_brushtask_detail('{{ Task.id }}')" style="text-decoration-line: none; color: unset"
                  title="展开/折叠" data-bs-toggle="tooltip">
                 <div class="ms-3">
@@ -105,16 +95,16 @@
                   <div class="datagrid-content">
                     <div class="d-flex align-items-center">
                       <span class="avatar avatar-sm rounded me-2 siteicon-{{ Task.site|hash }}" width="24" height="24" alt="" style="cursor:pointer"></span>
-                      <h3>{{ Task.site }}</h3>
+                      <h3 class="mb-0">{{ Task.site }}</h3>
                     </div>
                   </div>
                 </div>
                 <div class="datagrid-item">
                   <div class="datagrid-title">促销</div>
                   <div class="datagrid-content">
-                    {% if Task.free %}<span class="badge me-2 bg-green">{{ Task.free }}</span>
+                    {% if Task.free %}<span class="badge bg-green">{{ Task.free }}</span>
                     {% else %}
-                      <span class="badge me-2 bg-orange">全部</span>
+                      <span class="badge bg-orange">全部</span>
                     {% endif %}
                   </div>
                 </div>
@@ -154,17 +144,7 @@
                 <div class="datagrid-item">
                   <div class="datagrid-title">消息推送</div>
                   <div class="datagrid-content">
-                    {% if Task.sendmessage == 'Y' %}
-                      <span class="status status-green">开</span>
-                    {% else %}
-                      <span class="status status-red">关</span>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="datagrid-item">
-                  <div class="datagrid-title">强制做种</div>
-                  <div class="datagrid-content">
-                    {% if Task.forceupload == 'Y' %}
+                    {% if Task.sendmessage %}
                       <span class="status status-green">开</span>
                     {% else %}
                       <span class="status status-red">关</span>
@@ -174,7 +154,7 @@
                 <div class="datagrid-item">
                   <div class="datagrid-title">转移到媒体库</div>
                   <div class="datagrid-content">
-                    {% if Task.transfer == 'Y' %}
+                    {% if Task.transfer %}
                       <span class="status status-green">开</span>
                     {% else %}
                       <span class="status status-red">关</span>
@@ -204,12 +184,20 @@
                   </div>
                 </div>
                 <div class="datagrid-item">
+                  <div class="datagrid-title">标签</div>
+                  <div class="datagrid-content">
+                    {% if Task.label %}
+                    <span class="badge">{{ Task.label }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="datagrid-item">
                   <div class="datagrid-title">状态</div>
                   <div class="datagrid-content">
-                    {% if Task.state == 'Y' %}
-                      <span class="badge me-2 bg-green">正在运行</span>
+                    {% if Task.state %}
+                      <span class="badge bg-green">正在运行</span>
                     {% else %}
-                      <span class="badge me-2 bg-red">已停用</span>
+                      <span class="badge bg-red">已停用</span>
                     {% endif %}
                   </div>
                 </div>
@@ -268,7 +256,7 @@
                                                               data-bs-toggle="tooltip">?</span></label>
               <select class="form-select" id="brushtask_downloader">
                 <option value="" selected>请选择</option>
-                {% for downloader in Downloaders %}
+                {% for downloader in Downloaders.values() %}
                   <option value="{{ downloader.id }}">{{ downloader.name }}</option>
                 {% endfor %}
               </select>
@@ -291,6 +279,14 @@
               </select>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">标签 <span class="form-help"
+                                                           title="用户在下载器中标记该任务的种子，多个标签使用,分隔"
+                                                           data-bs-toggle="tooltip">?</span></label>
+              <input type="text" id="brushtask_label" class="form-control" placeholder="多个标签使用,分隔">
+            </div>
+          </div>
         </div>
         <div class="row">
           <div class="col-lg-4">
@@ -298,16 +294,6 @@
               <label class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="brushtask_sendmessage">
                 <span class="form-check-label">消息推送 <span class="form-help" title="开启后会将当前任务的情况进行推送"
-                                                              data-bs-toggle="tooltip">?</span></span>
-              </label>
-            </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="mb-3">
-              <label class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="brushtask_forceupload">
-                <span class="form-check-label">强制做种 <span class="form-help"
-                                                              title="开启后当前任务的新增下载将设置为强制下载/做种状态"
                                                               data-bs-toggle="tooltip">?</span></span>
               </label>
             </div>
@@ -675,31 +661,31 @@
         //赋值
         $("#brushtask_modal_title").text("编辑任务");
         $("#brushtask_name").val(ret.task.name);
-        $("#brushtask_site").val(ret.task.site);
-        brushtask_site_change(ret.task.site, ret.task.free, ret.task.rss_rule.hr);
+        $("#brushtask_site").val(ret.task.site_id);
+        brushtask_site_change(ret.task.site_id, ret.task.free, ret.task.rss_rule.hr);
         $("#brushtask_interval").val(ret.task.interval);
         $("#brushtask_downloader").val(ret.task.downloader);
         $("#brushtask_totalsize").val(ret.task.seed_size);
-        $("#brushtask_state").val(ret.task.state);
-        if (ret.task.transfer == "Y") {
+        if (ret.task.state) {
+          $("#brushtask_state").val("Y");
+        } else {
+          $("#brushtask_state").val("N");
+        }
+        if (ret.task.transfer) {
           $("#brushtask_transfer").prop("checked", true);
         } else {
           $("#brushtask_transfer").prop("checked", false);
         }
-        if (ret.task.sendmessage == "Y") {
+        if (ret.task.sendmessage) {
           $("#brushtask_sendmessage").prop("checked", true);
         } else {
           $("#brushtask_sendmessage").prop("checked", false);
-        }
-        if (ret.task.forceupload == "Y") {
-          $("#brushtask_forceupload").prop("checked", true);
-        } else {
-          $("#brushtask_forceupload").prop("checked", false);
         }
         $("#brushtask_dlcount").val(ret.task.rss_rule.dlcount)
         $("#brushtask_peercount").val(ret.task.rss_rule.peercount)
         $("#brushtask_include").val(ret.task.rss_rule.include);
         $("#brushtask_exclude").val(ret.task.rss_rule.exclude);
+        $("#brushtask_label").val(ret.task.label);
         //种子大小
         if (ret.task.rss_rule.size) {
           let size_str = ret.task.rss_rule.size.split('#');
@@ -853,10 +839,10 @@
       $("#brushtask_totalsize").addClass("is-invalid");
       return;
     }
+    let brushtask_label = $("#brushtask_label").val();
     let brushtask_state = $("#brushtask_state").val();
     let brushtask_transfer = $("#brushtask_transfer").prop('checked');
     let brushtask_sendmessage = $("#brushtask_sendmessage").prop('checked');
-    let brushtask_forceupload = $("#brushtask_forceupload").prop('checked');
     let brushtask_free = $("#brushtask_free").val();
     let brushtask_hr = $("#brushtask_hr").val();
     //种子大小
@@ -1022,10 +1008,10 @@
       brushtask_interval: brushtask_interval,
       brushtask_downloader: brushtask_downloader,
       brushtask_totalsize: brushtask_totalsize,
+      brushtask_label: brushtask_label,
       brushtask_state: brushtask_state,
       brushtask_transfer: brushtask_transfer,
       brushtask_sendmessage: brushtask_sendmessage,
-      brushtask_forceupload: brushtask_forceupload,
       brushtask_free: brushtask_free,
       brushtask_hr: brushtask_hr,
       brushtask_torrent_size: brushtask_torrent_size_do + "#" + brushtask_torrent_size,

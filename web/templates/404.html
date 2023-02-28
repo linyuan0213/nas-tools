@@ -1,16 +1,10 @@
 <!doctype html>
 {% import 'macro/svg.html' as SVG %}
+{% import 'macro/head.html' as HEAD %}
 <html lang="en">
 
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta content="white" name="apple-mobile-web-app-status-bar-style"/>
-  <link rel="shortcut icon" href="../static/favicon.ico" type="image/x-icon"/>
-  <link rel="apple-touch-icon" href="../static/img/logo.png">
-  <link rel="icon" href="apple-touch-icon.png">
+  {{ HEAD.meta_link() }}
   <title>404 - NAStool</title>
   <!-- CSS files -->
   <link href="../static/css/tabler.min.css" rel="stylesheet"/>

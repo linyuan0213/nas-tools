@@ -15,7 +15,7 @@
 <div class="page-body">
   <div class="container-xl">
     <div class="d-grid gap-3 grid-normal-card">
-      {% for Scheduler in SchedulerTasks %}
+    {% for Id, Scheduler in SchedulerTasks.items() %}
       <div class="card card-sm card-link-pop">
         <div class="card-body">
           <div class="row align-items-center">
@@ -26,7 +26,7 @@
             </div>
             <div class="col">
               <div class="font-weight-medium">
-                <a href="javascript:show_service_modal('{{ Scheduler.id }}','{{ Scheduler.name }}')"
+                <a href="javascript:show_service_modal('{{ Id }}','{{ Scheduler.name }}')"
                   id="service_btn">{{ Scheduler.name }}</a>
               </div>
               <div class="text-muted">
@@ -35,13 +35,13 @@
             </div>
             {% if Scheduler.state == "ON" %}
             <div class="col-auto align-self-center">
-              <div class="badge bg-primary"></div>
+              <span class="badge bg-green"></span>
             </div>
             {% endif %}
           </div>
         </div>
       </div>
-      {% endfor %}
+    {% endfor %}
     </div>
   </div>
 </div>
@@ -168,7 +168,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for target in SchedulerTasks[-2].targets %}
+            {% for target in SchedulerTasks['nettest'].targets %}
             <tr>
               <td>
                 <span>{{ target }}</span>

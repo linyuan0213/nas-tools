@@ -17,3 +17,4 @@ chromium-chromedriver
 npm
 dumb-init
 ffmpeg
+redis

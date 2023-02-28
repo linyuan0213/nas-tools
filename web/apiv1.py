@@ -337,6 +337,21 @@ class SiteDelete(ClientResource):
         return WebAction().api_action(cmd='del_site', data=self.parser.parse_args())
 
 
+@site.route('/cookie/update')
+class SiteUpdateCookie(ApiResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('site_id', type=int, help='更新站点ID', location='form')
+    parser.add_argument('site_cookie', type=str, help='Cookie', location='form')
+    parser.add_argument('site_ua', type=str, help='Ua', location='form')
+
+    @site.doc(parser=parser)
+    def post(self):
+        """
+        更新站点Cookie和Ua
+        """
+        return WebAction().api_action(cmd='update_site_cookie_ua', data=self.parser.parse_args())
+
+
 @site.route('/statistics/activity')
 class SiteStatisticsActivity(ClientResource):
     parser = reqparse.RequestParser()
@@ -597,7 +612,7 @@ class DownloadConfigUpdate(ClientResource):
     parser.add_argument('download_limit', type=int, help='下载速度限制', location='form')
     parser.add_argument('ratio_limit', type=int, help='分享率限制', location='form')
     parser.add_argument('seeding_time_limit', type=int, help='做种时间限制', location='form')
-    parser.add_argument('downloader', type=str, help='下载器（Qbittorrent/Transmission/115网盘/Aria2）', location='form')
+    parser.add_argument('downloader', type=str, help='下载器（Qbittorrent/Transmission）', location='form')
 
     @download.doc(parser=parser)
     def post(self):
@@ -625,6 +640,7 @@ class DownloadConfigList(ClientResource):
     parser = reqparse.RequestParser()
     parser.add_argument('sid', type=str, help='ID', location='form')
 
+    @download.doc(parser=parser)
     def post(self):
         """
         查询下载设置
@@ -637,11 +653,87 @@ class DownloadConfigDirectory(ClientResource):
     parser = reqparse.RequestParser()
     parser.add_argument('sid', type=str, help='下载设置ID', location='form')
 
+    @download.doc(parser=parser)
     def post(self):
         """
         查询下载保存目录
         """
         return WebAction().api_action(cmd="get_download_dirs", data=self.parser.parse_args())
+
+
+@download.route('/client/add')
+class DownloadClientAdd(ClientResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('did', type=str, help='下载器ID', location='form')
+    parser.add_argument('name', type=str, help='名称', location='form', required=True)
+    parser.add_argument('type', type=str, help='类型（qbittorrent/transmission）', location='form', required=True)
+    parser.add_argument('enabled', type=str, help='状态（0-停用 1-启动）', location='form', required=True)
+    parser.add_argument('transfer', type=str, help='监控（0-停用 1-启动）', location='form', required=True)
+    parser.add_argument('only_nastool', type=str, help='隔离（0-停用 1-启动）', location='form', required=True)
+    parser.add_argument('rmt_mode', type=str, help='转移方式', location='form', required=True)
+    parser.add_argument('config', type=str, help='配置数据（JSON）', location='form', required=True)
+
+    @download.doc(parser=parser)
+    def post(self):
+        """
+        新增/修改下载器
+        """
+        return WebAction().api_action(cmd="update_downloader", data=self.parser.parse_args())
+
+
+@download.route('/client/delete')
+class DownloadClientDelete(ClientResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('did', type=str, help='下载器ID', location='form', required=True)
+
+    @download.doc(parser=parser)
+    def post(self):
+        """
+        删除下载器
+        """
+        return WebAction().api_action(cmd="del_downloader", data=self.parser.parse_args())
+
+
+@download.route('/client/list')
+class DownloadClientList(ClientResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('did', type=str, help='下载器ID', location='form')
+
+    @download.doc(parser=parser)
+    def post(self):
+        """
+        查询下载器
+        """
+        return WebAction().api_action(cmd="get_downloaders", data=self.parser.parse_args())
+
+
+@download.route('/client/check')
+class DownloadClientCheck(ClientResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('did', type=str, help='下载器ID', location='form', required=True)
+    parser.add_argument('checked', type=str, help='状态（0-关闭 1-开启）', location='form', required=True)
+    parser.add_argument('flag', type=str, help='标识（enabled transfer only_nastool）', location='form', required=True)
+
+    @download.doc(parser=parser)
+    def post(self):
+        """
+        设置下载器状态
+        """
+        return WebAction().api_action(cmd="check_downloader", data=self.parser.parse_args())
+
+
+@download.route('/client/test')
+class DownloadClientTest(ClientResource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('type', type=str, help='类型（qbittorrent/transmission）', location='form', required=True)
+    parser.add_argument('config', type=str, help='配置数据（JSON）', location='form', required=True)
+
+    @download.doc(parser=parser)
+    def post(self):
+        """
+        测试下载器
+        """
+        return WebAction().api_action(cmd="test_downloader", data=self.parser.parse_args())
 
 
 @organization.route('/unknown/delete')
@@ -1567,7 +1659,6 @@ class BrushTaskUpdate(ClientResource):
     parser.add_argument('brushtask_state', type=str, help='状态（Y/N）', location='form', required=True)
     parser.add_argument('brushtask_transfer', type=str, help='转移到媒体库（Y/N）', location='form')
     parser.add_argument('brushtask_sendmessage', type=str, help='消息推送（Y/N）', location='form')
-    parser.add_argument('brushtask_forceupload', type=str, help='强制做种（Y/N）', location='form')
     parser.add_argument('brushtask_free', type=str, help='促销（FREE/2XFREE）', location='form')
     parser.add_argument('brushtask_hr', type=str, help='Hit&Run（HR）', location='form')
     parser.add_argument('brushtask_torrent_size', type=int, help='种子大小(GB)', location='form')
@@ -1648,69 +1739,6 @@ class BrushTaskTorrents(ClientResource):
         return WebAction().api_action(cmd='list_brushtask_torrents', data=self.parser.parse_args())
 
 
-@brushtask.route('/downloader/update')
-class BrushTaskDownloaderUpdate(ClientResource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('test', type=int, help='测试（0-否/1-是）', location='form', required=True)
-    parser.add_argument('id', type=int, help='下载器ID', location='form')
-    parser.add_argument('name', type=str, help='名称', location='form', required=True)
-    parser.add_argument('type', type=str, help='类型（qbittorrent/transmission）', location='form', required=True)
-    parser.add_argument('host', type=str, help='地址', location='form', required=True)
-    parser.add_argument('port', type=int, help='端口', location='form', required=True)
-    parser.add_argument('username', type=str, help='用户名', location='form')
-    parser.add_argument('password', type=str, help='密码', location='form')
-    parser.add_argument('save_dir', type=str, help='保存目录', location='form')
-
-    @brushtask.doc(parser=parser)
-    def post(self):
-        """
-        新增/修改刷流下载器
-        """
-        return WebAction().api_action(cmd='add_downloader', data=self.parser.parse_args())
-
-
-@brushtask.route('/downloader/delete')
-class BrushTaskDownloaderDelete(ClientResource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('id', type=int, help='下载器ID', location='form', required=True)
-
-    @brushtask.doc(parser=parser)
-    def post(self):
-        """
-        删除刷流下载器
-        """
-        return WebAction().api_action(cmd='delete_downloader', data=self.parser.parse_args())
-
-
-@brushtask.route('/downloader/info')
-class BrushTaskDownloaderInfo(ClientResource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('id', type=int, help='下载器ID', location='form', required=True)
-
-    @brushtask.doc(parser=parser)
-    def post(self):
-        """
-        刷流下载器详情
-        """
-        return WebAction().api_action(cmd='get_downloader', data=self.parser.parse_args())
-
-
-@brushtask.route('/downloader/list')
-class BrushTaskDownloaderList(ClientResource):
-    @staticmethod
-    def post():
-        """
-        查询所有刷流下载器
-        """
-        return {
-            "code": 0,
-            "success": True,
-            "data": {
-                "downloaders": BrushTask().get_downloader_info()
-            }
-        }
-
-
 @brushtask.route('/run')
 class BrushTaskRun(ClientResource):
     parser = reqparse.RequestParser()
@@ -1719,7 +1747,7 @@ class BrushTaskRun(ClientResource):
     @brushtask.doc(parser=parser)
     def post(self):
         """
-        刷流下载器详情
+        立即运行刷流任务
         """
         return WebAction().api_action(cmd='run_brushtask', data=self.parser.parse_args())
 

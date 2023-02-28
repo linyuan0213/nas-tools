@@ -1,12 +1,13 @@
 import log
 from app.helper import DbHelper
 from app.indexer import Indexer
+from app.plugins import EventManager
 from config import Config
 from app.message import Message
 from app.downloader import Downloader
 from app.media import Media
 from app.helper import ProgressHelper
-from app.utils.types import SearchType
+from app.utils.types import SearchType, EventType
 
 
 class Searcher:
@@ -16,19 +17,21 @@ class Searcher:
     indexer = None
     progress = None
     dbhelper = None
+    eventmanager = None
 
     _search_auto = True
 
     def __init__(self):
+        self.init_config()
+
+    def init_config(self):
         self.downloader = Downloader()
         self.media = Media()
         self.message = Message()
         self.progress = ProgressHelper()
         self.dbhelper = DbHelper()
         self.indexer = Indexer()
-        self.init_config()
-
-    def init_config(self):
+        self.eventmanager = EventManager()
         self._search_auto = Config().get_config("pt").get('search_auto', True)
 
     def search_medias(self,
@@ -48,6 +51,13 @@ class Searcher:
             return []
         if not self.indexer:
             return []
+        # 触发事件
+        self.eventmanager.send_event(EventType.SearchStart, {
+            "key_word": key_word,
+            "media_info": match_media.to_dict() if match_media else None,
+            "filter_args": filter_args,
+            "search_type": in_from.value if in_from else None
+        })
         return self.indexer.search_by_keyword(key_word=key_word,
                                               filter_args=filter_args,
                                               match_media=match_media,

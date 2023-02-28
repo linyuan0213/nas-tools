@@ -152,7 +152,7 @@ class SynologyChat(_IMessageClient):
         发送消息请求
         """
         payload = f"payload={json.dumps(payload_data)}"
-        ret = self._req.post_res(url=self._webhook_url, params=payload)
+        ret = self._req.post_res(url=self._webhook_url, data=payload)
         if ret and ret.status_code == 200:
             result = ret.json()
             if result:

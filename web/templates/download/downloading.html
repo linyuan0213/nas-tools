@@ -11,23 +11,16 @@
       </div>
       <div class="col-auto ms-auto d-print-none">
         <div class="btn-list">
-          <button data-bs-toggle="dropdown" type="button"
-              class="btn btn-primary d-none d-sm-inline-block dropdown-toggle">
+          <button type="button" class="btn btn-primary d-none d-sm-inline-block"
+              onclick="show_torrent_download_modal()">
             {{ SVG.plus() }}
             新增下载
           </button>
           <button data-bs-toggle="dropdown" type="button"
+              onclick="show_torrent_download_modal()"
               class="btn btn-primary d-sm-none btn-icon">
             {{ SVG.plus() }}
           </button>
-          <div class="dropdown-menu dropdown-menu-end">
-            <button class="dropdown-item" onclick="show_torrent_download_modal('torrent')">
-              种子文件
-            </button>
-            <button class="dropdown-item" onclick="show_torrent_download_modal('magnet')">
-              磁力链接
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -80,14 +73,12 @@
                         {{ SVG.dots_vertical() }}
                       </a>
                       <div class="dropdown-menu dropdown-menu-end">
-                        {% if Client != 'client115' %}
-                          <a href="javascript:start_pt_download('{{ Torrent.id }}')" id="start_btn_{{ Torrent.id }}"
-                            class="dropdown-item"
-                            style="{% if Torrent.state == 'Downloading' %}display:none{% endif %}">开始</a>
-                          <a href="javascript:stop_pt_download('{{ Torrent.id }}')" id="stop_btn_{{ Torrent.id }}"
-                            class="dropdown-item"
-                            style="{% if Torrent.state == 'Stoped' %}display:none{% endif %}">暂停</a>
-                        {% endif %}
+                        <a href="javascript:start_pt_download('{{ Torrent.id }}')" id="start_btn_{{ Torrent.id }}"
+                          class="dropdown-item"
+                          style="{% if Torrent.state == 'Downloading' %}display:none{% endif %}">开始</a>
+                        <a href="javascript:stop_pt_download('{{ Torrent.id }}')" id="stop_btn_{{ Torrent.id }}"
+                          class="dropdown-item"
+                          style="{% if Torrent.state == 'Stoped' %}display:none{% endif %}">暂停</a>
                         <a href="javascript:remove_pt_download('{{ Torrent.id }}')"
                           class="dropdown-item text-danger">删除</a>
                       </div>
@@ -171,16 +162,14 @@
   }
 
   //显示新增下载界面
-  function show_torrent_download_modal(type) {
+  function show_torrent_download_modal() {
     show_download_modal('', '', '', function(){
-      let magnet = $("#torrent_magnets").val();
-      if (!torrent_dropzone || !torrent_dropzone.files || !torrent_dropzone.files[0] && !magnet) {
+      if (!torrent_dropzone || !torrent_dropzone.files || !torrent_dropzone.files[0]) {
         return;
       }
       $("#search_download_btn").text("处理中...").attr("disabled", true);
       const params = {
         "files": torrent_dropzone.files,
-        "magnets": magnet.split("\n"),
         "dl_dir": $("#search_download_dir").val(),
         "dl_setting": $("#search_download_setting").val()
       }
@@ -189,7 +178,6 @@
         $("#modal-search-download").modal('hide');
         if (ret.code == 0) {
           torrent_dropzone.removeAllFiles();
-          $("#torrent_magnets").val("");
           window_history_refresh();
         } else {
           show_fail_modal(`添加下载失败：${ret.msg}`, function() {
@@ -197,7 +185,7 @@
           });
         }
       });
-    }, type);
+    }, true);
   }
 
   //事件

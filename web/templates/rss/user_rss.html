@@ -37,17 +37,14 @@
       {% for Task in Tasks %}
       <div class="card">
         <div class="card-header">
-          <a href="javascript:$('#detail_{{ Task.id }}').slideToggle()"
-             title="展开/折叠" data-bs-toggle="tooltip">
-            <div>
-              {% if Task.state == 'Y' %}
-              <span class="badge bg-green"></span>
-              {% else %}
-              <span class="badge bg-red"></span>
-              {% endif %}
-            </div>
-          </a>
-          <a href="javascript:$('#detail_{{ Task.id }}').slideToggle()" style="text-decoration-line: none; color: unset"
+          <div>
+            {% if Task.state == 'Y' %}
+            <span class="badge bg-green"></span>
+            {% else %}
+            <span class="badge bg-red"></span>
+            {% endif %}
+          </div>
+          <a href="javascript:show_userrss_detail({{ Task.id }})" style="text-decoration-line: none; color: unset"
              title="展开/折叠" data-bs-toggle="tooltip">
             <div class="ms-3"><h3 class="card-title">{{ Task.name }}</h3></div>
           </a>
@@ -82,7 +79,7 @@
             </button>
           </div>
           <div class="card-actions btn-actions ms-1 d-none d-sm-block">
-            <a href="javascript:$('#detail_{{ Task.id }}').slideToggle()" class="btn-action"
+            <a href="javascript:show_userrss_detail({{ Task.id }})" class="btn-action"
                title="展开/折叠" data-bs-toggle="tooltip">
               {{ SVG.menu_2() }}
             </a>
@@ -126,14 +123,14 @@
             <div class="datagrid-item">
               <div class="datagrid-title">动作</div>
               <div class="datagrid-content">
-                <span class="badge me-2 bg-blue">{{ Task.uses_text }}</span>
+                <span class="badge bg-blue">{{ Task.uses_text }}</span>
               </div>
             </div>
             <div class="datagrid-item" style="display: {% if Task.uses != 'D' %}none{% else %}block{% endif %};">
               <div class="datagrid-title">包含</div>
               <div class="datagrid-content">
                 {% if Task.include %}
-                <span class="badge badge-outline text-green me-2 text-wrap text-start">{{ Task.include }}</span>
+                <span class="badge badge-outline text-green text-wrap text-start">{{ Task.include }}</span>
                 {% endif %}
               </div>
             </div>
@@ -141,7 +138,7 @@
               <div class="datagrid-title">排除</div>
               <div class="datagrid-content">
                 {% if Task.exclude %}
-                <span class="badge badge-outline text-red me-2 text-wrap text-start">{{ Task.exclude }}</span>
+                <span class="badge badge-outline text-red text-wrap text-start">{{ Task.exclude }}</span>
                 {% endif %}
               </div>
             </div>
@@ -161,9 +158,9 @@
               <div class="datagrid-title">状态</div>
               <div class="datagrid-content">
                 {% if Task.state == 'Y' %}
-                <span class="badge me-2 bg-green">正在运行</span>
+                <span class="badge bg-green">正在运行</span>
                 {% else %}
-                <span class="badge me-2 bg-red">已停用</span>
+                <span class="badge bg-red">已停用</span>
                 {% endif %}
               </div>
             </div>
@@ -190,9 +187,9 @@
               <div class="datagrid-title">下载设置</div>
               <div class="datagrid-content">
                 {% if Task.download_setting|string in DownloadSettings %}
-                <span class="badge me-2 bg-yellow">{{ DownloadSettings[Task.download_setting|string] }}</span>
+                <span class="badge bg-yellow">{{ DownloadSettings[Task.download_setting|string] }}</span>
                 {% else %}
-                <span class="badge me-2 bg-red">默认</span>
+                <span class="badge bg-red">默认</span>
                 {% endif %}
               </div>
             </div>
@@ -560,6 +557,12 @@
   </div>
 </div>
 <script type="text/javascript">
+
+  // 折叠任务详情
+  function show_userrss_detail(taskid) {
+    $(`#detail_${taskid}`).slideToggle();
+  }
+
   // 恢复自定义订阅默认设置
   function recover_userrss_setting(uses) {
     if (uses.includes("R")) {

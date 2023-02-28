@@ -52,6 +52,8 @@ app:
   wallpaper: bing
   # Debug mode
   debug: true
+  # 开启后，只有Releases更新，才会有更新提示
+  releases_update_only: false
 
 # 【配置媒体库信息】
 media:
@@ -91,8 +93,6 @@ media:
   tv_name_format: "{title} ({year})/Season {season}/{title}-{part} - {season_episode} - 第{episode}集"
   # 【刮削元数据及图片】：开启后文件转移完成时会自动生成nfo描述文件及poster海报，协助媒体服务器识别和搜刮
   nfo_poster: false
-  # 【实时刷新媒体库】：开启后文件转移完成时会实时刷新媒体服务器（Emby/Jellyfin/Plex）的媒体库
-  refresh_mediaserver: true
 
 # 配置Emby服务器信息
 emby:
@@ -165,11 +165,8 @@ scraper_pic:
     season_thumb: true
     # 集
     episode_thumb: false
-
-# 【配置消息通知服务】
-message:
-  # 【Emby播放状态通知白名单】：配置了Emby webhooks插件回调时，用户播放媒体库中的媒体时会发送消息通知，本处配置哪些用户的设备不通知，避免打扰，配置格式：用户:设备名称，可用 - 增加多项
-  webhook_ignore:
+    # 开启后，读取视频文件生成缩略图
+    episode_thumb_ffmpeg: false
 
 # 【配置文件夹监控】：文件夹内容发生变化时自动识别转移
 sync:
@@ -179,18 +176,7 @@ sync:
 
 # 【配置站点检索信息】
 pt:
-  # 【下载使用的客户端软件】：qbittorrent、transmission、client115、aria2
-  pt_client: qbittorrent
-  # 【下载软件监控开关】：是否监控下载软件：true、false，如为true则下载完成会自动转移和重命名，如为false则不会处理
-  # 下载软件监控与Sync下载目录同步不要同时开启，否则功能存在重复
-  pt_monitor: false
-  # 【只监控NASTool添加的下载】：启用后只有NASTool添加的下载才会被自动转移和显示，关闭则下载软件中所有的任务都会转移和显示
-  pt_monitor_only: true
-  # 【下载完成后转移到媒体库的转移模式】：link、copy、softlink、move、rclone、rclonecopy、minio、miniocopy，详情参考顶部说明
-  rmt_mode: link
-  #【聚合检索使用的检索器】：jackett、prowlarr、builtin，需要配置jackett或prowlarr对应的配置区域，builtin为内置索引器需要在配置文件目录/sites目录下存入对应的站点配置文件
-  # 1、通过微信发送关键字，实时检索下载，发送格式示例：电视剧 西部世界、西部世界第1季、西部世界第1季第2集、西部世界 2022，只会匹配真实名称，命中后会自动下载，使用说明参考：https://github.com/jxxghp/nas-tools/wiki/
-  # 2、使用WEB UI中的搜索界面搜索资源，会识别显示真实名称，并显示媒体图片和评分等信息，会同时匹配种子名称跟真实名称
+  #【聚合检索使用的检索器】：builtin
   search_indexer: builtin
   # 【内建索引器使用的站点】：只有在该站点列表中内建索引器搜索时才会使用
   indexer_sites:
@@ -212,70 +198,6 @@ pt:
   # 【搜索结果数量限制】：每个站点返回搜索结果的最大数量
   site_search_result_num: 100
 
-# 【配置Jackett检索器】
-jackett:
-  # 【Jackett地址】：Jackett地址和端口，格式：http(s)://IP:PORT
-  host:
-  # 【Jackett ApiKey】：Jackett配置页面右上角复制API Key
-  api_key:
-  # 【Jackett管理密码】：如未设置可为空
-  password:
-
-# 【配置prowlarr检索器】
-prowlarr:
-  # 【Prowlarr地址】
-  host:
-  # 【Prowlarr ApiKey】：Prowlarr设置页面获取API Key
-  api_key:
-
-# 【配置qBittorrent下载软件】：pt区的pt_client如配置为qbittorrent则需要同步配置该项
-qbittorrent:
-  # 【qBittorrent IP地址和端口】：注意如果qb启动了HTTPS证书，则需要配置为https://IP
-  qbhost:
-  qbport:
-  # qBittorrent 登录用户名和密码
-  qbusername:
-  qbpassword:
-  # 转移完成后是否自动强制作种，按需要设置
-  force_upload: true
-  # 是否开始自动管理模式
-  auto_management: false
-
-# 【配置transmission下载软件】：pt区的pt_client如配置为transmission则需要同步配置该项，需要3.0以上版本，否则可能会报错
-transmission:
-  # 【transmission IP地址和端口】：注意如果tr启用了HTTPS证书，则需要配置为https://IP
-  trhost:
-  trport:
-  # transmission 登录用户名和密码
-  trusername:
-  trpassword:
-
-# 配置 115 网盘下载器
-client115:
-  # 115 Cookie 抓包获取
-  cookie:
-
-# 配置Aria2下载器
-aria2:
-  # Aria2地址
-  host:
-  # Aria2 RPC端口
-  port:
-  # 密码令牌
-  secret:
-
-# 配置 pikpak 网盘下载器
-pikpak:
-  # 用户名
-  username:
-  # 密码
-  password:
-  # 代理
-  proxy:
-
-# 【下载目录】：配置下载目录，自按分类下载到指定目录
-downloaddir:
-
 # 【配置豆瓣账号信息】：配置后会自动同步豆瓣收藏，豆瓣标记想看内容后，后台自动下载
 douban:
   # 【用户ID列表】：豆瓣电影点个我主页people后面的那一串数字，或者使用豆瓣App个人信息中查看。可以配置多个，注意要加引号
@@ -294,25 +216,6 @@ douban:
   auto_search: true
   # 【自动添加RSS开关】：站点检索找不到的记录是否自动添加RSS订阅（可实现未搜索到的自动追更）
   auto_rss: true
-
-# 【配置字幕自动下载】
-subtitle:
-  # 【下载渠道】：opensubtitles、chinesesubfinder
-  server: opensubtitles
-  # opensubtitles.org
-  opensubtitles:
-    # 是否启用
-    enable: true
-  # 配置ChineseSubFinder的服务器地址和API Key，API Key在ChineseSubFinder->配置中心->实验室->API Key处生成
-  chinesesubfinder:
-    # IP地址和端口
-    host:
-    # API KEY
-    api_key:
-    # NASTOOL媒体的映射路径
-    local_path:
-    # ChineseSubFinder媒体的映射路径
-    remote_path:
 
 # 【配置安全】
 security:

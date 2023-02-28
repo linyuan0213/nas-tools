@@ -9,6 +9,7 @@
   <!-- CSS files -->
   <link href="../static/css/tabler.min.css" rel="stylesheet"/>
   <link href="../static/css/demo.min.css" rel="stylesheet"/>
+  <link href="../static/css/tabler-vendors.min.css" rel="stylesheet"/>
   <link href="../static/css/fullcalendar.min.css" rel="stylesheet"/>
   <link href="../static/css/jquery.filetree.css" rel="stylesheet"/>
   <link href="../static/css/dropzone.css" rel="stylesheet"/>
@@ -28,19 +29,33 @@
 </head>
 <body class="layout-fluid">
 <div class="page">
+  <script src="../static/js/echarts.min.js"></script>
+  <script src="../static/js/jquery-3.3.1.min.js"></script>
   <script src="../static/js/demo-theme.min.js"></script>
+  <script src="../static/js/ace/ace.js"></script>
+  <script src="../static/js/dom-to-image.min.js"></script>
+  <script src="../static/js/FileSaver.min.js"></script>
+  <script src="../static/js/nprogress.js"></script>
+  <script src="../static/js/numeral.min.js"></script>
+  <script src="../static/js/fullcalendar.min.js"></script>
+  <script src="../static/js/locales/zh-cn.js"></script>
+  <script src="../static/js/jquery.filetree.js"></script>
   <script type="module" src="../static/components/lit-index.js"></script>
   <!-- 解决密码填充问题 -->
   <span hidden><input type="text"><input type="password"></span>
   <layout-navbar id="navbar-menu" hidden
+    layout-userlevel="{{ CurrentUser.level }}"
+    layout-useradmin="{{ CurrentUser.admin }}"
     layout-gopage="{{ GoPage }}"
     layout-appversion="{{ AppVersion }}"
-    layout-userpris='{{ UserPris|tojson|safe }}'>
+    >
   </layout-navbar>
   <layout-searchbar hidden
-      layout-username="{{ UserName }}"
+      layout-username="{{ CurrentUser.name }}"
       layout-systemflag="{{ SystemFlag }}"
-      layout-userpris='{{ UserPris|tojson|safe }}'>
+      layout-userlevel="{{ CurrentUser.level }}"
+      layout-useradmin="{{ CurrentUser.admin }}"
+      >
   </layout-searchbar>
   <div class="spinner-border" role="status" id="logo_animation" style="position:absolute;top:30%;left:calc(50% - 40px);width:80px;height:80px;"></div>
   <div class="page-wrapper" id="page_content" hidden="">
@@ -679,13 +694,13 @@
               <select class="form-select" id="search_download_setting" aria-label="下载设置"
                   onchange="refresh_savepath_select('search_download_dir', true, $(this).val())">
               </select>
-              <label for="floatingSelect">下载设置</label>
+              <label for="search_download_setting">下载设置</label>
             </div>
           </div>
           <div class="col-md">
             <div class="form-floating mb-1">
               <select class="form-select" id="search_download_dir" aria-label="保存目录"></select>
-              <label for="floatingSelect">保存目录</label>
+              <label for="search_download_dir">保存目录</label>
             </div>
           </div>
         </div>
@@ -698,7 +713,6 @@
             <span class="dropzone-msg-desc">点击或者拖动种子文件到此处</span>
           </div>
         </form>
-        <textarea class="form-control mt-2" id="torrent_magnets" rows="8" placeholder="magnet:?xt=urn:btih:xxx，换行添加多个磁链"></textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">取消</button>
@@ -848,20 +862,54 @@
     </div>
   </div>
 </div>
-<script src="../static/js/libs/list.min.js"></script>
-<script src="../static/js/jquery-3.3.1.min.js"></script>
+<!-- 用户认证 -->
+<div class="modal modal-blur fade" id="modal-user-auth" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">用户认证</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="mb-3">
+            <label class="form-label">合作站点</label>
+            <select type="text" class="form-select" id="user_auth_site" onchange="switch_cooperation_sites(this)">
+              {% for SiteId, SiteAttr in CooperationSites.items() %}
+                <option value="{{ SiteId }}" data-custom-properties="&lt;span class=&quot;avatar avatar-xs&quot; style=&quot;background-image: url({{ SiteAttr.icon }})&quot;&gt;&lt;/span&gt;">{{ SiteAttr.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        {% for SiteId, SiteAttr in CooperationSites.items() %}
+        <div class="row user_auth_params" id="user_auth_{{ SiteId }}_params" style="{% if loop.index0 != 0 %}display:none{% endif %}">
+          {% for ParamId, ParamAttr in SiteAttr.params.items() %}
+          <div class="col-12 col-lg">
+            <div class="mb-3">
+              <label class="form-label">{{ ParamAttr.name }} <span class="form-help"
+                                                               title="{{ ParamAttr.tooltip }}"
+                                                               data-bs-toggle="tooltip">?</span></label>
+              <input type="{{ ParamAttr.type }}" id="{{ SiteId }}_{{ ParamId }}" class="form-control" placeholder="{{ ParamAttr.placeholder }}">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="user_auth_btn" title="认证" onclick="user_auth()">
+          认证
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="../static/js/tabler.min.js"></script>
+<script src="../static/js/libs/dropzone-min.js"></script>
+<script src="../static/js/libs/list.min.js"></script>
+<script src="../static/js/libs/tom-select.base.min.js"></script>
 <script src="../static/js/demo.min.js"></script>
-<script src="../static/js/echarts.min.js"></script>
-<script src="../static/js/numeral.min.js"></script>
-<script src="../static/js/fullcalendar.min.js"></script>
-<script src="../static/js/locales/zh-cn.js"></script>
-<script src="../static/js/jquery.filetree.js"></script>
-<script src="../static/js/dropzone-min.js"></script>
-<script src="../static/js/dom-to-image.min.js"></script>
-<script src="../static/js/FileSaver.min.js"></script>
-<script src="../static/js/nprogress.js"></script>
-<script src="../static/js/ace.js"></script>
 <script src="../static/js/util.js"></script>
 <!-- 提示弹窗 -->
 <script type="text/javascript">
@@ -1651,6 +1699,10 @@
       $("#search_download_setting").attr("onchange", "refresh_savepath_select('search_download_dir', true, $(this).val(), false)")
     }
 
+    if (!show_type) {
+      $("#torrent_files").hide();
+    }
+
     // 绑定下载按钮事件
     if (func) {
       $("#search_download_btn").unbind("click").click(func);
@@ -1659,17 +1711,6 @@
     }
     // 清空
     torrent_dropzone.removeAllFiles();
-    $("#torrent_magnets").val("");
-    if (show_type === 'torrent') {
-      $("#torrent_files").show();
-      $("#torrent_magnets").hide();
-    } else if (show_type === 'magnet') {
-      $("#torrent_magnets").show();
-      $("#torrent_files").hide();
-    } else {
-      $("#torrent_files").hide();
-      $("#torrent_magnets").hide();
-    }
     $("#modal-search-download").modal('show');
   }
 
@@ -2185,7 +2226,7 @@
           } else {
             tcolor = "text";
           }
-          if (["Rmt", "Subtitle"].includes(source) && text.includes(" 到 ")) {
+          if (["Rmt", "Plugin"].includes(source) && text.includes(" 到 ")) {
             tstyle = `white-space: pre;`
             text = text.replace(/\s到\s/, "\n=> ")
           }
@@ -2253,7 +2294,7 @@
   // 渲染日志来源下拉列表
   function get_logging_source(){
     $("#dropdown-menu-logger").html('')
-    var menu=['All', 'System', 'Rss', 'Rmt', 'Meta', 'Sync', 'Sites', 'Brush', 'Douban', 'Spider', 'Message', 'Indexer', 'Searcher', 'Subscribe', 'Downloader', 'TorrentRemover']
+    var menu=['All', 'System', 'Rss', 'Rmt', 'Meta', 'Sync', 'Sites', 'Brush', 'Douban', 'Spider', 'Message', 'Indexer', 'Searcher', 'Subscribe', 'Downloader', 'TorrentRemover', 'Plugin']
     for(var i=0;i<menu.length;i++){
       $("#dropdown-menu-logger").append(`<a class="dropdown-item"  href="javascript:logger_select('${menu[i]}')">${menu[i]}</a>`);
     }
@@ -2364,6 +2405,59 @@
     });
   }
 
+  // 显示用户认证对话框
+  function show_user_auth_modal() {
+    $("#modal-user-auth").modal("show");
+  }
+
+  // 用户认证
+  function user_auth() {
+    $("#user_auth_btn").text("认证中...").prop("disabled", true);
+    let siteid = $("#user_auth_site").val();
+    let params = input_select_GetVal(`user_auth_${siteid}_params`, `${siteid}_`);
+    ajax_post("auth_user_level", {site: siteid, params: params}, function (ret) {
+      $("#modal-user-auth").modal("hide");
+      $("#user_auth_btn").prop("disabled", false).text("认证");
+      if (ret.code === 0) {
+        window.location.reload();
+      } else {
+        show_fail_modal(ret.msg);
+      }
+    }, true, false);
+  }
+
+  // 初始化tomselect
+  function init_tomselect() {
+    let el;
+    window.TomSelect && (new TomSelect(el = document.getElementById('user_auth_site'), {
+      copyClassesToDropdown: false,
+      dropdownClass: 'dropdown-menu ts-dropdown',
+      optionClass:'dropdown-item',
+      controlInput: '<input>',
+      render:{
+        item: function(data,escape) {
+          if( data.customProperties ){
+            return '<div><span class="dropdown-item-indicator">' + data.customProperties + '</span>' + escape(data.text) + '</div>';
+          }
+          return '<div>' + escape(data.text) + '</div>';
+        },
+        option: function(data,escape){
+          if( data.customProperties ){
+            return '<div><span class="dropdown-item-indicator">' + data.customProperties + '</span>' + escape(data.text) + '</div>';
+          }
+          return '<div>' + escape(data.text) + '</div>';
+        },
+      },
+    }));
+  }
+
+  // TomSelect响应事件
+  function switch_cooperation_sites(obj) {
+    let siteid = $(obj).val();
+    $(".user_auth_params").hide();
+    $(`#user_auth_${siteid}_params`).show();
+  }
+
 </script>
 
 <!-- 事件  -->
@@ -2390,35 +2484,14 @@
         }
     });
 
+    // TomSelect下拉框
+    init_tomselect();
+
     // tooltip点击事件处理，阻止冒泡到上级元素，避免比如`点击tooltip切换了switch`的问题
     $('body').on('click', 'span[data-bs-toggle="tooltip"]', function (e) {
       e.preventDefault();
       e.stopPropagation();
     });
-
-    /**
-     * 计算菜单列表高度
-     * @return {number}
-     */
-    function computeMenuListHeight() {
-      // '#navbar-menu > .order-first' 要打开菜单后才会显示，所以这里取固定值36
-      const menuFirstHeight = 36;
-      // 这个是经过测试得到的数值
-      const extra = 120;
-      return $('.navbar-brand').outerHeight() + menuFirstHeight + extra
-    }
-
-    /**
-     * 更新菜单列表高度
-     */
-    function updateMenuListHeight() {
-      const height = computeMenuListHeight();
-      $('.navbar ul.navbar-nav').css({
-        maxHeight: 'calc(100vh - ' + height + 'px)'
-      })
-    }
-    // 更新菜单高度
-    updateMenuListHeight()
 
     // 初始化季列表
     init_season_list();
@@ -2439,8 +2512,7 @@
       }
     });
 
-
-    {% if "系统设置" in UserPris %}
+    {% if "系统设置" in CurrentUser.pris %}
       // 刷新消息
       refresh_message("");
     {% endif %}
@@ -2454,8 +2526,10 @@
 
   });
 </script>
+
 <!-- 动态载入自定义组件 -->
 <script src="../static/components/index.js"></script>
+
 <!-- 用户自定义CSS -->
 <style>
   {{ CustomScriptCfg.css|safe or "" }}

@@ -3,10 +3,24 @@ from abc import ABCMeta, abstractmethod
 
 class _IMediaClient(metaclass=ABCMeta):
 
+    # 媒体服务器ID
+    client_id = ""
+    # 媒体服务器类型
+    client_type = ""
+    # 媒体服务器名称
+    client_name = ""
+
     @abstractmethod
     def match(self, ctype):
         """
         匹配实例
+        """
+        pass
+
+    @abstractmethod
+    def get_type(self):
+        """
+        获取媒体服务器类型
         """
         pass
 
@@ -46,6 +60,19 @@ class _IMediaClient(metaclass=ABCMeta):
         :param title: 标题
         :param year: 年份，可以为空，为空时不按年份过滤
         :return: 含title、year属性的字典列表
+        """
+        pass
+
+    @abstractmethod
+    def get_tv_episodes(self, item_id=None, title=None, year=None, tmdbid=None, season=None):
+        """
+        根据标题、年份、季查询电视剧所有集信息
+        :param item_id: 服务器中的ID
+        :param title: 标题
+        :param year: 年份，可以为空，为空时不按年份过滤
+        :param tmdbid: TMDBID
+        :param season: 季号，数字
+        :return: 所有集的列表
         """
         pass
 
@@ -104,5 +131,12 @@ class _IMediaClient(metaclass=ABCMeta):
     def get_playing_sessions(self):
         """
         获取正在播放的会话
+        """
+        pass
+
+    @abstractmethod
+    def get_webhook_message(self, message):
+        """
+        解析Webhook报文，获取消息内容结构
         """
         pass

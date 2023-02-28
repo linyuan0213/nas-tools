@@ -110,7 +110,6 @@ def upgrade() -> None:
     try:
         with op.batch_alter_table("SITE_BRUSH_TASK") as batch_op:
             batch_op.add_column(sa.Column('SENDMESSAGE', sa.Text, nullable=True))
-            batch_op.add_column(sa.Column('FORCEUPLOAD', sa.Text, nullable=True))
     except Exception as e:
         print(str(e))
     # 1.0.10

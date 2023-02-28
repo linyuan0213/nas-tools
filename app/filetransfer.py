@@ -14,11 +14,10 @@ from app.helper import DbHelper, ProgressHelper
 from app.helper import ThreadHelper
 from app.media import Media, Category, Scraper
 from app.media.meta import MetaInfo
-from app.mediaserver import MediaServer
 from app.message import Message
-from app.subtitle import Subtitle
+from app.plugins import EventManager
 from app.utils import EpisodeFormat, PathUtils, StringUtils, SystemUtils, ExceptionUtils
-from app.utils.types import MediaType, SyncType, RmtMode
+from app.utils.types import MediaType, SyncType, RmtMode, EventType
 from config import RMT_SUBEXT, RMT_MEDIAEXT, RMT_FAVTYPE, RMT_MIN_FILESIZE, DEFAULT_MOVIE_FORMAT, \
     DEFAULT_TV_FORMAT, Config
 
@@ -34,6 +33,7 @@ class FileTransfer:
     threadhelper = None
     dbhelper = None
     progress = None
+    eventmanager = None
 
     _default_rmt_mode = None
     _movie_path = None
@@ -53,7 +53,6 @@ class FileTransfer:
     _scraper_flag = False
     _scraper_nfo = {}
     _scraper_pic = {}
-    _refresh_mediaserver = False
     _ignored_paths = []
     _ignored_files = ''
 
@@ -61,11 +60,11 @@ class FileTransfer:
         self.media = Media()
         self.message = Message()
         self.category = Category()
-        self.mediaserver = MediaServer()
         self.scraper = Scraper()
         self.threadhelper = ThreadHelper()
         self.dbhelper = DbHelper()
         self.progress = ProgressHelper()
+        self.eventmanager = EventManager()
         self.init_config()
 
     def init_config(self):
@@ -74,8 +73,6 @@ class FileTransfer:
         self._scraper_nfo = Config().get_config('scraper_nfo')
         self._scraper_pic = Config().get_config('scraper_pic')
         if media:
-            # 刷新媒体库开关
-            self._refresh_mediaserver = media.get("refresh_mediaserver")
             # 电影目录
             self._movie_path = media.get('movie_path')
             if not isinstance(self._movie_path, list):
@@ -565,10 +562,6 @@ class FileTransfer:
         total_count = 0
         # 电视剧可能有多集，如果在循环里发消息就太多了，要在外面发消息
         message_medias = {}
-        # 需要刷新媒体库的清单
-        refresh_library_items = []
-        # 需要下载字段的清单
-        download_subtitle_items = []
         # 处理识别后的每一个文件或单个文件夹
         for file_item, media in Medias.items():
             try:
@@ -627,7 +620,7 @@ class FileTransfer:
                 if target_dir:
                     dist_path = target_dir
                 else:
-                    dist_path = self.__get_best_target_path(mtype=media.type, in_path=in_path, size=media.size)
+                    dist_path = self.get_best_target_path(mtype=media.type, in_path=in_path, size=media.size)
                 if not dist_path:
                     log.error("【Rmt】文件转移失败，目的路径不存在！")
                     success_flag = False
@@ -761,36 +754,18 @@ class FileTransfer:
                             if error_message not in alert_messages:
                                 alert_messages.append(error_message)
                             continue
-                # 媒体库刷新条目：类型-类别-标题-年份
-                refresh_item = {"type": media.type, "category": media.category, "title": media.title,
-                                "year": media.year, "target_path": dist_path}
-                # 登记媒体库刷新
-                if refresh_item not in refresh_library_items:
-                    refresh_library_items.append(refresh_item)
                 # 查询TMDB详情，需要全部数据
                 media.set_tmdb_info(self.media.get_tmdb_info(mtype=media.type,
                                                              tmdbid=media.tmdb_id,
                                                              append_to_response="all"))
-                # 下载字幕条目
-                subtitle_item = {"type": media.type,
-                                 "file": ret_file_path,
-                                 "file_ext": os.path.splitext(file_item)[-1],
-                                 "name": media.en_name if media.en_name else media.cn_name,
-                                 "title": media.title,
-                                 "year": media.year,
-                                 "season": media.begin_season,
-                                 "episode": media.begin_episode,
-                                 "bluray": True if bluray_disk_dir else False,
-                                 "imdbid": media.imdb_id}
-                # 登记字幕下载
-                if subtitle_item not in download_subtitle_items:
-                    download_subtitle_items.append(subtitle_item)
+                # 输出路径
+                out_path = new_file if not bluray_disk_dir else ret_dir_path
                 # 转移历史记录
                 self.dbhelper.insert_transfer_history(
                     in_from=in_from,
                     rmt_mode=rmt_mode,
                     in_path=reg_path,
-                    out_path=new_file if not bluray_disk_dir else ret_dir_path,
+                    out_path=out_path,
                     dest=dist_path,
                     media_info=media)
                 # 未识别手动识别或历史记录重新识别的批处理模式
@@ -830,6 +805,22 @@ class FileTransfer:
                 if rmt_mode == RmtMode.MOVE:
                     sleep(round(random.uniform(0, 1), 1))
 
+                # 解发字幕下载事件
+                self.eventmanager.send_event(EventType.SubtitleDownload, {
+                    "media_info": media.to_dict(),
+                    "file": ret_file_path,
+                    "file_ext": os.path.splitext(file_item)[-1],
+                    "bluray": True if bluray_disk_dir else False
+                })
+                # 解发转移完成事件
+                self.eventmanager.send_event(EventType.TransferFinished, {
+                    "in_path": in_path,
+                    "file": file_item,
+                    "target_path": out_path,
+                    "dest": dist_path,
+                    "media_info": media.to_dict()
+                })
+
             except Exception as err:
                 ExceptionUtils.exception_traceback(err)
                 log.error("【Rmt】文件转移时发生错误：%s - %s" % (str(err), traceback.format_exc()))
@@ -837,16 +828,18 @@ class FileTransfer:
         # 统计完成情况，发送通知
         if message_medias:
             self.message.send_transfer_tv_message(message_medias, in_from)
-        # 刷新媒体库
-        if refresh_library_items and self._refresh_mediaserver:
-            self.mediaserver.refresh_library_by_items(refresh_library_items)
-        # 启新进程下载字幕
-        if download_subtitle_items:
-            self.threadhelper.start_thread(Subtitle().download_subtitle, (download_subtitle_items,))
         # 总结
         log.info("【Rmt】%s 处理完成，总数：%s，失败：%s" % (in_path, total_count, failed_count))
         if alert_count > 0:
-            self.message.send_transfer_fail_message(in_path, alert_count, "、".join(alert_messages))
+            reason = "、".join(alert_messages)
+            # 解发事件
+            self.eventmanager.send_event(EventType.TransferFail, {
+                "path": in_path,
+                "count": alert_count,
+                "reason": reason
+            })
+            # 发送消息
+            self.message.send_transfer_fail_message(in_path, alert_count, reason)
         elif failed_count == 0:
             # 删除空目录
             if rmt_mode == RmtMode.MOVE \
@@ -971,43 +964,6 @@ class FileTransfer:
                             break
         return dir_exist_flag, ret_dir_path, file_exist_flag, ret_file_path
 
-    def transfer_embyfav(self, item_path):
-        """
-        Emby/Jellyfin点红星后转移电影文件到精选分类
-        :param item_path: 文件路径
-        """
-        if not item_path:
-            return False
-        if not self._movie_category_flag or not self._movie_path:
-            return False
-        if os.path.isdir(item_path):
-            movie_dir = item_path
-        else:
-            movie_dir = os.path.dirname(item_path)
-        # 已经是精选下的不处理
-        movie_type = os.path.basename(os.path.dirname(movie_dir))
-        if movie_type == RMT_FAVTYPE \
-                or movie_type not in self.category.get_movie_categorys():
-            return False
-        movie_name = os.path.basename(movie_dir)
-        movie_path = self.__get_best_target_path(mtype=MediaType.MOVIE, in_path=movie_dir)
-        # 开始转移文件，转移到同目录下的精选目录
-        org_path = os.path.join(movie_path, movie_type, movie_name)
-        new_path = os.path.join(movie_path, RMT_FAVTYPE, movie_name)
-        if os.path.exists(org_path):
-            log.info("【Rmt】开始转移文件 %s 到 %s ..." % (org_path, new_path))
-            if os.path.exists(new_path):
-                log.info("【Rmt】目录 %s 已存在" % new_path)
-                return False
-            ret, retmsg = SystemUtils.move(org_path, new_path)
-            if ret == 0:
-                return True
-            else:
-                log.error("【Rmt】%s" % retmsg)
-        else:
-            log.error("【Rmt】%s 目录不存在" % org_path)
-        return False
-
     def get_dest_path_by_info(self, dest, meta_info):
         """
         拼装转移重命名后的新文件地址
@@ -1088,7 +1044,7 @@ class FileTransfer:
                     exists_episodes = list(set(exists_episodes).union(set(file_meta_info.get_episode_list())))
             return list(set(total_episodes).difference(set(exists_episodes)))
 
-    def __get_best_target_path(self, mtype, in_path=None, size=0):
+    def get_best_target_path(self, mtype, in_path=None, size=0):
         """
         查询一个最好的目录返回，有in_path时找与in_path同路径的，没有in_path时，顺序查找1个符合大小要求的，没有in_path和size时，返回第1个
         :param mtype: 媒体类型：电影、电视剧、动漫
@@ -1253,42 +1209,6 @@ class FileTransfer:
                 log.error("【Rmt】文件名转移忽略词设置有误：%s" % str(err))
 
         return file_list, ""
-
-    def get_media_exists_flag(self, mtype, title, year, mediaid):
-        """
-        获取媒体存在标记：是否存在、是否订阅
-        :param: mtype 媒体类型
-        :param: title 媒体标题
-        :param: year 媒体年份
-        :param: mediaid TMDBID/DB:豆瓣ID/BG:Bangumi的ID
-        :return: 1-已订阅/2-已下载/0-不存在未订阅, RSSID
-        """
-        if str(mediaid).isdigit():
-            tmdbid = mediaid
-        else:
-            tmdbid = None
-        if mtype in ["MOV", "电影", MediaType.MOVIE]:
-            rssid = self.dbhelper.get_rss_movie_id(title=title, year=year, tmdbid=tmdbid)
-        else:
-            if not tmdbid:
-                meta_info = MetaInfo(title=title)
-                title = meta_info.get_name()
-                season = meta_info.get_season_string()
-                if season:
-                    year = None
-            else:
-                season = None
-            rssid = self.dbhelper.get_rss_tv_id(title=title, year=year, season=season, tmdbid=tmdbid)
-        if rssid:
-            # 已订阅
-            fav = "1"
-        elif MediaServer().check_item_exists(title=title, year=year, tmdbid=tmdbid):
-            # 已下载
-            fav = "2"
-        else:
-            # 未订阅、未下载
-            fav = "0"
-        return fav, rssid
 
 
 if __name__ == "__main__":

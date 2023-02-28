@@ -11,9 +11,10 @@ class MediaType(Enum):
 class DownloaderType(Enum):
     QB = 'Qbittorrent'
     TR = 'Transmission'
-    Client115 = '115网盘'
-    Aria2 = 'Aria2'
-    PikPak = 'PikPak'
+    UT = 'uTorrent'
+    PAN115 = '115网盘'
+    ARIA2 = 'Aria2'
+    PIKPAK = 'PikPak'
 
 
 class SyncType(Enum):
@@ -59,9 +60,9 @@ class OsType(Enum):
 
 
 class IndexerType(Enum):
+    BUILTIN = "Indexer"
     JACKETT = "Jackett"
     PROWLARR = "Prowlarr"
-    BUILTIN = "Indexer"
 
 
 class MediaServerType(Enum):
@@ -95,5 +96,39 @@ class SiteSchema(Enum):
     TNode = "TNode"
 
 
-MovieTypes = ['MOV', '电影']
-TvTypes = ['TV', '电视剧']
+# 可监听事件
+class EventType(Enum):
+    # Emby Webhook通知
+    EmbyWebhook = "emby.webhook"
+    # Jellyfin Webhook通知
+    JellyfinWebhook = "jellyfin.webhook"
+    # Plex Webhook通知
+    PlexWebhook = "plex.webhook"
+    # 新增下载
+    DownloadAdd = "download.add"
+    # 下载失败
+    DownloadFail = "download.fail"
+    # 入库完成
+    TransferFinished = "transfer.finished"
+    # 入库失败
+    TransferFail = "transfer.fail"
+    # 下载字幕
+    SubtitleDownload = "subtitle.download"
+    # 新增订阅
+    SubscribeAdd = "subscribe.add"
+    # 订阅完成
+    SubscribeFinished = "subscribe.finished"
+    # 交互消息
+    MessageIncoming = "message.incoming"
+    # 开始搜索
+    SearchStart = "search.start"
+    # 源文件被删除
+    SourceFileDeleted = "sourcefile.deleted"
+    # 媒件库文件被删除
+    LibraryFileDeleted = "libraryfile.deleted"
+
+
+# 电影类型关键字
+MovieTypes = ['MOV', '电影', MediaType.MOVIE]
+# 电视剧类型关键字
+TvTypes = ['TV', '电视剧', MediaType.TV]

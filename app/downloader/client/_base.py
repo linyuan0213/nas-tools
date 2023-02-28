@@ -1,15 +1,27 @@
 import os.path
 from abc import ABCMeta, abstractmethod
 
-from config import Config
-
 
 class _IDownloadClient(metaclass=ABCMeta):
+
+    # 下载器ID
+    client_id = ""
+    # 下载器类型
+    client_type = ""
+    # 下载器名称
+    client_name = ""
 
     @abstractmethod
     def match(self, ctype):
         """
         匹配实例
+        """
+        pass
+
+    @abstractmethod
+    def get_type(self):
+        """
+        获取下载器类型
         """
         pass
 
@@ -34,21 +46,28 @@ class _IDownloadClient(metaclass=ABCMeta):
         :param ids: 种子ID，单个ID或者ID列表
         :param status: 种子状态过滤
         :param tag: 种子标签过滤
-        :return: 种子信息列表
+        :return: 种子信息列表，是否发生错误
         """
         pass
 
     @abstractmethod
-    def get_downloading_torrents(self, tag):
+    def get_downloading_torrents(self, ids, tag):
         """
-        读取下载中的种子信息
+        读取下载中的种子信息，发生错误时需返回None
         """
         pass
 
     @abstractmethod
-    def get_completed_torrents(self, tag):
+    def get_completed_torrents(self, ids, tag):
         """
-        读取下载完成的种子信息
+        读取下载完成的种子信息，发生错误时需返回None
+        """
+        pass
+
+    @abstractmethod
+    def get_files(self, tid):
+        """
+        读取种子文件列表
         """
         pass
 
@@ -113,13 +132,12 @@ class _IDownloadClient(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def get_replace_path(path):
+    def get_replace_path(path, downloaddir):
         """
         对目录路径进行转换
         """
-        if not path:
+        if not path or not downloaddir:
             return ""
-        downloaddir = Config().get_config('downloaddir') or []
         path = os.path.normpath(path)
         for attr in downloaddir:
             if not attr.get("save_path") or not attr.get("container_path"):

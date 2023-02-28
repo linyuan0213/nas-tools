@@ -4,44 +4,47 @@ import time
 from datetime import datetime
 from urllib import parse
 
-from pkg_resources import parse_version as v
-
 import log
 import qbittorrentapi
 from app.downloader.client._base import _IDownloadClient
 from app.utils import ExceptionUtils, StringUtils
 from app.utils.types import DownloaderType
-from config import Config
 
 
 class Qbittorrent(_IDownloadClient):
-    schema = "qbittorrent"
-    client_type = DownloaderType.QB.value
-    _client_config = {}
 
+    # 下载器ID
+    client_id = "qbittorrent"
+    # 下载器类型
+    client_type = DownloaderType.QB
+    # 下载器名称
+    client_name = DownloaderType.QB.value
+
+    # 私有属性
+    _client_config = {}
     _force_upload = False
     _auto_management = False
+
     qbc = None
     ver = None
     host = None
     port = None
     username = None
     password = None
+    download_dir = []
 
-    def __init__(self, config=None):
-        if config:
-            self._client_config = config
-        else:
-            self._client_config = Config().get_config('qbittorrent')
+    def __init__(self, config):
+        self._client_config = config
         self.init_config()
         self.connect()
 
     def init_config(self):
         if self._client_config:
-            self.host = self._client_config.get('qbhost')
-            self.port = int(self._client_config.get('qbport')) if str(self._client_config.get('qbport')).isdigit() else 0
-            self.username = self._client_config.get('qbusername')
-            self.password = self._client_config.get('qbpassword')
+            self.host = self._client_config.get('host')
+            self.port = int(self._client_config.get('port')) if str(self._client_config.get('port')).isdigit() else 0
+            self.username = self._client_config.get('username')
+            self.password = self._client_config.get('password')
+            self.download_dir = self._client_config.get('download_dir')
             # 强制做种开关
             self._force_upload = self._client_config.get('force_upload')
             # 自动管理模式开关
@@ -49,7 +52,10 @@ class Qbittorrent(_IDownloadClient):
 
     @classmethod
     def match(cls, ctype):
-        return True if ctype in [cls.schema, cls.client_type] else False
+        return True if ctype in [cls.client_id, cls.client_type, cls.client_name] else False
+
+    def get_type(self):
+        return self.client_type
 
     def connect(self):
         if self.host and self.port:
@@ -76,7 +82,7 @@ class Qbittorrent(_IDownloadClient):
             return qbt
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
-            log.error(f"【{self.client_type}】qBittorrent连接出错：{str(err)}")
+            log.error(f"【{self.client_name}】qBittorrent连接出错：{str(err)}")
             return None
 
     def get_status(self):
@@ -96,33 +102,47 @@ class Qbittorrent(_IDownloadClient):
         if not self.qbc:
             return [], True
         try:
-            torrents = self.qbc.torrents_info(torrent_hashes=ids, status_filter=status, tag=tag)
-            if self.is_ver_less_4_4():
-                torrents = self.filter_torrent_by_tag(torrents, tag=tag)
+            torrents = self.qbc.torrents_info(torrent_hashes=ids,
+                                              status_filter=status)
+            if tag:
+                results = []
+                if not isinstance(tag, list):
+                    tag = [tag]
+                for torrent in torrents:
+                    include_flag = True
+                    for t in tag:
+                        if t and t not in torrent.get("tags"):
+                            include_flag = False
+                            break
+                    if include_flag:
+                        results.append(torrent)
+                return results or [], False
             return torrents or [], False
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return [], True
 
-    def get_completed_torrents(self, tag=None):
+    def get_completed_torrents(self, ids=None, tag=None):
         """
         获取已完成的种子
-        return: 种子列表, 是否发生异常
+        return: 种子列表, 如发生异常则返回None
         """
         if not self.qbc:
-            return []
-        torrents, _ = self.get_torrents(status=["completed"], tag=tag)
-        return torrents
+            return None
+        torrents, error = self.get_torrents(status=["completed"], ids=ids, tag=tag)
+        return None if error else torrents or []
 
-    def get_downloading_torrents(self, tag=None):
+    def get_downloading_torrents(self, ids=None, tag=None):
         """
         获取正在下载的种子
-        return: 种子列表, 是否发生异常
+        return: 种子列表, 如发生异常则返回None
         """
         if not self.qbc:
-            return []
-        torrents, _ = self.get_torrents(status=["downloading"], tag=tag)
-        return torrents
+            return None
+        torrents, error = self.get_torrents(ids=ids,
+                                            status=["downloading"],
+                                            tag=tag)
+        return None if error else torrents or []
 
     def remove_torrents_tag(self, ids, tag):
         """
@@ -137,6 +157,9 @@ class Qbittorrent(_IDownloadClient):
             return False
 
     def set_torrents_status(self, ids, tags=None):
+        """
+        设置种子状态为已整理，以及是否强制做种
+        """
         if not self.qbc:
             return
         try:
@@ -145,7 +168,7 @@ class Qbittorrent(_IDownloadClient):
             # 超级做种
             if self._force_upload:
                 self.qbc.torrents_set_force_start(enable=True, torrent_hashes=ids)
-            log.info(f"【{self.client_type}】设置qBittorrent种子状态成功")
+            log.info(f"【{self.client_name}】设置qBittorrent种子状态成功")
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
 
@@ -159,8 +182,11 @@ class Qbittorrent(_IDownloadClient):
             ExceptionUtils.exception_traceback(err)
 
     def get_transfer_task(self, tag):
+        """
+        获取下载文件转移任务种子
+        """
         # 处理下载完成的任务
-        torrents = self.get_completed_torrents(tag=tag)
+        torrents = self.get_completed_torrents(tag=tag) or []
         trans_tasks = []
         for torrent in torrents:
             # 判断标签是否包含"已整理"
@@ -176,12 +202,15 @@ class Qbittorrent(_IDownloadClient):
                     trans_name = trans_name[1:]
             else:
                 trans_name = torrent.get('name')
-            true_path = self.get_replace_path(path)
+            true_path = self.get_replace_path(path, self.download_dir)
             trans_tasks.append(
                 {'path': os.path.join(true_path, trans_name).replace("\\", "/"), 'id': torrent.get('hash')})
         return trans_tasks
 
     def get_remove_torrents(self, config=None):
+        """
+        获取自动删种任务种子
+        """
         if not config:
             return []
         remove_torrents = []
@@ -390,8 +419,8 @@ class Qbittorrent(_IDownloadClient):
         if not ids:
             return False
         try:
-            ret = self.qbc.torrents_delete(delete_files=delete_file, torrent_hashes=ids)
-            return ret
+            self.qbc.torrents_delete(delete_files=delete_file, torrent_hashes=ids)
+            return True
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return False
@@ -457,37 +486,17 @@ class Qbittorrent(_IDownloadClient):
         self.qbc.torrents_set_download_limit(limit=int(limit),
                                              torrent_hashes=ids)
 
-    def is_ver_less_4_4(self):
-        return v(self.ver) < v("v4.4.0")
-
-    @staticmethod
-    def filter_torrent_by_tag(torrents, tag):
-        if not tag:
-            return torrents
-        if not isinstance(tag, list):
-            tag = [tag]
-        results = []
-        for torrent in torrents:
-            include_flag = True
-            for t in tag:
-                if t and t not in torrent.get("tags"):
-                    include_flag = False
-                    break
-            if include_flag:
-                results.append(torrent)
-        return results
-
     def change_torrent(self, **kwargs):
         """
         修改种子状态
         """
         pass
 
-    def get_downloading_progress(self, tag=None):
+    def get_downloading_progress(self, tag=None, ids=None):
         """
         获取正在下载的种子进度
         """
-        Torrents = self.get_downloading_torrents(tag=tag)
+        Torrents = self.get_downloading_torrents(tag=tag, ids=ids) or []
         DispTorrents = []
         for torrent in Torrents:
             # 进度
@@ -517,9 +526,13 @@ class Qbittorrent(_IDownloadClient):
     def set_speed_limit(self, download_limit=None, upload_limit=None):
         """
         设置速度限制
+        :param download_limit: 下载速度限制，单位KB/s
+        :param upload_limit: 上传速度限制，单位kB/s
         """
         if not self.qbc:
             return
+        download_limit = download_limit * 1024
+        upload_limit = upload_limit * 1024
         try:
             if self.qbc.transfer.upload_limit != upload_limit:
                 self.qbc.transfer.upload_limit = upload_limit

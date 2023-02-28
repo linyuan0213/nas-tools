@@ -6,7 +6,6 @@ from app.downloader import Downloader
 from app.helper import DbHelper, ProgressHelper
 from app.indexer import Indexer
 from app.media import Media, DouBan
-from app.media.meta import MetaInfo
 from app.message import Message
 from app.searcher import Searcher
 from app.sites import Sites
@@ -234,7 +233,7 @@ def search_media_by_message(input_str, in_from: SearchType, user_id, user_name=N
         if input_str.startswith("订阅"):
             SEARCH_MEDIA_TYPE[user_id] = "SUBSCRIBE"
             input_str = re.sub(r"订阅[:：\s]*", "", input_str)
-        elif input_str.startswith("http") or input_str.startswith("magnet:"):
+        elif input_str.startswith("http"):
             SEARCH_MEDIA_TYPE[user_id] = "DOWNLOAD"
         else:
             input_str = re.sub(r"(搜索|下载)[:：\s]*", "", input_str)
@@ -242,68 +241,36 @@ def search_media_by_message(input_str, in_from: SearchType, user_id, user_name=N
 
         # 下载链接
         if SEARCH_MEDIA_TYPE[user_id] == "DOWNLOAD":
-            if input_str.startswith("http"):
-                # 检查是不是有这个站点
-                site_info = Sites().get_sites(siteurl=input_str)
-                # 偿试下载种子文件
-                filepath, content, retmsg = Torrent().save_torrent_file(
-                    url=input_str,
-                    cookie=site_info.get("cookie"),
-                    ua=site_info.get("ua"),
-                    proxy=site_info.get("proxy")
-                )
-                # 下载种子出错
-                if not content and retmsg:
-                    Message().send_channel_msg(channel=in_from,
-                                               title=retmsg,
-                                               user_id=user_id)
-                    return
-                if isinstance(content, str):
-                    # 磁力链
-                    title = Torrent().get_magnet_title(content)
-                    if title:
-                        meta_info = Media().get_media_info(title=title)
-                    else:
-                        meta_info = MetaInfo(title="磁力链接")
-                        meta_info.org_string = content
-                    meta_info.set_torrent_info(
-                        enclosure=content,
-                        download_volume_factor=0,
-                        upload_volume_factor=1
-                    )
-                else:
-                    # 识别文件名
-                    filename = os.path.basename(filepath)
-                    # 识别
-                    meta_info = Media().get_media_info(title=filename)
-                    meta_info.set_torrent_info(
-                        enclosure=input_str
-                    )
-            else:
-                # 磁力链
-                filepath = None
-                title = Torrent().get_magnet_title(input_str)
-                if title:
-                    meta_info = Media().get_media_info(title=title)
-                else:
-                    meta_info = MetaInfo(title="磁力链接")
-                    meta_info.org_string = input_str
-                meta_info.set_torrent_info(
-                    enclosure=input_str,
-                    download_volume_factor=0,
-                    upload_volume_factor=1
-                )
-            # 开始下载
-            meta_info.user_name = user_name
-            state, retmsg = Downloader().download(media_info=meta_info,
-                                                  torrent_file=filepath)
-            if state:
-                Message().send_download_message(in_from=in_from,
-                                                can_item=meta_info)
-            else:
+            # 检查是不是有这个站点
+            site_info = Sites().get_sites(siteurl=input_str)
+            # 偿试下载种子文件
+            filepath, content, retmsg = Torrent().save_torrent_file(
+                url=input_str,
+                cookie=site_info.get("cookie"),
+                ua=site_info.get("ua"),
+                proxy=site_info.get("proxy")
+            )
+            # 下载种子出错
+            if (not content or not filepath) and retmsg:
                 Message().send_channel_msg(channel=in_from,
-                                           title=f"添加下载失败，{retmsg}",
+                                           title=retmsg,
                                            user_id=user_id)
+                return
+            # 识别文件名
+            filename = os.path.basename(filepath)
+            # 识别
+            meta_info = Media().get_media_info(title=filename)
+            if not meta_info:
+                Message().send_channel_msg(channel=in_from,
+                                           title="无法识别种子文件名！",
+                                           user_id=user_id)
+                return
+            # 开始下载
+            meta_info.set_torrent_info(enclosure=input_str)
+            Downloader().download(media_info=meta_info,
+                                  torrent_file=filepath,
+                                  in_from=in_from,
+                                  user_name=user_name)
 
         # 搜索或订阅
         else:
@@ -467,31 +434,21 @@ def __rss_media(in_from, media_info, user_id=None, state='D', user_name=None):
     """
     开始添加订阅和发送消息
     """
+    # 操作用户
+    media_info.user_name = user_name
     # 添加订阅
-    if media_info.douban_id:
-        code, msg, media_info = Subscribe().add_rss_subscribe(mtype=media_info.type,
-                                                              name=media_info.title,
-                                                              year=media_info.year,
-                                                              season=media_info.begin_season,
-                                                              mediaid=f"DB:{media_info.douban_id}",
-                                                              state=state,
-                                                              rss_sites=media_info.rss_sites,
-                                                              search_sites=media_info.search_sites)
-    else:
-        code, msg, media_info = Subscribe().add_rss_subscribe(mtype=media_info.type,
-                                                              name=media_info.title,
-                                                              year=media_info.year,
-                                                              season=media_info.begin_season,
-                                                              mediaid=media_info.tmdb_id,
-                                                              state=state,
-                                                              rss_sites=media_info.rss_sites,
-                                                              search_sites=media_info.search_sites)
+    mediaid = f"DB:{media_info.douban_id}" if media_info.douban_id else media_info.tmdb_id
+    code, msg, media_info = Subscribe().add_rss_subscribe(mtype=media_info.type,
+                                                          name=media_info.title,
+                                                          year=media_info.year,
+                                                          season=media_info.begin_season,
+                                                          mediaid=mediaid,
+                                                          state=state,
+                                                          rss_sites=media_info.rss_sites,
+                                                          search_sites=media_info.search_sites,
+                                                          in_from=in_from)
     if code == 0:
         log.info("【Web】%s %s 已添加订阅" % (media_info.type.value, media_info.get_title_string()))
-        if in_from in Message().get_search_types():
-            media_info.user_name = user_name
-            Message().send_rss_success_message(in_from=in_from,
-                                               media_info=media_info)
     else:
         if in_from in Message().get_search_types():
             log.info("【Web】%s 添加订阅失败：%s" % (media_info.title, msg))

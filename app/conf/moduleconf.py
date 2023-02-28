@@ -41,15 +41,6 @@ class ModuleConf(object):
         "move": RmtMode.MOVE
     }
 
-    # 下载器
-    DOWNLOADER_DICT = {
-        "qbittorrent": DownloaderType.QB,
-        "transmission": DownloaderType.TR,
-        "client115": DownloaderType.Client115,
-        "aria2": DownloaderType.Aria2,
-        "pikpak": DownloaderType.PikPak
-    }
-
     # 索引器
     INDEXER_DICT = {
         "prowlarr": IndexerType.PROWLARR,
@@ -57,19 +48,12 @@ class ModuleConf(object):
         "builtin": IndexerType.BUILTIN
     }
 
-    # 媒体服务器
-    MEDIASERVER_DICT = {
-        "emby": MediaServerType.EMBY,
-        "jellyfin": MediaServerType.JELLYFIN,
-        "plex": MediaServerType.PLEX
-    }
-
     # 消息通知类型
     MESSAGE_CONF = {
         "client": {
             "telegram": {
                 "name": "Telegram",
-                "img_url": "../static/img/telegram.png",
+                "img_url": "../static/img/message/telegram.png",
                 "search_type": SearchType.TG,
                 "config": {
                     "token": {
@@ -113,7 +97,7 @@ class ModuleConf(object):
             },
             "wechat": {
                 "name": "微信",
-                "img_url": "../static/img/wechat.png",
+                "img_url": "../static/img/message/wechat.png",
                 "search_type": SearchType.WX,
                 "config": {
                     "corpid": {
@@ -162,12 +146,20 @@ class ModuleConf(object):
                         "tooltip": "需要交互功能时才需要填写，在微信企业应用管理后台-接收消息设置页面生成，填入完成后重启本应用，然后再在微信页面输入地址确定",
                         "type": "text",
                         "placeholder": "API接收消息EncodingAESKey"
+                    },
+                    "adminUser": {
+                        "id": "wechat_adminUser",
+                        "required": False,
+                        "title": "AdminUser",
+                        "tooltip": "需要交互功能时才需要填写，可执行交互菜单命令的用户名，为空则不限制，多个;号分割。可在企业微信后台查看成员的Account ID",
+                        "type": "text",
+                        "placeholder": "可执行交互菜单的用户名"
                     }
                 }
             },
             "serverchan": {
                 "name": "Server酱",
-                "img_url": "../static/img/serverchan.png",
+                "img_url": "../static/img/message/serverchan.png",
                 "config": {
                     "sckey": {
                         "id": "serverchan_sckey",
@@ -181,7 +173,7 @@ class ModuleConf(object):
             },
             "bark": {
                 "name": "Bark",
-                "img_url": "../static/img/bark.webp",
+                "img_url": "../static/img/message/bark.webp",
                 "config": {
                     "server": {
                         "id": "bark_server",
@@ -211,7 +203,7 @@ class ModuleConf(object):
             },
             "pushdeer": {
                 "name": "PushDeer",
-                "img_url": "../static/img/pushdeer.png",
+                "img_url": "../static/img/message/pushdeer.png",
                 "config": {
                     "server": {
                         "id": "pushdeer_server",
@@ -233,7 +225,7 @@ class ModuleConf(object):
             },
             "pushplus": {
                 "name": "PushPlus",
-                "img_url": "../static/img/pushplus.jpg",
+                "img_url": "../static/img/message/pushplus.jpg",
                 "config": {
                     "token": {
                         "id": "pushplus_token",
@@ -272,7 +264,7 @@ class ModuleConf(object):
             },
             "iyuu": {
                 "name": "爱语飞飞",
-                "img_url": "../static/img/iyuu.png",
+                "img_url": "../static/img/message/iyuu.png",
                 "config": {
                     "token": {
                         "id": "iyuumsg_token",
@@ -286,7 +278,7 @@ class ModuleConf(object):
             },
             "slack": {
                 "name": "Slack",
-                "img_url": "../static/img/slack.png",
+                "img_url": "../static/img/message/slack.png",
                 "search_type": SearchType.SLACK,
                 "config": {
                     "bot_token": {
@@ -317,7 +309,7 @@ class ModuleConf(object):
             },
             "gotify": {
                 "name": "Gotify",
-                "img_url": "../static/img/gotify.png",
+                "img_url": "../static/img/message/gotify.png",
                 "config": {
                     "server": {
                         "id": "gotify_server",
@@ -346,7 +338,7 @@ class ModuleConf(object):
             },
             "chanify": {
                 "name": "Chanify",
-                "img_url": "../static/img/chanify.png",
+                "img_url": "../static/img/message/chanify.png",
                 "config": {
                     "server": {
                         "id": "chanify_server",
@@ -368,7 +360,7 @@ class ModuleConf(object):
             },
             "synologychat": {
                 "name": "Synology Chat",
-                "img_url": "../static/img/synologychat.png",
+                "img_url": "../static/img/message/synologychat.png",
                 "search_type": SearchType.SYNOLOGY,
                 "config": {
                     "webhook_url": {
@@ -431,6 +423,10 @@ class ModuleConf(object):
                 "name": "刷流删种",
                 "fuc_name": "brushtask_remove"
             },
+            "auto_remove_torrents": {
+                "name": "自动删种",
+                "fuc_name": "auto_remove_torrents"
+            },
             "mediaserver_message": {
                 "name": "媒体服务",
                 "fuc_name": "mediaserver_message"
@@ -444,9 +440,9 @@ class ModuleConf(object):
 
     # 自动删种配置
     TORRENTREMOVER_DICT = {
-        "Qb": {
+        "qbittorrent": {
             "name": "Qbittorrent",
-            "img_url": "../static/img/qbittorrent.png",
+            "img_url": "../static/img/downloader/qbittorrent.png",
             "downloader_type": DownloaderType.QB,
             "torrent_state": {
                 "downloading": "正在下载_传输数据",
@@ -470,9 +466,9 @@ class ModuleConf(object):
                 "unknown": "未知状态",
             }
         },
-        "Tr": {
+        "transmission": {
             "name": "Transmission",
-            "img_url": "../static/img/transmission.png",
+            "img_url": "../static/img/downloader/transmission.png",
             "downloader_type": DownloaderType.TR,
             "torrent_state": {
                 "downloading": "正在下载",
@@ -522,116 +518,12 @@ class ModuleConf(object):
     DOWNLOADER_CONF = {
         "qbittorrent": {
             "name": "Qbittorrent",
-            "img_url": "../static/img/qbittorrent.png",
-            "background": "bg-blue",
-            "test_command": "app.downloader.client.qbittorrent|Qbittorrent",
-            "config": {
-                "qbhost": {
-                    "id": "qbittorrent.qbhost",
-                    "required": True,
-                    "title": "IP地址",
-                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
-                    "type": "text",
-                    "placeholder": "127.0.0.1"
-                },
-                "qbport": {
-                    "id": "qbittorrent.qbport",
-                    "required": True,
-                    "title": "端口",
-                    "type": "text",
-                    "placeholder": "8080"
-                },
-                "qbusername": {
-                    "id": "qbittorrent.qbusername",
-                    "required": True,
-                    "title": "用户名",
-                    "type": "text",
-                    "placeholder": "admin"
-                },
-                "qbpassword": {
-                    "id": "qbittorrent.qbpassword",
-                    "required": False,
-                    "title": "密码",
-                    "type": "password",
-                    "placeholder": "adminadmin"
-                },
-                "force_upload": {
-                    "id": "qbittorrent.force_upload",
-                    "required": False,
-                    "title": "自动强制作种",
-                    "tooltip": "开启后下载文件转移完成时会自动将对应种子设置为强制做种状态，需在基础设置中开启下载软件监控功能",
-                    "type": "switch"
-                },
-                "auto_management": {
-                    "id": "qbittorrent.auto_management",
-                    "required": False,
-                    "title": "自动管理模式",
-                    "tooltip": "开启后下载目录将由Qbittorrent自动管理，不再使用NASTool传递的下载目录，需要同时在下载目录设置中配置好分类标签",
-                    "type": "switch"
-                }
-            }
-        },
-        "transmission": {
-            "name": "Transmission",
-            "img_url": "../static/img/transmission.png",
-            "background": "bg-danger",
-            "test_command": "app.downloader.client.transmission|Transmission",
-            "config": {
-                "trhost": {
-                    "id": "transmission.trhost",
-                    "required": True,
-                    "title": "IP地址",
-                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
-                    "type": "text",
-                    "placeholder": "127.0.0.1"
-                },
-                "trport": {
-                    "id": "transmission.trport",
-                    "required": True,
-                    "title": "端口",
-                    "type": "text",
-                    "placeholder": "9091"
-                },
-                "trusername": {
-                    "id": "transmission.trusername",
-                    "required": True,
-                    "title": "用户名",
-                    "type": "text",
-                    "placeholder": "admin"
-                },
-                "trpassword": {
-                    "id": "transmission.trpassword",
-                    "required": False,
-                    "title": "密码",
-                    "type": "password",
-                    "placeholder": ""
-                }
-            }
-        },
-        "client115": {
-            "name": "115网盘",
-            "img_url": "../static/img/115.jpg",
-            "background": "bg-azure",
-            "test_command": "app.downloader.client.client115|Client115",
-            "config": {
-                "cookie": {
-                    "id": "client115.cookie",
-                    "required": True,
-                    "title": "Cookie",
-                    "tooltip": "115网盘Cookie，通过115网盘网页端抓取Cookie",
-                    "type": "text",
-                    "placeholder": "USERSESSIONID=xxx;115_lang=zh;UID=xxx;CID=xxx;SEID=xxx"
-                }
-            }
-        },
-        "aria2": {
-            "name": "Aria2",
-            "img_url": "../static/img/aria2.png",
-            "background": "bg-green",
-            "test_command": "app.downloader.client.aria2|Aria2",
+            "img_url": "../static/img/downloader/qbittorrent.png",
+            "monitor_enable": True,
+            "speedlimit_enable": True,
             "config": {
                 "host": {
-                    "id": "aria2.host",
+                    "id": "qbittorrent_host",
                     "required": True,
                     "title": "IP地址",
                     "tooltip": "配置IP地址，如为https则需要增加https://前缀",
@@ -639,60 +531,72 @@ class ModuleConf(object):
                     "placeholder": "127.0.0.1"
                 },
                 "port": {
-                    "id": "aria2.port",
+                    "id": "qbittorrent_port",
                     "required": True,
                     "title": "端口",
                     "type": "text",
-                    "placeholder": "6800"
+                    "placeholder": "8080"
                 },
-                "secret": {
-                    "id": "aria2.secret",
-                    "required": True,
-                    "title": "令牌",
-                    "type": "text",
-                    "placeholder": ""
-                }
-            }
-        },
-        "pikpak": {
-            "name": "PikPak",
-            "img_url": "../static/img/pikpak.png",
-            "background": "bg-indigo",
-            "test_command": "app.downloader.client.pikpak|PikPak",
-            "config": {
                 "username": {
-                    "id": "pikpak.username",
+                    "id": "qbittorrent_username",
                     "required": True,
                     "title": "用户名",
-                    "tooltip": "用户名",
                     "type": "text",
-                    "placeholder": ""
+                    "placeholder": "admin"
                 },
                 "password": {
-                    "id": "pikpak.password",
-                    "required": True,
-                    "title": "密码",
-                    "tooltip": "密码",
-                    "type": "password",
-                    "placeholder": ""
-                },
-                "proxy": {
-                    "id": "pikpak.proxy",
+                    "id": "qbittorrent_password",
                     "required": False,
-                    "title": "代理",
-                    "tooltip": "如果需要代理才能访问pikpak可以在此处填入代理地址",
-                    "type": "text",
-                    "placeholder": "127.0.0.1:7890"
+                    "title": "密码",
+                    "type": "password",
+                    "placeholder": "password"
                 }
             }
         },
+        "transmission": {
+            "name": "Transmission",
+            "img_url": "../static/img/downloader/transmission.png",
+            "monitor_enable": True,
+            "speedlimit_enable": True,
+            "config": {
+                "host": {
+                    "id": "transmission_host",
+                    "required": True,
+                    "title": "IP地址",
+                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
+                    "type": "text",
+                    "placeholder": "127.0.0.1"
+                },
+                "port": {
+                    "id": "transmission_port",
+                    "required": True,
+                    "title": "端口",
+                    "type": "text",
+                    "placeholder": "9091"
+                },
+                "username": {
+                    "id": "transmission_username",
+                    "required": True,
+                    "title": "用户名",
+                    "type": "text",
+                    "placeholder": "admin"
+                },
+                "password": {
+                    "id": "transmission_password",
+                    "required": False,
+                    "title": "密码",
+                    "type": "password",
+                    "placeholder": "password"
+                }
+            }
+        }
     }
 
     # 媒体服务器
     MEDIASERVER_CONF = {
         "emby": {
             "name": "Emby",
-            "img_url": "../static/img/emby.png",
+            "img_url": "../static/img/mediaserver/emby.png",
             "background": "bg-green",
             "test_command": "app.mediaserver.client.emby|Emby",
             "config": {
@@ -716,7 +620,7 @@ class ModuleConf(object):
         },
         "jellyfin": {
             "name": "Jellyfin",
-            "img_url": "../static/img/jellyfin.jpg",
+            "img_url": "../static/img/mediaserver/jellyfin.jpg",
             "background": "bg-purple",
             "test_command": "app.mediaserver.client.jellyfin|Jellyfin",
             "config": {
@@ -740,7 +644,7 @@ class ModuleConf(object):
         },
         "plex": {
             "name": "Plex",
-            "img_url": "../static/img/plex.png",
+            "img_url": "../static/img/mediaserver/plex.png",
             "background": "bg-yellow",
             "test_command": "app.mediaserver.client.plex|Plex",
             "config": {
@@ -916,9 +820,9 @@ class ModuleConf(object):
                 "type": "dropdown",
                 "options": [{'value': '', 'name': '默认'},
                             {'value': 'U', 'name': '综合排序'},
-                            {'value': 'T', 'name': '首播时间'},
+                            {'value': 'T', 'name': '近期热度'},
                             {'value': 'S', 'name': '高分优先'},
-                            {'value': 'R', 'name': '近期热度'}]
+                            {'value': 'R', 'name': '首播时间'}]
             },
             "tags": {
                 "name": "类型",
@@ -946,9 +850,9 @@ class ModuleConf(object):
                 "type": "dropdown",
                 "options": [{'value': '', 'name': '默认'},
                             {'value': 'U', 'name': '综合排序'},
-                            {'value': 'T', 'name': '首播时间'},
+                            {'value': 'T', 'name': '近期热度'},
                             {'value': 'S', 'name': '高分优先'},
-                            {'value': 'R', 'name': '近期热度'}]
+                            {'value': 'R', 'name': '首播时间'}]
             },
             "tags": {
                 "name": "地区",

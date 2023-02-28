@@ -131,25 +131,26 @@ export class NormalCard extends observeState(CustomElement) {
              style="background-color: rgba(0, 0, 0, 0.5); box-shadow:0 0 0 1px #dddddd;"
              @click=${() => { navmenu(`media_detail?type=${this.media_type}&id=${this.tmdb_id}`) }}>
           <div style="cursor: pointer">
-            ${this.year ? html`<div class="text-white"><strong>${this.site ? this.site : this.year}</strong></div>` : nothing }
+            ${this.year ? html`<div class="text-white" 
+                style="-webkit-line-clamp:1; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;"><strong>${this.site ? this.site : this.year}</strong></div>` : nothing }
             ${this.title
             ? html`
               <h2 class="lh-sm text-white"
-                  style="margin-bottom: 5px; -webkit-line-clamp:3; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
+                  style="margin-bottom: 5px; -webkit-line-clamp:2; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
                 <strong>${this.title}</strong>
               </h2>`
             : nothing }
             ${this.overview
             ? html`
               <p class="lh-sm text-white"
-                 style="margin-bottom: 5px; -webkit-line-clamp:6; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
+                 style="margin-bottom: 5px; -webkit-line-clamp:4; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
                 ${this.overview}
               </p>`
             : nothing }
             ${this.date
             ? html`
               <p class="lh-sm text-white"
-                style="margin-bottom: 5px; -webkit-line-clamp:4; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
+                style="margin-bottom: 5px; -webkit-line-clamp:1; display: -webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow: ellipsis;">
                 <small>${this.date}</small>
               </p>`
             : nothing }

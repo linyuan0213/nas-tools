@@ -156,6 +156,17 @@
                 </div>
               </div>
             </div>
+            <div class="row">
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="app.releases_update_only" {% if
+                      Config.app.releases_update_only %}checked{% endif %}>
+                    <span class="form-check-label">仅检查Releases更新 <span class="form-help" title="开启后，只有Releases更新，才会有更新提示" data-bs-toggle="tooltip">?</span></span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="card-footer">
             <div class="row align-items-center">
@@ -330,17 +341,6 @@
               <div class="col-lg">
                 <div class="mb-3">
                   <label class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="media.refresh_mediaserver" {% if
-                      Config.media.refresh_mediaserver %}checked{% endif %}>
-                    <span class="form-check-label">实时刷新媒体库 <span class="form-help"
-                                                                        title="开启后，文件转移完成时会实时刷新媒体服务器（Emby/Jellyfin/Plex）的媒体库"
-                                                                        data-bs-toggle="tooltip">?</span></span>
-                  </label>
-                </div>
-              </div>
-              <div class="col-lg">
-                <div class="mb-3">
-                  <label class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="media.nfo_poster"
                            {% if Config.media.nfo_poster %}checked{% endif %}>
                     <span class="form-check-label">刮削元数据及图片 <span class="form-help"
@@ -360,12 +360,6 @@
                 <a href="javascript:void(0)" class="btn d-sm-none btn-icon" data-bs-toggle="modal" data-bs-target="#modal-scraper" title="刮削设置">
                   {{ SVG.slideshow() }}
                 </a>
-                <a href="javascript:void(0)" class="btn d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modal-release-groups">
-                  自定义制作组/字幕组
-                </a>
-                <a href="javascript:void(0)" class="btn d-sm-none btn-icon" data-bs-toggle="modal" data-bs-target="#modal-release-groups" title="自定义制作组/字幕组">
-                  {{ SVG.tex() }}
-                </a>
               </div>
               <div class="col"></div>
               <div class="col-auto">
@@ -377,6 +371,7 @@
           </div>
         </div>
       </div>
+      {% if CurrentUser.level >= 2 %}
       <div class="col-md-12">
         <div class="card" id="basic_service">
           <div class="card-header">
@@ -425,28 +420,6 @@
               <div class="col-xl">
                 <div class="mb-3">
                   <label class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="pt.pt_monitor"
-                           {% if Config.pt.pt_monitor %}checked{% endif %}>
-                    <span class="form-check-label">下载软件监控 <span class="form-help"
-                                                                      title="监控下载软件，下载完成后自动进行文件转移，与目录同步监控下载目录二选一开启"
-                                                                      data-bs-toggle="tooltip">?</span></span>
-                  </label>
-                </div>
-              </div>
-              <div class="col-xl">
-                <div class="mb-3">
-                  <label class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="pt.pt_monitor_only" {% if
-                      Config.pt.pt_monitor_only %}checked{% endif %}>
-                    <span class="form-check-label">只管理NAStool添加的下载 <span class="form-help"
-                                                                                 title="启用后只有含NASTOOL标签的下载任务才会被自动转移和显示，关闭则下载软件中所有的任务都会转移和显示；仅支持Qbittorrent、Transmission下载器"
-                                                                                 data-bs-toggle="tooltip">?</span></span>
-                  </label>
-                </div>
-              </div>
-              <div class="col-xl">
-                <div class="mb-3">
-                  <label class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="pt.search_auto"
                            {% if Config.pt.search_auto %}checked{% endif %}>
                     <span class="form-check-label">远程搜索自动择优下载 <span class="form-help"
@@ -480,6 +453,7 @@
           </div>
         </div>
       </div>
+    {% endif %}
       <div class="col-md-12">
         <div class="card" id="security">
           <div class="card-header">
@@ -561,6 +535,7 @@
           </div>
         </div>
       </div>
+      {% if CurrentUser.level >= 2 %}
       <div class="col-md-12">
         <div class="card" id="laboratory">
           <div class="card-header">
@@ -648,6 +623,7 @@
           </div>
         </div>
       </div>
+    {% endif %}
     </div>
   </div>
 </div>
@@ -985,9 +961,18 @@
                 <div class="col-12 col-lg-3">
                   <div class="mb-3">
                     <label class="form-check">
-                      <input class="form-check-input" type="checkbox" id="scraper_pic.tv.episode_thumb" {% if
+                      <input class="form-check-input" type="checkbox" id="scraper_pic.tv.episode_thumb" onclick="open_ffmpeg_div('modal_episode_thumb_ffmpeg')" {% if
                         Config.scraper_pic and Config.scraper_pic.tv.episode_thumb %}checked{% endif %}>
-                      <span class="form-check-label">thumb <span class="form-help" title="开启后将生成集缩略图，优先查询TMDB，如TMDB无数据则读取视频文件生成（需要ffmpeg，最新完整版Docker镜像已包含，lite版本镜像默认不支持该功能）" data-bs-toggle="tooltip">?</span></span>
+                      <span class="form-check-label">thumb <span class="form-help" title="开启后将查询TMDB生成集缩略图" data-bs-toggle="tooltip">?</span></span>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-3 {% if not Config.scraper_pic or not Config.scraper_pic.tv.episode_thumb %}d-none{% endif %}" id="modal_episode_thumb_ffmpeg">
+                  <div class="mb-3">
+                    <label class="form-check">
+                      <input class="form-check-input" type="checkbox" id="scraper_pic.tv.episode_thumb_ffmpeg" {% if
+                        Config.scraper_pic and Config.scraper_pic.tv.episode_thumb and Config.scraper_pic.tv.episode_thumb_ffmpeg %}checked{% endif %}>
+                      <span class="form-check-label">thumb-ffmpeg <span class="form-help" title="开始后，如TMDB无数据则读取视频文件生成（需要ffmpeg，最新完整版Docker镜像已包含，lite版本镜像默认不支持该功能）" data-bs-toggle="tooltip">?</span></span>
                     </label>
                   </div>
                 </div>
@@ -1045,31 +1030,6 @@
     </div>
   </div>
 </div>
-<div class="modal modal-blur fade" id="modal-release-groups" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">自定义制作组/字幕组 <span class="form-help" title="无法识别的制作组/字幕组在此添加" data-bs-toggle="tooltip">?</span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class='row'>
-          <div class="col-lg-12">
-            <div class="mb-3">
-              <textarea class="form-control" id="release_groups" rows="5" placeholder="多个制作组/字幕组请用;分隔，支持正则表达式，特殊字符注意转义">{{ Config.laboratory.release_groups or '' }}</textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-link me-auto" data-bs-dismiss="modal">取消</button>
-        <a id="release_groups_save_btn" href="javascript:save_release_groups_config()" class="btn btn-primary">
-          保存
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
 <script type="text/javascript">
 
   // CSS编辑器
@@ -1108,16 +1068,6 @@
     $("#modal-scraper").modal("hide");
   }
 
-  // 保存自定义制作组/字幕组配置
-  function save_release_groups_config(){
-    let params = {'laboratory.release_groups': $("#release_groups").val().replace(/;$/g, '')};
-    $("#release_groups_save_btn").text("保存中...").attr("disabled", true);
-    ajax_post("update_config", params, function (ret) {
-      $("#release_groups_save_btn").text("保存").attr("disabled", false);
-    });
-    $("#modal-customized-words").modal("hide");
-  }
-
   // 保存自定义CSS/JavsScript配置
   function save_user_script(){
     let css_text = css_editor.getValue();
@@ -1129,4 +1079,15 @@
     $("#modal-user-script").modal("hide");
   }
 
+  // 选中电视剧-集图片thumb，显示ffmpeg
+  function open_ffmpeg_div(div_id){
+    let ffmpeg_container = $("#"+div_id);
+    let ffmpeg_check = ffmpeg_container.find("input[type='checkbox']");
+    if (ffmpeg_container.hasClass("d-none")){
+      ffmpeg_container.removeClass("d-none");
+    }else{
+      ffmpeg_container.addClass("d-none");
+      ffmpeg_check.prop("checked", false);
+    }
+  }
 </script>

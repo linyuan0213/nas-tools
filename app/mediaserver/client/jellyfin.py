@@ -8,10 +8,15 @@ from app.utils import RequestUtils, SystemUtils, ExceptionUtils
 
 
 class Jellyfin(_IMediaClient):
-    schema = "jellyfin"
-    server_type = MediaServerType.JELLYFIN.value
-    _client_config = {}
+    # 媒体服务器ID
+    client_id = "jellyfin"
+    # 媒体服务器类型
+    client_type = MediaServerType.JELLYFIN
+    # 媒体服务器名称
+    client_name = MediaServerType.JELLYFIN.value
 
+    # 私有属性
+    _client_config = {}
     _apikey = None
     _host = None
     _user = None
@@ -38,7 +43,10 @@ class Jellyfin(_IMediaClient):
 
     @classmethod
     def match(cls, ctype):
-        return True if ctype in [cls.schema, cls.server_type] else False
+        return True if ctype in [cls.client_id, cls.client_type, cls.client_name] else False
+
+    def get_type(self):
+        return self.client_type
 
     def get_status(self):
         """
@@ -58,11 +66,11 @@ class Jellyfin(_IMediaClient):
             if res:
                 return res.json()
             else:
-                log.error(f"【{self.server_type}】Library/VirtualFolders 未获取到返回数据")
+                log.error(f"【{self.client_name}】Library/VirtualFolders 未获取到返回数据")
                 return []
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Library/VirtualFolders 出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Library/VirtualFolders 出错：" + str(e))
             return []
 
     def get_user_count(self):
@@ -77,11 +85,11 @@ class Jellyfin(_IMediaClient):
             if res:
                 return len(res.json())
             else:
-                log.error(f"【{self.server_type}】Users 未获取到返回数据")
+                log.error(f"【{self.client_name}】Users 未获取到返回数据")
                 return 0
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Users出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Users出错：" + str(e))
             return 0
 
     def get_admin_user(self):
@@ -99,10 +107,10 @@ class Jellyfin(_IMediaClient):
                     if user.get("Policy", {}).get("IsAdministrator"):
                         return user.get("Id")
             else:
-                log.error(f"【{self.server_type}】Users 未获取到返回数据")
+                log.error(f"【{self.client_name}】Users 未获取到返回数据")
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Users出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Users出错：" + str(e))
         return None
 
     def get_activity_log(self, num):
@@ -133,11 +141,11 @@ class Jellyfin(_IMediaClient):
                                     "date": SystemUtils.get_local_time(event_date)}
                         ret_array.append(activity)
             else:
-                log.error(f"【{self.server_type}】System/ActivityLog/Entries 未获取到返回数据")
+                log.error(f"【{self.client_name}】System/ActivityLog/Entries 未获取到返回数据")
                 return []
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接System/ActivityLog/Entries出错：" + str(e))
+            log.error(f"【{self.client_name}】连接System/ActivityLog/Entries出错：" + str(e))
             return []
         return ret_array
 
@@ -154,11 +162,11 @@ class Jellyfin(_IMediaClient):
             if res:
                 return res.json()
             else:
-                log.error(f"【{self.server_type}】Items/Counts 未获取到返回数据")
+                log.error(f"【{self.client_name}】Items/Counts 未获取到返回数据")
                 return {}
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Items/Counts出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Items/Counts出错：" + str(e))
             return {}
 
     def __get_jellyfin_series_id_by_name(self, name, year):
@@ -180,38 +188,9 @@ class Jellyfin(_IMediaClient):
                             return res_item.get('Id')
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Items出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Items出错：" + str(e))
             return None
         return ""
-
-    def __get_jellyfin_season_id_by_name(self, name, year, season):
-        """
-        根据名称查询Jellyfin中剧集和季对应季的Id
-        """
-        if not self._host or not self._apikey or not self._user:
-            return None, None
-        series_id = self.__get_jellyfin_series_id_by_name(name, year)
-        if series_id is None:
-            return None, None
-        if not series_id:
-            return "", ""
-        if not season:
-            season = 1
-        req_url = "%sShows/%s/Seasons?api_key=%s&userId=%s" % (
-            self._host, series_id, self._apikey, self._user)
-        try:
-            res = RequestUtils().get_res(req_url)
-            if res:
-                res_items = res.json().get("Items")
-                if res_items:
-                    for res_item in res_items:
-                        if int(res_item.get('IndexNumber')) == int(season):
-                            return series_id, res_item.get('Id')
-        except Exception as e:
-            ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Shows/Id/Seasons出错：" + str(e))
-            return None, None
-        return "", ""
 
     def get_movies(self, title, year=None):
         """
@@ -238,45 +217,57 @@ class Jellyfin(_IMediaClient):
                             return ret_movies
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Items出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Items出错：" + str(e))
             return None
         return []
 
-    def __get_jellyfin_tv_episodes(self, title, year=None, tmdb_id=None, season=None):
+    def get_tv_episodes(self,
+                        item_id=None,
+                        title=None,
+                        year=None,
+                        tmdb_id=None,
+                        season=None):
         """
         根据标题和年份和季，返回Jellyfin中的剧集列表
+        :param item_id: Jellyfin中的剧集ID
         :param title: 标题
-        :param year: 年份，可以为空，为空时不按年份过滤
+        :param year: 年份
         :param tmdb_id: TMDBID
         :param season: 季
         :return: 集号的列表
         """
         if not self._host or not self._apikey or not self._user:
             return None
-        # 电视剧
-        series_id, season_id = self.__get_jellyfin_season_id_by_name(title, year, season)
-        if series_id is None or season_id is None:
-            return None
-        if not series_id or not season_id:
-            return []
-        # 验证tmdbid是否相同
-        item_tmdbid = self.get_iteminfo(series_id).get("ProviderIds", {}).get("Tmdb")
-        if tmdb_id and item_tmdbid:
-            if str(tmdb_id) != str(item_tmdbid):
+        if not item_id:
+            # 查TVID
+            item_id = self.__get_jellyfin_series_id_by_name(title, year)
+            if item_id is None:
+                return None
+            if not item_id:
                 return []
-        req_url = "%sShows/%s/Episodes?seasonId=%s&&userId=%s&isMissing=false&api_key=%s" % (
-            self._host, series_id, season_id, self._user, self._apikey)
+            # 验证tmdbid是否相同
+            item_tmdbid = self.get_iteminfo(item_id).get("ProviderIds", {}).get("Tmdb")
+            if tmdb_id and item_tmdbid:
+                if str(tmdb_id) != str(item_tmdbid):
+                    return []
+        if not season:
+            season = ""
+        req_url = "%sShows/%s/Episodes?season=%s&&userId=%s&isMissing=false&api_key=%s" % (
+            self._host, item_id, season, self._user, self._apikey)
         try:
             res_json = RequestUtils().get_res(req_url)
             if res_json:
                 res_items = res_json.json().get("Items")
                 exists_episodes = []
                 for res_item in res_items:
-                    exists_episodes.append(int(res_item.get("IndexNumber")))
+                    exists_episodes.append({
+                        "season_num": res_item.get("season_num") or 0,
+                        "episode_num": res_item.get("IndexNumber") or 0
+                    })
                 return exists_episodes
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Shows/Id/Episodes出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Shows/Id/Episodes出错：" + str(e))
             return None
         return []
 
@@ -290,9 +281,16 @@ class Jellyfin(_IMediaClient):
         """
         if not self._host or not self._apikey:
             return None
-        exists_episodes = self.__get_jellyfin_tv_episodes(meta_info.title, meta_info.year, meta_info.tmdb_id, season)
+        # 没有季默认为和1季
+        if not season:
+            season = 1
+        exists_episodes = self.get_tv_episodes(title=meta_info.title,
+                                               year=meta_info.year,
+                                               tmdb_id=meta_info.tmdb_id,
+                                               season=season)
         if not isinstance(exists_episodes, list):
             return None
+        exists_episodes = [episode.get("episode_num") for episode in exists_episodes]
         total_episodes = [episode for episode in range(1, total_num + 1)]
         return list(set(total_episodes).difference(set(exists_episodes)))
 
@@ -314,11 +312,11 @@ class Jellyfin(_IMediaClient):
                     if image.get("ProviderName") == "TheMovieDb" and image.get("Type") == image_type:
                         return image.get("Url")
             else:
-                log.error(f"【{self.server_type}】Items/RemoteImages 未获取到返回数据")
+                log.error(f"【{self.client_name}】Items/RemoteImages 未获取到返回数据")
                 return None
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Items/Id/RemoteImages出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Items/Id/RemoteImages出错：" + str(e))
             return None
         return None
 
@@ -334,15 +332,15 @@ class Jellyfin(_IMediaClient):
             if res:
                 return True
             else:
-                log.info(f"【{self.server_type}】刷新媒体库失败，无法连接Jellyfin！")
+                log.info(f"【{self.client_name}】刷新媒体库失败，无法连接Jellyfin！")
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Library/Refresh出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Library/Refresh出错：" + str(e))
             return False
 
     def refresh_library_by_items(self, items):
         """
-        按类型、名称、年份来刷新媒体库，Jellyfin没有刷单个项目的API，这里直接刷新整库
+        按类型、名称、年份来刷新媒体库，Jellyfin没有刷单个项目的API，这里直接刷新整个库
         :param items: 已识别的需要刷新媒体库的媒体信息列表
         """
         # 没找到单项目刷新的对应的API，先按全库刷新
@@ -414,11 +412,35 @@ class Jellyfin(_IMediaClient):
                             yield item
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.server_type}】连接Users/Items出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Users/Items出错：" + str(e))
         yield {}
 
     def get_playing_sessions(self):
         """
         获取正在播放的会话
         """
-        pass
+        if not self._host or not self._apikey:
+            return []
+        playing_sessions = []
+        req_url = "%sSessions?api_key=%s" % (self._host, self._apikey)
+        try:
+            res = RequestUtils().get_res(req_url)
+            if res and res.status_code == 200:
+                sessions = res.json()
+                for session in sessions:
+                    if session.get("NowPlayingItem"):
+                        playing_sessions.append(session)
+            return playing_sessions
+        except Exception as e:
+            ExceptionUtils.exception_traceback(e)
+            return []
+
+    def get_webhook_message(self, message):
+        """
+        解析Jellyfin报文
+        """
+        eventItem = {'event': message.get('NotificationType', ''),
+                     'item_name': message.get('Name'),
+                     'user_name': message.get('NotificationUsername')
+                     }
+        return eventItem

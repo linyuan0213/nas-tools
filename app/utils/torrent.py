@@ -1,36 +1,13 @@
+import datetime
 import os.path
 import re
-import datetime
-from urllib.parse import quote, unquote
+from urllib.parse import unquote
 
 from bencode import bdecode
 
 from app.utils.http_utils import RequestUtils
+from app.utils.types import MediaType
 from config import Config
-
-# Trackers列表
-trackers = [
-    "udp://tracker.opentrackr.org:1337/announce",
-    "udp://9.rarbg.com:2810/announce",
-    "udp://opentracker.i2p.rocks:6969/announce",
-    "https://opentracker.i2p.rocks:443/announce",
-    "udp://tracker.torrent.eu.org:451/announce",
-    "udp://tracker1.bt.moack.co.kr:80/announce",
-    "udp://tracker.pomf.se:80/announce",
-    "udp://tracker.moeking.me:6969/announce",
-    "udp://tracker.dler.org:6969/announce",
-    "udp://p4p.arenabg.com:1337/announce",
-    "udp://open.stealth.si:80/announce",
-    "udp://movies.zsw.ca:6969/announce",
-    "udp://ipv4.tracker.harry.lu:80/announce",
-    "udp://explodie.org:6969/announce",
-    "udp://exodus.desync.com:6969/announce",
-    "https://tracker.nanoha.org:443/announce",
-    "https://tracker.lilithraws.org:443/announce",
-    "https://tr.burnabyhighstar.com:443/announce",
-    "http://tracker.mywaifu.best:6969/announce",
-    "http://bt.okmp3.ru:2710/announce"
-]
 
 
 class Torrent:
@@ -122,38 +99,6 @@ class Torrent:
         return file_path, file_content, ""
 
     @staticmethod
-    def convert_hash_to_magnet(hash_text, title):
-        """
-        根据hash值，转换为磁力链，自动添加tracker
-        :param hash_text: 种子Hash值
-        :param title: 种子标题
-        """
-        if not hash_text or not title:
-            return None
-        hash_text = re.search(r'[0-9a-z]+', hash_text, re.IGNORECASE)
-        if not hash_text:
-            return None
-        hash_text = hash_text.group(0)
-        ret_magnet = f'magnet:?xt=urn:btih:{hash_text}&dn={quote(title)}'
-        for tracker in trackers:
-            ret_magnet = f'{ret_magnet}&tr={quote(tracker)}'
-        return ret_magnet
-
-    @staticmethod
-    def add_trackers_to_magnet(url, title=None):
-        """
-        添加tracker和标题到磁力链接
-        """
-        if not url or not title:
-            return None
-        ret_magnet = url
-        if title and url.find("&dn=") == -1:
-            ret_magnet = f'{ret_magnet}&dn={quote(title)}'
-        for tracker in trackers:
-            ret_magnet = f'{ret_magnet}&tr={quote(tracker)}'
-        return ret_magnet
-
-    @staticmethod
     def get_torrent_files(path):
         """
         解析Torrent文件，获取文件清单
@@ -216,16 +161,6 @@ class Torrent:
         return file_name
 
     @staticmethod
-    def get_magnet_title(url):
-        """
-        从磁力链接中获取标题
-        """
-        if not url:
-            return ""
-        title = re.findall(r"dn=(.+)&?", url)
-        return unquote(title[0]) if title else ""
-
-    @staticmethod
     def get_intersection_episodes(target, source, title):
         """
         对两个季集字典进行判重，有相同项目的取集的交集
@@ -257,3 +192,47 @@ class Torrent:
             target[title][index]["episodes"] = target_episodes
         return target
 
+    @staticmethod
+    def get_download_list(media_list, download_order):
+        """
+        对媒体信息进行排序、去重
+        """
+        if not media_list:
+            return []
+
+        # 排序函数，标题、站点、资源类型、做种数量
+        def get_sort_str(x):
+            season_len = str(len(x.get_season_list())).rjust(2, '0')
+            episode_len = str(len(x.get_episode_list())).rjust(4, '0')
+            # 排序：标题、资源类型、站点、做种、季集
+            if download_order == "seeder":
+                return "%s%s%s%s%s" % (str(x.title).ljust(100, ' '),
+                                       str(x.res_order).rjust(3, '0'),
+                                       str(x.seeders).rjust(10, '0'),
+                                       str(x.site_order).rjust(3, '0'),
+                                       "%s%s" % (season_len, episode_len))
+            else:
+                return "%s%s%s%s%s" % (str(x.title).ljust(100, ' '),
+                                       str(x.res_order).rjust(3, '0'),
+                                       str(x.site_order).rjust(3, '0'),
+                                       str(x.seeders).rjust(10, '0'),
+                                       "%s%s" % (season_len, episode_len))
+
+        # 匹配的资源中排序分组选最好的一个下载
+        # 按站点顺序、资源匹配顺序、做种人数下载数逆序排序
+        media_list = sorted(media_list, key=lambda x: get_sort_str(x), reverse=True)
+        # 控重
+        can_download_list_item = []
+        can_download_list = []
+        # 排序后重新加入数组，按真实名称控重，即只取每个名称的第一个
+        for t_item in media_list:
+            # 控重的主链是名称、年份、季、集
+            if t_item.type != MediaType.MOVIE:
+                media_name = "%s%s" % (t_item.get_title_string(),
+                                       t_item.get_season_episode_string())
+            else:
+                media_name = t_item.get_title_string()
+            if media_name not in can_download_list:
+                can_download_list.append(media_name)
+                can_download_list_item.append(t_item)
+        return can_download_list_item

@@ -12,6 +12,7 @@ class Jackett(_IIndexClient):
     schema = "jackett"
     _client_config = {}
     index_type = IndexerType.JACKETT.value
+    client_type = IndexerType.JACKETT
     _password = None
 
     def __init__(self, config=None):
@@ -32,6 +33,10 @@ class Jackett(_IIndexClient):
                     self.host = "http://" + self.host
                 if not self.host.endswith('/'):
                     self.host = self.host + "/"
+
+
+    def get_type(self):
+        return self.client_type
 
     def get_status(self):
         """

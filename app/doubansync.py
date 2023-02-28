@@ -8,7 +8,6 @@ from app.downloader import Downloader
 from app.helper import DbHelper
 from app.media import Media, DouBan
 from app.media.meta import MetaInfo
-from app.message import Message
 from app.searcher import Searcher
 from app.subscribe import Subscribe
 from app.utils import ExceptionUtils
@@ -33,16 +32,15 @@ class DoubanSync:
     _types = None
 
     def __init__(self):
+        self.init_config()
+
+    def init_config(self):
         self.douban = DouBan()
         self.searcher = Searcher()
         self.downloader = Downloader()
         self.media = Media()
-        self.message = Message()
         self.dbhelper = DbHelper()
         self.subscribe = Subscribe()
-        self.init_config()
-
-    def init_config(self):
         douban = Config().get_config('douban')
         if douban:
             # 同步间隔
@@ -122,16 +120,14 @@ class DoubanSync:
                                                                                 name=media.get_name(),
                                                                                 year=media.year,
                                                                                 season=media.begin_season,
-                                                                                mediaid=f"DB:{media.douban_id}")
+                                                                                mediaid=f"DB:{media.douban_id}",
+                                                                                in_from=SearchType.DB)
                                 if code != 0:
                                     log.error("【Douban】%s 添加订阅失败：%s" % (media.get_name(), msg))
                                     # 订阅已存在
                                     if code == 9:
                                         self.dbhelper.insert_douban_media_state(media, "RSS")
                                 else:
-                                    # 发送订阅消息
-                                    self.message.send_rss_success_message(in_from=SearchType.DB,
-                                                                          media_info=media)
                                     # 插入为已RSS状态
                                     self.dbhelper.insert_douban_media_state(media, "RSS")
                         else:
@@ -145,16 +141,14 @@ class DoubanSync:
                                                                                 year=media.year,
                                                                                 season=media.begin_season,
                                                                                 mediaid=f"DB:{media.douban_id}",
-                                                                                state="R")
+                                                                                state="R",
+                                                                                in_from=SearchType.DB)
                                 if code != 0:
                                     log.error("【Douban】%s 添加订阅失败：%s" % (media.get_name(), msg))
                                     # 订阅已存在
                                     if code == 9:
                                         self.dbhelper.insert_douban_media_state(media, "RSS")
                                 else:
-                                    # 发送订阅消息
-                                    self.message.send_rss_success_message(in_from=SearchType.DB,
-                                                                          media_info=media)
                                     # 插入为已RSS状态
                                     self.dbhelper.insert_douban_media_state(media, "RSS")
                             elif not search_state:

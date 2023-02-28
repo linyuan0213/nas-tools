@@ -476,6 +476,18 @@ class Media:
                 return None
         return None
 
+    def search_tmdb_person(self, name):
+        """
+        搜索TMDB演员信息
+        """
+        if not self.search:
+            return []
+        try:
+            return self.__dict_tmdbpersons(self.search.people({"query": name}))
+        except Exception as err:
+            print(str(err))
+            return []
+
     def get_tmdb_info(self, mtype: MediaType,
                       tmdbid,
                       language=None,
@@ -892,6 +904,25 @@ class Media:
                 log.error("【Rmt】发生错误：%s - %s" % (str(err), traceback.format_exc()))
         # 循环结束
         return return_media_infos
+
+    @staticmethod
+    def __dict_tmdbpersons(infos):
+        """
+        TMDB人员信息转为字典
+        """
+        if not infos:
+            return []
+        ret_infos = []
+        for info in infos:
+            tmdbid = info.get("id")
+            name = info.get("name")
+            image = TMDB_IMAGE_FACE_URL % info.get("profile_path") if info.get("profile_path") else ""
+            ret_infos.append({
+                "id": tmdbid,
+                "name": name,
+                "image": image
+            })
+        return ret_infos
 
     @staticmethod
     def __dict_tmdbinfos(infos, mtype=None):
@@ -1396,7 +1427,21 @@ class Media:
         """
         if not tv_info:
             return []
-        return tv_info.get("seasons") or []
+        ret_info = []
+        for info in tv_info.get("seasons") or []:
+            if not info.get("season_number"):
+                continue
+            ret_info.append({
+                "air_date": info.get("air_date"),
+                "episode_count": info.get("episode_count"),
+                "id": info.get("id"),
+                "name": info.get("name"),
+                "overview": info.get("overview"),
+                "poster_path": TMDB_IMAGE_W500_URL % info.get("poster_path") if info.get("poster_path") else "",
+                "season_number": info.get("season_number")
+            })
+        ret_info.reverse()
+        return ret_info
 
     def get_tmdb_season_episodes(self, tmdbid, season: int):
         """
@@ -1429,10 +1474,41 @@ class Media:
         season_info = self.get_tmdb_tv_season_detail(tmdbid=tmdbid, season=season)
         if not season_info:
             return []
-        return season_info.get("episodes") or []
+        ret_info = []
+        for info in season_info.get("episodes") or []:
+            ret_info.append({
+                "air_date": info.get("air_date"),
+                "episode_number": info.get("episode_number"),
+                "id": info.get("id"),
+                "name": info.get("name"),
+                "overview": info.get("overview"),
+                "production_code": info.get("production_code"),
+                "runtime": info.get("runtime"),
+                "season_number": info.get("season_number"),
+                "show_id": info.get("show_id"),
+                "still_path": TMDB_IMAGE_W500_URL % info.get("still_path") if info.get("still_path") else "",
+                "vote_average": info.get("vote_average")
+            })
+        ret_info.reverse()
+        return ret_info
+
+    def get_tmdb_backdrop(self, mtype, tmdbid):
+        """
+        获取TMDB的背景图
+        """
+        if not tmdbid:
+            return ""
+        tmdbinfo = self.get_tmdb_info(mtype=mtype,
+                                      tmdbid=tmdbid,
+                                      append_to_response="images",
+                                      chinese=False)
+        if not tmdbinfo:
+            return ""
+        results = self.get_tmdb_backdrops(tmdbinfo=tmdbinfo, original=False)
+        return results[0] if results else ""
 
     @staticmethod
-    def get_tmdb_backdrops(tmdbinfo):
+    def get_tmdb_backdrops(tmdbinfo, original=True):
         """
         获取TMDB的背景图
         """
@@ -1480,9 +1556,10 @@ class Media:
         """
         if not tmdbinfo:
             return []
+        prefix_url = TMDB_IMAGE_ORIGINAL_URL if original else TMDB_IMAGE_W500_URL
         backdrops = tmdbinfo.get("images", {}).get("backdrops") or []
-        result = [TMDB_IMAGE_ORIGINAL_URL % backdrop.get("file_path") for backdrop in backdrops]
-        result.append(TMDB_IMAGE_ORIGINAL_URL % tmdbinfo.get("backdrop_path"))
+        result = [prefix_url % backdrop.get("file_path") for backdrop in backdrops]
+        result.append(prefix_url % tmdbinfo.get("backdrop_path"))
         return result
 
     @staticmethod
@@ -1820,20 +1897,22 @@ class Media:
             print(str(e))
         return []
 
-    def get_person_medias(self, personid, mtype, page=1):
+    def get_person_medias(self, personid, mtype=None, page=1):
         """
         查询人物相关影视作品
         """
         if not self.person:
             return []
-        result = []
         try:
             if mtype == MediaType.MOVIE:
                 movies = self.person.movie_credits(person_id=personid) or []
                 result = self.__dict_tmdbinfos(movies, mtype)
-            elif mtype == MediaType.TV:
+            elif mtype:
                 tvs = self.person.tv_credits(person_id=personid) or []
                 result = self.__dict_tmdbinfos(tvs, mtype)
+            else:
+                medias = self.person.combined_credits(person_id=personid) or []
+                result = self.__dict_tmdbinfos(medias)
             return result[(page - 1) * 20: page * 20]
         except Exception as e:
             print(str(e))
@@ -2017,14 +2096,10 @@ class Media:
         """
         获取TMDB热门电影随机一张背景图
         """
+        if not self.discover:
+            return ""
         try:
-            # 随机类型
-            mtype = MediaType.MOVIE if random.uniform(0, 1) > 0.5 else MediaType.TV
-            # 热门电影/电视剧
-            if mtype == MediaType.MOVIE:
-                medias = self.discover.discover_movies(params={"sort_by": "popularity.desc"})
-            else:
-                medias = self.discover.discover_tv_shows(params={"sort_by": "popularity.desc"})
+            medias = self.discover.discover_movies(params={"sort_by": "popularity.desc"})
             if medias:
                 backdrops = [media.get("backdrop_path") for media in medias if media.get("backdrop_path")]
                 # 随机一张
@@ -2090,12 +2165,14 @@ class Media:
         """
         if not self.episode:
             return ""
+        if not tv_id or not season_id or not episode_id:
+            return ""
         res = self.episode.images(tv_id, season_id, episode_id)
         if res:
             if orginal:
-                return TMDB_IMAGE_ORIGINAL_URL % res[0].get("file_path")
+                return TMDB_IMAGE_ORIGINAL_URL % res[-1].get("file_path")
             else:
-                return TMDB_IMAGE_W500_URL % res[0].get("file_path")
+                return TMDB_IMAGE_W500_URL % res[-1].get("file_path")
         else:
             return ""
 
@@ -2117,11 +2194,13 @@ class Media:
         if revenue:
             result.append({"收入": StringUtils.str_amount(revenue)})
         budget = media_info.tmdb_info.get("budget")
-        if media_info.vote_average:
-            result.append({"成本": StringUtils.str_amount(budget)})
         if budget:
+            result.append({"成本": StringUtils.str_amount(budget)})
+        if media_info.original_language:
             result.append({"原始语言": media_info.original_language})
         production_country = self.get_get_production_country_names(tmdbinfo=media_info.tmdb_info)
+        if media_info.networks:
+            result.append({"电视网": media_info.networks})
         if production_country:
             result.append({"出品国家": production_country}),
         production_company = self.get_tmdb_production_company_names(tmdbinfo=media_info.tmdb_info)

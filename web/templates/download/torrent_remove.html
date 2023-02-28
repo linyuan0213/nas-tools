@@ -31,17 +31,14 @@
       {% for Id, Attr in TorrentRemoveTasks.items() %}
       <div class="card">
         <div class="card-header">
-          <a href="javascript:$(`#detail_{{ Attr.id }}`).slideToggle()"
-             title="展开/折叠"  data-bs-toggle="tooltip">
-            <div>
-              {% if Attr.enabled %}
-              <span class="badge bg-green"></span>
-              {% else %}
-              <span class="badge bg-red"></span>
-              {% endif %}
-            </div>
-          </a>
-          <a href="javascript:$(`#detail_{{ Attr.id }}`).slideToggle()" style="text-decoration-line: none; color: unset"
+          <div>
+            {% if Attr.enabled %}
+            <span class="badge bg-green"></span>
+            {% else %}
+            <span class="badge bg-red"></span>
+            {% endif %}
+          </div>
+          <a href="javascript:show_torrentremove_detail({{ Attr.id }})" style="text-decoration-line: none; color: unset"
              title="展开/折叠" data-bs-toggle="tooltip">
             <div class="ms-3">
                 <h3 class="card-title">{{ Attr.name }}</h3>
@@ -71,7 +68,7 @@
             </button>
           </div>
           <div class="card-actions btn-actions d-none d-sm-block">
-            <a href="javascript:$(`#detail_{{ Attr.id }}`).slideToggle()" class="btn-action"
+            <a href="javascript:show_torrentremove_detail({{ Attr.id }})" class="btn-action"
                title="展开/折叠" data-bs-toggle="tooltip">
               {{ SVG.menu_2() }}
             </a>
@@ -95,17 +92,17 @@
             <div class="datagrid-item">
               <div class="datagrid-title">下载器</div>
               <div class="datagrid-content">
-                <span class="badge me-2 bg-blue">{{ DownloaderConfig[Attr.downloader].name}}</span>
+                <span class="badge mb-1 bg-blue">{{ Attr.downloader_name }}</span>
               </div>
             </div>
             <div class="datagrid-item">
               <div class="datagrid-title">管理限制</div>
               <div class="datagrid-content">
               {% if Attr.onlynastool %}
-                <span class="badge me-2">只管理NAStool添加</span>
+                <span class="badge mb-1">隔离</span>
               {% endif %}
               {% if Attr.samedata %}
-                <span class="badge me-2">处理辅种</span>
+                <span class="badge mb-1">处理辅种</span>
               {% endif %}
               </div>
             </div>
@@ -119,11 +116,11 @@
               <div class="datagrid-title">动作</div>
               <div class="datagrid-content">
                 {% if Attr.action == 1 %}
-                <span class="badge me-2 bg-blue">暂停任务</span>
+                <span class="badge bg-blue">暂停任务</span>
                 {% elif Attr.action == 2 %}
-                <span class="badge me-2 bg-orange">删除任务</span>
+                <span class="badge bg-orange">删除任务</span>
                 {% elif Attr.action == 3 %}
-                <span class="badge me-2 bg-red">删除任务及文件</span>
+                <span class="badge bg-red">删除任务及文件</span>
                 {% endif %}
               </div>
             </div>
@@ -163,7 +160,7 @@
               <div class="datagrid-title">保存路径关键词</div>
               <div class="datagrid-content">
               {% if Attr.config.savepath_key %}
-                <span class="badge me-2 bg-orange">{{ Attr.config.savepath_key }}</span>
+                <span class="badge bg-orange">{{ Attr.config.savepath_key }}</span>
               {% endif %}
               </div>
             </div>
@@ -171,17 +168,17 @@
               <div class="datagrid-title">tracker关键词</div>
               <div class="datagrid-content">
               {% if Attr.config.tracker_key %}
-                <span class="badge me-2 bg-orange">{{ Attr.config.tracker_key }}</span>
+                <span class="badge bg-orange">{{ Attr.config.tracker_key }}</span>
               {% endif %}
               </div>
             </div>
-            {% if Attr.downloader == "Qb" %}
+            {% if Attr.downloader_type == "qbittorrent" %}
               <div class="datagrid-item">
                 <div class="datagrid-title">分类</div>
                 <div class="datagrid-content">
                   {% if Attr.config.qb_category %}
                   {% for Category in Attr.config.qb_category %}
-                  <span class="badge me-2 mb-1">{{ Category }}</span>
+                  <span class="badge mb-1">{{ Category }}</span>
                   {% endfor %}
                   {% endif %}
                 </div>
@@ -191,17 +188,17 @@
                 <div class="datagrid-content">
                   {% if Attr.config.qb_state %}
                   {% for State in Attr.config.qb_state %}
-                  <span class="badge me-2 bg-blue mb-1">{{ State }}</span>
+                  <span class="badge bg-blue mb-1">{{ State }}</span>
                   {% endfor %}
                   {% endif %}
                 </div>
               </div>
-            {% elif Attr.downloader == "Tr" %}
+            {% elif Attr.downloader_type == "transmission" %}
               <div class="datagrid-item">
                 <div class="datagrid-title">错误信息关键词</div>
                 <div class="datagrid-content">
                 {% if Attr.config.tr_error_key %}
-                  <span class="badge me-2 bg-orange">{{ Attr.config.tr_error_key }}</span>
+                  <span class="badge bg-orange">{{ Attr.config.tr_error_key }}</span>
                 {% endif %}
                 </div>
               </div>
@@ -210,7 +207,7 @@
                 <div class="datagrid-content">
                   {% if Attr.config.tr_state %}
                   {% for State in Attr.config.tr_state %}
-                  <span class="badge me-2 bg-blue mb-1">{{ State }}</span>
+                  <span class="badge bg-blue mb-1">{{ State }}</span>
                   {% endfor %}
                   {% endif %}
                 </div>
@@ -220,9 +217,9 @@
               <div class="datagrid-title">状态</div>
               <div class="datagrid-content">
                 {% if Attr.enabled %}
-                <span class="badge me-2 bg-green">正在运行</span>
+                <span class="badge bg-green">正在运行</span>
                 {% else %}
-                <span class="badge me-2 bg-red">已停用</span>
+                <span class="badge bg-red">已停用</span>
                 {% endif %}
               </div>
             </div>
@@ -231,7 +228,7 @@
               <div class="datagrid-content">
                 {% if Attr.config.tags %}
                 {% for Tag in Attr.config.tags %}
-                <span class="badge me-2 mb-1">{{ Tag }}</span>
+                <span class="badge mb-1">{{ Tag }}</span>
                 {% endfor %}
                 {% endif %}
               </div>
@@ -257,16 +254,29 @@
       </div>
       <div class="modal-body">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-6">
             <div class="mb-3">
               <label class="form-label required">名称</label>
-              <input type="text" id="name" class="form-control" placeholder="别名">
+              <input type="text" id="torrent_remove_name" class="form-control" placeholder="别名">
             </div>
           </div>
+          <div class="col-lg-6">
+            <div class="mb-3">
+              <label class="form-label required">下载器</label>
+              <select class="form-select" id="torrent_remove_downloader" onchange="show_torrent_remove_downloader_type($(this).val())">
+                <option value="">请选择</option>
+                {% for Id, Attr in Downloaders.items() %}
+                <option value="{{ Id }}">{{ Attr.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="row">
           <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">动作</label>
-              <select class="form-select" id="action">
+              <select class="form-select" id="torrent_remove_action">
                 <option value="1" selected>暂停种子</option>
                 <option value="2">删除种子</option>
                 <option value="3">删除种子及文件</option>
@@ -277,25 +287,25 @@
             <div class="mb-3">
               <label class="form-label required">运行间隔（分钟） <span class="form-help" title="执行自动删种任务的间隔时间"
                   data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="interval" class="form-control" placeholder="分钟">
+              <input type="text" id="torrent_remove_interval" class="form-control" placeholder="分钟">
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">状态</label>
+              <select class="form-select" id="torrent_remove_enabled">
+                <option value="1">启用</option>
+                <option value="0" selected>停用</option>
+              </select>
             </div>
           </div>
         </div>
         <div class="row">
           <div class="col-lg-4">
             <div class="mb-3">
-              <label class="form-label">状态</label>
-              <select class="form-select" id="enabled">
-                <option value="1">启用</option>
-                <option value="0" selected>停用</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="mb-3">
               <label class="form-label">处理辅种 <span class="form-help" title="若种子名称及大小与满足其他删种条件的种子相同，则一并处理"
                   data-bs-toggle="tooltip">?</span></label>
-              <select class="form-select" id="samedata">
+              <select class="form-select" id="torrent_remove_samedata">
                 <option value="0" selected>否</option>
                 <option value="1" >是</option>
               </select>
@@ -303,12 +313,19 @@
           </div>
           <div class="col-lg-4">
             <div class="mb-3">
-              <label class="form-label">只管理NAStool添加的下载 <span class="form-help" title="只管理含有NASTOOL标签的种子"
+              <label class="form-label">隔离 <span class="form-help" title="只管理含有NASTOOL标签的种子"
                   data-bs-toggle="tooltip">?</span></label>
-              <select class="form-select" id="onlynastool">
+              <select class="form-select" id="torrent_remove_onlynastool">
                 <option value="0">否</option>
                 <option value="1" selected>是</option>
               </select>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">种子大小 <span class="form-help" title="种子大小在设置范围内视为满足该条件，留空为不启用"
+                data-bs-toggle="tooltip">?</span></label>
+              <input type="text" id="torrent_remove_size" class="form-control" placeholder="GB，例如如1-10">
             </div>
           </div>
         </div>
@@ -317,118 +334,87 @@
             <div class="mb-3">
               <label class="form-label">分享率 <span class="form-help" title="种子分享率大于等于设置值视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="ratio" class="form-control" placeholder="保留一位小数">
+              <input type="text" id="torrent_remove_ratio" class="form-control" placeholder="保留一位小数">
             </div>
           </div>
           <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">做种时间 <span class="form-help" title="种子做种时间大于等于设置值视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="seeding_time" class="form-control" placeholder="小时">
+              <input type="text" id="torrent_remove_seeding_time" class="form-control" placeholder="小时">
             </div>
           </div>
           <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">平均上传速度 <span class="form-help" title="种子平均上传速度小于等于设置值视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="upload_avs" class="form-control" placeholder="KB/s">
+              <input type="text" id="torrent_remove_upload_avs" class="form-control" placeholder="KB/s">
             </div>
           </div>
         </div>
         <div class="row">
-          <div class="col-lg-3">
-            <div class="mb-3">
-              <label class="form-label">种子大小 <span class="form-help" title="种子大小在设置范围内视为满足该条件，留空为不启用"
-                data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="size" class="form-control" placeholder="GB，例如如1-10">
-            </div>
-          </div>
-          <div class="col-lg-9">
+          <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">标签 <span class="form-help" title="设置多个标签时，种子包含所有标签视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="tags" class="form-control" placeholder="多个标签用;分隔">
+              <input type="text" id="torrent_remove_tags" class="form-control" placeholder="多个标签用;分隔">
             </div>
           </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6">
+          <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">保存路径关键词 <span class="form-help" title="种子保存路径含有关键词视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="savepath_key" class="form-control" placeholder="支持正则表达式">
+              <input type="text" id="torrent_remove_savepath_key" class="form-control" placeholder="支持正则表达式">
             </div>
           </div>
-          <div class="col-lg-6">
+          <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">tracker关键词 <span class="form-help" title="种子第一个活动tracker含有关键词视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="tracker_key" class="form-control" placeholder="支持正则表达式">
+              <input type="text" id="torrent_remove_tracker_key" class="form-control" placeholder="支持正则表达式">
             </div>
           </div>
         </div>
-        <div class="form-selectgroup-boxes row mb-3">
-          <label class="form-label required">下载器</label>
-          {% for Id, Attr in DownloaderConfig.items() %}
-          <div class="col-lg-6">
-            <div class="mb-1">
-              <label class="form-selectgroup-item" for="downloader_{{ Id }}">
-                <input type="radio" name="downloader" id="downloader_{{ Id }}" value="{{ Id }}" class="form-selectgroup-input" checked>
-                <span class="form-selectgroup-label d-flex align-items-center p-3">
-                  <span class="me-3">
-                    <span class="form-selectgroup-check"></span>
-                  </span>
-                  <span class="form-selectgroup-label-content">
-                    <span class="avatar avatar-sm avatar-thumb avatar-rounded"
-                          style="background-image: url({{ Attr.img_url }})"></span>
-                    <span class="form-selectgroup-title strong mb-1">&nbsp;&nbsp;&nbsp;{{ Attr.name }}</span>
-                  </span>
-                </span>
-              </label>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <div id="qb_config_div" class="row">
+        <div id="div_qb_config" class="row">
           <div class="col-lg-7">
             <div class="mb-3">
               <label class="form-label">种子状态 <span class="form-help"
                 title=
-                "{% for Id, Attr in DownloaderConfig.Qb.torrent_state.items() %}
+                "{% for Id, Attr in DownloaderConfig.qbittorrent.torrent_state.items() %}
                 {{ Id }}：{{ Attr }}<br>
                 {% endfor %}
                 <br>设置多个状态时，种子属于其中任一状态视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip"
                 data-bs-html="true">?</span></label>
-              <input type="text" id="qb_state" class="form-control" placeholder="多个状态用;分隔">
+              <input type="text" id="torrent_remove_qb_state" class="form-control" placeholder="多个状态用;分隔">
             </div>
           </div>
           <div class="col-lg-5">
             <div class="mb-3">
               <label class="form-label">分类 <span class="form-help" title="设置多个分类时，种子属于其中任一分类视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="qb_category" class="form-control" placeholder="多个分类用;分隔">
+              <input type="text" id="torrent_remove_qb_category" class="form-control" placeholder="多个分类用;分隔">
             </div>
           </div>
         </div>
-        <div id="tr_config_div" class="row">
+        <div id="div_tr_config" class="row">
           <div class="col-lg-7">
             <div class="mb-3">
               <label class="form-label">种子状态 <span class="form-help"
-                title="{% for Id, Attr in DownloaderConfig.Tr.torrent_state.items() %}
+                title="{% for Id, Attr in DownloaderConfig.transmission.torrent_state.items() %}
                 {{ Id }}：{{ Attr }}<br>
                 {% endfor %}
                 <br>设置多个状态时，种子属于其中任一状态视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip"
                 data-bs-html="true">?</span></label>
-              <input type="text" id="tr_state" class="form-control" placeholder="多个状态用;分隔">
+              <input type="text" id="torrent_remove_tr_state" class="form-control" placeholder="多个状态用;分隔">
             </div>
           </div>
           <div class="col-lg-5">
             <div class="mb-3">
               <label class="form-label">错误信息关键词 <span class="form-help" title="种子错误信息含有关键词视为满足该条件，留空为不启用"
                 data-bs-toggle="tooltip">?</span></label>
-              <input type="text" id="tr_error_key" class="form-control" placeholder="支持正则表达式">
+              <input type="text" id="torrent_remove_tr_error_key" class="form-control" placeholder="支持正则表达式">
             </div>
           </div>
         </div>
@@ -461,28 +447,46 @@
 </div>
 <script type="text/javascript">
 
+  var DownloaderTypes = {{ Downloaders|safe }};
+
+  // 折叠任务详情
+  function show_torrentremove_detail(taskid) {
+    $(`#detail_${taskid}`).slideToggle();
+  }
+
+  // 重置删种任务表单
+  function reset_torrent_remove_config(){
+    $("#torrent_remove_name").val('');
+    $("#torrent_remove_downloader").val('');
+    $("#torrent_remove_action").val('1');
+    $("#torrent_remove_interval").val('');
+    $("#torrent_remove_enabled").val('0');
+    $("#torrent_remove_samedata").val('0');
+    $("#torrent_remove_onlynastool").val('1');
+    $("#torrent_remove_size").val('');
+    $("#torrent_remove_ratio").val('');
+    $("#torrent_remove_seeding_time").val('');
+    $("#torrent_remove_upload_avs").val('');
+    $("#torrent_remove_tags").val('');
+    $("#torrent_remove_savepath_key").val('');
+    $("#torrent_remove_tracker_key").val('');
+    $("#torrent_remove_qb_category").val('');
+    $("#torrent_remove_qb_state").val('');
+    $("#torrent_remove_tr_error_key").val('');
+    $("#torrent_remove_tr_state").val('');
+  }
+
   // 显示新增任务
   function show_add_torrent_remove_task_modal(){
+    let downloaders = {{ Downloaders|safe }};
+    if (!Object.keys(downloaders).length) {
+      show_fail_modal("请先添加下载器！");
+      return;
+    }
     $("#torrent_remove_task_id").val('');
     $("#modal-torrent-remove-task-title").val('新增删种任务');
-    $("#name").val('');
-    $("#action").val('1');
-    $("#interval").val('');
-    $("#enabled").val('0');
-    $("#samedata").val('0');
-    $("#onlynastool").val('1');
-    $("#size").val('');
-    $("#ratio").val('');
-    $("#seeding_time").val('');
-    $("#upload_avs").val('');
-    $("#tags").val('');
-    $("#savepath_key").val('');
-    $("#tracker_key").val('');
-    show_downloader("Qb");
-    $("#qb_category").val('');
-    $("#qb_state").val('');
-    $("#tr_error_key").val('');
-    $("#tr_state").val('');
+    reset_torrent_remove_config();
+    show_torrent_remove_downloader_type("");
     $("#modal-torrent-remove-task").modal('show');
   }
 
@@ -492,49 +496,40 @@
     ajax_post("get_torrent_remove_task", { tid: tid }, function (ret) {
       if (ret.code == 0) {
         $("#modal-download-setting-title").val('编辑下载设置');
-        $("#name").val(ret.detail.name);
-        $("#action").val(ret.detail.action);
-        $("#interval").val(ret.detail.interval);
-        $("#enabled").val(ret.detail.enabled);
-        $("#samedata").val(ret.detail.samedata);
-        $("#onlynastool").val(ret.detail.onlynastool);
+        reset_torrent_remove_config();
+        $("#torrent_remove_name").val(ret.detail.name);
+        $("#torrent_remove_downloader").val(ret.detail.downloader);
+        $("#torrent_remove_action").val(ret.detail.action);
+        $("#torrent_remove_interval").val(ret.detail.interval);
+        $("#torrent_remove_enabled").val(ret.detail.enabled);
+        $("#torrent_remove_samedata").val(ret.detail.samedata);
+        $("#torrent_remove_onlynastool").val(ret.detail.onlynastool);
         if (ret.detail.config.size.length) {
           let minsize = ret.detail.config.size[0];
           let maxsize = ret.detail.config.size[1];
-          $("#size").val(`${minsize}-${maxsize}`);
+          $("#torrent_remove_size").val(`${minsize}-${maxsize}`);
         } else {
-          $("#size").val('');
+          $("#torrent_remove_size").val('');
         }
         if (ret.detail.config.ratio) {
-          $("#ratio").val(ret.detail.config.ratio);
+          $("#torrent_remove_ratio").val(ret.detail.config.ratio);
         } else {
-          $("#ratio").val('');
+          $("#torrent_remove_ratio").val('');
         }
         if (ret.detail.config.seeding_time) {
-          $("#seeding_time").val(ret.detail.config.seeding_time);
+          $("#torrent_remove_seeding_time").val(ret.detail.config.seeding_time);
         } else {
-          $("#seeding_time").val('');
+          $("#torrent_remove_seeding_time").val('');
         }
         if (ret.detail.config.upload_avs) {
-          $("#upload_avs").val(ret.detail.config.upload_avs);
+          $("#torrent_remove_upload_avs").val(ret.detail.config.upload_avs);
         } else {
-          $("#upload_avs").val('');
+          $("#torrent_remove_upload_avs").val('');
         }
-        $("#tags").val(ret.detail.config.tags.join(';'));
-        $("#savepath_key").val(ret.detail.config.savepath_key);
-        $("#tracker_key").val(ret.detail.config.tracker_key);
-        show_downloader(ret.detail.downloader);
-        if (ret.detail.downloader == "Qb") {
-          $("#qb_category").val(ret.detail.config.qb_category.join(';'));
-          $("#qb_state").val(ret.detail.config.qb_state.join(';'));
-          $("#tr_error_key").val('');
-          $("#tr_state").val('');
-        } else if (ret.detail.downloader == "Tr") {
-          $("#qb_category").val('');
-          $("#qb_state").val('');
-          $("#tr_error_key").val(ret.detail.config.tr_error_key);
-          $("#tr_state").val(ret.detail.config.tr_state.join(';'));
-        }
+        $("#torrent_remove_tags").val(ret.detail.config.tags.join(';'));
+        $("#torrent_remove_savepath_key").val(ret.detail.config.savepath_key);
+        $("#torrent_remove_tracker_key").val(ret.detail.config.tracker_key);
+        show_torrent_remove_downloader_type(ret.detail.downloader, ret.detail.config);
         $("#modal-torrent-remove-task").modal('show');
       }
     });
@@ -542,63 +537,44 @@
 
   // 保存新建/编辑任务
   function add_or_edit_torrent_remove_task(){
-    let tid = $("#torrent_remove_task_id").val();
-    let name = $("#name").val();
-    if (!name) {
-      $("#name").addClass("is-invalid");
+    let config = input_select_GetVal("modal-torrent-remove-task", "torrent_remove_");
+    if (!config.name) {
+      $("#torrent_remove_name").addClass("is-invalid");
       return;
     } else {
-      $("#name").removeClass("is-invalid");
+      $("#torrent_remove_name").removeClass("is-invalid");
     }
-    let interval = $("#interval").val();
-    if (!interval || isNaN(interval)) {
-      $("#interval").addClass("is-invalid");
+    if (!config.interval || isNaN(config.interval)) {
+      $("#torrent_remove_interval").addClass("is-invalid");
       return;
     } else {
-      $("#interval").removeClass("is-invalid");
+      $("#torrent_remove_interval").removeClass("is-invalid");
     }
-    let ratio = $("#ratio").val();
-    if (ratio && isNaN(ratio)) {
-      $("#ratio").addClass("is-invalid");
+    if (config.ratio && isNaN(config.ratio)) {
+      $("#torrent_remove_ratio").addClass("is-invalid");
       return;
     } else {
-      $("#ratio").removeClass("is-invalid");
+      $("#torrent_remove_ratio").removeClass("is-invalid");
     }
-    let seeding_time = $("#seeding_time").val();
-    if (seeding_time && isNaN(seeding_time)) {
-      $("#seeding_time").addClass("is-invalid");
+    if (config.seeding_time && isNaN(config.seeding_time)) {
+      $("#torrent_remove_seeding_time").addClass("is-invalid");
       return;
     } else {
-      $("#seeding_time").removeClass("is-invalid");
+      $("#torrent_remove_seeding_time").removeClass("is-invalid");
     }
-    let upload_avs = $("#upload_avs").val();
-    if (upload_avs && isNaN(upload_avs)) {
-      $("#upload_avs").addClass("is-invalid");
+    if (config.upload_avs && isNaN(config.upload_avs)) {
+      $("#torrent_remove_upload_avs").addClass("is-invalid");
       return;
     } else {
-      $("#upload_avs").removeClass("is-invalid");
+      $("#torrent_remove_upload_avs").removeClass("is-invalid");
     }
-    let params = {
-      tid: tid,
-      name: name,
-      action: $("#action").val(),
-      interval: interval,
-      enabled: $("#enabled").val(),
-      samedata: $("#samedata").val(),
-      onlynastool: $("#onlynastool").val(),
-      ratio: ratio,
-      seeding_time: seeding_time,
-      upload_avs: upload_avs,
-      size: $("#size").val(),
-      tags: $("#tags").val(),
-      savepath_key: $("#savepath_key").val(),
-      tracker_key: $("#tracker_key").val(),
-      downloader: $('input:radio[name=downloader]:checked').val(),
-      qb_state: $("#qb_state").val(),
-      qb_category: $("#qb_category").val(),
-      tr_state: $("#tr_state").val(),
-      tr_error_key: $("#tr_error_key").val(),
-    };
+    if (!config.downloader) {
+      $("#download_setting_downloader").addClass("is-invalid");
+      return;
+    } else {
+      $("#download_setting_downloader").removeClass("is-invalid");
+    }
+    let params = {...{tid: $("#torrent_remove_task_id").val()}, ...config};
     $("#add_or_edit_torrent_remove_task_btn").text("保存中").attr("disabled", true);
     ajax_post("update_torrent_remove_task", params, function (ret) {
       $("#modal-torrent-remove-task").modal('hide');
@@ -616,7 +592,7 @@
 
   // 删除任务
   function delete_torrent_remove_task(tid, name){
-    show_confirm_modal("删除下载设置 " + name + " ？", function () {
+    show_confirm_modal(`删除下载设置 ${name} ？`, function () {
       hide_confirm_modal();
       ajax_post("delete_torrent_remove_task", { "tid": tid }, function (ret) {
         window_history_refresh();
@@ -633,8 +609,8 @@
         let tbody = '';
         for (let torrent of torrents) {
           let tb = `<tr><td><span>${torrent.name}</span>
-                    <br><span class="badge badge-outline text-blue me-1 mb-1">${torrent.site}</span>
-                    <span class="badge badge-outline text-orange me-1 mb-1">${(torrent.size/1024/1024/1024).toFixed(2)} GB</span></td></tr>`;
+                    <br><span class="badge badge-outline text-blue mb-1">${torrent.site}</span>
+                    <span class="badge badge-outline text-orange mb-1">${(torrent.size/1024/1024/1024).toFixed(2)} GB</span></td></tr>`;
           tbody = `${tbody}${tb}`;
         }
         tbody = `<tbody>${tbody}</tbody>`;
@@ -650,23 +626,9 @@
 
   // 单选框事件
   $('input[type=radio][name=downloader]').change(function () {
-     let use = this.value;
-    show_downloader(use);
+    let use = this.value;
+    show_torrent_remove_downloader_type(use);
   });
-
-  // 删种任务下载器
-  function show_downloader(downloader) {
-    if (downloader == 'Qb') {
-      $("#qb_config_div").show();
-      $("#tr_config_div").hide();
-      $("#downloader_Qb").prop("checked", true);
-    }
-    else if (downloader == 'Tr') {
-      $("#qb_config_div").hide();
-      $("#tr_config_div").show();
-      $("#downloader_Tr").prop("checked", true);
-    }
-  }
 
   // 立即运行任务
   function run_torrent_remove_now(tid) {
@@ -675,5 +637,34 @@
         window_history_refresh();
       });
     });
+  }
+
+  // 联动事件
+  function show_torrent_remove_downloader_type(downloader_id, config) {
+    let downloader_type = "";
+    if (downloader_id) {
+      downloader_type = DownloaderTypes[downloader_id].type;
+    }
+    if (config) {
+      $("#torrent_remove_qb_category").val(config.qb_category.join(';'));
+      $("#torrent_remove_qb_state").val(config.qb_state.join(';'));
+      $("#torrent_remove_tr_error_key").val(config.tr_error_key);
+      $("#torrent_remove_tr_state").val(config.tr_state.join(';'));
+    }
+    let qb_config_obj = $("#div_qb_config");
+    let tr_config_obj = $("#div_tr_config");
+    switch (downloader_type) {
+      case 'qbittorrent':
+        qb_config_obj.show();
+        tr_config_obj.hide();
+        break;
+      case 'transmission':
+        qb_config_obj.hide();
+        tr_config_obj.show();
+        break;
+      default:
+        qb_config_obj.hide();
+        tr_config_obj.hide();
+    }
   }
 </script>

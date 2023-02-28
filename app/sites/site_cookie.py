@@ -9,7 +9,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 import log
 from app.helper import ChromeHelper, ProgressHelper, DbHelper, OcrHelper, SiteHelper
 from app.sites.sites import Sites
-from app.conf import SiteConf
+from app.sites.siteconf import SiteConf
 from app.utils import StringUtils, RequestUtils, ExceptionUtils
 from app.utils.commons import singleton
 
@@ -18,6 +18,7 @@ from app.utils.commons import singleton
 class SiteCookie(object):
     progress = None
     sites = None
+    siteconf = None
     ocrhelper = None
     dbhelpter = None
     captcha_code = {}
@@ -29,6 +30,7 @@ class SiteCookie(object):
         self.dbhelpter = DbHelper()
         self.progress = ProgressHelper()
         self.sites = Sites()
+        self.siteconf = SiteConf()
         self.ocrhelper = OcrHelper()
         self.captcha_code = {}
 
@@ -77,10 +79,12 @@ class SiteCookie(object):
             return None, None, "获取源码失败"
         if SiteHelper.is_logged_in(html_text):
             return chrome.get_cookies(), chrome.get_ua(), "已经登录过且Cookie未失效"
+        # 站点配置
+        login_conf = self.siteconf.get_login_conf()
         # 查找用户名输入框
         html = etree.HTML(html_text)
         username_xpath = None
-        for xpath in SiteConf.SITE_LOGIN_XPATH.get("username"):
+        for xpath in login_conf.get("username"):
             if html.xpath(xpath):
                 username_xpath = xpath
                 break
@@ -88,7 +92,7 @@ class SiteCookie(object):
             return None, None, "未找到用户名输入框"
         # 查找密码输入框
         password_xpath = None
-        for xpath in SiteConf.SITE_LOGIN_XPATH.get("password"):
+        for xpath in login_conf.get("password"):
             if html.xpath(xpath):
                 password_xpath = xpath
                 break
@@ -96,20 +100,20 @@ class SiteCookie(object):
             return None, None, "未找到密码输入框"
         # 查找两步验证码
         twostepcode_xpath = None
-        for xpath in SiteConf.SITE_LOGIN_XPATH.get("twostep"):
+        for xpath in login_conf.get("twostep"):
             if html.xpath(xpath):
                 twostepcode_xpath = xpath
                 break
         # 查找验证码输入框
         captcha_xpath = None
-        for xpath in SiteConf.SITE_LOGIN_XPATH.get("captcha"):
+        for xpath in login_conf.get("captcha"):
             if html.xpath(xpath):
                 captcha_xpath = xpath
                 break
         # 查找验证码图片
         captcha_img_url = None
         if captcha_xpath:
-            for xpath in SiteConf.SITE_LOGIN_XPATH.get("captcha_img"):
+            for xpath in login_conf.get("captcha_img"):
                 if html.xpath(xpath):
                     captcha_img_url = html.xpath(xpath)[0]
                     break
@@ -117,7 +121,7 @@ class SiteCookie(object):
                 return None, None, "未找到验证码图片"
         # 查找登录按钮
         submit_xpath = None
-        for xpath in SiteConf.SITE_LOGIN_XPATH.get("submit"):
+        for xpath in login_conf.get("submit"):
             if html.xpath(xpath):
                 submit_xpath = xpath
                 break
@@ -196,7 +200,7 @@ class SiteCookie(object):
         else:
             # 读取错误信息
             error_xpath = None
-            for xpath in SiteConf.SITE_LOGIN_XPATH.get("error"):
+            for xpath in login_conf.get("error"):
                 if html.xpath(xpath):
                     error_xpath = xpath
                     break
@@ -258,7 +262,7 @@ class SiteCookie(object):
                                  text="开始更新 %s Cookie和User-Agent ..." % site.get("name"))
             # 登录页面地址
             baisc_url = StringUtils.get_base_url(site.get("signurl") or site.get("rssurl"))
-            site_conf = self.sites.get_grapsite_conf(url=baisc_url)
+            site_conf = self.siteconf.get_grap_conf(url=baisc_url)
             if site_conf.get("LOGIN"):
                 login_url = "%s/%s" % (baisc_url, site_conf.get("LOGIN"))
             else:

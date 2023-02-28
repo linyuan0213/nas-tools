@@ -151,6 +151,20 @@ class DOUBANMEDIAS(Base):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
+class DOWNLOADER(Base):
+    __tablename__ = 'DOWNLOADER'
+
+    ID = Column(Integer, Sequence('ID'), primary_key=True)
+    NAME = Column(Text)
+    ENABLED = Column(Integer)
+    TYPE = Column(Text)
+    TRANSFER = Column(Integer)
+    ONLY_NASTOOL = Column(Integer)
+    RMT_MODE = Column(Text)
+    CONFIG = Column(Text)
+    DOWNLOAD_DIR = Column(Text)
+
+
 class DOWNLOADHISTORY(Base):
     __tablename__ = 'DOWNLOAD_HISTORY'
 
@@ -163,9 +177,11 @@ class DOWNLOADHISTORY(Base):
     POSTER = Column(Text)
     OVERVIEW = Column(Text)
     TORRENT = Column(Text)
-    ENCLOSURE = Column(Text)
+    ENCLOSURE = Column(Text, index=True)
     SITE = Column(Text)
     DESC = Column(Text)
+    DOWNLOADER = Column(Text)
+    DOWNLOAD_ID = Column(Text, index=True)
     DATE = Column(Text, index=True)
 
     def as_dict(self):
@@ -355,23 +371,6 @@ class SEARCHRESULTINFO(Base):
     NOTE = Column(Text)
 
 
-class SITEBRUSHDOWNLOADERS(Base):
-    __tablename__ = 'SITE_BRUSH_DOWNLOADERS'
-
-    ID = Column(Integer, Sequence('ID'), primary_key=True)
-    NAME = Column(Text)
-    TYPE = Column(Text)
-    HOST = Column(Text)
-    PORT = Column(Text)
-    USERNAME = Column(Text)
-    PASSWORD = Column(Text)
-    SAVE_DIR = Column(Text)
-    NOTE = Column(Text)
-
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-
 class SITEBRUSHTASK(Base):
     __tablename__ = 'SITE_BRUSH_TASK'
 
@@ -383,14 +382,14 @@ class SITEBRUSHTASK(Base):
     REMOVE_RULE = Column(Text)
     SEED_SIZE = Column(Text)
     INTEVAL = Column(Text)
+    LABEL = Column(Text)
     DOWNLOADER = Column(Text)
     TRANSFER = Column(Text)
-    DOWNLOAD_COUNT = Column(Text)
-    REMOVE_COUNT = Column(Text)
-    DOWNLOAD_SIZE = Column(Text)
-    UPLOAD_SIZE = Column(Text)
+    DOWNLOAD_COUNT = Column(Integer)
+    REMOVE_COUNT = Column(Integer)
+    DOWNLOAD_SIZE = Column(Integer)
+    UPLOAD_SIZE = Column(Integer)
     SENDMESSAGE = Column(Text)
-    FORCEUPLOAD = Column(Text)
     STATE = Column(Text)
     LST_MOD_DATE = Column(Text)
 

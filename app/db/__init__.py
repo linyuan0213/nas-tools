@@ -40,5 +40,5 @@ def update_db():
         alembic_cfg.set_main_option('sqlalchemy.url', f"sqlite:///{db_location}")
         alembic_upgrade(alembic_cfg, 'head')
     except Exception as e:
-        print(str(e))
+        pass
     log.console('数据库更新完成')
