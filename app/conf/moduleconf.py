@@ -694,7 +694,7 @@ class ModuleConf(object):
     INDEXER_CONF = {
         "jackett": {
             "name": "Jackett",
-            "img_url": "./static/img/jackett.png",
+            "img_url": "./static/img/indexer/jackett.png",
             "background": "bg-black",
             "test_command": "app.indexer.client.jackett|Jackett",
             "config": {
@@ -726,7 +726,7 @@ class ModuleConf(object):
         },
         "prowlarr": {
             "name": "Prowlarr",
-            "img_url": "../static/img/prowlarr.png",
+            "img_url": "../static/img/indexer/prowlarr.png",
             "background": "bg-orange",
             "test_command": "app.indexer.client.prowlarr|Prowlarr",
             "config": {
