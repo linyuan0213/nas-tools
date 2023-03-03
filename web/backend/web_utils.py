@@ -47,9 +47,9 @@ class WebUtils:
         try:
             releases_update_only = Config().get_config("app").get("releases_update_only")
             version_res = RequestUtils(proxies=Config().get_proxies()).get_res(
-                "https://api.github.com/repos/NAStool/nas-tools/releases/latest")
+                "https://api.github.com/repos/linyuan0213/nas-tools/releases/latest")
             commit_res = RequestUtils(proxies=Config().get_proxies()).get_res(
-                "https://api.github.com/repos/NAStool/nas-tools/commits/master")
+                "https://api.github.com/repos/linyuan0213/nas-tools/commits/master")
             if version_res and commit_res:
                 ver_json = version_res.json()
                 commit_json = commit_res.json()
