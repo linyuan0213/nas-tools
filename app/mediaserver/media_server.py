@@ -9,7 +9,7 @@ from app.media import Media
 from app.message import Message
 from app.utils import ExceptionUtils
 from app.utils.commons import singleton
-from app.utils.types import MediaServerType, MovieTypes
+from app.utils.types import MediaServerType, MovieTypes, SystemConfigKey
 from app.utils.types import MediaType
 from config import Config
 
@@ -194,7 +194,7 @@ class MediaServer:
             self.progress.start("mediasync")
             self.progress.update(ptype="mediasync", text="请稍候...")
             # 获取需同步的媒体库
-            librarys = self.systemconfig.get_system_config("SyncLibrary") or []
+            librarys = self.systemconfig.get_system_config(SystemConfigKey.SyncLibrary) or []
             # 汇总统计
             medias_count = self.get_medias_count()
             total_media_count = medias_count.get("MovieCount") + medias_count.get("SeriesCount")
@@ -204,7 +204,7 @@ class MediaServer:
             # 清空登记薄
             self.mediadb.empty()
             for library in self.get_libraries():
-                if library.get("id") not in librarys:
+                if str(library.get("id")) not in librarys:
                     continue
                 # 获取媒体库所有项目
                 self.progress.update(ptype="mediasync",
@@ -318,7 +318,7 @@ class MediaServer:
         """
         if not self.server:
             return
-        if channel != self._server_type:
+        if channel != self.server.get_type():
             return
         event_info = self.server.get_webhook_message(message)
         if event_info:
@@ -331,7 +331,7 @@ class MediaServer:
                                                               season_id=event_info.get('season_id'),
                                                               episode_id=event_info.get('episode_id'))
             else:
-                if self._server_type == MediaServerType.PLEX:
+                if self._server_type == "plex":
                     # Plex:根据返回的tmdb_id去调用tmdb获取
                     image_url = self.media.get_tmdb_backdrop(mtype=MediaType.MOVIE,
                                                              tmdbid=event_info.get('tmdb_id'))

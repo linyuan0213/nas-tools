@@ -8,7 +8,6 @@ from app.plugins.event_manager import EventManager
 from app.utils import SystemUtils, PathUtils
 from app.utils.commons import singleton
 from config import Config
-from web.backend.user import UserAuth
 
 
 @singleton
@@ -106,7 +105,10 @@ class PluginManager:
             return None
         if not hasattr(self._running_plugins[pid], method):
             return
-        return getattr(self._running_plugins[pid], method)(*args, **kwargs)
+        try:
+            return getattr(self._running_plugins[pid], method)(*args, **kwargs)
+        except Exception as err:
+            print(str(err))
 
     def reload_plugin(self, pid):
         """
@@ -115,7 +117,10 @@ class PluginManager:
         if not self._running_plugins.get(pid):
             return
         if hasattr(self._running_plugins[pid], "init_config"):
-            self._running_plugins[pid].init_config(self.get_plugin_config(pid))
+            try:
+                self._running_plugins[pid].init_config(self.get_plugin_config(pid))
+            except Exception as err:
+                print(str(err))
 
     def __stop_plugins(self):
         """
@@ -141,12 +146,11 @@ class PluginManager:
             return False
         return self.systemconfig.set_system_config(self._config_key % pid, conf)
 
-    def get_plugins_conf(self):
+    def get_plugins_conf(self, auth_level):
         """
         获取所有插件配置
         """
         all_confs = {}
-        auth_level = UserAuth().get_auth_level()
         for pid, plugin in self._running_plugins.items():
             # 基本属性
             conf = {}

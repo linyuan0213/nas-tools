@@ -193,6 +193,7 @@ class Plex(_IMediaClient):
                 "season_num": episode.seasonNumber,
                 "episode_num": episode.index
             })
+        return ret_tvs
 
     def get_no_exists_episodes(self, meta_info, season, total_num):
         """
@@ -253,7 +254,6 @@ class Plex(_IMediaClient):
             libraries.append({"id": library.key, "name": library.title})
         return libraries
 
-    @staticmethod
     def get_iteminfo(self, itemid):
         """
         获取单个项目详情
