@@ -22,7 +22,7 @@ export class LayoutNavbar extends CustomElement {
     this.layout_appversion = "v2.8.3 e950041";
     this._active_name = "";
     this._update_appversion = "";
-    this._update_url = "https://github.com/NAStool/nas-tools";
+    this._update_url = "https://github.com/linyuan0213/nas-tools";
     this._is_update = false;
     this.classList.add("navbar","navbar-vertical","navbar-expand-lg","lit-navbar-fixed","lit-navbar","lit-navbar-hide-scrollbar");
 
