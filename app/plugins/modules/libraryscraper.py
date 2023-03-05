@@ -6,11 +6,10 @@ from apscheduler.triggers.cron import CronTrigger
 import log
 from app.media import Media, Scraper
 from app.plugins.modules._base import _IPluginModule
-from app.sync import Sync
 from config import Config, RMT_MEDIAEXT
 
 
-class LibraryNfo(_IPluginModule):
+class LibraryScraper(_IPluginModule):
     # 插件名称
     module_name = "媒体库刮削"
     # 插件描述
@@ -24,7 +23,7 @@ class LibraryNfo(_IPluginModule):
     # 插件作者
     module_author = "jxxghp"
     # 插件配置项ID前缀
-    module_config_prefix = "librarynfo_"
+    module_config_prefix = "libraryscraper_"
     # 加载顺序
     module_order = 10
     # 可使用的用户级别
@@ -34,11 +33,10 @@ class LibraryNfo(_IPluginModule):
     _scheduler = None
     _media = None
     _scraper = None
-    _scraper_nfo = {}
-    _scraper_pic = {}
     # 限速开关
     _cron = None
     _onlyonce = False
+    _mode = None
 
     @staticmethod
     def get_fields():
@@ -52,7 +50,7 @@ class LibraryNfo(_IPluginModule):
                         {
                             'title': '刮削周期',
                             'required': "required",
-                            'tooltip': '需要在基础设置中配置好刮削内容；刮削时间根据媒体库中的文件数量及网络状况而定，耗时可能会非常长，建议合理设置刮削周期，留空则不启用',
+                            'tooltip': '需要在基础设置中配置好刮削内容；刮削时间根据媒体库中的文件数量及网络状况而定，耗时可能会非常长，建议合理设置刮削周期，留空则不启用定期刮削',
                             'type': 'text',
                             'content': [
                                 {
@@ -60,13 +58,29 @@ class LibraryNfo(_IPluginModule):
                                     'placeholder': '0 0 0 ? *',
                                 }
                             ]
+                        },
+                        {
+                            'title': '刮削模式',
+                            'required': "required",
+                            'type': 'select',
+                            'content': [
+                                {
+                                    'id': 'mode',
+                                    'default': 'no_force',
+                                    'options': {
+                                        "no_force": "仅刮削缺失的元数据和图片",
+                                        "force_nfo": "覆盖所有元数据",
+                                        "force_all": "覆盖所有元数据和图片"
+                                    },
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            'title': '仅运行一次',
+                            'title': '立即运行一次',
                             'required': "",
-                            'tooltip': '打开后立即运行一次（点击此对话框的确定后即会运行，周期未设置也会运行），关闭后将按照刮削周期运行',
+                            'tooltip': '打开后立即运行一次（点击此对话框的确定按钮后即会运行，周期未设置也会运行），关闭后将仅按照刮削周期运行',
                             'type': 'switch',
                             'id': 'onlyonce',
                         }
@@ -83,10 +97,7 @@ class LibraryNfo(_IPluginModule):
         if config:
             self._onlyonce = config.get("onlyonce")
             self._cron = config.get("cron")
-
-        # 刮削配置
-        self._scraper_nfo = Config().get_config('scraper_nfo')
-        self._scraper_pic = Config().get_config('scraper_pic')
+            self._mode = config.get("mode")
 
         # 停止现有任务
         self.stop_service()
@@ -101,6 +112,13 @@ class LibraryNfo(_IPluginModule):
 
         # 立即刮削一次
         if self._onlyonce:
+            # 关闭一次性开关
+            self._onlyonce = False
+            self.update_config({
+                "onlyonce": False,
+                "cron": self._cron,
+                "mode": self._mode
+            })
             self.__libraryscraper()
 
     def get_state(self):
@@ -114,6 +132,9 @@ class LibraryNfo(_IPluginModule):
         movie_path = Config().get_config('media').get('movie_path')
         tv_path = Config().get_config('media').get('tv_path')
         anime_path = Config().get_config('media').get('anime_path')
+        # 模式
+        force_nfo = True if self._mode in ["force_nfo", "force_all"] else False
+        force_pic = True if self._mode in ["force_all"] else False
         # 所有类型
         log.info(f"【Plugin】开始刮削媒体库：{movie_path} {tv_path} {anime_path} ...")
         for library in [movie_path, tv_path, anime_path]:
@@ -139,11 +160,12 @@ class LibraryNfo(_IPluginModule):
                         continue
                     log.info(f"【Plugin】开始刮削媒体库文件：{file}")
                     self._scraper.gen_scraper_files(media=media_info,
-                                                    scraper_nfo=self._scraper_nfo,
-                                                    scraper_pic=self._scraper_pic,
                                                     dir_path=os.path.dirname(file),
                                                     file_name=os.path.splitext(os.path.basename(file))[0],
-                                                    file_ext=os.path.splitext(file)[-1])
+                                                    file_ext=os.path.splitext(file)[-1],
+                                                    force=True,
+                                                    force_nfo=force_nfo,
+                                                    force_pic=force_pic)
                     log.info(f"【Plugin】{file} 刮削完成")
         log.info(f"【Plugin】媒体库刮削完成")
 
