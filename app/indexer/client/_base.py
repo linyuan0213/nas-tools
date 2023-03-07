@@ -85,12 +85,13 @@ class _IIndexClient(metaclass=ABCMeta):
                                                         allow_space=True)
         api_url = f"{indexer.domain}?apikey={self.api_key}&t=search&q={search_word}"
         result_array = self.__parse_torznabxml(api_url)
+
+        # 索引花费时间
+        seconds = (datetime.datetime.now() - start_time).seconds
         if len(result_array) == 0:
             log.warn(f"【{self.index_type}】{indexer.name} 未检索到数据")
             self.progress.update(ptype='search', text=f"{indexer.name} 未检索到数据")
 
-            # 索引花费时间
-            seconds = (datetime.datetime.now() - start_time).seconds
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                         itype=self.client_id,
                                         seconds=seconds,
