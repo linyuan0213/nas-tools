@@ -8,7 +8,7 @@ from app.helper import ProgressHelper, DbHelper
 from app.media import Media
 from app.media.meta import MetaInfo
 from app.utils import DomUtils, RequestUtils, StringUtils, ExceptionUtils
-from app.utils.types import MediaType, SearchType
+from app.utils.types import MediaType, SearchType, ProgressKey
 
 
 class _IIndexClient(metaclass=ABCMeta):
@@ -90,7 +90,7 @@ class _IIndexClient(metaclass=ABCMeta):
         seconds = (datetime.datetime.now() - start_time).seconds
         if len(result_array) == 0:
             log.warn(f"【{self.index_type}】{indexer.name} 未检索到数据")
-            self.progress.update(ptype='search', text=f"{indexer.name} 未检索到数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 未检索到数据")
 
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                         itype=self.client_id,
@@ -101,7 +101,7 @@ class _IIndexClient(metaclass=ABCMeta):
         else:
             log.warn(f"【{self.index_type}】{indexer.name} 返回数据：{len(result_array)}")
             # 更新进度
-            self.progress.update(ptype='search', text=f"{indexer.name} 返回 {len(result_array)} 条数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 返回 {len(result_array)} 条数据")
             # 索引统计
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                                     itype=self.client_id,
@@ -381,6 +381,6 @@ class _IIndexClient(metaclass=ABCMeta):
         end_time = datetime.datetime.now()
         log.info(
             f"【{self.client_name}】{indexer.name} 共检索到 {len(result_array)} 条数据，过滤 {index_rule_fail}，不匹配 {index_match_fail}，错误 {index_error}，有效 {index_sucess}，耗时 {(end_time - start_time).seconds} 秒")
-        self.progress.update(ptype='search',
+        self.progress.update(ptype=ProgressKey.Search,
                              text=f"{indexer.name} 共检索到 {len(result_array)} 条数据，过滤 {index_rule_fail}，不匹配 {index_match_fail}，错误 {index_error}，有效 {index_sucess}，耗时 {(end_time - start_time).seconds} 秒")
         return ret_array
