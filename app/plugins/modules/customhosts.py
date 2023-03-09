@@ -1,6 +1,3 @@
-import json
-import os
-
 from python_hosts import Hosts, HostsEntry
 
 import log
@@ -31,6 +28,7 @@ class CustomHosts(_IPluginModule):
 
     # 私有属性
     _hosts = None
+    _enable = False
 
     @staticmethod
     def get_fields():
@@ -42,16 +40,40 @@ class CustomHosts(_IPluginModule):
                     # 同一行
                     [
                         {
-                            'title': '',
+                            'title': '系统hosts',
                             'required': False,
-                            'tooltip': '',
+                            'tooltip': '默认读取系统原有hosts文件，修改会覆盖系统hosts文件。正确的hosts会被写入文件，错误的hosts会在下方展示，请修改后重新提交。',
                             'type': 'textarea',
                             'content':
                                 {
                                     'id': 'hosts',
-                                    'placeholder': '默认读取系统原有hosts文件，修改会覆盖系统hosts设置',
+                                    'placeholder': '默认读取系统原有hosts文件，修改会覆盖系统hosts文件',
                                     'rows': 20,
                                 }
+                        }
+                    ],
+                    [
+                        {
+                            'title': '错误hosts',
+                            'required': False,
+                            'tooltip': '错误的hosts配置会展示在此处，请修改上方hosts，重新提交。（错误的hosts不会写入系统hosts文件）',
+                            'type': 'textarea',
+                            'readonly': True,
+                            'content':
+                                {
+                                    'id': 'err_hosts',
+                                    'placeholder': '错误的hosts配置会展示在此处，请修改上方hosts，重新提交',
+                                    'rows': 2,
+                                }
+                        }
+                    ],
+                    [
+                        {
+                            'title': '开启hosts同步',
+                            'required': "",
+                            'tooltip': '获取系统hosts并更新',
+                            'type': 'switch',
+                            'id': 'enable',
                         }
                     ]
                 ]
@@ -67,11 +89,24 @@ class CustomHosts(_IPluginModule):
 
         # 读取配置
         if config:
+            self._enable = config.get("enable")
+            if not self._enable:
+                # 更新配置
+                self.update_config({
+                    "hosts": '',
+                    "err_hosts": '',
+                    "enable": self._enable
+                })
+                return
+
             # 读取系统hosts
             system_hosts = Hosts(path=hosts_path)
 
             # 读取设置
             self._hosts = config.get("hosts")
+            if not self._hosts:
+                self.__sync_hosts_to_db(hosts_path)
+
             if self._hosts:
                 if not isinstance(self._hosts, list):
                     self._hosts = str(self._hosts).split('\n')
@@ -79,6 +114,8 @@ class CustomHosts(_IPluginModule):
                 flush_config = True
                 # 新的hosts
                 new_hosts = []
+                # 错误的hosts
+                err_hosts = []
                 for host in self._hosts:
                     if not host:
                         continue
@@ -90,6 +127,7 @@ class CustomHosts(_IPluginModule):
                         new_hosts.append(new_entry)
                     except Exception as err:
                         flush_config = False
+                        err_hosts.append(host + "\n")
                         log.error(f"【Plugin】{host} 格式转换错误：{str(err)}")
 
                 # 没有错误再写入hosts
@@ -100,24 +138,41 @@ class CustomHosts(_IPluginModule):
                     system_hosts.add(new_hosts)
                     system_hosts.write()
                     log.info("【Plugin】更新系统hosts文件成功")
+
+                # 更新配置
+                self.update_config({
+                    "hosts": config.get("hosts"),
+                    "err_hosts": err_hosts,
+                    "enable": self._enable
+                })
         # 没有配置
         else:
-            self._hosts = []
-            # 读取系统hosts
-            system_hosts = Hosts(path=hosts_path)
-            for entry in system_hosts.entries:
-                if not entry.is_real_entry():
-                    continue
-                self._hosts.append(str(entry.address) + " " + str(entry.names[0]) + "\n")
+            if not self._enable:
+                return
+            self.__sync_hosts_to_db(hosts_path)
 
-            # 更新配置
-            self.update_config({
-                "hosts": self._hosts
-            })
-            log.info("【Plugin】数据库与hosts文件版本不一致，获取系统hosts更新入数据库")
+    def __sync_hosts_to_db(self, hosts_path):
+        """
+        同步hosts文件到数据库
+        """
+        self._hosts = []
+        # 读取系统hosts
+        system_hosts = Hosts(path=hosts_path)
+        for entry in system_hosts.entries:
+            if not entry.is_real_entry():
+                continue
+            self._hosts.append(str(entry.address) + " " + str(entry.names[0]) + "\n")
+
+        # 更新配置
+        self.update_config({
+            "hosts": self._hosts,
+            "err_hosts": '',
+            "enable": self._enable
+        })
+        log.info("【Plugin】hosts初始化成功")
 
     def get_state(self):
-        return self._hosts
+        return self._enable
 
     def stop_service(self):
         """
