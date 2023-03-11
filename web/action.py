@@ -40,7 +40,7 @@ from app.torrentremover import TorrentRemover
 from app.utils import StringUtils, EpisodeFormat, RequestUtils, PathUtils, \
     SystemUtils, ExceptionUtils
 from app.utils.types import RmtMode, OsType, SearchType, SyncType, MediaType, MovieTypes, TvTypes, \
-    EventType, SystemConfigKey
+    EventType, SystemConfigKey, RssType
 from config import RMT_MEDIAEXT, TMDB_IMAGE_W500_URL, RMT_SUBEXT, Config
 from web.backend.search_torrents import search_medias_for_web, search_media_by_message
 from web.backend.user import User
@@ -218,7 +218,8 @@ class WebAction:
             "get_downloaders": self.__get_downloaders,
             "test_downloader": self.__test_downloader,
             "get_indexer_statistics": self.__get_indexer_statistics,
-            "media_path_scrap": self.__media_path_scrap
+            "media_path_scrap": self.__media_path_scrap,
+            "get_default_rss_setting": self.get_default_rss_setting
         }
 
     def action(self, cmd, data=None):
@@ -1365,8 +1366,9 @@ class WebAction:
         """
         添加RSS订阅
         """
-        name = data.get("name")
         _subscribe = Subscribe()
+        in_form = RssType.Manual if data.get("in_form") == "manual" else RssType.Auto
+        name = data.get("name")
         year = data.get("year")
         keyword = data.get("keyword")
         season = data.get("season")
@@ -1387,6 +1389,7 @@ class WebAction:
         page = data.get("page")
         mtype = MediaType.MOVIE if data.get(
             "type") in MovieTypes else MediaType.TV
+
         media_info = None
         if isinstance(season, list):
             code = 0
@@ -1394,7 +1397,7 @@ class WebAction:
             for sea in season:
                 code, msg, media_info = _subscribe.add_rss_subscribe(mtype=mtype,
                                                                      name=name,
-                                                                     year=year,
+                                                                     in_form=in_form,
                                                                      keyword=keyword,
                                                                      season=sea,
                                                                      fuzzy_match=fuzzy_match,
@@ -1415,6 +1418,7 @@ class WebAction:
             code, msg, media_info = _subscribe.add_rss_subscribe(mtype=mtype,
                                                                  name=name,
                                                                  year=year,
+                                                                 in_form=in_form,
                                                                  keyword=keyword,
                                                                  season=season,
                                                                  fuzzy_match=fuzzy_match,
@@ -3157,6 +3161,7 @@ class WebAction:
             code, msg, _ = Subscribe().add_rss_subscribe(mtype=mtype,
                                                          name=rssinfo[0].NAME,
                                                          year=rssinfo[0].YEAR,
+                                                         in_form=RssType.Auto,
                                                          season=season,
                                                          mediaid=rssinfo[0].TMDBID,
                                                          total_ep=rssinfo[0].TOTAL,
@@ -4817,4 +4822,20 @@ class WebAction:
         强制刷新站点数据,并发送站点统计的消息
         """
         # 强制刷新站点数据,并发送站点统计的消息
-        SiteUserInfo().refresh_pt_date_now()
+        SiteUserInfo().refresh_site_data_now()
+
+    @staticmethod
+    def get_default_rss_setting(data):
+        """
+        获取默认订阅设置
+        """
+        match data.get("mtype"):
+            case "TV":
+                default_rss_setting = Subscribe().default_rss_setting_tv
+            case "MOV":
+                default_rss_setting = Subscribe().default_rss_setting_mov
+            case _:
+                default_rss_setting = {}
+        if default_rss_setting:
+            return {"code": 0, "data": default_rss_setting}
+        return {"code": 1}
