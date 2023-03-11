@@ -52,6 +52,13 @@ class _IIndexClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_client_id(self):
+        """
+        获取索引器id
+        """
+        pass
+
+    @abstractmethod
     def get_indexers(self):
         """
         :return:  indexer 信息 [(indexerId, indexerName, url)]

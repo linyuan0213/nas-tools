@@ -45,6 +45,9 @@ class BuiltinIndexer(_IIndexClient):
     def get_type(self):
         return self.client_type
 
+    def get_client_id(self):
+        return self.client_id
+
     def get_status(self):
         """
         检查连通性

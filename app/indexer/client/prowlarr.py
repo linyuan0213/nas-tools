@@ -10,6 +10,7 @@ class Prowlarr(_IIndexClient):
     schema = "prowlarr"
     _client_config = {}
     index_type = IndexerType.PROWLARR.value
+    client_id = "prowlarr"
     client_type = IndexerType.PROWLARR
 
     def __init__(self, config=None):
@@ -34,10 +35,12 @@ class Prowlarr(_IIndexClient):
     def match(cls, ctype):
         return True if ctype in [cls.schema, cls.index_type] else False
 
-
     def get_type(self):
         return self.client_type
 
+    def get_client_id(self):
+        return self.client_id
+    
     def get_status(self):
         """
         检查连通性
@@ -63,8 +66,8 @@ class Prowlarr(_IIndexClient):
         indexers = ret.json().get("indexers", [])
         return [IndexerConf({"id": v["indexerId"],
                              "name": v["indexerName"],
-                             "domain": f'{self.host}{v["indexerId"]}/api',
-                             "builtin": False})
+                             "domain": f'{self.host}{v["indexerId"]}/api'},
+                            builtin=False)
                 for v in indexers]
 
     def search(self, *kwargs):

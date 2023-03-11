@@ -12,6 +12,7 @@ class Jackett(_IIndexClient):
     schema = "jackett"
     _client_config = {}
     index_type = IndexerType.JACKETT.value
+    client_id = "jackett"
     client_type = IndexerType.JACKETT
     _password = None
 
@@ -34,9 +35,11 @@ class Jackett(_IIndexClient):
                 if not self.host.endswith('/'):
                     self.host = self.host + "/"
 
-
     def get_type(self):
         return self.client_type
+
+    def get_client_id(self):
+        return self.client_id
 
     def get_status(self):
         """
@@ -68,11 +71,10 @@ class Jackett(_IIndexClient):
             ret = RequestUtils(cookies=cookie).get_res(indexer_query_url)
             if not ret or not ret.json():
                 return []
-            return [IndexerConf({"id": v["id"],
-                                 "name": v["name"],
-                                 "domain": f'{self.host}api/v2.0/indexers/{v["id"]}/results/torznab/',
-                                 "public": True if v['type'] == 'public' else False,
-                                 "builtin": False})
+            return [IndexerConf(datas={"id": v["id"], "name": v["name"],
+                                "domain": f'{self.host}api/v2.0/indexers/{v["id"]}/results/torznab/'},
+                                public=True if v['type'] == 'public' else False,
+                                builtin=False)
                     for v in ret.json()]
         except Exception as e2:
             ExceptionUtils.exception_traceback(e2)

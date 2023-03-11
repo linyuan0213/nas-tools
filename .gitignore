@@ -8,3 +8,4 @@
 /build/**
 /venv/**
 .python-version
+.vscode/

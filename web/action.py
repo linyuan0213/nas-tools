@@ -7,6 +7,8 @@ import re
 import shutil
 import signal
 from urllib.parse import unquote
+import itertools
+
 
 import cn2an
 from flask_login import logout_user, current_user
@@ -4794,7 +4796,8 @@ class WebAction:
         获取索引器统计数据
         """
         dataset = [["indexer", "avg"]]
-        result = self.dbhelper.get_indexer_statistics() or []
+        client_id = Indexer().get_client().get_client_id()
+        result = self.dbhelper.get_indexer_statistics(client_id) or []
         dataset.extend([[ret[0], round(ret[4], 1)] for ret in result])
         return {
             "code": 0,
