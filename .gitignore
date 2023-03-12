@@ -7,5 +7,6 @@
 /web/backend/user.py
 /build/**
 /venv/**
+/cloudflarespeedtest/**
 .python-version
 .vscode/
