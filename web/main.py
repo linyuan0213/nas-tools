@@ -129,7 +129,6 @@ def login():
         Indexers = Indexer().get_indexers()
         SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
         CustomScriptCfg = SystemConfig().get_system_config(SystemConfigKey.CustomScript)
-        # CooperationSites = current_user.get_authsites()
         return render_template('navigation.html',
                                GoPage=GoPage,
                                CurrentUser=current_user,
