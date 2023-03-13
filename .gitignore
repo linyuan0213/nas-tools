@@ -11,3 +11,4 @@
 /cloudflarespeedtest/**
 .python-version
 .vscode/
+Dockerfile-dev
