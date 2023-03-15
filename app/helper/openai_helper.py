@@ -18,6 +18,9 @@ class OpenAiHelper:
         self._api_key = Config().get_config("openai").get("api_key")
         if self._api_key:
             openai.api_key = self._api_key
+        proxy_conf = Config().get_proxies()
+        if proxy_conf and proxy_conf.get("https"):
+            openai.proxy = proxy_conf.get("https")
 
     def get_state(self):
         return True if self._api_key else False
@@ -50,7 +53,7 @@ class OpenAiHelper:
             result = completion.choices[0].message.content
             return json.loads(result)
         except Exception as e:
-            print(f"{result} - {str(e)}")
+            print(f"{str(e)}：{result}")
             return {}
 
     def get_answer(self, text):

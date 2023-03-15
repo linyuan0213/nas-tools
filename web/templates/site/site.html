@@ -172,7 +172,7 @@
             <div class="mb-3">
               <label class="form-label required">站点用途 <span class="form-help" title="设置站点使用场景，选中的场景才会使用该站点"
                   data-bs-toggle="tooltip">?</span></label>
-              <div class="form-selectgroup">
+              <div class="form-selectgroup form-selectgroup-pills">
                 <label class="form-selectgroup-item">
                   <input type="checkbox" name="site_uses" value="Q" class="form-selectgroup-input" checked>
                   <span class="form-selectgroup-label">签到</span>
@@ -518,6 +518,7 @@
         $("#site_signurl").val(ret.site.signurl);
         $("#site_cookie").val(ret.site.cookie);
         $("#site_ua").val(ret.site.ua);
+        $("#site_download_setting").val(ret.site.download_setting);
         if (ret.site.parse) {
           $("#site_parse").val("Y");
         } else {
