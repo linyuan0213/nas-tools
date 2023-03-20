@@ -539,8 +539,8 @@ class ModuleConf(object):
                 "host": {
                     "id": "qbittorrent_host",
                     "required": True,
-                    "title": "IP地址",
-                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
+                    "title": "地址",
+                    "tooltip": "配置IP地址或域名，如为https则需要增加https://前缀",
                     "type": "text",
                     "placeholder": "127.0.0.1"
                 },
@@ -591,8 +591,8 @@ class ModuleConf(object):
                 "host": {
                     "id": "transmission_host",
                     "required": True,
-                    "title": "IP地址",
-                    "tooltip": "配置IP地址，如为https则需要增加https://前缀",
+                    "title": "地址",
+                    "tooltip": "配置IP地址或域名，如为https则需要增加https://前缀",
                     "type": "text",
                     "placeholder": "127.0.0.1"
                 },
