@@ -136,41 +136,14 @@ class Sites:
             return {}
         return ret_sites
 
-    def init_favicons(self):
+    def get_sites_by_suffix(self, suffix):
         """
-        加载图标到内存
+        根据url的后缀获取站点配置
         """
-        self._site_favicons = {site.SITE: site.FAVICON for site in self.dbhelper.get_site_favicons()}
-
-    def get_sites(self,
-                  siteid=None,
-                  siteurl=None,
-                  rss=False,
-                  brush=False,
-                  signin=False,
-                  statistic=False):
-        """
-        获取站点配置
-        """
-        if siteid:
-            return self._siteByIds.get(int(siteid)) or {}
-        if siteurl:
-            return self._siteByUrls.get(StringUtils.get_url_domain(siteurl)) or {}
-
-        ret_sites = []
-        for site in self._siteByIds.values():
-            if rss and not site.get('rss_enable'):
-                continue
-            if brush and not site.get('brush_enable'):
-                continue
-            if signin and not site.get('signin_enable'):
-                continue
-            if statistic and not site.get('statistic_enable'):
-                continue
-            ret_sites.append(site)
-        if siteid or siteurl:
-            return {}
-        return ret_sites
+        for key in self._siteByUrls:
+            if key.endswith(suffix):
+                return self._siteByUrls[key]
+        return {}
 
     def get_site_dict(self,
                       rss=False,
