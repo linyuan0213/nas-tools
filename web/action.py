@@ -67,7 +67,7 @@ class WebAction:
             "del_unknown_path": self.__del_unknown_path,
             "rename": self.__rename,
             "rename_udf": self.__rename_udf,
-            "delete_history": self.__delete_history,
+            "delete_history": self.delete_history,
             "logging": self.__logging,
             "version": self.__version,
             "update_site": self.__update_site,
@@ -221,7 +221,10 @@ class WebAction:
             "test_downloader": self.__test_downloader,
             "get_indexer_statistics": self.__get_indexer_statistics,
             "media_path_scrap": self.__media_path_scrap,
-            "get_default_rss_setting": self.get_default_rss_setting
+            "get_default_rss_setting": self.get_default_rss_setting,
+            "get_movie_rss_items": self.get_movie_rss_items,
+            "get_tv_rss_items": self.get_tv_rss_items,
+            "get_ical_events": self.get_ical_events,
         }
 
     def action(self, cmd, data=None):
@@ -866,11 +869,11 @@ class WebAction:
                                                                udf_flag=True)
         return succ_flag, ret_msg
 
-    def __delete_history(self, data):
+    def delete_history(self, data):
         """
         删除识别记录及文件
         """
-        logids = data.get('logids')
+        logids = data.get('logids') or []
         flag = data.get('flag')
         for logid in logids:
             # 读取历史记录
@@ -898,9 +901,9 @@ class WebAction:
                     # 删除源文件
                     del_flag, del_msg = self.delete_media_file(source_path, source_filename)
                     if not del_flag:
-                        log.error(f"【Web】{del_msg}")
+                        log.error(del_msg)
                     else:
-                        log.info(f"【Web】{del_msg}")
+                        log.info(del_msg)
                         # 触发源文件删除事件
                         EventManager().send_event(EventType.SourceFileDeleted, {
                             "media_info": media_info,
@@ -912,9 +915,9 @@ class WebAction:
                     if dest_path and dest_filename:
                         del_flag, del_msg = self.delete_media_file(dest_path, dest_filename)
                         if not del_flag:
-                            log.error(f"【Web】{del_msg}")
+                            log.error(del_msg)
                         else:
-                            log.info(f"【Web】{del_msg}")
+                            log.info(del_msg)
                             # 触发媒体库文件删除事件
                             EventManager().send_event(EventType.LibraryFileDeleted, {
                                 "media_info": media_info,
@@ -1233,6 +1236,8 @@ class WebAction:
             os.system("sudo git submodule update --init --recursive")
             # 安装依赖
             os.system('sudo pip install -r /nas-tools/requirements.txt')
+            # 修复权限
+            os.system('sudo chown -R nt:nt /nas-tools')
             # 重启
             self.restart_server()
         return {"code": 0}
@@ -1856,7 +1861,9 @@ class WebAction:
             if not release_date:
                 return {"code": 1, "retmsg": "上映日期不正确"}
             else:
-                return {"code": 0,
+                return {
+                    "code": 0,
+                    "events": [{
                         "type": "电视剧",
                         "title": title,
                         "start": release_date,
@@ -1865,7 +1872,8 @@ class WebAction:
                         "poster": poster_path,
                         "vote_average": vote_average,
                         "rssid": rssid
-                        }
+                    }]
+                }
         else:
             if tid:
                 tmdb_info = Media().get_tmdb_tv_season_detail(tmdbid=tid, season=season)
@@ -1960,6 +1968,7 @@ class WebAction:
         brushtask_downloader = data.get("brushtask_downloader")
         brushtask_totalsize = data.get("brushtask_totalsize")
         brushtask_state = data.get("brushtask_state")
+        brushtask_rssurl = data.get("brushtask_rssurl")
         brushtask_label = data.get("brushtask_label")
         brushtask_transfer = 'Y' if data.get("brushtask_transfer") else 'N'
         brushtask_sendmessage = 'Y' if data.get(
@@ -2007,6 +2016,7 @@ class WebAction:
             "name": brushtask_name,
             "site": brushtask_site,
             "free": brushtask_free,
+            "rssurl": brushtask_rssurl,
             "interval": brushtask_interval,
             "downloader": brushtask_downloader,
             "seed_size": brushtask_totalsize,
@@ -3485,7 +3495,8 @@ class WebAction:
             SE_key = item.ES_STRING if item.ES_STRING and mtype != "MOV" else "MOV"
             media_type = {"MOV": "电影", "TV": "电视剧", "ANI": "动漫"}.get(mtype)
             # 只需要部分种子标签
-            labels = [label for label in str(item.NOTE).split("|") if label in ["官方", "中字", "国语", "特效字幕"]]
+            labels = [label for label in str(item.NOTE).split("|")
+                      if label in ["官方", "官组", "中字", "国语", "特效", "特效字幕"]]
             # 种子信息
             torrent_item = {
                 "id": item.ID,
@@ -4059,9 +4070,9 @@ class WebAction:
                 del_flag, del_msg = self.delete_media_file(filedir=os.path.dirname(file),
                                                            filename=os.path.basename(file))
                 if not del_flag:
-                    log.error(f"【Web】{del_msg}")
+                    log.error(del_msg)
                 else:
-                    log.info(f"【Web】{del_msg}")
+                    log.info(del_msg)
         return {"code": 0}
 
     @staticmethod
@@ -4878,3 +4889,65 @@ class WebAction:
         if default_rss_setting:
             return {"code": 0, "data": default_rss_setting}
         return {"code": 1}
+
+    @staticmethod
+    def get_movie_rss_items(data=None):
+        """
+        获取所有电影订阅项目
+        """
+        RssMovieItems = [
+            {
+                "id": movie.get("tmdbid"),
+                "rssid": movie.get("id")
+            } for movie in Subscribe().get_subscribe_movies().values() if movie.get("tmdbid")
+        ]
+        return {"code": 0, "result": RssMovieItems}
+
+    @staticmethod
+    def get_tv_rss_items(data=None):
+        """
+        获取所有电视剧订阅项目
+        """
+        # 电视剧订阅
+        RssTvItems = [
+            {
+                "id": tv.get("tmdbid"),
+                "rssid": tv.get("id"),
+                "season": int(str(tv.get('season')).replace("S", "")),
+                "name": tv.get("name"),
+            } for tv in Subscribe().get_subscribe_tvs().values() if tv.get('season') and tv.get("tmdbid")
+        ]
+        # 自定义订阅
+        RssTvItems += RssChecker().get_userrss_mediainfos()
+        # 电视剧订阅去重
+        Uniques = set()
+        UniqueTvItems = []
+        for item in RssTvItems:
+            unique = f"{item.get('id')}_{item.get('season')}"
+            if unique not in Uniques:
+                Uniques.add(unique)
+                UniqueTvItems.append(item)
+        return {"code": 0, "result": UniqueTvItems}
+
+    def get_ical_events(self, data=None):
+        """
+        获取ical日历事件
+        """
+        Events = []
+        # 电影订阅
+        RssMovieItems = self.get_movie_rss_items().get("result")
+        for movie in RssMovieItems:
+            info = self.__movie_calendar_data(movie)
+            if info.get("id"):
+                Events.append(info)
+
+        # 电视剧订阅
+        RssTvItems = self.get_tv_rss_items().get("result")
+        for tv in RssTvItems:
+            infos = self.__tv_calendar_data(tv).get("events")
+            if infos and isinstance(infos, list):
+                for info in infos:
+                    if info.get("id"):
+                        Events.append(info)
+
+        return {"code": 0, "result": Events}

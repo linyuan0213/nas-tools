@@ -92,9 +92,11 @@ groupmod -o -g "$PGID" nt
 usermod -o -u "$PUID" nt
 
 # 创建目录、权限设置
-mkdir -p /.pm2 /.local
-chown -R nt:nt "${WORKDIR}" /config /.pm2 /.local /usr/lib/chromium /etc/hosts
+chown -R nt:nt "${WORKDIR}" "${NT_HOME}" /config /usr/lib/chromium /etc/hosts
 export PATH=${PATH}:/usr/lib/chromium
+
+# 执行扩展脚本
+$*
 
 # 掩码设置
 umask "${UMASK}"
