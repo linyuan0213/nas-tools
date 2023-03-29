@@ -315,7 +315,7 @@ class WebAction:
             os.kill(os.getpid(), getattr(signal, "SIGKILL", signal.SIGTERM))
         elif SystemUtils.is_synology():
             os.system(
-                "sudo ps -ef | grep -v grep | grep 'python run.py'|awk '{print $2}'|xargs kill -9")
+                "ps -ef | grep -v grep | grep 'python run.py'|awk '{print $2}'|xargs kill -9")
         else:
             os.system("pm2 restart NAStool")
 
@@ -2422,10 +2422,10 @@ class WebAction:
 
         # 补充存在与订阅状态
         for res in res_list:
-            fav, rssid = self.get_media_exists_flag(mtype=res.get("type"),
-                                                    title=res.get("title"),
-                                                    year=res.get("year"),
-                                                    mediaid=res.get("id"))
+            fav, rssid, item_url = self.get_media_exists_info(mtype=res.get("type"),
+                                                              title=res.get("title"),
+                                                              year=res.get("year"),
+                                                              mediaid=res.get("id"))
             res.update({
                 'fav': fav,
                 'rssid': rssid
@@ -3583,7 +3583,7 @@ class WebAction:
                 fav, rssid = 0, None
                 # 存在标志
                 if item.TMDBID:
-                    fav, rssid = self.get_media_exists_flag(
+                    fav, rssid, item_url = self.get_media_exists_info(
                         mtype=mtype,
                         title=item.TITLE,
                         year=item.YEAR,
@@ -4528,10 +4528,10 @@ class WebAction:
                 "msg": "无法查询到TMDB信息"
             }
         # 查询存在及订阅状态
-        fav, rssid = self.get_media_exists_flag(mtype=mtype,
-                                                title=media_info.title,
-                                                year=media_info.year,
-                                                mediaid=media_info.tmdb_id)
+        fav, rssid, item_url = self.get_media_exists_info(mtype=mtype,
+                                                          title=media_info.title,
+                                                          year=media_info.year,
+                                                          mediaid=media_info.tmdb_id)
         MediaHandler = Media()
         MediaServerHandler = MediaServer()
         # 查询季
@@ -4540,12 +4540,12 @@ class WebAction:
         if seasons:
             for season in seasons:
                 season.update({
-                    "state": MediaServerHandler.check_item_exists(
+                    "state": True if MediaServerHandler.check_item_exists(
                         mtype=mtype,
                         title=media_info.title,
                         year=media_info.year,
                         tmdbid=media_info.tmdb_id,
-                        season=season.get("season_number"))
+                        season=season.get("season_number")) else False
                 })
         return {
             "code": 0,
@@ -4566,6 +4566,7 @@ class WebAction:
                 "link": media_info.get_detail_url(),
                 "douban_link": media_info.get_douban_detail_url(),
                 "fav": fav,
+                "item_url": item_url,
                 "rssid": rssid,
                 "seasons": seasons
             }
@@ -4673,14 +4674,14 @@ class WebAction:
         PluginManager().reload_plugin(plugin_id)
         return {"code": 0, "msg": "保存成功"}
 
-    def get_media_exists_flag(self, mtype, title, year, mediaid):
+    def get_media_exists_info(self, mtype, title, year, mediaid):
         """
         获取媒体存在标记：是否存在、是否订阅
         :param: mtype 媒体类型
         :param: title 媒体标题
         :param: year 媒体年份
         :param: mediaid TMDBID/DB:豆瓣ID/BG:Bangumi的ID
-        :return: 1-已订阅/2-已下载/0-不存在未订阅, RSSID
+        :return: 1-已订阅/2-已下载/0-不存在未订阅, RSSID, 如果已下载,还会有对应的媒体库的播放地址链接
         """
         if str(mediaid).isdigit():
             tmdbid = mediaid
@@ -4698,16 +4699,21 @@ class WebAction:
             else:
                 season = None
             rssid = self.dbhelper.get_rss_tv_id(title=title, year=year, season=season, tmdbid=tmdbid)
+        item_url = None
         if rssid:
             # 已订阅
             fav = "1"
-        elif MediaServer().check_item_exists(mtype=mtype, title=title, year=year, tmdbid=tmdbid):
-            # 已下载
-            fav = "2"
         else:
-            # 未订阅、未下载
-            fav = "0"
-        return fav, rssid
+            # 检查媒体服务器是否存在
+            item_id = MediaServer().check_item_exists(mtype=mtype, title=title, year=year, tmdbid=tmdbid)
+            if item_id:
+                # 已下载
+                fav = "2"
+                item_url = MediaServer().get_play_url(item_id=item_id)
+            else:
+                # 未订阅、未下载
+                fav = "0"
+        return fav, rssid, item_url
 
     @staticmethod
     def __get_season_episodes(data=None):
@@ -4725,13 +4731,13 @@ class WebAction:
         MediaServerHandler = MediaServer()
         for episode in episodes:
             episode.update({
-                "state": MediaServerHandler.check_item_exists(
+                "state": True if MediaServerHandler.check_item_exists(
                     mtype=MediaType.TV,
                     title=title,
                     year=year,
                     tmdbid=tmdbid,
                     season=season,
-                    episode=episode.get("episode_number"))
+                    episode=episode.get("episode_number")) else False
             })
         return {
             "code": 0,
