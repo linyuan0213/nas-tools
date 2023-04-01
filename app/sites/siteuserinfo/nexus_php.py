@@ -118,7 +118,8 @@ class NexusPhpSiteUserInfo(_ISiteUserInfo):
             if bonus_match and bonus_match.group(1).strip():
                 self.bonus = StringUtils.str_float(bonus_match.group(1))
                 return
-            bonus_match = re.search(r"[魔力值|\]][\[\]:：<>/a-zA-Z_\-=\"'\s#;]+\s*([\d,.]+|\"[\d,.]+\")[<>()&\s]", html_text,
+            bonus_match = re.search(r"[魔力值|\]][\[\]:：<>/a-zA-Z_\-=\"'\s#;]+\s*([\d,.]+|\"[\d,.]+\")[<>()&\s]",
+                                    html_text,
                                     flags=re.S)
             if bonus_match and bonus_match.group(1).strip():
                 self.bonus = StringUtils.str_float(bonus_match.group(1).strip('"'))
@@ -170,22 +171,39 @@ class NexusPhpSiteUserInfo(_ISiteUserInfo):
         if not html:
             return None
 
+        # 首页存在扩展链接，使用扩展链接
+        seeding_url_text = html.xpath('//a[contains(@href,"torrents.php") '
+                                      'and contains(@href,"seeding")]/@href')
+        if multi_page is False and seeding_url_text and seeding_url_text[0].strip():
+            self._torrent_seeding_page = seeding_url_text[0].strip()
+            return self._torrent_seeding_page
+
         size_col = 3
         seeders_col = 4
         # 搜索size列
-        size_col_xpath = '//tr[position()=1]/td[(img[@class="size"] and img[@alt="size"]) or (text() = "大小")]'
+        size_col_xpath = '//tr[position()=1]/' \
+                         'td[(img[@class="size"] and img[@alt="size"])' \
+                         ' or (text() = "大小")' \
+                         ' or (a/img[@class="size" and @alt="size"])]'
         if html.xpath(size_col_xpath):
             size_col = len(html.xpath(f'{size_col_xpath}/preceding-sibling::td')) + 1
         # 搜索seeders列
-        seeders_col_xpath = '//tr[position()=1]/td[(img[@class="seeders"] and img[@alt="seeders"]) or (text() = "在做种")]'
+        seeders_col_xpath = '//tr[position()=1]/' \
+                            'td[(img[@class="seeders"] and img[@alt="seeders"])' \
+                            ' or (text() = "在做种")' \
+                            ' or (a/img[@class="seeders" and @alt="seeders"])]'
         if html.xpath(seeders_col_xpath):
             seeders_col = len(html.xpath(f'{seeders_col_xpath}/preceding-sibling::td')) + 1
 
         page_seeding = 0
         page_seeding_size = 0
         page_seeding_info = []
-        seeding_sizes = html.xpath(f'//tr[position()>1]/td[{size_col}]')
-        seeding_seeders = html.xpath(f'//tr[position()>1]/td[{seeders_col}]//text()')
+        # 如果 table class="torrents"，则增加table[@class="torrents"]
+        table_class = '//table[@class="torrents"]' if html.xpath('//table[@class="torrents"]') else ''
+        seeding_sizes = html.xpath(f'{table_class}//tr[position()>1]/td[{size_col}]')
+        seeding_seeders = html.xpath(f'{table_class}//tr[position()>1]/td[{seeders_col}]/b/a/text()')
+        if not seeding_seeders:
+            seeding_seeders = html.xpath(f'{table_class}//tr[position()>1]/td[{seeders_col}]//text()')
         if seeding_sizes and seeding_seeders:
             page_seeding = len(seeding_sizes)
 
