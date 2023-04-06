@@ -33,6 +33,7 @@ class SearchType(Enum):
     API = "第三方API请求"
     SLACK = "Slack"
     SYNOLOGY = "Synology Chat"
+    PLUGIN = "插件"
 
 
 class RmtMode(Enum):
@@ -128,8 +129,12 @@ class EventType(Enum):
     LibraryFileDeleted = "libraryfile.deleted"
     # 刮削媒体信息
     MediaScrapStart = "media.scrap.start"
-    # customHosts插件重载
-    CustomHostsReload = "customhosts.reload"
+    # 插件重载
+    PluginReload = "plugin.reload"
+    # 豆瓣想看同步
+    DoubanSync = "douban.sync"
+    # 辅种任务开始
+    AutoSeedStart = "autoseed.start"
 
 
 # 系统配置Key字典
@@ -150,6 +155,8 @@ class SystemConfigKey(Enum):
     DefaultRssSettingMOV = "DefaultRssSettingMOV"
     # 默认电视剧订阅设置
     DefaultRssSettingTV = "DefaultRssSettingTV"
+    # 用户已安装的插件
+    UserInstalledPlugins = "UserInstalledPlugins"
 
 
 # 处理进度Key字典

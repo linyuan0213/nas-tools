@@ -51,8 +51,6 @@ class ChromeHelper(object):
             return self._chrome
 
     def get_status(self):
-        if not self._executable_path:
-            return False
         if self._executable_path \
                 and not os.path.exists(self._executable_path):
             return False
@@ -76,6 +74,8 @@ class ChromeHelper(object):
         options.add_argument('--no-service-autorun')
         options.add_argument('--no-default-browser-check')
         options.add_argument('--password-store=basic')
+        if SystemUtils.is_windows() or SystemUtils.is_macos():
+            options.add_argument("--window-position=-32000,-32000")
         if self._proxy:
             proxy = Config().get_proxies().get("https")
             if proxy:
