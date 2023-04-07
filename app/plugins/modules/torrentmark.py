@@ -182,15 +182,15 @@ class TorrentMark(_IPluginModule):
                 # 获取种子hash
                 hash_str = self.__get_hash(torrent, downloader_type)
                 # 获取种子标签
-                torrent_tags = self.__get_tag(torrent, downloader_type).split(",")
+                torrent_tags = set(map(lambda s: s.strip(), (self.__get_tag(torrent, downloader_type) or "").split(",")))
                 pt_flag = self.__isPT(torrent, downloader_type)
-
+                torrent_tags.discard("")
                 if pt_flag is True:
-                    torrent_tags.append("PT")
-                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=torrent_tags)
+                    torrent_tags.add("PT")
+                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
                 else:
-                    torrent_tags.append("BT")
-                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=torrent_tags)
+                    torrent_tags.add("BT")
+                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
         self.info("标记任务执行完成")
 
     @staticmethod
