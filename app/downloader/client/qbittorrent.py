@@ -173,6 +173,18 @@ class Qbittorrent(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
 
+    def set_torrents_tag(self, ids, tags):
+        """
+        设置种子标签，以及是否强制做种
+        """
+        if not self.qbc:
+            return
+        try:
+            # 打标签
+            self.qbc.torrents_add_tags(tags, torrent_hashes=ids)
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+
     def torrents_set_force_start(self, ids):
         """
         设置强制作种
