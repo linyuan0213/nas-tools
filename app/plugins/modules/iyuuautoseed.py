@@ -1,9 +1,11 @@
+import re
 from datetime import datetime
 from threading import Event
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from lxml import etree
 
 from app.downloader import Downloader
 from app.helper import IyuuHelper
@@ -11,6 +13,7 @@ from app.media.meta import MetaInfo
 from app.message import Message
 from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
+from app.utils import RequestUtils
 from app.utils.types import DownloaderType
 from config import Config
 
@@ -51,8 +54,16 @@ class IYUUAutoSeed(_IPluginModule):
     _downloaders = []
     _sites = []
     _notify = False
+    _nolabels = None
     # 退出事件
     _event = Event()
+    # 种子链接xpaths
+    _torrent_xpaths = [
+        "//form[contains(@action, 'download.php?id=')]/@action",
+        "//a[contains(@href, 'download.php?hash=')]/@href",
+        "//a[contains(@href, 'download.php?id=')]/@href",
+        "//a[@class='index'][contains(@href, '/dl/')]/@href",
+    ]
 
     @staticmethod
     def get_fields():
@@ -72,15 +83,6 @@ class IYUUAutoSeed(_IPluginModule):
                             'tooltip': '开启后，自动监控下载器，对下载完成的任务根据执行周期自动辅种。',
                             'type': 'switch',
                             'id': 'enable',
-                        }
-                    ],
-                    [
-                        {
-                            'title': '立即运行一次',
-                            'required': "",
-                            'tooltip': '打开后立即运行一次（点击此对话框的确定按钮后即会运行，周期未设置也会运行），关闭后将仅按照刮削周期运行（同时上次触发运行的任务如果在运行中也会停止）',
-                            'type': 'switch',
-                            'id': 'onlyonce',
                         }
                     ],
                     [
@@ -105,6 +107,20 @@ class IYUUAutoSeed(_IPluginModule):
                                 {
                                     'id': 'cron',
                                     'placeholder': '0 0 0 ? *',
+                                }
+                            ]
+                        }
+                    ],
+                    [
+                        {
+                            'title': '不辅种标签',
+                            'required': "",
+                            'tooltip': '下载器中的种子有以下标签时不进行辅种，多个标签使用英文,分隔',
+                            'type': 'text',
+                            'content': [
+                                {
+                                    'id': 'nolabels',
+                                    'placeholder': '使用,分隔多个标签',
                                 }
                             ]
                         }
@@ -152,6 +168,13 @@ class IYUUAutoSeed(_IPluginModule):
                             'tooltip': '运行辅助任务后会发送通知（需要打开自定义消息通知）',
                             'type': 'switch',
                             'id': 'notify',
+                        },
+                        {
+                            'title': '立即运行一次',
+                            'required': "",
+                            'tooltip': '打开后立即运行一次（点击此对话框的确定按钮后即会运行，周期未设置也会运行），关闭后将仅按照刮削周期运行（同时上次触发运行的任务如果在运行中也会停止）',
+                            'type': 'switch',
+                            'id': 'onlyonce',
                         }
                     ]
                 ]
@@ -171,6 +194,7 @@ class IYUUAutoSeed(_IPluginModule):
             self._downloaders = config.get("downloaders")
             self._sites = config.get("sites")
             self._notify = config.get("notify")
+            self._nolabels = config.get("nolabels")
         # 停止现有任务
         self.stop_service()
 
@@ -179,31 +203,29 @@ class IYUUAutoSeed(_IPluginModule):
             self.iyuuhelper = IyuuHelper(token=self._token)
             self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
             if self._cron:
-                self._scheduler.add_job(self.auto_seed, CronTrigger.from_crontab(self._cron))
+                self.info(f"辅种服务启动，周期：{self._cron}")
+                self._scheduler.add_job(self.auto_seed,
+                                        CronTrigger.from_crontab(self._cron))
             if self._onlyonce:
+                self.info(f"辅种服务启动，立即运行一次")
                 self._scheduler.add_job(self.auto_seed, 'date',
                                         run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())))
-            if self._cron or self._onlyonce:
-                self._scheduler.print_jobs()
-                self._scheduler.start()
-
-                if self._onlyonce:
-                    self.info(f"辅种服务启动，立即运行一次")
-                if self._cron:
-                    self.info(f"辅种服务启动，周期：{self._cron}")
-
-            # 关闭一次性开关
-            if self._onlyonce:
+                # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
                     "enable": self._enable,
-                    "onlyonce": False,
+                    "onlyonce": self._onlyonce,
                     "cron": self._cron,
                     "token": self._token,
                     "downloaders": self._downloaders,
                     "sites": self._sites,
-                    "notify": self._notify
+                    "notify": self._notify,
+                    "nolabels": self._nolabels
                 })
+            if self._cron or self._onlyonce:
+                # 启动服务
+                self._scheduler.print_jobs()
+                self._scheduler.start()
 
     def get_state(self):
         return True if self._enable and self._cron and self._token and self._downloaders else False
@@ -212,7 +234,8 @@ class IYUUAutoSeed(_IPluginModule):
         """
         开始辅种
         """
-        if not self.get_state():
+        if not self._enable or not self._token or not self._downloaders:
+            self.warn("辅种服务未启用或未配置")
             return
         if not self.iyuuhelper:
             return
@@ -225,9 +248,9 @@ class IYUUAutoSeed(_IPluginModule):
             # 获取下载器中已完成的种子
             torrents = self.downloader.get_completed_torrents(downloader_id=downloader)
             if torrents:
-                self.info(f"下载器：{downloader}，已完成种子数：{len(torrents)}")
+                self.info(f"下载器 {downloader} 已完成种子数：{len(torrents)}")
             else:
-                self.info(f"下载器：{downloader}，没有已完成种子")
+                self.info(f"下载器 {downloader} 没有已完成种子")
                 continue
             hash_strs = []
             for torrent in torrents:
@@ -237,15 +260,23 @@ class IYUUAutoSeed(_IPluginModule):
                 # 获取种子hash
                 hash_str = self.__get_hash(torrent, downloader_type)
                 save_path = self.__get_save_path(torrent, downloader_type)
+                # 获取种子标签
+                torrent_labels = self.__get_label(torrent, downloader_type)
+                if self._nolabels \
+                        and torrent_labels \
+                        and set(self._nolabels.split(',')).intersection(set(torrent_labels)):
+                    self.info(f"种子 {hash_str} 含有不辅种标签，跳过 ...")
+                    continue
                 hash_strs.append({
                     "hash": hash_str,
                     "save_path": save_path
                 })
             if hash_strs:
-                # 200个为一组
+                # 分组处理，减少IYUU Api请求次数
                 chunk_size = 200
                 for i in range(0, len(hash_strs), chunk_size):
-                    chunk = hash_strs[i:i + chunk_size]  # 切片操作
+                    # 切片操作
+                    chunk = hash_strs[i:i + chunk_size]
                     # 处理分组
                     self.__seed_torrents(hash_strs=chunk,
                                          downloader=downloader)
@@ -286,7 +317,7 @@ class IYUUAutoSeed(_IPluginModule):
                 if not seed.get("sid") or not seed.get("info_hash"):
                     continue
                 if seed.get("info_hash") in hashs:
-                    self.debug(f"{seed.get('info_hash')} 已在下载器中，跳过 ...")
+                    self.info(f"{seed.get('info_hash')} 已在下载器中，跳过 ...")
                     continue
                 # 添加任务
                 self.__download_torrent(seed=seed,
@@ -320,6 +351,9 @@ class IYUUAutoSeed(_IPluginModule):
                                                     ids=[seed.get("info_hash")])
         if torrent_info:
             self.info(f"{seed.get('info_hash')} 已在下载器中，跳过 ...")
+            return
+        # 站点流控
+        if self.sites.check_ratelimit(site_info.get("id")):
             return
         # 下载种子
         torrent_url = self.__get_download_url(seed=seed,
@@ -356,30 +390,124 @@ class IYUUAutoSeed(_IPluginModule):
         """
         获取种子hash
         """
-        return torrent.get("hash") if dl_type == DownloaderType.QB else torrent.hashString
+        try:
+            return torrent.get("hash") if dl_type == DownloaderType.QB else torrent.hashString
+        except Exception as e:
+            print(str(e))
+            return ""
+
+    @staticmethod
+    def __get_label(torrent, dl_type):
+        """
+        获取种子标签
+        """
+        try:
+            return torrent.get("tags") or [] if dl_type == DownloaderType.QB else torrent.labels or []
+        except Exception as e:
+            print(str(e))
+            return []
 
     @staticmethod
     def __get_save_path(torrent, dl_type):
         """
         获取种子保存路径
         """
-        return torrent.get("save_path") if dl_type == DownloaderType.QB else torrent.download_dir
+        try:
+            return torrent.get("save_path") if dl_type == DownloaderType.QB else torrent.download_dir
+        except Exception as e:
+            print(str(e))
+            return ""
 
     def __get_download_url(self, seed, site, base_url):
         """
         拼装种子下载链接
         """
-        download_url = base_url.replace("id={}",
-                                        "id={id}"
-                                        ).format(
-            **{"id": seed.get("torrent_id"),
-               "passkey": site.get("passkey"),
-               "uid": site.get("uid")
-               })
-        if download_url.find("{") != -1:
-            self.warn(f"当前不支持该站点的辅助任务，Url转换失败：{download_url}")
+
+        def __is_special_site(url):
+            """
+            判断是否为特殊站点
+            """
+            if "hdchina.org" in url:
+                return True
+            if "hdsky.me" in url:
+                return True
+            if "hdcity.in" in url:
+                return True
+            if "totheglory.im" in url:
+                return True
+            return False
+
+        try:
+            if __is_special_site(site.get('strict_url')):
+                # 从详情页面获取下载链接
+                return self.__get_torrent_url_from_page(seed=seed, site=site)
+            else:
+                download_url = base_url.replace(
+                    "id={}",
+                    "id={id}"
+                ).replace(
+                    "/{}",
+                    "/{id}"
+                ).format(
+                    **{
+                        "id": seed.get("torrent_id"),
+                        "passkey": site.get("passkey") or '',
+                        "uid": site.get("uid") or ''
+                    }
+                )
+                if download_url.count("{"):
+                    self.warn(f"当前不支持该站点的辅助任务，Url转换失败：{seed}")
+                    return None
+                download_url = re.sub(r"[&?]passkey=", "",
+                                      re.sub(r"[&?]uid=", "",
+                                             download_url,
+                                             flags=re.IGNORECASE),
+                                      flags=re.IGNORECASE)
+                return f"{site.get('strict_url')}/{download_url}"
+        except Exception as e:
+            self.warn(f"当前不支持该站点的辅助任务，Url转换失败：{str(e)}")
             return None
-        return f"{site.get('strict_url')}/{download_url}"
+
+    def __get_torrent_url_from_page(self, seed, site):
+        """
+        从详情页面获取下载链接
+        """
+        try:
+            page_url = f"{site.get('strict_url')}/details.php?id={seed.get('torrent_id')}&hit=1"
+            self.info(f"正在获取种子下载链接：{page_url} ...")
+            res = RequestUtils(
+                cookies=site.get("cookie"),
+                headers=site.get("ua"),
+                proxies=Config().get_proxies() if site.get("proxy") else None
+            ).get_res(url=page_url)
+            if res is not None and res.status_code in (200, 500):
+                if "charset=utf-8" in res.text or "charset=UTF-8" in res.text:
+                    res.encoding = "UTF-8"
+                else:
+                    res.encoding = res.apparent_encoding
+                if not res.text:
+                    self.warn(f"获取种子下载链接失败，页面内容为空：{page_url}")
+                    return None
+                # 使用xpath从页面中获取下载链接
+                html = etree.HTML(res.text)
+                for xpath in self._torrent_xpaths:
+                    download_url = html.xpath(xpath)
+                    if download_url:
+                        download_url = download_url[0]
+                        self.info(f"获取种子下载链接成功：{download_url}")
+                        if not download_url.startswith("http"):
+                            if download_url.startswith("/"):
+                                download_url = f"{site.get('strict_url')}{download_url}"
+                            else:
+                                download_url = f"{site.get('strict_url')}/{download_url}"
+                        return download_url
+                self.warn(f"获取种子下载链接失败，未找到下载链接：{page_url}")
+                return None
+            else:
+                return None
+        except Exception as e:
+            self.warn(f"获取种子下载链接失败：{str(e)}")
+            return None
 
     def stop_service(self):
         """

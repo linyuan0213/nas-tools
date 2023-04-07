@@ -10,12 +10,13 @@ from app.utils.commons import singleton
 class IyuuHelper(object):
     _version = "2.0.0"
     _api_base = "https://api.iyuu.cn/%s"
-    _sites = []
+    _sites = {}
     _token = None
 
     def __init__(self, token):
         self._token = token
-        self.init_config()
+        if self._token:
+            self.init_config()
 
     def init_config(self):
         self._sites = self.__get_sites()
@@ -39,7 +40,7 @@ class IyuuHelper(object):
         else:
             ret = RequestUtils(
                 accept_type="application/json"
-            ).post_res(f"{url}", data=json.dumps(params))
+            ).post_res(f"{url}", data=params)
         if ret:
             result = ret.json()
             if result.get('ret') == 200:
@@ -52,14 +53,12 @@ class IyuuHelper(object):
             return None, f"请求IYUU失败，未获取到返回信息"
 
     def get_torrent_url(self, sid):
-        if not self._sites:
-            return None, None
         if not sid:
             return None, None
-        for site in self._sites:
-            if site.get('id') == sid:
-                return site.get('base_url'), site.get('download_page')
-        return None, None
+        if not self._sites.get(sid):
+            return None, None
+        site = self._sites.get(sid)
+        return site.get('base_url'), site.get('download_page')
 
     def __get_sites(self):
         """
@@ -84,10 +83,14 @@ class IyuuHelper(object):
         """
         result, msg = self.__request_iyuu(url=self._api_base % 'api/sites')
         if result:
-            return result.get('sites')
+            ret_sites = {}
+            sites = result.get('sites') or []
+            for site in sites:
+                ret_sites[site.get('id')] = site
+            return ret_sites
         else:
             print(msg)
-            return []
+            return {}
 
     def get_seed_info(self, info_hashs: list):
         """
@@ -110,15 +113,14 @@ class IyuuHelper(object):
             "version": "1.0.0"
         }
         """
-        # FIXME 非法请求：做种列表sha1校验失败
         info_hashs.sort()
-        json_str = json.dumps(info_hashs, ensure_ascii=False)
-        sha1 = self.get_sha1(json_str)
+        json_data = json.dumps(info_hashs, separators=(',', ':'), ensure_ascii=False)
+        sha1 = self.get_sha1(json_data)
         result, msg = self.__request_iyuu(url=self._api_base % 'api/infohash',
                                           method="post",
                                           params={
                                               "timestamp": time.time(),
-                                              "hash": json_str,
+                                              "hash": json_data,
                                               "sha1": sha1
                                           })
         return result, msg
