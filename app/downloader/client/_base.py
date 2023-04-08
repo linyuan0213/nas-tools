@@ -193,3 +193,10 @@ class _IDownloadClient(metaclass=ABCMeta):
         设置速度限制
         """
         pass
+
+    @abstractmethod
+    def recheck_torrents(self, ids):
+        """
+        下载控制：重新校验
+        """
+        pass
