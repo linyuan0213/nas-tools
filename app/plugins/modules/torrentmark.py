@@ -182,14 +182,16 @@ class TorrentMark(_IPluginModule):
                 # 获取种子hash
                 hash_str = self.__get_hash(torrent, downloader_type)
                 # 获取种子标签
-                torrent_tags = set(map(lambda s: s.strip(), (self.__get_tag(torrent, downloader_type) or "").split(",")))
-                pt_flag = self.__isPT(torrent, downloader_type)
+                torrent_tags = set(self.__get_tag(torrent, downloader_type))
+                pt_flag = self.__isPt(torrent, downloader_type)
                 torrent_tags.discard("")
                 if pt_flag is True:
+                    torrent_tags.discard("BT")
                     torrent_tags.add("PT")
                     self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
                 else:
                     torrent_tags.add("BT")
+                    torrent_tags.discard("PT")
                     self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
         self.info("标记任务执行完成")
 
@@ -210,134 +212,34 @@ class TorrentMark(_IPluginModule):
         获取种子标签
         """
         try:
-            return torrent.get("tags") or [] if dl_type == DownloaderType.QB else torrent.labels or []
+            return list(map(lambda s: s.strip(), (torrent.get("tags") or "").split(","))) if dl_type == DownloaderType.QB else torrent.labels or []
         except Exception as e:
             print(str(e))
             return []
-   
+
     @staticmethod
-    def __isPT(torrent, dl_type):
+    def __isPt(torrent, dl_type):
         """
         获取种子标签
         """
         try:
             tracker_list = list()
             if dl_type == DownloaderType.QB and torrent.trackers_count == 1:
-                tracker_list.append(torrent.tracker)
+                for tracker in torrent.trackers.data:
+                    if tracker['msg'] == '':
+                        tracker_list.append(tracker['url'])
             elif dl_type == DownloaderType.TR:
-                tracker_list = torrent.tracker_list or []
+                tracker_list = list(map(lambda s: s['announce'], torrent.trackers or []))
             if len(tracker_list) == 1:
                 if tracker_list[0].find("secure=") != -1 \
                     or tracker_list[0].find("passkey=") != -1 \
-                    or tracker_list[0].find("totheglory") != -1:
+                        or tracker_list[0].find("totheglory") != -1:
                     return True
             else:
                 return False
         except Exception as e:
             print(str(e))
             return False
-
-    # @staticmethod
-    # def __get_save_path(torrent, dl_type):
-    #     """
-    #     获取种子保存路径
-    #     """
-    #     try:
-    #         return torrent.get("save_path") if dl_type == DownloaderType.QB else torrent.download_dir
-    #     except Exception as e:
-    #         print(str(e))
-    #         return ""
-
-    # def __get_download_url(self, seed, site, base_url):
-    #     """
-    #     拼装种子下载链接
-    #     """
-
-    #     def __is_special_site(url):
-    #         """
-    #         判断是否为特殊站点
-    #         """
-    #         if "hdchina.org" in url:
-    #             return True
-    #         if "hdsky.me" in url:
-    #             return True
-    #         if "hdcity.in" in url:
-    #             return True
-    #         if "totheglory.im" in url:
-    #             return True
-    #         return False
-
-    #     try:
-    #         if __is_special_site(site.get('strict_url')):
-    #             # 从详情页面获取下载链接
-    #             return self.__get_torrent_url_from_page(seed=seed, site=site)
-    #         else:
-    #             download_url = base_url.replace(
-    #                 "id={}",
-    #                 "id={id}"
-    #             ).replace(
-    #                 "/{}",
-    #                 "/{id}"
-    #             ).format(
-    #                 **{
-    #                     "id": seed.get("torrent_id"),
-    #                     "passkey": site.get("passkey") or '',
-    #                     "uid": site.get("uid") or ''
-    #                 }
-    #             )
-    #             if download_url.count("{"):
-    #                 self.warn(f"当前不支持该站点的辅助任务，Url转换失败：{seed}")
-    #                 return None
-    #             download_url = re.sub(r"[&?]passkey=", "",
-    #                                   re.sub(r"[&?]uid=", "",
-    #                                          download_url,
-    #                                          flags=re.IGNORECASE),
-    #                                   flags=re.IGNORECASE)
-    #             return f"{site.get('strict_url')}/{download_url}"
-    #     except Exception as e:
-    #         self.warn(f"当前不支持该站点的辅助任务，Url转换失败：{str(e)}")
-    #         return None
-
-    # def __get_torrent_url_from_page(self, seed, site):
-    #     """
-    #     从详情页面获取下载链接
-    #     """
-    #     try:
-    #         page_url = f"{site.get('strict_url')}/details.php?id={seed.get('torrent_id')}&hit=1"
-    #         self.info(f"正在获取种子下载链接：{page_url} ...")
-    #         res = RequestUtils(
-    #             cookies=site.get("cookie"),
-    #             headers=site.get("ua"),
-    #             proxies=Config().get_proxies() if site.get("proxy") else None
-    #         ).get_res(url=page_url)
-    #         if res is not None and res.status_code in (200, 500):
-    #             if "charset=utf-8" in res.text or "charset=UTF-8" in res.text:
-    #                 res.encoding = "UTF-8"
-    #             else:
-    #                 res.encoding = res.apparent_encoding
-    #             if not res.text:
-    #                 self.warn(f"获取种子下载链接失败，页面内容为空：{page_url}")
-    #                 return None
-    #             # 使用xpath从页面中获取下载链接
-    #             html = etree.HTML(res.text)
-    #             for xpath in self._torrent_xpaths:
-    #                 download_url = html.xpath(xpath)
-    #                 if download_url:
-    #                     download_url = download_url[0]
-    #                     self.info(f"获取种子下载链接成功：{download_url}")
-    #                     if not download_url.startswith("http"):
-    #                         if download_url.startswith("/"):
-    #                             download_url = f"{site.get('strict_url')}{download_url}"
-    #                         else:
-    #                             download_url = f"{site.get('strict_url')}/{download_url}"
-    #                     return download_url
-    #             self.warn(f"获取种子下载链接失败，未找到下载链接：{page_url}")
-    #             return None
-    #         else:
-    #             return None
-    #     except Exception as e:
-    #         self.warn(f"获取种子下载链接失败：{str(e)}")
-    #         return None
 
     def stop_service(self):
         """
