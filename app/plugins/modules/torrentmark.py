@@ -226,7 +226,7 @@ class TorrentMark(_IPluginModule):
             tracker_list = list()
             if dl_type == DownloaderType.QB and torrent.trackers_count == 1:
                 for tracker in torrent.trackers.data:
-                    if tracker['msg'] == '':
+                    if tracker['url'].find('http') != -1:
                         tracker_list.append(tracker['url'])
             elif dl_type == DownloaderType.TR:
                 tracker_list = list(map(lambda s: s['announce'], torrent.trackers or []))
