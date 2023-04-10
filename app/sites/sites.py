@@ -117,7 +117,8 @@ class Sites:
                 self._limiters[site.ID] = SiteRateLimiter(
                     limit_interval=int(site_note.get("limit_interval")) * 60,
                     limit_count=int(site_note.get("limit_count")),
-                    limit_seconds=int(site_note.get("limit_seconds"))
+                    limit_seconds=int(site_note.get("limit_seconds")) if site_note.get("limit_seconds") and str(
+                        site_note.get("limit_seconds")).isdigit() else None
                 )
 
     def init_favicons(self):
@@ -182,6 +183,8 @@ class Sites:
         """
         获取最大站点优先级
         """
+        if not self._siteByIds:
+            return 0
         return max([int(site.get("pri")) for site in self._siteByIds.values()])
 
     def get_site_dict(self,
