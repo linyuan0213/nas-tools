@@ -57,6 +57,7 @@ class TorrentTransfer(_IPluginModule):
     _nopaths = None
     _deletesource = False
     _fromtorrentpath = None
+    _autostart = False
     # 退出事件
     _event = Event()
     # 待检查种子清单
@@ -222,6 +223,13 @@ class TorrentTransfer(_IPluginModule):
                             'id': 'notify',
                         },
                         {
+                            'title': '校验成功后开始',
+                            'required': "",
+                            'tooltip': '自动开始目的下载器中处于校验成功且暂停状态的种子',
+                            'type': 'switch',
+                            'id': 'autostart',
+                        },
+                        {
                             'title': '立即运行一次',
                             'required': "",
                             'tooltip': '打开后立即运行一次（点击此对话框的确定按钮后即会运行，周期未设置也会运行），关闭后将仅按照周期运行（同时上次触发运行的任务如果在运行中也会停止）',
@@ -237,6 +245,7 @@ class TorrentTransfer(_IPluginModule):
         self.downloader = Downloader()
         self.message = Message()
         # 读取配置
+
         if config:
             self._enable = config.get("enable")
             self._onlyonce = config.get("onlyonce")
@@ -250,6 +259,7 @@ class TorrentTransfer(_IPluginModule):
             self._deletesource = config.get("deletesource")
             self._fromtorrentpath = config.get("fromtorrentpath")
             self._nopaths = config.get("nopaths")
+            self._autostart = config.get("autostart")
 
         # 停止现有任务
         self.stop_service()
@@ -289,11 +299,13 @@ class TorrentTransfer(_IPluginModule):
                     "todownloader": self._todownloader,
                     "deletesource": self._deletesource,
                     "fromtorrentpath": self._fromtorrentpath,
-                    "nopaths": self._nopaths
+                    "nopaths": self._nopaths,
+                    "autostart": self._autostart
                 })
             if self._scheduler.get_jobs():
-                # 追加种子校验服务
-                self._scheduler.add_job(self.check_recheck, 'interval', minutes=3)
+                if self._autostart:
+                    # 追加种子校验服务
+                    self._scheduler.add_job(self.check_recheck, 'interval', minutes=3)
                 # 启动服务
                 self._scheduler.print_jobs()
                 self._scheduler.start()
@@ -318,10 +330,12 @@ class TorrentTransfer(_IPluginModule):
         self.info("开始移转做种任务 ...")
         # 源下载器
         downloader = self._fromdownloader[0]
+        # 源下载器类型
+        downloader_type = self.downloader.get_downloader_type(downloader_id=downloader)
         # 目的下载器
         todownloader = self._todownloader[0]
-        # 下载器类型
-        downloader_type = self.downloader.get_downloader_type(downloader_id=downloader)
+        # 目的下载器类型
+        to_downloader_type = self.downloader.get_downloader_type(downloader_id=todownloader)
         # 获取下载器中已完成的种子
         torrents = self.downloader.get_completed_torrents(downloader_id=downloader)
         if torrents:
@@ -351,11 +365,15 @@ class TorrentTransfer(_IPluginModule):
                     continue
             # 获取种子标签
             torrent_labels = self.__get_label(torrent, downloader_type)
-            if self._nolabels \
-                    and torrent_labels \
-                    and set(self._nolabels.split(',')).intersection(set(torrent_labels)):
-                self.info(f"种子 {hash_str} 含有不转移标签，跳过 ...")
-                continue
+            if torrent_labels and self._nolabels:
+                is_skip = False
+                for label in self._nolabels.split(','):
+                    if label in torrent_labels:
+                        self.info(f"种子 {hash_str} 含有不转移标签 {label}，跳过 ...")
+                        is_skip = True
+                        break
+                if is_skip:
+                    continue
             hash_strs.append({
                 "hash": hash_str,
                 "save_path": save_path
@@ -400,14 +418,14 @@ class TorrentTransfer(_IPluginModule):
                         continue
                     # 读取trackers
                     try:
-                        torrent = bdecode(content)
-                        announce = torrent.get('announce')
+                        torrent_main = bdecode(content)
+                        main_announce = torrent_main.get('announce')
                     except Exception as err:
                         self.error(f"解析种子文件 {torrent_file} 失败：{err}")
                         fail += 1
                         continue
 
-                    if not announce:
+                    if not main_announce:
                         self.info(f"{hash_item.get('hash')} 未发现tracker信息，尝试补充tracker信息...")
                         # 读取fastresume文件
                         fastresume_file = os.path.join(self._fromtorrentpath,
@@ -423,18 +441,18 @@ class TorrentTransfer(_IPluginModule):
                             # 解析fastresume文件
                             torrent_fastresume = bdecode(fastresume)
                             # 读取trackers
-                            trackers = torrent_fastresume.get('trackers')
-                            if isinstance(trackers, list) \
-                                    and len(trackers) > 0 \
-                                    and trackers[0]:
+                            fastresume_trackers = torrent_fastresume.get('trackers')
+                            if isinstance(fastresume_trackers, list) \
+                                    and len(fastresume_trackers) > 0 \
+                                    and fastresume_trackers[0]:
                                 # 重新赋值
-                                torrent['announce'] = trackers[0][0]
+                                torrent_main['announce'] = fastresume_trackers[0][0]
                                 # 替换种子文件路径
                                 torrent_file = os.path.join(Config().get_temp_path(),
                                                             f"{hash_item.get('hash')}.torrent")
                                 # 编码并保存到临时文件
                                 with open(torrent_file, 'wb') as f:
-                                    f.write(bencode(torrent))
+                                    f.write(bencode(torrent_main))
                         except Exception as err:
                             self.error(f"解析fastresume文件 {fastresume_file} 失败：{err}")
                             fail += 1
@@ -467,8 +485,7 @@ class TorrentTransfer(_IPluginModule):
                     # 下载成功
                     self.info(f"成功添加转移做种任务，种子文件：{torrent_file}")
                     # TR会自动校验
-                    downloader_type = self.downloader.get_downloader_type(downloader_id=todownloader)
-                    if downloader_type == DownloaderType.QB:
+                    if to_downloader_type == DownloaderType.QB:
                         # 开始校验种子
                         self.downloader.recheck_torrents(downloader_id=todownloader, ids=[download_id])
                     # 删除源种子，不能删除文件！
@@ -477,8 +494,16 @@ class TorrentTransfer(_IPluginModule):
                                                         ids=[download_id],
                                                         delete_file=False)
                     success += 1
+                    # 插入转种记录
+                    history_key = "%s-%s" % (int(self._fromdownloader[0]), hash_item.get('hash'))
+                    self.history(key=history_key,
+                                 value={
+                                     "to_download": int(self._todownloader[0]),
+                                     "to_download_id": download_id,
+                                     "delete_source": self._deletesource,
+                                 })
             # 触发校验任务
-            if success > 0:
+            if success > 0 and self._autostart:
                 self.check_recheck()
             # 发送通知
             if self._notify:
@@ -571,8 +596,8 @@ class TorrentTransfer(_IPluginModule):
         判断种子是否可以做种并处于暂停状态
         """
         try:
-            return torrent.get("state") == "pausedUP" if dl_type == DownloaderType.QB \
-                else (torrent.status.stopped and torrent.percent_done == 1)
+            return torrent.get("state") == "pausedUP" and torrent.get("tracker") if dl_type == DownloaderType.QB \
+                else (torrent.status.stopped and torrent.percent_done == 1 and torrent.trackers)
         except Exception as e:
             print(str(e))
             return False
