@@ -715,6 +715,11 @@ def service():
         else:
             Services.pop('sync')
 
+    # 系统进程
+    if "processes" in Services:
+        if not SystemUtils.is_docker() or not SystemUtils.get_all_processes():
+            Services.pop('processes')
+
     return render_template("service.html",
                            Count=len(Services),
                            RuleGroups=RuleGroups,

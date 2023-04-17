@@ -584,9 +584,9 @@ class Message(object):
                     image=image_url
                 )
 
-    def send_custom_message(self, title, text="", image=""):
+    def send_plugin_message(self, title, text="", image=""):
         """
-        发送自定义消息
+        发送插件消息
         """
         if not title:
             return
@@ -595,6 +595,26 @@ class Message(object):
         # 发送消息
         for client in self._active_clients:
             if "custom_message" in client.get("switchs"):
+                self.__sendmsg(
+                    client=client,
+                    title=title,
+                    text=text,
+                    image=image
+                )
+
+    def send_custom_message(self, clients, title, text="", image=""):
+        """
+        发送自定义消息
+        """
+        if not title:
+            return
+        if not clients:
+            return
+        # 插入消息中心
+        self.messagecenter.insert_system_message(level="INFO", title=title, content=text)
+        # 发送消息
+        for client in self._active_clients:
+            if str(client.get("id")) in clients:
                 self.__sendmsg(
                     client=client,
                     title=title,

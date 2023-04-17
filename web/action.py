@@ -201,6 +201,7 @@ class WebAction:
             "list_brushtask_torrents": self.__list_brushtask_torrents,
             "set_system_config": self.__set_system_config,
             "get_site_user_statistics": self.get_site_user_statistics,
+            "send_plugin_message": self.send_plugin_message,
             "send_custom_message": self.send_custom_message,
             "media_detail": self.media_detail,
             "media_similar": self.__media_similar,
@@ -231,7 +232,8 @@ class WebAction:
             "get_plugin_state": self.get_plugin_state,
             "get_plugins_conf": self.get_plugins_conf,
             "update_category_config": self.update_category_config,
-            "get_category_config": self.get_category_config
+            "get_category_config": self.get_category_config,
+            "get_system_processes": self.get_system_processes
         }
 
     def action(self, cmd, data=None):
@@ -1139,6 +1141,7 @@ class WebAction:
                                                    rss_uses=rss_uses)
         # 生效站点配置
         Sites().init_config()
+        Rss().init_config()
         # 初始化刷流任务
         BrushTask().init_config()
         return {"code": ret}
@@ -4155,7 +4158,6 @@ class WebAction:
         name = data.get("name")
         category = data.get("category")
         tags = data.get("tags")
-        content_layout = data.get("content_layout")
         is_paused = data.get("is_paused")
         upload_limit = data.get("upload_limit")
         download_limit = data.get("download_limit")
@@ -4166,7 +4168,6 @@ class WebAction:
                                               name=name,
                                               category=category,
                                               tags=tags,
-                                              content_layout=content_layout,
                                               is_paused=is_paused,
                                               upload_limit=upload_limit or 0,
                                               download_limit=download_limit or 0,
@@ -4470,6 +4471,17 @@ class WebAction:
         return {"code": 0, "data": statistics}
 
     @staticmethod
+    def send_plugin_message(data):
+        """
+        发送插件消息
+        """
+        title = data.get("title")
+        text = data.get("text") or ""
+        image = data.get("image") or ""
+        Message().send_plugin_message(title=title, text=text, image=image)
+        return {"code": 0}
+
+    @staticmethod
     def send_custom_message(data):
         """
         发送自定义消息
@@ -4477,7 +4489,10 @@ class WebAction:
         title = data.get("title")
         text = data.get("text") or ""
         image = data.get("image") or ""
-        Message().send_custom_message(title=title, text=text, image=image)
+        message_clients = data.get("message_clients")
+        if not message_clients:
+            return {"code": 1, "msg": "未选择消息服务"}
+        Message().send_custom_message(clients=message_clients, title=title, text=text, image=image)
         return {"code": 0}
 
     @staticmethod
@@ -5087,3 +5102,10 @@ class WebAction:
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
             return None
+
+    @staticmethod
+    def get_system_processes(data=None):
+        """
+        获取系统进程
+        """
+        return {"code": 0, "data": SystemUtils.get_all_processes()}

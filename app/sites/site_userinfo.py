@@ -140,7 +140,7 @@ class SiteUserInfo(object):
         if not site_schema:
             log.error("【Sites】站点 %s 无法识别站点类型" % site_name)
             return None
-        return site_schema(site_name, url, site_cookie, html_text, session=session, ua=ua)
+        return site_schema(site_name, url, site_cookie, html_text, session=session, ua=ua, emulate=emulate, proxy=proxy)
 
     def __refresh_site_data(self, site_info):
         """
@@ -236,7 +236,14 @@ class SiteUserInfo(object):
         incDownloads = 0
         _, _, site, upload, download = SiteUserInfo().get_pt_site_statistics_history(2)
 
-        for site, upload, download in zip(site, upload, download):
+        # 按照上传降序排序
+        data_list = list(zip(site, upload, download))
+        data_list = sorted(data_list, key=lambda x: x[1], reverse=True)
+
+        for data in data_list:
+            site = data[0]
+            upload = int(data[1])
+            download = int(data[2])
             if upload > 0 or download > 0:
                 incUploads += int(upload)
                 incDownloads += int(download)
@@ -245,7 +252,7 @@ class SiteUserInfo(object):
                                    f"下载量：{StringUtils.str_filesize(download)}\n"
                                    f"\n————————————")
 
-        if incDownloads and incUploads:
+        if incDownloads or incUploads:
             string_list.insert(0, f"【今日汇总】\n"
                                   f"总上传：{StringUtils.str_filesize(incUploads)}\n"
                                   f"总下载：{StringUtils.str_filesize(incDownloads)}\n"
