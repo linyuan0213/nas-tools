@@ -30,7 +30,7 @@ class BrushTask(object):
     dbhelper = None
     downloader = None
     _scheduler = None
-    _brush_tasks = []
+    _brush_tasks = {}
     _torrents_cache = []
     _qb_client = "qbittorrent"
     _tr_client = "transmission"
@@ -48,47 +48,11 @@ class BrushTask(object):
         # 移除现有任务
         self.stop_service()
         # 读取刷流任务列表
-        self._brush_tasks = self.get_brushtask_info()
-        if not self._brush_tasks:
-            return
-        # 启动RSS任务
-        task_flag = False
-        self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
-        for task in self._brush_tasks:
-            if task.get("state") \
-                    and task.get("interval"):
-                cron = str(task.get("interval")).strip()
-                if cron.isdigit():
-                    task_flag = True
-                    self._scheduler.add_job(func=self.check_task_rss,
-                                            args=[task.get("id")],
-                                            trigger='interval',
-                                            seconds=int(cron) * 60)
-                elif cron.count(" ") == 4:
-                    try:
-                        self._scheduler.add_job(func=self.check_task_rss,
-                                                args=[task.get("id")],
-                                                trigger=CronTrigger.from_crontab(cron))
-                        task_flag = True
-                    except Exception as err:
-                        log.error(f"任务 {task.get('name')} 运行周期格式不正确：{str(err)}")
-
-        # 启动删种任务
-        if task_flag:
-            self._scheduler.add_job(func=self.remove_tasks_torrents,
-                                    trigger='interval',
-                                    seconds=BRUSH_REMOVE_TORRENTS_INTERVAL)
-            # 启动
-            self._scheduler.print_jobs()
-            self._scheduler.start()
-            log.info("刷流服务启动")
-
-    def get_brushtask_info(self, taskid=None):
-        """
-        读取刷流任务列表
-        """
+        self._brush_tasks = {}
         brushtasks = self.dbhelper.get_brushtasks()
-        _brush_tasks = []
+        if not brushtasks:
+            return
+        # 加载任务到内存
         for task in brushtasks:
             site_info = self.sites.get_sites(siteid=task.SITE)
             if site_info:
@@ -97,7 +61,7 @@ class BrushTask(object):
                 site_url = ""
             downloader_info = self.downloader.get_downloader_conf(task.DOWNLOADER)
             total_size = round(int(self.dbhelper.get_brushtask_totalsize(task.ID)) / (1024 ** 3), 1)
-            _brush_tasks.append({
+            self._brush_tasks[str(task.ID)] = {
                 "id": task.ID,
                 "name": task.NAME,
                 "site": site_info.get("name"),
@@ -105,7 +69,7 @@ class BrushTask(object):
                 "interval": task.INTEVAL,
                 "label": task.LABEL,
                 "savepath": task.SAVEPATH,
-                "state": True if task.STATE == "Y" else False,
+                "state": task.STATE,
                 "downloader": task.DOWNLOADER,
                 "downloader_name": downloader_info.get("name") if downloader_info else None,
                 "transfer": True if task.TRANSFER == "Y" else False,
@@ -125,14 +89,53 @@ class BrushTask(object):
                 "upload_size": StringUtils.str_filesize(task.UPLOAD_SIZE),
                 "lst_mod_date": task.LST_MOD_DATE,
                 "site_url": site_url
-            })
+            }
+
+        # 启动RSS任务
+        if self._brush_tasks:
+            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            for _, task in self._brush_tasks.items():
+                # 任务状态：Y-正常，S-停止下载新种，N-完全停止
+                if task.get("state") in ['Y', 'S'] \
+                        and task.get("interval"):
+                    cron = str(task.get("interval")).strip()
+                    if cron.isdigit():
+                        if task.get("state") == 'Y':
+                            self._scheduler.add_job(func=self.check_task_rss,
+                                                    args=[task.get("id")],
+                                                    trigger='interval',
+                                                    seconds=int(cron) * 60)
+                    elif cron.count(" ") == 4:
+                        if task.get("state") == 'Y':
+                            try:
+                                self._scheduler.add_job(func=self.check_task_rss,
+                                                        args=[task.get("id")],
+                                                        trigger=CronTrigger.from_crontab(cron))
+                            except Exception as err:
+                                log.error(f"任务 {task.get('name')} 运行周期格式不正确：{str(err)}")
+                    else:
+                        log.error(f"任务 {task.get('name')} 运行周期格式不正确")
+            # 正常运行任务数
+            running_task = len(self._scheduler.get_jobs())
+            # 启动删种任务
+            if running_task > 0:
+                self._scheduler.add_job(func=self.remove_tasks_torrents,
+                                        trigger='interval',
+                                        seconds=BRUSH_REMOVE_TORRENTS_INTERVAL)
+                # 启动
+                self._scheduler.print_jobs()
+                self._scheduler.start()
+
+                log.info(f"{running_task} 个刷流服务正常启动")
+
+    def get_brushtask_info(self, taskid=None):
+        """
+        读取刷流任务列表
+        """
         if taskid:
-            for task in _brush_tasks:
-                if task.get("id") == int(taskid):
-                    return task
-            return {}
+            return self._brush_tasks.get(str(taskid)) or {}
         else:
-            return _brush_tasks
+            return self._brush_tasks.values()
 
     def check_task_rss(self, taskid):
         """
@@ -154,6 +157,10 @@ class BrushTask(object):
         rss_free = taskinfo.get("free")
         downloader_id = taskinfo.get("downloader")
         ua = taskinfo.get("ua")
+        state = taskinfo.get("state")
+        if state != 'Y':
+            log.info("【Brush】刷流任务 %s 已停止下载新种！" % task_name)
+            return
         # 查询站点信息
         site_info = self.sites.get_sites(siteid=site_id)
         if not site_info:
@@ -163,7 +170,10 @@ class BrushTask(object):
         site_id = site_info.get("id")
         site_name = site_info.get("name")
         site_proxy = site_info.get("proxy")
-
+        site_brush_enable = site_info.get("brush_enable")
+        if not site_brush_enable:
+            log.error("【Brush】站点 %s 未开启刷流功能，无法刷流！" % site_name)
+            return
         if not rss_url:
             log.error("【Brush】站点 %s 未配置RSS订阅地址，无法刷流！" % site_name)
             return
@@ -279,8 +289,8 @@ class BrushTask(object):
             self.message.send_brushtask_remove_message(title=_msg_title, text=_msg_text)
 
         # 遍历所有任务
-        for taskinfo in self._brush_tasks:
-            if not taskinfo.get("state"):
+        for taskid, taskinfo in self._brush_tasks.items():
+            if taskinfo.get("state") == 'N':
                 continue
             try:
                 # 总上传量
@@ -292,7 +302,6 @@ class BrushTask(object):
                 # 需要更新状态的种子
                 update_torrents = []
                 # 任务信息
-                taskid = taskinfo.get("id")
                 task_name = taskinfo.get("name")
                 downloader_id = taskinfo.get("downloader")
                 remove_rule = taskinfo.get("remove_rule")

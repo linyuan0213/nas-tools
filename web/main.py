@@ -54,6 +54,7 @@ ConfigLock = Lock()
 App = Flask(__name__)
 App.wsgi_app = ProxyFix(App.wsgi_app)
 App.config['JSON_AS_ASCII'] = False
+App.config['JSON_SORT_KEYS'] = False
 App.secret_key = os.urandom(24)
 App.permanent_session_lifetime = datetime.timedelta(days=30)
 
@@ -632,12 +633,14 @@ def brushtask():
 @App.route('/service', methods=['POST', 'GET'])
 @login_required
 def service():
+    # 所有规则组
     RuleGroups = Filter().get_rule_groups()
-    pt = Config().get_config('pt')
+    # 所有同步目录
+    SyncPaths = Sync().get_sync_path_conf()
 
     # 所有服务
     Services = current_user.get_services()
-
+    pt = Config().get_config('pt')
     # RSS订阅
     if "rssdownload" in Services:
         pt_check_interval = pt.get('pt_check_interval')
@@ -723,6 +726,7 @@ def service():
     return render_template("service.html",
                            Count=len(Services),
                            RuleGroups=RuleGroups,
+                           SyncPaths=SyncPaths,
                            SchedulerTasks=Services)
 
 
