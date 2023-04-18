@@ -73,7 +73,7 @@ class _IIndexClient(metaclass=ABCMeta):
                match_media,
                in_from: SearchType):
         """
-        根据关键字多线程检索
+        根据关键字多线程搜索
         """
         if not indexer or not key_word:
             return None
@@ -84,7 +84,7 @@ class _IIndexClient(metaclass=ABCMeta):
             return []
         # 计算耗时
         start_time = datetime.datetime.now()
-        log.info(f"【{self.index_type}】开始检索Indexer：{indexer.name} ...")
+        log.info(f"【{self.index_type}】开始搜索Indexer：{indexer.name} ...")
         # 特殊符号处理
         search_word = StringUtils.handler_special_chars(text=key_word,
                                                         replace_word=" ",
@@ -95,8 +95,8 @@ class _IIndexClient(metaclass=ABCMeta):
         # 索引花费时间
         seconds = (datetime.datetime.now() - start_time).seconds
         if len(result_array) == 0:
-            log.warn(f"【{self.index_type}】{indexer.name} 未检索到数据")
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 未检索到数据")
+            log.warn(f"【{self.index_type}】{indexer.name} 未搜索到数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 未搜索到数据")
 
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                         itype=self.client_id,
@@ -231,7 +231,7 @@ class _IIndexClient(metaclass=ABCMeta):
                               match_media,
                               start_time):
         """
-        从检索结果中匹配符合资源条件的记录
+        从搜索结果中匹配符合资源条件的记录
         """
         ret_array = []
         index_sucess = 0
