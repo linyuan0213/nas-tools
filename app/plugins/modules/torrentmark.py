@@ -181,15 +181,14 @@ class TorrentMark(_IPluginModule):
                 torrent_tags = set(self.__get_tag(torrent, downloader_type))
                 pt_flag = self.__isPt(torrent, downloader_type)
                 torrent_tags.discard("")
-                old_torrent_tags = list(torrent_tags.copy())
                 if pt_flag is True:
                     torrent_tags.discard("BT")
                     torrent_tags.add("PT")
-                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags), old_tags = old_torrent_tags)
+                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
                 else:
                     torrent_tags.add("BT")
                     torrent_tags.discard("PT")
-                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags), old_tags=old_torrent_tags)
+                    self.downloader.set_torrents_tag(downloader_id=downloader, ids=hash_str, tags=list(torrent_tags))
         self.info("标记任务执行完成")
 
     @staticmethod
