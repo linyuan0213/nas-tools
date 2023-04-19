@@ -200,7 +200,7 @@ def web():
     SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
     CustomScriptCfg = SystemConfig().get(SystemConfigKey.CustomScript)
     CooperationSites = current_user.get_authsites()
-    Menus = current_user.get_usermenus()
+    Menus = WebAction().get_user_menus()
     return render_template('navigation.html',
                            GoPage=GoPage,
                            CurrentUser=current_user,
@@ -639,6 +639,8 @@ def service():
     RuleGroups = Filter().get_rule_groups()
     # 所有同步目录
     SyncPaths = Sync().get_sync_path_conf()
+    # 所有站点
+    SigninSites = Sites().get_site_dict(signin=True)
 
     # 所有服务
     Services = current_user.get_services()
@@ -729,6 +731,7 @@ def service():
                            Count=len(Services),
                            RuleGroups=RuleGroups,
                            SyncPaths=SyncPaths,
+                           SigninSites=SigninSites,
                            SchedulerTasks=Services)
 
 

@@ -602,8 +602,7 @@ class BrushTask(object):
             download_dir=download_dir,
             download_setting="-2",
             download_limit=download_limit,
-            upload_limit=upload_limit,
-            is_auto=False if download_dir else None
+            upload_limit=upload_limit
         )
         if not download_id:
             # 下载失败
@@ -848,40 +847,49 @@ class BrushTask(object):
 
     @staticmethod
     def __get_torrent_dict(downloader_type, torrent):
-        # 当前时间
-        date_now = int(time.mktime(datetime.now().timetuple()))
+
+        # 当前时间戳
+        date_now = int(time.time())
 
         if downloader_type == "qbittorrent":
             # ID
             torrent_id = torrent.get("hash")
-            # 已开始时间 秒
-            dltime = int(time.time() - torrent.get("added_on"))
-            # 已做种时间 秒
-            date_done = torrent.completion_on if torrent.completion_on > 0 else torrent.added_on
-            seeding_time = date_now - date_done if date_done else 0
+            # 下载时间
+            dltime = date_now - torrent.get("added_on") if torrent.get("added_on") else 0
+            # 做种时间
+            seeding_time = date_now - torrent.get("completion_on") if torrent.get("completion_on") else 0
             # 分享率
             ratio = torrent.get("ratio") or 0
             # 上传量
             uploaded = torrent.get("uploaded") or 0
             # 平均上传速度 Byte/s
-            avg_upspeed = int(uploaded / dltime)
+            if dltime:
+                avg_upspeed = int(uploaded / dltime)
+            else:
+                avg_upspeed = uploaded
             # 已未活动 秒
-            last_activity = int(torrent.get("last_activity", 0))
-            iatime = date_now - last_activity if last_activity else 0
+            iatime = date_now - torrent.get("last_activity") if torrent.get("last_activity") else 0
             # 下载量
             downloaded = torrent.get("downloaded")
             # 种子大小
             total_size = torrent.get("total_size")
             # 添加时间
-            add_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(torrent.get("added_on")))
+            add_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(torrent.get("added_on") or 0))
+
         else:
+
             # ID
             torrent_id = torrent.hashString
             # 做种时间
-            date_done = torrent.date_done or torrent.date_added
+            if not torrent.date_done or torrent.date_done.timestamp() < 1:
+                seeding_time = 0
+            else:
+                seeding_time = date_now - int(torrent.date_done.timestamp())
             # 下载耗时
-            dltime = date_now - int(time.mktime(torrent.date_added.timetuple()))
-            seeding_time = date_now - int(time.mktime(date_done.timetuple()))
+            if not torrent.date_added or torrent.date_added.timestamp() < 1:
+                dltime = 0
+            else:
+                dltime = date_now - int(torrent.date_added.timestamp())
             # 下载量
             downloaded = int(torrent.total_size * torrent.progress / 100)
             # 分享率
@@ -889,13 +897,20 @@ class BrushTask(object):
             # 上传量
             uploaded = int(downloaded * torrent.ratio)
             # 平均上传速度
-            avg_upspeed = int(uploaded / dltime)
+            if dltime:
+                avg_upspeed = int(uploaded / dltime)
+            else:
+                avg_upspeed = uploaded
             # 未活动时间
-            iatime = date_now - int(time.mktime(torrent.date_active.timetuple()))
+            if not torrent.date_active or torrent.date_active.timestamp() < 1:
+                iatime = 0
+            else:
+                iatime = date_now - int(torrent.date_active.timestamp())
             # 种子大小
             total_size = torrent.total_size
             # 添加时间
-            add_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(torrent.date_added))
+            add_time = time.strftime('%Y-%m-%d %H:%M:%S',
+                                     time.localtime(torrent.date_added.timestamp() if torrent.date_added else 0))
 
         return {
             "id": torrent_id,
