@@ -84,10 +84,11 @@ class User(UserMixin):
         """
         return self.admin_users[0]["pris"].split(",")
 
-    def get_usermenus(self):
+    def get_usermenus(self, ignore=None):
         user_pris_list = self.get_pris().split(",")
+        pris_list = list(set(user_pris_list) - set(ignore))
         menu_list = list()
-        for pris in user_pris_list:
+        for pris in pris_list:
             if pris == "我的媒体库":
                 menu_list.append({'name': '我的媒体库', 'level': 1, 'page': 'index',
                                  'icon': '\n                   ...          '})

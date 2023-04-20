@@ -199,7 +199,7 @@ def web():
     Indexers = Indexer().get_indexers()
     SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
     CustomScriptCfg = SystemConfig().get(SystemConfigKey.CustomScript)
-    Menus = current_user.get_usermenus()
+    Menus = WebAction().get_user_menus()
     return render_template('navigation.html',
                            GoPage=GoPage,
                            CurrentUser=current_user,
