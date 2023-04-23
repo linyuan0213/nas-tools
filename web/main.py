@@ -1647,14 +1647,7 @@ def Img():
     url = request.args.get('url')
     if not url:
         return make_response("参数错误", 400)
-    try:
-        return send_file(WebUtils.get_image_stream(url),
-                     mimetype='image/jpeg',
-                     download_name='image.jpg',
-                     as_attachment=True)
-    except TypeError:
-        log.debug("图片不存在：%s" % url)
-        return make_response("图片不存在", 400)
+    return Response(WebUtils.request_cache(url), mimetype='image/jpeg')
 
 
 # base64模板过滤器
