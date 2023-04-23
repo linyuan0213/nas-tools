@@ -199,7 +199,7 @@ def web():
     Indexers = Indexer().get_indexers()
     SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
     CustomScriptCfg = SystemConfig().get(SystemConfigKey.CustomScript)
-    Menus = WebAction().get_user_menus()
+    Menus = WebAction().get_user_menus().get("menus") or []
     return render_template('navigation.html',
                            GoPage=GoPage,
                            CurrentUser=current_user,
@@ -362,7 +362,7 @@ def sites():
 @App.route('/sitelist', methods=['POST', 'GET'])
 @login_required
 def sitelist():
-    IndexerSites = Indexer().get_builtin_indexers(check=False)
+    IndexerSites = Indexer().get_indexers(check=False)
     return render_template("site/sitelist.html",
                            Sites=IndexerSites,
                            Count=len(IndexerSites))
@@ -908,7 +908,8 @@ def download_setting():
 @App.route('/indexer', methods=['POST', 'GET'])
 @login_required
 def indexer():
-    indexers = Indexer().get_builtin_indexers(check=False)
+    # 只有选中的索引器才搜索
+    indexers = Indexer().get_indexers(check=False)
     private_count = len([item.id for item in indexers if not item.public])
     public_count = len([item.id for item in indexers if item.public])
     return render_template("setting/indexer.html",
@@ -1622,6 +1623,21 @@ def ical():
     response = Response(cal.to_ical(), mimetype='text/calendar')
     response.headers['Content-Disposition'] = 'attachment; filename=nastool.ics'
     return response
+
+
+@App.route('/img')
+@login_required
+def Img():
+    """
+    图片中换服务
+    """
+    url = request.args.get('url')
+    if not url:
+        return make_response("参数错误", 400)
+    return send_file(WebUtils.get_image_stream(url),
+                     mimetype='image/jpeg',
+                     download_name='image.jpg',
+                     as_attachment=True)
 
 
 # base64模板过滤器

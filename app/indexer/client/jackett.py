@@ -54,7 +54,7 @@ class Jackett(_IIndexClient):
     def match(cls, ctype):
         return True if ctype in [cls.schema, cls.index_type] else False
 
-    def get_indexers(self):
+    def get_indexers(self, check=True, indexer_id=None, public=True):
         """
         获取配置的jackett indexer
         :return: indexer 信息 [(indexerId, indexerName, url)]

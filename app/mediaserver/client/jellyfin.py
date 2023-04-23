@@ -1,9 +1,10 @@
 import re
+from urllib.parse import quote
 
 import log
 from config import Config
 from app.mediaserver.client._base import _IMediaClient
-from app.utils.types import MediaServerType
+from app.utils.types import MediaServerType, MediaType
 from app.utils import RequestUtils, SystemUtils, ExceptionUtils, IpUtils
 
 
@@ -22,7 +23,6 @@ class Jellyfin(_IMediaClient):
     _host = None
     _play_host = None
     _user = None
-    _libraries = []
 
     def __init__(self, config=None):
         if config:
@@ -71,17 +71,17 @@ class Jellyfin(_IMediaClient):
         """
         if not self._host or not self._apikey:
             return []
-        req_url = "%sLibrary/VirtualFolders?api_key=%s" % (self._host, self._apikey)
+        req_url = f"{self._host}Users/{self._user}/Views?api_key={self._apikey}"
         try:
             res = RequestUtils().get_res(req_url)
             if res:
-                return res.json()
+                return res.json().get("Items")
             else:
-                log.error(f"【{self.client_name}】Library/VirtualFolders 未获取到返回数据")
+                log.error(f"【{self.client_name}】Users/Views 未获取到返回数据")
                 return []
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            log.error(f"【{self.client_name}】连接Library/VirtualFolders 出错：" + str(e))
+            log.error(f"【{self.client_name}】连接Users/Views 出错：" + str(e))
             return []
 
     def get_user_count(self):
@@ -163,7 +163,7 @@ class Jellyfin(_IMediaClient):
                         activity = {"type": event_type, "event": event_str,
                                     "date": SystemUtils.get_local_time(event_date)}
                         ret_array.append(activity)
-                    if item.get("Type") == "VideoPlayback":
+                    if item.get("Type") in ["VideoPlayback", "VideoPlaybackStopped"]:
                         event_type = "PL"
                         event_date = re.sub(r'\dZ', 'Z', item.get("Date"))
                         activity = {"type": event_type, "event": item.get("Name"),
@@ -382,17 +382,18 @@ class Jellyfin(_IMediaClient):
             return None
         return None
 
-    def get_local_image_by_id(self, item_id):
+    def get_local_image_by_id(self, item_id, remote=True):
         """
         根据ItemId从媒体服务器查询有声书图片地址
         :param item_id: 在Emby中的ID
+        :param remote: 是否远程使用
         """
         if not self._host or not self._apikey:
             return None
-        if self._play_host and not IpUtils.is_internal(self._play_host):
-            return "%sItems/%s/Images/Primary?maxHeight=225&maxWidth=400&quality=90" % (
-                self._play_host, item_id)
-        return None
+        host = self._play_host or self._host
+        if remote and IpUtils.is_internal(host):
+            return None
+        return "%sItems/%s/Images/Primary" % (host, item_id)
 
     def refresh_root_library(self):
         """
@@ -428,11 +429,31 @@ class Jellyfin(_IMediaClient):
         """
         获取媒体服务器所有媒体库列表
         """
-        if self._host and self._apikey:
-            self._libraries = self.__get_jellyfin_librarys()
+        if not self._host or not self._apikey:
+            return []
         libraries = []
-        for library in self._libraries:
-            libraries.append({"id": library.get("ItemId"), "name": library.get("Name")})
+        for library in self.__get_jellyfin_librarys() or []:
+            match library.get("CollectionType"):
+                case "movies":
+                    library_type = MediaType.MOVIE.value
+                case "tvshows":
+                    library_type = MediaType.TV.value
+                case _:
+                    continue
+            image = self.get_local_image_by_id(library.get("Id"), remote=False)
+            link = f"{self._play_host or self._host}web/index.html#!" \
+                   f"/movies.html?topParentId={library.get('Id')}" \
+                if library_type == MediaType.MOVIE.value \
+                else f"{self._play_host or self._host}web/index.html#!" \
+                     f"/tv.html?topParentId={library.get('Id')}"
+            libraries.append({
+                "id": library.get("Id"),
+                "name": library.get("Name"),
+                "path": library.get("Path"),
+                "type": library_type,
+                "image": f'img?url={quote(image)}',
+                "link": link
+            })
         return libraries
 
     def get_iteminfo(self, itemid):

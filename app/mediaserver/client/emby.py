@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import quote
 
 import log
 from config import Config
@@ -9,7 +10,6 @@ from app.utils.types import MediaType, MediaServerType
 
 
 class Emby(_IMediaClient):
-
     # 媒体服务器ID
     client_id = "emby"
     # 媒体服务器类型
@@ -24,7 +24,7 @@ class Emby(_IMediaClient):
     _host = None
     _play_host = None
     _user = None
-    _libraries = []
+    _folders = []
 
     def __init__(self, config=None):
         if config:
@@ -51,14 +51,14 @@ class Emby(_IMediaClient):
                     self._play_host = self._play_host + "/"
             self._apikey = self._client_config.get('api_key')
             if self._host and self._apikey:
-                self._libraries = self.__get_emby_librarys()
+                self._folders = self.__get_emby_folders()
                 self._user = self.get_admin_user()
                 self._serverid = self.get_server_id()
 
     @classmethod
     def match(cls, ctype):
         return True if ctype in [cls.client_id, cls.client_type, cls.client_name] else False
-    
+
     def get_type(self):
         return self.client_type
 
@@ -68,9 +68,9 @@ class Emby(_IMediaClient):
         """
         return True if self.get_medias_count() else False
 
-    def __get_emby_librarys(self):
+    def __get_emby_folders(self):
         """
-        获取Emby媒体库列表
+        获取Emby媒体库路径列表
         """
         if not self._host or not self._apikey:
             return []
@@ -85,6 +85,25 @@ class Emby(_IMediaClient):
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
             log.error(f"【{self.client_name}】连接Library/SelectableMediaFolders 出错：" + str(e))
+            return []
+
+    def __get_emby_librarys(self):
+        """
+        获取Emby媒体库列表
+        """
+        if not self._host or not self._apikey:
+            return []
+        req_url = f"{self._host}emby/Users/{self._user}/Views?api_key={self._apikey}"
+        try:
+            res = RequestUtils().get_res(req_url)
+            if res:
+                return res.json().get("Items")
+            else:
+                log.error(f"【{self.client_name}】User/Views 未获取到返回数据")
+                return []
+        except Exception as e:
+            ExceptionUtils.exception_traceback(e)
+            log.error(f"【{self.client_name}】连接User/Views 出错：" + str(e))
             return []
 
     def get_admin_user(self):
@@ -165,7 +184,7 @@ class Emby(_IMediaClient):
                         event_str = "%s, %s" % (item.get("Name"), item.get("ShortOverview"))
                         activity = {"type": event_type, "event": event_str, "date": event_date}
                         ret_array.append(activity)
-                    if item.get("Type") == "VideoPlayback":
+                    if item.get("Type") in ["VideoPlayback", "VideoPlaybackStopped"]:
                         event_type = "PL"
                         event_date = SystemUtils.get_local_time(item.get("Date"))
                         event_str = item.get("Name")
@@ -388,17 +407,18 @@ class Emby(_IMediaClient):
             return None
         return None
 
-    def get_local_image_by_id(self, item_id):
+    def get_local_image_by_id(self, item_id, remote=True):
         """
         根据ItemId从媒体服务器查询本地图片地址
         :param item_id: 在Emby中的ID
+        :param remote: 是否远程使用
         """
         if not self._host or not self._apikey:
             return None
-        if self._play_host and not IpUtils.is_internal(self._play_host):
-            return "%sItems/%s/Images/Primary?maxHeight=225&maxWidth=400&quality=90" % (
-                self._play_host, item_id)
-        return None
+        host = self._play_host or self._host
+        if remote and IpUtils.is_internal(host):
+            return None
+        return "%sItems/%s/Images/Primary" % (host, item_id)
 
     def __refresh_emby_library_by_id(self, item_id):
         """
@@ -480,30 +500,30 @@ class Emby(_IMediaClient):
                 # 已存在，不用刷新
                 return None
         # 查找需要刷新的媒体库ID
-        for library in self._libraries:
+        for folder in self._folders:
             # 找同级路径最多的媒体库（要求容器内映射路径与实际一致）
             max_equal_path_id = None
             max_path_len = 0
             equal_path_num = 0
-            for folder in library.get("SubFolders"):
-                path_list = re.split(pattern='/+|\\\\+', string=folder.get("Path"))
+            for subfolder in folder.get("SubFolders"):
+                path_list = re.split(pattern='/+|\\\\+', string=subfolder.get("Path"))
                 if item.get("category") != path_list[-1]:
                     continue
                 try:
-                    path_len = len(os.path.commonpath([item.get("target_path"), folder.get("Path")]))
+                    path_len = len(os.path.commonpath([item.get("target_path"), subfolder.get("Path")]))
                     if path_len >= max_path_len:
                         max_path_len = path_len
-                        max_equal_path_id = folder.get("Id")
+                        max_equal_path_id = subfolder.get("Id")
                         equal_path_num += 1
                 except Exception as err:
                     print(str(err))
                     continue
             if max_equal_path_id:
-                return max_equal_path_id if equal_path_num == 1 else library.get("Id")
+                return max_equal_path_id if equal_path_num == 1 else folder.get("Id")
             # 如果找不到，只要路径中有分类目录名就命中
-            for folder in library.get("SubFolders"):
-                if folder.get("Path") and re.search(r"[/\\]%s" % item.get("category"), folder.get("Path")):
-                    return library.get("Id")
+            for subfolder in folder.get("SubFolders"):
+                if subfolder.get("Path") and re.search(r"[/\\]%s" % item.get("category"), subfolder.get("Path")):
+                    return folder.get("Id")
         # 刷新根目录
         return "/"
 
@@ -511,11 +531,27 @@ class Emby(_IMediaClient):
         """
         获取媒体服务器所有媒体库列表
         """
-        if self._host and self._apikey:
-            self._libraries = self.__get_emby_librarys()
+        if not self._host or not self._apikey:
+            return []
         libraries = []
-        for library in self._libraries:
-            libraries.append({"id": library.get("Id"), "name": library.get("Name")})
+        for library in self.__get_emby_librarys() or []:
+            match library.get("CollectionType"):
+                case "movies":
+                    library_type = MediaType.MOVIE.value
+                case "tvshows":
+                    library_type = MediaType.TV.value
+                case _:
+                    continue
+            image = self.get_local_image_by_id(library.get("Id"), remote=False)
+            libraries.append({
+                "id": library.get("Id"),
+                "name": library.get("Name"),
+                "path": library.get("Path"),
+                "type": library_type,
+                "image": f'img?url={quote(image)}',
+                "link": f'{self._play_host or self._host}web/index.html'
+                        f'#!/videos?serverId={self._serverid}&parentId={library.get("Id")}'
+            })
         return libraries
 
     def get_iteminfo(self, itemid):
