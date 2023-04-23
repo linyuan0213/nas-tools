@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import log
 from app.helper import ProgressHelper, SubmoduleHelper
+from app.indexer.client import BuiltinIndexer
 from app.utils import ExceptionUtils, StringUtils
 from app.utils.commons import singleton
 from app.utils.types import SearchType, IndexerType, ProgressKey
@@ -78,6 +79,13 @@ class Indexer(object):
         获取当前用户选中的索引器的索引站点名称
         """
         return [indexer.name for indexer in self.get_indexers(check=True)]
+
+    @staticmethod
+    def get_builtin_indexers(check=True, indexer_id=None):
+        """
+        获取内置索引器的索引站点
+        """
+        return BuiltinIndexer().get_indexers(check=check, indexer_id=indexer_id)
 
     def list_resources(self, index_id, page=0, keyword=None):
         """
