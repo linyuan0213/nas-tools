@@ -9,7 +9,6 @@ import signal
 import sqlite3
 import time
 from urllib.parse import unquote
-import itertools
 
 
 import cn2an
