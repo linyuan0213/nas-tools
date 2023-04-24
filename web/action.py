@@ -640,15 +640,19 @@ class WebAction:
                 continue
             # 查询站点
             site_info = Sites().get_sites(siteurl=url)
-            if not site_info:
-                return {"code": -1, "msg": "根据链接地址未匹配到站点"}
-            # 下载种子文件，并读取信息
-            file_path, _, _, _, retmsg = Torrent().get_torrent_info(
-                url=url,
-                cookie=site_info.get("cookie"),
-                ua=site_info.get("ua"),
-                proxy=site_info.get("proxy")
-            )
+            # if not site_info:
+            #     return {"code": -1, "msg": "根据链接地址未匹配到站点"}
+            if not url.startswith("magnet:"):
+                # 下载种子文件，并读取信息
+                file_path, _, _, _, retmsg = Torrent().get_torrent_info(
+                    url=url,
+                    cookie=site_info.get("cookie"),
+                    ua=site_info.get("ua"),
+                    proxy=site_info.get("proxy")
+                )
+            else:
+                file_dir = Config().get_temp_path()
+                file_path, retmsg = Torrent().magent2torrent(url, file_dir)
             if not file_path:
                 return {"code": -1, "msg": f"下载种子文件失败： {retmsg}"}
             media_info = Media().get_media_info(title=os.path.basename(file_path))
