@@ -94,8 +94,7 @@ class Indexer(object):
         :param page: 页码
         :param keyword: 搜索关键字
         """
-        if self._client.client_id == "builtin":
-            return self._client.list(index_id=index_id, page=page, keyword=keyword)
+        return BuiltinIndexer().list(index_id=index_id, page=page, keyword=keyword)
 
     def __get_client(self, ctype: [IndexerType, str], conf=None):
         return self.__build_class(ctype=ctype, conf=conf)
