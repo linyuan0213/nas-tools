@@ -5,4 +5,4 @@ Forked from [NAStool/nas-tools](https://github.com/NAStool/nas-tools)
 增加 Jackett 和 Prowlarr 索引器
 
 Docker：
-[linyuan0213/nas-tools](https://hub.docker.com/repository/docker/linyuan0213/nas-tools)
+[linyuan0213/nas-tools](https://hub.docker.com/r/linyuan0213/nas-tools)
