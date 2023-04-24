@@ -159,7 +159,10 @@ class SystemConfigKey(Enum):
     DefaultRssSettingTV = "DefaultRssSettingTV"
     # 用户已安装的插件
     UserInstalledPlugins = "UserInstalledPlugins"
-
+    # 括削配置
+    UserScraperConf = "UserScraperConf"
+    # 索引站点
+    UserIndexerSites = "UserIndexerSites"
 
 # 处理进度Key字典
 class ProgressKey(Enum):

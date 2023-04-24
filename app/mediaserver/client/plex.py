@@ -337,7 +337,8 @@ class Plex(_IMediaClient):
         if not self._plex:
             return ""
         library = self._plex.library.sectionByID(library_key)
-        items = library.recentlyAdded()
+        # 担心有些没图片,多获取几个
+        items = library.recentlyAdded(maxresults=8)
         poster_urls = []
         for item in items:
             if item.posterUrl is not None:
@@ -503,12 +504,19 @@ class Plex(_IMediaClient):
         ret_resume = []
         for item in items:
             item_type = MediaType.MOVIE.value if item.TYPE == "movie" else MediaType.TV.value
+            if item_type == MediaType.MOVIE.value:
+                name = item.title
+            else:
+                if item.parentIndex == 1:
+                    name = "%s 第%s集" % (item.grandparentTitle, item.index)
+                else:
+                    name = "%s 第%s季第%s集" % (item.grandparentTitle, item.parentIndex, item.index)
             link = self.get_play_url(item.key)
             ret_resume.append({
                 "id": item.key,
-                "name": item.title,
+                "name": name,
                 "type": item_type,
-                "image": f"img?url={quote(item.artUrl)}",
+                "image": f"img?url={quote(item.artUrl)}" if item.artUrl else "",
                 "link": link,
                 "percent": item.viewOffset / item.duration * 100
             })
@@ -525,12 +533,13 @@ class Plex(_IMediaClient):
         for item in items[:num]:
             item_type = MediaType.MOVIE.value if item.TYPE == "movie" else MediaType.TV.value
             link = self.get_play_url(item.key)
-            title = item.title if item_type == MediaType.MOVIE.value else f"{item.parentTitle} {item.title}"
+            title = item.title if item_type == MediaType.MOVIE.value else \
+                "%s 第%s季" % (item.parentTitle, item.index)
             ret_resume.append({
                 "id": item.key,
                 "name": title,
                 "type": item_type,
-                "image": f"img?url={quote(item.posterUrl)}",
+                "image": f"img?url={quote(item.posterUrl)}" if item.posterUrl else "",
                 "link": link
             })
         return ret_resume
