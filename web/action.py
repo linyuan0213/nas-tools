@@ -34,7 +34,7 @@ from app.plugins import PluginManager, EventManager
 from app.rss import Rss
 from app.rsschecker import RssChecker
 from app.scheduler import Scheduler
-from app.sites import Sites, SiteUserInfo, SiteSignin, SiteCookie, SiteConf
+from app.sites import Sites, SiteUserInfo, SiteCookie, SiteConf
 from app.subscribe import Subscribe
 from app.sync import Sync
 from app.torrentremover import TorrentRemover
@@ -233,8 +233,7 @@ class WebAction:
             "update_category_config": self.update_category_config,
             "get_category_config": self.get_category_config,
             "get_system_processes": self.get_system_processes,
-            "iyuu_bind_site": self.iyuu_bind_site,
-            "run_signin": self.__run_signin
+            "iyuu_bind_site": self.iyuu_bind_site
         }
 
     def action(self, cmd, data=None):
@@ -336,8 +335,7 @@ class WebAction:
             else:
                 os.system("pkill -f 'python3 run.py'")
 
-    @staticmethod
-    def handle_message_job(msg, in_from=SearchType.OT, user_id=None, user_name=None):
+    def handle_message_job(self, msg, in_from=SearchType.OT, user_id=None, user_name=None):
         """
         处理消息事件
         """
@@ -346,16 +344,16 @@ class WebAction:
         commands = {
             "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desp": "删种"},
             "/ptt": {"func": Downloader().transfer, "desp": "下载文件转移"},
-            "/pts": {"func": SiteSignin().signin, "desp": "站点签到"},
+            "/pts": {"func": self.site_signin, "desp": "站点签到"},
             "/rst": {"func": Sync().transfer_sync, "desp": "目录同步"},
             "/rss": {"func": Rss().rssdownload, "desp": "RSS订阅"},
-            "/db": {"func": WebAction().douban_sync, "desp": "豆瓣同步"},
+            "/db": {"func": self.douban_sync, "desp": "豆瓣同步"},
             "/ssa": {"func": Subscribe().subscribe_search_all, "desp": "订阅搜索"},
-            "/tbl": {"func": WebAction().truncate_blacklist, "desp": "清理转移缓存"},
-            "/trh": {"func": WebAction().truncate_rsshistory, "desp": "清理RSS缓存"},
-            "/utf": {"func": WebAction().unidentification, "desp": "重新识别"},
-            "/udt": {"func": WebAction().update_system, "desp": "系统更新"},
-            "/sta": {"func": WebAction().user_statistics, "desp": "数据统计"}
+            "/tbl": {"func": self.truncate_blacklist, "desp": "清理转移缓存"},
+            "/trh": {"func": self.truncate_rsshistory, "desp": "清理RSS缓存"},
+            "/utf": {"func": self.unidentification, "desp": "重新识别"},
+            "/udt": {"func": self.update_system, "desp": "系统更新"},
+            "/sta": {"func": self.user_statistics, "desp": "数据统计"}
         }
 
         # 触发事件
@@ -495,18 +493,17 @@ class WebAction:
                     cfg[keys[0]][keys[1]] = cfg_value.replace("\\", "/")
         return cfg
 
-    @staticmethod
-    def __sch(data):
+    def __sch(self, data):
         """
         启动定时服务
         """
         commands = {
             "autoremovetorrents": TorrentRemover().auto_remove_torrents,
             "pttransfer": Downloader().transfer,
-            "ptsignin": SiteSignin().signin,
+            "ptsignin": self.site_signin,
             "sync": Sync().transfer_sync,
             "rssdownload": Rss().rssdownload,
-            "douban": WebAction().douban_sync,
+            "douban": self.douban_sync,
             "subscribe_search_all": Subscribe().subscribe_search_all,
         }
         sch_item = data.get("item")
@@ -1185,18 +1182,15 @@ class WebAction:
         """
         rss = True if data.get("rss") else False
         brush = True if data.get("brush") else False
-        signin = True if data.get("signin") else False
         statistic = True if data.get("statistic") else False
         basic = True if data.get("basic") else False
         if basic:
             sites = Sites().get_site_dict(rss=rss,
                                           brush=brush,
-                                          signin=signin,
                                           statistic=statistic)
         else:
             sites = Sites().get_sites(rss=rss,
                                       brush=brush,
-                                      signin=signin,
                                       statistic=statistic)
         return {"code": 0, "sites": sites}
 
@@ -4959,7 +4953,7 @@ class WebAction:
         return {"code": 0, "result": Events}
 
     @staticmethod
-    def install_plugin(data):
+    def install_plugin(data, reload=True):
         """
         安装插件
         """
@@ -4973,7 +4967,8 @@ class WebAction:
         # 保存配置
         SystemConfig().set(SystemConfigKey.UserInstalledPlugins, user_plugins)
         # 重新加载插件
-        PluginManager().init_config()
+        if reload:
+            PluginManager().init_config()
         return {"code": 0, "msg": "插件安装成功"}
 
     @staticmethod
@@ -5035,6 +5030,14 @@ class WebAction:
         """
         # 触发事件
         EventManager().send_event(EventType.DoubanSync, {})
+
+    @staticmethod
+    def site_signin(data=None):
+        """
+        启动站点签到
+        """
+        # 触发事件
+        EventManager().send_event(EventType.SiteSignin, {})
 
     @staticmethod
     def update_category_config(data):
@@ -5137,11 +5140,3 @@ class WebAction:
                                           passkey=data.get('passkey'),
                                           uid=data.get('uid'))
         return {"code": 0 if state else 1, "msg": msg}
-
-    @staticmethod
-    def __run_signin(data):
-        """
-        手动站点签到
-        """
-        ThreadHelper().start_thread(SiteSignin().signin, (data.get("sids"),))
-        return {"code": 0, "msg": "执行成功"}
