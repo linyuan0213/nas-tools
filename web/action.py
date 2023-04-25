@@ -194,7 +194,6 @@ class WebAction:
             "delete_torrent_remove_task": self.__delete_torrent_remove_task,
             "get_remove_torrents": self.__get_remove_torrents,
             "auto_remove_torrents": self.__auto_remove_torrents,
-            "douban_sync": self.douban_sync,
             "delete_douban_history": self.__delete_douban_history,
             "list_brushtask_torrents": self.__list_brushtask_torrents,
             "set_system_config": self.__set_system_config,
@@ -341,18 +340,18 @@ class WebAction:
         if not msg:
             return
         commands = {
-            "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desp": "删种"},
+            "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desp": "自动删种"},
             "/ptt": {"func": Downloader().transfer, "desp": "下载文件转移"},
             "/pts": {"func": self.site_signin, "desp": "站点签到"},
             "/rst": {"func": Sync().transfer_sync, "desp": "目录同步"},
-            "/rss": {"func": Rss().rssdownload, "desp": "RSS订阅"},
+            "/rss": {"func": Rss().rssdownload, "desp": "电影/电视剧订阅"},
             "/db": {"func": self.douban_sync, "desp": "豆瓣同步"},
             "/ssa": {"func": Subscribe().subscribe_search_all, "desp": "订阅搜索"},
             "/tbl": {"func": self.truncate_blacklist, "desp": "清理转移缓存"},
             "/trh": {"func": self.truncate_rsshistory, "desp": "清理RSS缓存"},
             "/utf": {"func": self.unidentification, "desp": "重新识别"},
             "/udt": {"func": self.update_system, "desp": "系统更新"},
-            "/sta": {"func": self.user_statistics, "desp": "数据统计"}
+            "/sta": {"func": self.user_statistics, "desp": "站点数据统计"}
         }
 
         # 触发事件
@@ -492,17 +491,15 @@ class WebAction:
                     cfg[keys[0]][keys[1]] = cfg_value.replace("\\", "/")
         return cfg
 
-    def __sch(self, data):
+    @staticmethod
+    def __sch(data):
         """
-        启动定时服务
+        启动服务
         """
         commands = {
-            "autoremovetorrents": TorrentRemover().auto_remove_torrents,
             "pttransfer": Downloader().transfer,
-            "ptsignin": self.site_signin,
             "sync": Sync().transfer_sync,
             "rssdownload": Rss().rssdownload,
-            "douban": self.douban_sync,
             "subscribe_search_all": Subscribe().subscribe_search_all,
         }
         sch_item = data.get("item")

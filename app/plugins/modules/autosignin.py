@@ -198,7 +198,7 @@ class AutoSignIn(_IPluginModule):
             # 运行一次
             if self._onlyonce:
                 self.info(f"签到服务启动，立即运行一次")
-                self._scheduler.add_job(self.__sign_in, 'date',
+                self._scheduler.add_job(self.sign_in, 'date',
                                         run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())))
                 # 关闭一次性开关
                 self._onlyonce = False
@@ -216,7 +216,7 @@ class AutoSignIn(_IPluginModule):
             # 周期运行
             if self._cron:
                 self.info(f"定时签到服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__sign_in,
+                self._scheduler.add_job(self.sign_in,
                                         CronTrigger.from_crontab(self._cron))
 
             # 启动任务
@@ -225,7 +225,7 @@ class AutoSignIn(_IPluginModule):
                 self._scheduler.start()
 
     @EventHandler.register(EventType.SiteSignin)
-    def __sign_in(self, event=None):
+    def sign_in(self, event=None):
         """
         自动签到
         """
@@ -241,14 +241,14 @@ class AutoSignIn(_IPluginModule):
         today_history = self.get_history(key=today)
         if not today_history:
             sign_sites = self._sign_sites
-            self.debug(f"今日 {today} 未签到，开始签到已选站点")
+            self.info(f"今日 {today} 未签到，开始签到已选站点")
         else:
             # 根据重试关键词查找重签站点
             sign_sites = today_history if isinstance(today_history, list) else [today_history]
             if sign_sites:
-                self.debug(f"今日 {today} 已签到，开始重签重试站点及特殊站点")
+                self.info(f"今日 {today} 已签到，开始重签重试站点及特殊站点")
             else:
-                self.debug(f"今日 {today} 已签到，无重新签到站点")
+                self.info(f"今日 {today} 已签到，无重新签到站点")
                 return
 
         # 查询签到站点
@@ -259,7 +259,7 @@ class AutoSignIn(_IPluginModule):
 
         # 执行签到
         self.info("开始执行签到任务")
-        with ThreadPool(min(len(sites), int(self._queue_cnt) or 10)) as p:
+        with ThreadPool(min(len(sites), int(self._queue_cnt) if self._queue_cnt else 10)) as p:
             status = p.map(self.signin_site, sites)
 
         if status:
