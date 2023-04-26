@@ -209,3 +209,12 @@ class User(UserMixin):
         获取服务
         """
         return SERVICE_CONF
+
+    def get_users(self):
+        return self.dbhelper.get_users()
+
+    def add_user(self, name, password, pris):
+        return self.dbhelper.insert_user(name, password, pris)
+
+    def delete_user(self, name):
+        return self.dbhelper.delete_user(name)
