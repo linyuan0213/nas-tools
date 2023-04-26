@@ -17,6 +17,7 @@ from app.media.meta import MetaInfo
 from app.message import Message
 from app.plugins import EventManager
 from app.utils import EpisodeFormat, PathUtils, StringUtils, SystemUtils, ExceptionUtils, NumberUtils
+from app.utils.commons import singleton
 from app.utils.types import MediaType, SyncType, RmtMode, EventType, ProgressKey, MovieTypes
 from config import RMT_SUBEXT, RMT_MEDIAEXT, RMT_FAVTYPE, RMT_MIN_FILESIZE, DEFAULT_MOVIE_FORMAT, \
     DEFAULT_TV_FORMAT, Config
@@ -24,6 +25,7 @@ from config import RMT_SUBEXT, RMT_MEDIAEXT, RMT_FAVTYPE, RMT_MIN_FILESIZE, DEFA
 lock = Lock()
 
 
+@singleton
 class FileTransfer:
     media = None
     message = None
@@ -54,6 +56,9 @@ class FileTransfer:
     _ignored_files = ''
 
     def __init__(self):
+        self.init_config()
+
+    def init_config(self):
         self.media = Media()
         self.message = Message()
         self.category = Category()
@@ -62,9 +67,7 @@ class FileTransfer:
         self.dbhelper = DbHelper()
         self.progress = ProgressHelper()
         self.eventmanager = EventManager()
-        self.init_config()
 
-    def init_config(self):
         media = Config().get_config('media')
         if media:
             # 电影目录
@@ -794,7 +797,7 @@ class FileTransfer:
                 # 未识别手动识别或历史记录重新识别的批处理模式
                 if isinstance(episode[1], bool) and episode[1]:
                     # 未识别手动识别，更改未识别记录为已处理
-                    self.dbhelper.update_transfer_unknown_state(file_item)
+                    self.update_transfer_unknown_state(file_item)
                 # 电影立即发送消息
                 if media.type == MediaType.MOVIE:
                     self.message.send_transfer_movie_message(in_from,
@@ -1170,6 +1173,7 @@ class FileTransfer:
             "edition": media.get_edtion_string() or None,
             "videoFormat": media.resource_pix,
             "releaseGroup": media.resource_team,
+            "customization": media.customization,
             "effect": media.resource_effect,
             "videoCodec": media.video_encode,
             "audioCodec": media.audio_encode,
@@ -1250,11 +1254,71 @@ class FileTransfer:
                                                   season=season,
                                                   season_episode=season_episode)
 
+    def get_transfer_info_by_id(self, logid):
+        """
+        根据LogID查询转移历史记录
+        """
+        return self.dbhelper.get_transfer_info_by_id(logid=logid)
+
     def get_transfer_history(self, search, page, rownum):
         """
         查询转移历史记录
         """
         return self.dbhelper.get_transfer_history(search=search, page=page, rownum=rownum)
+
+    def delete_transfer_log_by_id(self, logid):
+        """
+        删除转移历史记录
+        """
+        return self.dbhelper.delete_transfer_log_by_id(logid=logid)
+
+    def delete_transfer_unknown(self, tid):
+        """
+        删除未知转移记录
+        """
+        return self.dbhelper.delete_transfer_unknown(tid=tid)
+
+    def get_unknown_info_by_id(self, tid):
+        """
+        根据ID查询未知转移记录
+        """
+        return self.dbhelper.get_unknown_info_by_id(tid=tid)
+
+    def update_transfer_unknown_state(self, path):
+        """
+        更新未知转移记录状态
+        """
+        return self.dbhelper.update_transfer_unknown_state(path=path)
+
+    def delete_transfer_blacklist(self, path):
+        """
+        删除黑名单记录
+        """
+        return self.dbhelper.delete_transfer_blacklist(path=path)
+
+    def truncate_transfer_blacklist(self):
+        """
+        清空黑名单记录
+        """
+        return self.dbhelper.truncate_transfer_blacklist()
+
+    def get_transfer_statistics(self, days=30):
+        """
+        查询转移统计
+        """
+        return self.dbhelper.get_transfer_statistics(days=days)
+
+    def get_transfer_unknown_paths(self):
+        """
+        查询未知转移记录
+        """
+        return self.dbhelper.get_transfer_unknown_paths()
+
+    def get_transfer_unknown_paths_by_page(self, search, page, rownum):
+        """
+        查询未知转移记录
+        """
+        return self.dbhelper.get_transfer_unknown_paths_by_page(search=search, page=page, rownum=rownum)
 
 
 if __name__ == "__main__":

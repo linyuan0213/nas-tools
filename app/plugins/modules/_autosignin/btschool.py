@@ -1,19 +1,17 @@
-import json
-
 from app.plugins.modules._autosignin._base import _ISiteSigninHandler
 from app.utils import StringUtils, RequestUtils
 from config import Config
 
 
-class PTerClub(_ISiteSigninHandler):
+class BTSchool(_ISiteSigninHandler):
     """
-    猫签到
+    学校签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "pterclub.com"
+    site_url = "pt.btschool.club"
 
     # 已签到
-    _sign_regex = ['签到已得\\d+']
+    _sign_text = '每日签到'
 
     @classmethod
     def match(cls, url):
@@ -35,22 +33,33 @@ class PTerClub(_ISiteSigninHandler):
         ua = site_info.get("ua")
         proxy = Config().get_proxies() if site_info.get("proxy") else None
 
+        # 首页
+        html_res = RequestUtils(cookies=site_cookie,
+                                headers=ua,
+                                proxies=proxy
+                                ).get_res(url="https://pt.btschool.club")
+        if not html_res or html_res.status_code != 200:
+            self.error(f"签到失败，请检查站点连通性")
+            return False, f'【{site}】签到失败，请检查站点连通性'
+
+        if "login.php" in html_res.text:
+            self.error(f"签到失败，cookie失效")
+            return False, f'【{site}】签到失败，cookie失效'
+
+        # 已签到
+        if self._sign_text not in html_res.text:
+            self.info(f"已签到")
+            return True, f'【{site}】已签到'
+
         # 签到
         sign_res = RequestUtils(cookies=site_cookie,
                                 headers=ua,
                                 proxies=proxy
-                                ).get_res(url="https://pterclub.com/attendance-ajax.php")
+                                ).get_res(url="https://pt.btschool.club/index.php?action=addbonus")
         if not sign_res or sign_res.status_code != 200:
             self.error(f"签到失败，签到接口请求失败")
-            return False, f'【{site}】签到失败，请检查cookie是否失效'
+            return False, f'【{site}】签到失败，签到接口请求失败'
 
-        sign_dict = json.loads(sign_res.text)
-        if sign_dict['status'] == 1:
-            # {"status":"1","data":" (签到已成功300)","message":"<p>这是您的第<b>237</b>次签到，
-            # 已连续签到<b>237</b>天。</p><p>本次签到获得<b>300</b>克猫粮。</p>"}
-            self.info(f"签到成功")
-            return True, f'【{site}】签到成功'
-        else:
-            # {"status":"0","data":"抱歉","message":"您今天已经签到过了，请勿重复刷新。"}
-            self.info(f"今日已签到")
-            return True, f'【{site}】今日已签到'
+        # 签到成功
+        self.info(f"签到成功")
+        return True, f'【{site}】签到成功'
