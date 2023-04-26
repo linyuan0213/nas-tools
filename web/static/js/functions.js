@@ -1131,6 +1131,7 @@ function check_manual_input_path(select_id, input_id, manual_path=null) {
     savepath_select.val(manual_path)
     if (manual_path !== "" && savepath_select.val() === null) {
       savepath_input_manual.val(manual_path);
+      savepath_select.val("manual");
       savepath_select.hide();
       savepath_input_manual.show();
     } else {
@@ -1145,7 +1146,7 @@ function check_manual_input_path(select_id, input_id, manual_path=null) {
 // 获取保存路径
 function get_savepath(select_id, input_id) {
   let savepath = $(`#${select_id}`).val();
-  if (savepath === "manual") {
+  if (savepath === "manual" || savepath === null) {
     return $(`#${input_id}`).val();
   } else {
     return savepath;

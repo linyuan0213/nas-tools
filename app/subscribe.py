@@ -160,6 +160,8 @@ class Subscribe:
             if mediaid:
                 # 根据ID查询
                 media_info = WebUtils.get_mediainfo_from_id(mtype=mtype, mediaid=mediaid)
+                if not season:
+                    season = media_info.begin_season
             else:
                 # 根据名称和年份查询
                 if season:
@@ -979,3 +981,37 @@ class Subscribe:
         查询数据库中订阅的电视剧缺失集数
         """
         return self.dbhelper.get_rss_tv_episodes(rssid)
+
+    def check_history(self, type_str, name, year, season):
+        """
+        检查订阅历史是否存在
+        """
+        return self.dbhelper.check_rss_history(type_str=type_str,
+                                               name=name,
+                                               year=year,
+                                               season=season)
+
+    def delete_subscribe(self, mtype,
+                         title=None, year=None, season=None, rssid=None, tmdbid=None):
+        """
+        删除电影订阅
+        """
+        if mtype == MediaType.MOVIE:
+            return self.dbhelper.delete_rss_movie(title=title, year=year, rssid=rssid, tmdbid=tmdbid)
+        else:
+            return self.dbhelper.delete_rss_tv(title=title, season=season, rssid=rssid, tmdbid=tmdbid)
+
+    def get_subscribe_id(self, mtype,
+                         title, year=None, season=None, tmdbid=None):
+        """
+        获取订阅ID
+        """
+        if mtype == MediaType.MOVIE:
+            return self.dbhelper.get_rss_movie_id(title=title,
+                                                  year=year,
+                                                  tmdbid=tmdbid)
+        else:
+            return self.dbhelper.get_rss_tv_id(title=title,
+                                               year=year,
+                                               season=season,
+                                               tmdbid=tmdbid)

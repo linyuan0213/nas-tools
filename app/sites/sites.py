@@ -175,6 +175,16 @@ class Sites:
                 return self._siteByUrls[key]
         return {}
 
+    def get_sites_by_name(self, name):
+        """
+        根据站点名称获取站点配置
+        """
+        ret_sites = []
+        for site in self._siteByIds.values():
+            if site.get("name") == name:
+                ret_sites.append(site)
+        return ret_sites
+
     def get_max_site_pri(self):
         """
         获取最大站点优先级
@@ -300,3 +310,52 @@ class Sites:
         if note:
             infos = json.loads(note)
         return infos
+
+    def add_site(self, name, site_pri,
+                 rssurl=None, signurl=None, cookie=None, note=None, rss_uses=None):
+        """
+        添加站点
+        """
+        ret = self.dbhelper.insert_config_site(name=name,
+                                               site_pri=site_pri,
+                                               rssurl=rssurl,
+                                               signurl=signurl,
+                                               cookie=cookie,
+                                               note=note,
+                                               rss_uses=rss_uses)
+        self.init_config()
+        return ret
+
+    def update_site(self, tid, name, site_pri,
+                    rssurl, signurl, cookie, note, rss_uses):
+        """
+        更新站点
+        """
+        ret = self.dbhelper.update_config_site(tid=tid,
+                                               name=name,
+                                               site_pri=site_pri,
+                                               rssurl=rssurl,
+                                               signurl=signurl,
+                                               cookie=cookie,
+                                               note=note,
+                                               rss_uses=rss_uses)
+        self.init_config()
+        return ret
+
+    def delete_site(self, siteid):
+        """
+        删除站点
+        """
+        ret = self.dbhelper.delete_config_site(siteid)
+        self.init_config()
+        return ret
+
+    def update_site_cookie(self, siteid, cookie, ua=None):
+        """
+        更新站点Cookie和UA
+        """
+        ret = self.dbhelper.update_site_cookie_ua(tid=siteid,
+                                                  cookie=cookie,
+                                                  ua=ua)
+        self.init_config()
+        return ret

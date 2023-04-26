@@ -661,3 +661,29 @@ class Rss:
             log.info("【Rss】实际下载了 %s 个资源" % len(download_items))
         else:
             log.info("【Rss】未下载到任何资源")
+
+    def is_rss_finished(self, torrent_name, enclosure):
+        """
+        检查种子是否RSS处理过
+        """
+        return self.dbhelper.is_userrss_finished(torrent_name=torrent_name,
+                                                 enclosure=enclosure)
+
+    def simple_insert_rss_torrents(self, title, enclosure):
+        """
+        简单插入RSS种子
+        """
+        self.dbhelper.simple_insert_rss_torrents(title=title,
+                                                 enclosure=enclosure)
+
+    def delete_rss_history(self, rssid):
+        """
+        删除订阅历史
+        """
+        self.dbhelper.delete_rss_history(rssid=rssid)
+
+    def get_rss_history(self, rtype=None, rid=None):
+        """
+        获取订阅历史
+        """
+        return self.dbhelper.get_rss_history(rtype=rtype, rid=rid)
