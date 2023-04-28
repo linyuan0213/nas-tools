@@ -51,8 +51,10 @@ from web.backend.web_utils import WebUtils
 
 class WebAction:
     _actions = {}
+    _commands = {}
 
     def __init__(self):
+        # WEB请求响应
         self._actions = {
             "sch": self.__sch,
             "search": self.__search,
@@ -67,7 +69,6 @@ class WebAction:
             "rename": self.__rename,
             "rename_udf": self.__rename_udf,
             "delete_history": self.delete_history,
-            "logging": self.__logging,
             "version": self.__version,
             "update_site": self.__update_site,
             "get_site": self.__get_site,
@@ -90,7 +91,6 @@ class WebAction:
             "test_connection": self.__test_connection,
             "user_manager": self.__user_manager,
             "refresh_rss": self.__refresh_rss,
-            "refresh_message": self.__refresh_message,
             "delete_tmdb_cache": self.__delete_tmdb_cache,
             "movie_calendar_data": self.__movie_calendar_data,
             "tv_calendar_data": self.__tv_calendar_data,
@@ -234,6 +234,32 @@ class WebAction:
             "run_plugin_method": self.run_plugin_method,
             "update_all_config": self.__update_all_config
         }
+        # 远程命令响应
+        self._commands = {
+            "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desc": "自动删种"},
+            "/ptt": {"func": Downloader().transfer, "desc": "下载文件转移"},
+            "/rst": {"func": Sync().transfer_sync, "desc": "目录同步"},
+            "/rss": {"func": Rss().rssdownload, "desc": "电影/电视剧订阅"},
+            "/ssa": {"func": Subscribe().subscribe_search_all, "desc": "订阅搜索"},
+            "/tbl": {"func": self.truncate_blacklist, "desc": "清理转移缓存"},
+            "/trh": {"func": self.truncate_rsshistory, "desc": "清理RSS缓存"},
+            "/utf": {"func": self.unidentification, "desc": "重新识别"},
+            "/udt": {"func": self.update_system, "desc": "系统更新"},
+            "/sta": {"func": self.user_statistics, "desc": "站点数据统计"}
+        }
+        # 远程命令响应
+        self._commands = {
+            "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desc": "自动删种"},
+            "/ptt": {"func": Downloader().transfer, "desc": "下载文件转移"},
+            "/rst": {"func": Sync().transfer_sync, "desc": "目录同步"},
+            "/rss": {"func": Rss().rssdownload, "desc": "电影/电视剧订阅"},
+            "/ssa": {"func": Subscribe().subscribe_search_all, "desc": "订阅搜索"},
+            "/tbl": {"func": self.truncate_blacklist, "desc": "清理转移缓存"},
+            "/trh": {"func": self.truncate_rsshistory, "desc": "清理RSS缓存"},
+            "/utf": {"func": self.unidentification, "desc": "重新识别"},
+            "/udt": {"func": self.update_system, "desc": "系统更新"},
+            "/sta": {"func": self.user_statistics, "desc": "站点数据统计"}
+        }
 
     def action(self, cmd, data=None):
         func = self._actions.get(cmd)
@@ -340,18 +366,6 @@ class WebAction:
         """
         if not msg:
             return
-        commands = {
-            "/ptr": {"func": TorrentRemover().auto_remove_torrents, "desc": "自动删种"},
-            "/ptt": {"func": Downloader().transfer, "desc": "下载文件转移"},
-            "/rst": {"func": Sync().transfer_sync, "desc": "目录同步"},
-            "/rss": {"func": Rss().rssdownload, "desc": "电影/电视剧订阅"},
-            "/ssa": {"func": Subscribe().subscribe_search_all, "desc": "订阅搜索"},
-            "/tbl": {"func": self.truncate_blacklist, "desc": "清理转移缓存"},
-            "/trh": {"func": self.truncate_rsshistory, "desc": "清理RSS缓存"},
-            "/utf": {"func": self.unidentification, "desc": "重新识别"},
-            "/udt": {"func": self.update_system, "desc": "系统更新"},
-            "/sta": {"func": self.user_statistics, "desc": "站点数据统计"}
-        }
 
         # 触发MessageIncoming事件
         EventManager().send_event(EventType.MessageIncoming, {
@@ -363,7 +377,7 @@ class WebAction:
         })
 
         # 系统内置命令
-        command = commands.get(msg)
+        command = self._commands.get(msg)
         if command:
             # 启动服务
             ThreadHelper().start_thread(command.get("func"), ())
@@ -1050,37 +1064,6 @@ class WebAction:
             return True, f"{file} 删除失败"
 
     @staticmethod
-    def __logging(data):
-        """
-        查询实时日志
-        """
-        log_list = []
-        refresh_new = data.get('refresh_new')
-        source = data.get('source')
-
-        if not source:
-            if not refresh_new:
-                log_list = list(log.LOG_QUEUE)
-            elif log.LOG_INDEX:
-                if log.LOG_INDEX > len(log.LOG_QUEUE):
-                    log_list = list(log.LOG_QUEUE)
-                else:
-                    log_list = list(log.LOG_QUEUE[-log.LOG_INDEX:])
-            log.LOG_INDEX = 0
-        else:
-            for message in log.LOG_QUEUE:
-                if str(message.get("source")) == source:
-                    log_list.append(message)
-                else:
-                    continue
-            if refresh_new:
-                if int(refresh_new) < len(log_list):
-                    log_list = log_list[int(refresh_new):]
-                elif int(refresh_new) >= len(log_list):
-                    log_list = []
-        return {"loglist": log_list}
-
-    @staticmethod
     def __version(data):
         """
         检查新版本
@@ -1758,27 +1741,6 @@ class WebAction:
             "message": messages,
             "lst_time": lst_time
         }
-
-    def __refresh_message(self, data):
-        """
-        刷新首页消息中心
-        """
-        lst_time = data.get("lst_time")
-        system_msg = self.get_system_message(lst_time=lst_time)
-        messages = system_msg.get("message")
-        lst_time = system_msg.get("lst_time")
-        ret_messages = []
-        for message in list(reversed(messages)):
-            content = re.sub(r"#+", "<br>",
-                             re.sub(r"<[^>]+>", "",
-                                    re.sub(r"<br/?>", "####", message.get("content"), flags=re.IGNORECASE)))
-            ret_messages.append({
-                "level": "bg-red" if message.get("level") == "ERROR" else "",
-                "title": message.get("title"),
-                "content": content,
-                "time": message.get("time")
-            })
-        return {"code": 0, "message": ret_messages, "lst_time": lst_time}
 
     @staticmethod
     def __delete_tmdb_cache(data):
@@ -5194,3 +5156,9 @@ class WebAction:
                 return ret
 
         return {"code": 0}
+
+    def get_commands(self):
+        """
+        获取命令列表
+        """
+        return [{"id": cid, "name": cmd.get("desc")} for cid, cmd in self._commands.items()]

@@ -18,6 +18,7 @@ from flask import Flask, request, json, render_template, make_response, session,
     redirect, Response
 from flask_compress import Compress
 from flask_login import LoginManager, login_user, login_required, current_user
+from flask_sock import Sock
 from icalendar import Calendar, Event, Alarm
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -56,8 +57,12 @@ App = Flask(__name__)
 App.wsgi_app = ProxyFix(App.wsgi_app)
 App.config['JSON_AS_ASCII'] = False
 App.config['JSON_SORT_KEYS'] = False
+App.config['SOCK_SERVER_OPTIONS'] = {'ping_interval': 25}
 App.secret_key = os.urandom(24)
 App.permanent_session_lifetime = datetime.timedelta(days=30)
+
+# Flask Socket
+Sock = Sock(App)
 
 # 启用压缩
 Compress(App)
@@ -206,6 +211,7 @@ def web():
     SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
     CustomScriptCfg = SystemConfig().get(SystemConfigKey.CustomScript)
     Menus = WebAction().get_user_menus().get("menus") or []
+    Commands = WebAction().get_commands()
     return render_template('navigation.html',
                            GoPage=GoPage,
                            CurrentUser=current_user,
@@ -221,7 +227,8 @@ def web():
                            SearchSource=SearchSource,
                            CustomScriptCfg=CustomScriptCfg,
                            DefaultPath=DefaultPath,
-                           Menus=Menus)
+                           Menus=Menus,
+                           Commands=Commands)
 
 
 # 开始
@@ -1641,6 +1648,63 @@ def Img():
     response.headers.set('Cache-Control', 'max-age=604800')
     response.headers.set('Etag', etag)
     return response
+
+
+@Sock.route('/logging')
+@login_required
+def logging_handler(ws):
+    """
+    实时日志WebSocket
+    """
+    while True:
+        message = ws.receive()
+        _source = json.loads(message).get("source")
+        if log.LOG_INDEX > 0:
+            logs = list(log.LOG_QUEUE)[-log.LOG_INDEX:]
+            log.LOG_INDEX = 0
+            if _source:
+                logs = [l for l in logs if l.get("source") == _source]
+            ws.send((json.dumps(logs)))
+        else:
+            ws.send(json.dumps([]))
+
+
+@Sock.route('/message')
+@login_required
+def message_handler(ws):
+    """
+    消息中心WebSocket
+    """
+    while True:
+        data = ws.receive()
+        msgbody = json.loads(data)
+        if msgbody.get("text"):
+            # 发送的消息
+            WebAction().handle_message_job(msg=msgbody.get("text"),
+                                           in_from=SearchType.WEB,
+                                           user_id=current_user.username,
+                                           user_name=current_user.username)
+            ws.send((json.dumps({})))
+        else:
+            # 拉取消息
+            system_msg = WebAction().get_system_message(lst_time=msgbody.get("lst_time"))
+            messages = system_msg.get("message")
+            lst_time = system_msg.get("lst_time")
+            ret_messages = []
+            for message in list(reversed(messages)):
+                content = re.sub(r"#+", "<br>",
+                                 re.sub(r"<[^>]+>", "",
+                                        re.sub(r"<br/?>", "####", message.get("content"), flags=re.IGNORECASE)))
+                ret_messages.append({
+                    "level": "bg-red" if message.get("level") == "ERROR" else "",
+                    "title": message.get("title"),
+                    "content": content,
+                    "time": message.get("time")
+                })
+            ws.send((json.dumps({
+                "lst_time": lst_time,
+                "message": ret_messages
+            })))
 
 
 # base64模板过滤器
