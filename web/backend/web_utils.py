@@ -1,4 +1,3 @@
-import io
 from functools import lru_cache
 
 import cn2an

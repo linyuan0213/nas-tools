@@ -2090,6 +2090,7 @@ class WebAction:
             "effect": media_info.resource_effect,
             "pix": media_info.resource_pix,
             "team": media_info.resource_team,
+            "customization": media_info.customization,
             "video_codec": media_info.video_encode,
             "audio_codec": media_info.audio_encode,
             "org_string": media_info.org_string,
@@ -5161,4 +5162,10 @@ class WebAction:
         """
         获取命令列表
         """
-        return [{"id": cid, "name": cmd.get("desc")} for cid, cmd in self._commands.items()]
+        return [{
+            "id": cid,
+            "name": cmd.get("desc")
+        } for cid, cmd in self._commands.items()] + [{
+            "id": item.get("cmd"),
+            "name": item.get("desc")
+        } for item in PluginManager().get_plugin_commands()]
