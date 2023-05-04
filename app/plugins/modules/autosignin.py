@@ -20,7 +20,7 @@ from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
-from app.utils import RequestUtils, ExceptionUtils, StringUtils
+from app.utils import RequestUtils, ExceptionUtils, StringUtils, SchedulerUtils
 from app.utils.types import EventType
 from config import Config
 
@@ -99,7 +99,7 @@ class AutoSignIn(_IPluginModule):
                         {
                             'title': '清理缓存',
                             'required': "",
-                            'tooltip': '清理本日已签到',
+                            'tooltip': '清理本日已签到（开启后全部站点将会签到一次)',
                             'type': 'switch',
                             'id': 'clean',
                         }
@@ -114,7 +114,7 @@ class AutoSignIn(_IPluginModule):
                         {
                             'title': '签到周期',
                             'required': "",
-                            'tooltip': '设置自动签到时间周期，支持5位cron表达式',
+                            'tooltip': '自动签到时间，四种配置方法：1、配置间隔，单位小时，比如23.5；2、配置固定时间，如08:00；3、配置时间范围，如08:00-09:00，表示在该时间范围内随机执行一次；4、配置5位cron表达式，如：0 */6 * * *；配置为空则不启用自动签到功能。',
                             'type': 'text',
                             'content': [
                                 {
@@ -126,7 +126,7 @@ class AutoSignIn(_IPluginModule):
                         {
                             'title': '签到队列',
                             'required': "",
-                            'tooltip': '签到队列数量，默认10',
+                            'tooltip': '同时并行签到的站点数量，默认10（根据机器性能，缩小队列数量会延长签到时间，但可以提升成功率）',
                             'type': 'text',
                             'content': [
                                 {
@@ -138,7 +138,7 @@ class AutoSignIn(_IPluginModule):
                         {
                             'title': '重试关键词',
                             'required': "",
-                            'tooltip': '重新签到关键词，支持正则表达式',
+                            'tooltip': '重新签到关键词，支持正则表达式；每天首次全签，后续如果设置了重试词则只签到命中重试词的站点，否则全签。',
                             'type': 'text',
                             'content': [
                                 {
@@ -168,7 +168,7 @@ class AutoSignIn(_IPluginModule):
             {
                 'type': 'details',
                 'summary': '特殊站点',
-                'tooltip': '选中的站点无论是否匹配重试关键词都会进行重签',
+                'tooltip': '选中的站点无论是否匹配重试关键词都会进行重签（如无需要可不设置）',
                 'content': [
                     # 同一行
                     [
@@ -231,8 +231,10 @@ class AutoSignIn(_IPluginModule):
             # 周期运行
             if self._cron:
                 self.info(f"定时签到服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.sign_in,
-                                        CronTrigger.from_crontab(self._cron))
+                SchedulerUtils.start_job(scheduler=self._scheduler,
+                                         func=self.sign_in,
+                                         func_desc="自动签到",
+                                         cron=str(self._cron))
 
             # 启动任务
             if self._scheduler.get_jobs():
