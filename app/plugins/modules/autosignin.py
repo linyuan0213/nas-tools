@@ -7,7 +7,6 @@ from threading import Event
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
 from lxml import etree
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as es
@@ -210,6 +209,11 @@ class AutoSignIn(_IPluginModule):
             # 定时服务
             self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
 
+            # 清理缓存即今日历史
+            if self._clean:
+                self.delete_history(key=datetime.today().strftime('%Y-%m-%d'))
+                self._clean = False
+
             # 运行一次
             if self._onlyonce:
                 self.info(f"签到服务启动，立即运行一次")
@@ -217,6 +221,8 @@ class AutoSignIn(_IPluginModule):
                                         run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())))
                 # 关闭一次性开关
                 self._onlyonce = False
+
+            if self._onlyonce or self._clean:
                 self.update_config({
                     "enabled": self._enabled,
                     "cron": self._cron,
@@ -226,6 +232,7 @@ class AutoSignIn(_IPluginModule):
                     "notify": self._notify,
                     "onlyonce": self._onlyonce,
                     "queue_cnt": self._queue_cnt,
+                    "clean": self._clean
                 })
 
             # 周期运行
@@ -270,7 +277,7 @@ class AutoSignIn(_IPluginModule):
         today = today.strftime('%Y-%m-%d')
         today_history = self.get_history(key=today)
         # 今日没数据
-        if not today_history or self._clean:
+        if not today_history:
             sign_sites = self._sign_sites
             self.info(f"今日 {today} 未签到，开始签到已选站点")
         else:
@@ -300,15 +307,27 @@ class AutoSignIn(_IPluginModule):
             status = p.map(self.signin_site, sign_sites)
 
         if status:
-            # 签到详细信息
-            Message().send_site_signin_message(status)
             self.info("站点签到任务完成！")
 
+            # 命中重试词的站点id
             retry_sites = []
-            # 记录本次命中重试关键词的站点
-            if self._retry_keyword:
-                sites = {site.get('name'): site.get("id") for site in Sites().get_site_dict()}
-                for s in status:
+            # 命中重试词的站点签到msg
+            retry_msg = []
+            # 登录成功
+            login_success_msg = []
+            # 签到成功
+            sign_success_msg = []
+            # 已签到
+            already_sign_msg = []
+            # 仿真签到成功
+            fz_sign_msg = []
+            # 失败｜错误
+            failed_msg = []
+
+            sites = {site.get('name'): site.get("id") for site in Sites().get_site_dict()}
+            for s in status:
+                # 记录本次命中重试关键词的站点
+                if self._retry_keyword:
                     site_names = re.findall(r'【(.*?)】', s)
                     if site_names:
                         site_id = sites.get(site_names[0])
@@ -317,7 +336,23 @@ class AutoSignIn(_IPluginModule):
                             if site_id:
                                 self.debug(f"站点 {site_names[0]} 命中重试关键词 {self._retry_keyword}")
                                 retry_sites.append(str(site_id))
-            else:
+                                # 命中的站点
+                                retry_msg.append(s)
+                                continue
+
+                if "登录成功" in s:
+                    login_success_msg.append(s)
+                elif "仿真签到成功" in s:
+                    fz_sign_msg.append(s)
+                    continue
+                elif "签到成功" in s:
+                    sign_success_msg.append(s)
+                elif '已签到' in s:
+                    already_sign_msg.append(s)
+                else:
+                    failed_msg.append(s)
+
+            if not self._retry_keyword:
                 # 没设置重试关键词则重试已选站点
                 retry_sites = self._sign_sites
             self.debug(f"下次签到重试站点 {retry_sites}")
@@ -335,6 +370,13 @@ class AutoSignIn(_IPluginModule):
                                         "sign": self._sign_sites,
                                         "retry": retry_sites
                                     })
+
+            # 签到详细信息 登录成功、签到成功、已签到、仿真签到成功、失败--命中重试
+            signin_message = login_success_msg + sign_success_msg + already_sign_msg + fz_sign_msg + failed_msg
+            if len(retry_msg) > 0:
+                signin_message.append("——————命中重试—————")
+                signin_message += retry_msg
+            Message().send_site_signin_message(signin_message)
 
             # 发送通知
             if self._notify:
@@ -395,19 +437,21 @@ class AutoSignIn(_IPluginModule):
                 # 首页
                 self.info("开始站点仿真签到：%s" % site)
                 home_url = StringUtils.get_base_url(site_url)
+                if "1ptba" in home_url:
+                    home_url = f"{home_url}/index.php"
                 if not chrome.visit(url=home_url, ua=ua, cookie=site_cookie, proxy=site_info.get("proxy")):
                     self.warn("%s 无法打开网站" % site)
-                    return f"【{site}】无法打开网站！"
+                    return f"【{site}】仿真签到失败，无法打开网站！"
                 # 循环检测是否过cf
                 cloudflare = chrome.pass_cloudflare()
                 if not cloudflare:
                     self.warn("%s 跳转站点失败" % site)
-                    return f"【{site}】跳转站点失败！"
+                    return f"【{site}】仿真签到失败，跳转站点失败！"
                 # 判断是否已签到
                 html_text = chrome.get_html()
                 if not html_text:
                     self.warn("%s 获取站点源码失败" % site)
-                    return f"【{site}】获取站点源码失败！"
+                    return f"【{site}】仿真签到失败，获取站点源码失败！"
                 # 查找签到按钮
                 html = etree.HTML(html_text)
                 xpath_str = None
@@ -482,8 +526,8 @@ class AutoSignIn(_IPluginModule):
                     return f"【{site}】{checkin_text}失败，无法打开网站！"
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
-            self.warn("%s 签到出错：%s" % (site, str(e)))
-            return f"{site} 签到出错：{str(e)}！"
+            self.warn("%s 签到失败：%s" % (site, str(e)))
+            return f"【{site}】签到失败：{str(e)}！"
 
     def stop_service(self):
         """
