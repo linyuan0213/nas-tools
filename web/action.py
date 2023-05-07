@@ -8,14 +8,15 @@ import shutil
 import signal
 import sqlite3
 import time
+from math import floor
+from pathlib import Path
 from urllib.parse import unquote
 
 
 import cn2an
 from flask_login import logout_user, current_user
-from math import floor
 from werkzeug.security import generate_password_hash
-from pathlib import Path
+
 import log
 from app.brushtask import BrushTask
 from app.conf import SystemConfig, ModuleConf
@@ -23,7 +24,7 @@ from app.downloader import Downloader
 from app.filetransfer import FileTransfer
 from app.filter import Filter
 from app.helper import DbHelper, ProgressHelper, ThreadHelper, \
-    MetaHelper, DisplayHelper, WordsHelper, IndexerHelper, IyuuHelper
+    MetaHelper, DisplayHelper, WordsHelper, IndexerHelper
 from app.helper import RssHelper, PluginHelper
 from app.indexer import Indexer
 from app.media import Category, Media, Bangumi, DouBan, Scraper
@@ -119,7 +120,7 @@ class WebAction:
             "get_site_seeding_info": self.__get_site_seeding_info,
             "clear_tmdb_cache": self.__clear_tmdb_cache,
             "check_site_attr": self.__check_site_attr,
-            "refresh_process": self.__refresh_process,
+            "refresh_process": self.refresh_process,
             "restory_backup": self.__restory_backup,
             "start_mediasync": self.__start_mediasync,
             "mediasync_state": self.__mediasync_state,
@@ -230,7 +231,6 @@ class WebAction:
             "update_category_config": self.update_category_config,
             "get_category_config": self.get_category_config,
             "get_system_processes": self.get_system_processes,
-            "iyuu_bind_site": self.iyuu_bind_site,
             "run_plugin_method": self.run_plugin_method,
             "update_all_config": self.__update_all_config
         }
@@ -1516,9 +1516,9 @@ class WebAction:
                 if not path:
                     return {"retcode": -1, "retmsg": "未识别路径有误"}
                 succ_flag, msg = _filetransfer.transfer_media(in_from=SyncType.MAN,
-                                                               rmt_mode=rmt_mode,
-                                                               in_path=path,
-                                                               target_dir=dest_dir)
+                                                              rmt_mode=rmt_mode,
+                                                              in_path=path,
+                                                              target_dir=dest_dir)
                 if succ_flag:
                     _filetransfer.update_transfer_unknown_state(path)
                 else:
@@ -1541,9 +1541,9 @@ class WebAction:
                 if not path:
                     return {"retcode": -1, "retmsg": "未识别路径有误"}
                 succ_flag, msg = _filetransfer.transfer_media(in_from=SyncType.MAN,
-                                                               rmt_mode=rmt_mode,
-                                                               in_path=path,
-                                                               target_dir=dest_dir)
+                                                              rmt_mode=rmt_mode,
+                                                              in_path=path,
+                                                              target_dir=dest_dir)
                 if not succ_flag:
                     ret_flag = False
                     if msg not in ret_msg:
@@ -2094,6 +2094,7 @@ class WebAction:
             "video_codec": media_info.video_encode,
             "audio_codec": media_info.audio_encode,
             "org_string": media_info.org_string,
+            "rev_string": media_info.rev_string,
             "ignored_words": media_info.ignored_words,
             "replaced_words": media_info.replaced_words,
             "offset_words": media_info.offset_words
@@ -2558,7 +2559,7 @@ class WebAction:
         return {"code": 0, "site_free": site_free, "site_2xfree": site_2xfree, "site_hr": site_hr}
 
     @staticmethod
-    def __refresh_process(data):
+    def refresh_process(data):
         """
         刷新进度条
         """
@@ -5113,19 +5114,6 @@ class WebAction:
         获取系统进程
         """
         return {"code": 0, "data": SystemUtils.get_all_processes()}
-
-    @staticmethod
-    def iyuu_bind_site(data):
-        """
-        IYUU绑定合作站点
-        """
-        if not data.get('token'):
-            return {"code": -1, "msg": "请先填写IYUU token并保存后再进行IYUU认证！"}
-        iyuuhelper = IyuuHelper(token=data.get('token'))
-        state, msg = iyuuhelper.bind_site(site=data.get('site'),
-                                          passkey=data.get('passkey'),
-                                          uid=data.get('uid'))
-        return {"code": 0 if state else 1, "msg": msg}
 
     @staticmethod
     def run_plugin_method(data):

@@ -1,9 +1,7 @@
 /**
  * 公共变量区
  */
-// 刷新进度
-let RefreshProcessFlag = false;
-let RefreshFailCount = 0;
+
 // 刷新订阅站点列表
 let RssSitesLength = 0;
 // 刷新搜索站点列表
@@ -20,12 +18,12 @@ let NavPageLoading = false;
 let NavPageXhr;
 // 是否允许打断弹窗
 let GlobalModalAbort = true;
-//实时日志刷新标志
-let RefreshLoggingFlag = false;
+// 进度刷新EventSource
+let ProgressES;
 // 日志来源筛选时关掉之前的刷新日志计时器
 let LoggingSource = "";
-// 日志WebSocket
-let LoggingWS;
+// 日志EventSource
+let LoggingES;
 // 是否存量消息刷新
 let OldMessageFlag = true;
 // 消息WebSocket
@@ -103,7 +101,7 @@ function navmenu(page, newflag = false) {
 // 搜索
 function media_search(tmdbid, title, type) {
   const param = {"tmdbid": tmdbid, "search_word": title, "media_type": type};
-  show_refresh_process("正在搜索 " + title + " ...", "search");
+  show_refresh_progress("正在搜索 " + title + " ...", "search");
   ajax_post("search", param, function (ret) {
     hide_refresh_process();
     if (ret.code === 0) {
@@ -129,17 +127,21 @@ function hide_wait_modal() {
   $("#modal-wait").modal("hide");
 }
 
-// 连接日志服务
-function connect_logging() {
-  LoggingWS = new ReconnectingWebSocket(WSProtocol + window.location.host + '/logging');
-  LoggingWS.onmessage = function (event) {
-    render_logging(JSON.parse(event.data))
-  };
+// 停止日志服务
+function stop_logging() {
+  if (LoggingES) {
+    LoggingES.close();
+    LoggingES = undefined;
+  }
 }
 
-// 发送刷新日志请求
-function get_logging() {
-  LoggingWS.send(JSON.stringify({"source": LoggingSource}));
+// 连接日志服务
+function start_logging() {
+  stop_logging();
+  LoggingES = new EventSource(`stream-logging?source=${LoggingSource}`);
+  LoggingES.onmessage = function (event) {
+    render_logging(JSON.parse(event.data))
+  };
 }
 
 // 刷新日志
@@ -182,33 +184,35 @@ function render_logging(log_list) {
                   <td style="${tdstyle}"><span class="${tcolor}" style="${tstyle}" title="${text}">${text}</span></td>
                   </tr>`;
     }
-    let logging_table_obj = $("#logging_table");
-    let bool_ToScrolTop = (logging_table_obj.scrollTop() + logging_table_obj.prop("offsetHeight")) >= logging_table_obj.prop("scrollHeight");
-    $("#logging_content").append(tbody);
-    if (bool_ToScrolTop) {
-      setTimeout(function () {
-        logging_table_obj.scrollTop(logging_table_obj.prop("scrollHeight"));
-      }, 500);
+    if (tbody) {
+      let logging_table_obj = $("#logging_table");
+      let bool_ToScrolTop = (logging_table_obj.scrollTop() + logging_table_obj.prop("offsetHeight")) >= logging_table_obj.prop("scrollHeight");
+      let logging_content = $("#logging_content");
+      if (logging_content.text().indexOf("刷新中...") !== -1) {
+        logging_content.empty();
+      }
+      logging_content.append(tbody);
+      if (bool_ToScrolTop) {
+        setTimeout(function () {
+          logging_table_obj.scrollTop(logging_table_obj.prop("scrollHeight"));
+        }, 500);
+      }
     }
   }
   if ($("#modal-logging").is(":hidden")) {
-    RefreshLoggingFlag = false;
-  }
-  if (RefreshLoggingFlag) {
-    window.setTimeout("get_logging()", 1000);
+    stop_logging();
   }
 }
 
 // 暂停实时日志
 function pause_logging() {
   let btn = $("#logging_stop_btn")
-  if (btn.text() === "暂停") {
-    btn.text("开始")
-    RefreshLoggingFlag = false;
+  if (btn.text() === "开始") {
+    btn.text("暂停")
+    start_logging()
   } else {
-    btn.text("暂停");
-    RefreshLoggingFlag = true;
-    get_logging();
+    btn.text("开始");
+    stop_logging();
   }
 }
 
@@ -218,10 +222,7 @@ function show_logging_modal() {
   $("#logging_stop_btn").text("暂停");
   $('#modal-logging').modal('show');
   // 连接日志服务
-  connect_logging();
-  // 开始获取日志
-  RefreshLoggingFlag = true;
-  setTimeout("get_logging()", 1000);
+  start_logging();
 }
 
 // 日志来源筛选
@@ -236,7 +237,7 @@ function logger_select(source) {
   }
   $("#logging_content").html(`<tr><td colspan="3" class="text-center">${logtype}</td></tr>`);
   // 拉取新日志
-  get_logging();
+  start_logging();
 }
 
 // 连接消息服务
@@ -342,27 +343,37 @@ function show_init_alert_modal() {
     navmenu('basic');
   });
 }
+// 停止刷新进度条
+function stop_progress() {
+  if (ProgressES) {
+    ProgressES.close();
+    ProgressES = undefined;
+  }
+}
 
 // 刷新进度条
-function refresh_process(type) {
-  if (!RefreshProcessFlag) {
-    return;
+function start_progress(type) {
+  stop_progress();
+  ProgressES = new EventSource(`stream-progress?type=${type}`);
+  ProgressES.onmessage = function (event) {
+    render_progress(JSON.parse(event.data))
+  };
+}
+
+// 渲染进度条
+function render_progress(ret) {
+  if (ret.code === 0 && ret.value <= 100) {
+    $("#modal_process_bar").attr("style", "width: " + ret.value + "%").attr("aria-valuenow", ret.value);
+    $("#modal_process_text").text(ret.text);
   }
-  ajax_post("refresh_process", {type: type}, function (ret) {
-    if (ret.code === 0 && ret.value <= 100) {
-      $("#modal_process_bar").attr("style", "width: " + ret.value + "%").attr("aria-valuenow", ret.value);
-      $("#modal_process_text").text(ret.text);
-    } else {
-      RefreshFailCount = RefreshFailCount + 1;
-    }
-    if (RefreshFailCount < 5) {
-      setTimeout("refresh_process('" + type + "')", 200);
-    }
-  }, true, false);
+  if ($("#modal-process").is(":hidden")) {
+    stop_progress();
+  }
 }
 
 // 显示全局进度框
-function show_refresh_process(title, type) {
+function show_refresh_progress(title, type) {
+  // 显示对话框
   if (title) {
     $("#modal_process_title").text(title);
   } else {
@@ -371,15 +382,12 @@ function show_refresh_process(title, type) {
   $("#modal_process_bar").attr("style", "width: 0%").attr("aria-valuenow", 0);
   $("#modal_process_text").text("请稍候...");
   $("#modal-process").modal("show");
-  //刷新进度
-  RefreshProcessFlag = true;
-  RefreshFailCount = 0;
-  refresh_process(type);
+  // 开始刷新进度条
+  setTimeout(`start_progress('${type}')`, 1000);
 }
 
 // 关闭全局进度框
 function hide_refresh_process() {
-  RefreshProcessFlag = false;
   $("#modal-process").modal("hide");
 }
 
@@ -634,7 +642,7 @@ function show_rss_seasons_modal(name, year, type, mediaid, seasons, func) {
 function search_mediainfo_media(tmdbid, title, typestr) {
   hide_mediainfo_modal();
   const param = {"tmdbid": tmdbid, "search_word": title, "media_type": typestr};
-  show_refresh_process("正在搜索 " + title + " ...", "search");
+  show_refresh_progress("正在搜索 " + title + " ...", "search");
   ajax_post("search", param, function (ret) {
     hide_refresh_process();
     if (ret.code === 0) {
@@ -1297,7 +1305,7 @@ function search_media_advanced() {
   };
   const param = {"search_word": keyword, "filters": filters, "unident": true};
   $("#modal-search-advanced").modal("hide");
-  show_refresh_process(`正在搜索 ${keyword} ...`, "search");
+  show_refresh_progress(`正在搜索 ${keyword} ...`, "search");
   ajax_post("search", param, function (ret) {
     hide_refresh_process();
     if (ret.code === 0) {
@@ -1409,7 +1417,7 @@ function media_name_test(name, result_div, func, subtitle) {
 function media_name_test_ui(data, result_div) {
   // 希望chips按此数组的顺序生成..
   $(`#${result_div}`).empty();
-  const sort_array = ["org_string", "ignored_words", "replaced_words", "offset_words",
+  const sort_array = ["rev_string", "ignored_words", "replaced_words", "offset_words",
     "type", "category", "name", "title", "tmdbid", "year", "season_episode", "part",
     "restype", "effect", "pix", "video_codec", "audio_codec", "team", "customization"]
   // 调用组件实例的自定义方法.. 一次性添加chips
@@ -1619,7 +1627,7 @@ function manual_media_transfer() {
     "logid": logid
   };
   $('#modal-media-identification').modal('hide');
-  show_refresh_process("手动转移 " + inpath, "filetransfer");
+  show_refresh_progress("手动转移 " + inpath, "filetransfer");
   let cmd = (manual_type === '3') ? "rename_udf" : "rename"
   ajax_post(cmd, data, function (ret) {
     hide_refresh_process();
