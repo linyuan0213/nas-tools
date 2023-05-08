@@ -163,7 +163,7 @@ jobs:
       - name: Set Up Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Ppackage through pyinstaller
+      - name: Package through pyinstaller
         run: |
           mkdir rootfs
           docker buildx build --platform linux/arm64 --file ./package/builder/alpine.Dockerfile --build-arg branch=master --output type=local,dest=./rootfs .
