@@ -937,7 +937,9 @@ class SystemVersion(ClientResource):
 class SystemPath(ClientResource):
     parser = reqparse.RequestParser()
     parser.add_argument('dir', type=str, help='路径', location='form', required=True)
-    parser.add_argument('filter', type=str, help='过滤器（ONLYFILE/ONLYDIR/MEDIAFILE/SUBFILE/AUDIOTRACKFILE/ALL）', location='form',
+    parser.add_argument('filter', type=str,
+                        help='过滤器（ONLYFILE/ONLYDIR/MEDIAFILE/SUBFILE/AUDIOTRACKFILE/ALL）',
+                        location='form',
                         required=True)
 
     @system.doc(parser=parser)
@@ -1066,6 +1068,7 @@ class ConfigDirectory(ClientResource):
         配置媒体库目录
         """
         return WebAction().api_action(cmd='update_directory', data=self.parser.parse_args())
+
 
 @config.route('/set')
 class ConfigSet(ClientResource):

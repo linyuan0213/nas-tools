@@ -41,7 +41,7 @@ from app.sync import Sync
 from app.torrentremover import TorrentRemover
 from app.utils import DomUtils, SystemUtils, ExceptionUtils, StringUtils
 from app.utils.types import *
-from config import PT_TRANSFER_INTERVAL, Config
+from config import PT_TRANSFER_INTERVAL, Config, TMDB_API_DOMAINS
 from web.action import WebAction
 from web.apiv1 import apiv1_bp
 from web.backend.WXBizMsgCrypt3 import WXBizMsgCrypt
@@ -403,8 +403,11 @@ def resources():
     site_name = request.args.get("title")
     page = request.args.get("page") or 0
     keyword = request.args.get("keyword")
-    Results = WebAction().action("list_site_resources", {"id": site_id, "page": page, "keyword": keyword}).get(
-        "data") or []
+    Results = WebAction().list_site_resources({
+        "id": site_id,
+        "page": page,
+        "keyword": keyword
+    }).get("data") or []
     return render_template("site/resources.html",
                            Results=Results,
                            SiteId=site_id,
@@ -846,7 +849,8 @@ def basic():
                            CustomScriptCfg=CustomScriptCfg,
                            CurrentUser=current_user,
                            ScraperNfo=ScraperConf.get("scraper_nfo") or {},
-                           ScraperPic=ScraperConf.get("scraper_pic") or {})
+                           ScraperPic=ScraperConf.get("scraper_pic") or {},
+                           TmdbDomains=TMDB_API_DOMAINS)
 
 
 # 自定义识别词设置页面
@@ -1024,14 +1028,13 @@ def plugin():
 @action_login_check
 def do():
     try:
-        cmd = request.form.get("cmd")
-        data = request.form.get("data")
+        content = request.get_json()
+        cmd = content.get("cmd")
+        data = content.get("data") or {}
+        return WebAction().action(cmd, data)
     except Exception as e:
         ExceptionUtils.exception_traceback(e)
         return {"code": -1, "msg": str(e)}
-    if data:
-        data = json.loads(data)
-    return WebAction().action(cmd, data)
 
 
 # 目录事件响应
