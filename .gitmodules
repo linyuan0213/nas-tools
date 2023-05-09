@@ -1,9 +1,9 @@
 [submodule "third_party/feapder"]
 	path = third_party/feapder
 	url = https://github.com/jxxghp/feapder
-[submodule "third_party/qbittorrent-api/src"]
-	path = third_party/qbittorrent-api/src
-	url = https://github.com/rmartin16/qbittorrent-api/src
+[submodule "third_party/qbittorrent-api"]
+	path = third_party/qbittorrent-api
+	url = https://github.com/rmartin16/qbittorrent-api
 [submodule "third_party/anitopy"]
 	path = third_party/anitopy
 	url = https://github.com/igorcmoura/anitopy
