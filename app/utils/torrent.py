@@ -310,9 +310,19 @@ class Torrent:
                 log.debug("【Downloader】元数据获取超时")
                 return None, "种子元数据获取超时"
         session.pause()
-
         log.debug("【Downloader】获取元数据完成")
-        tf = handle.torrent_file()
+        tout = 0
+        while True:
+            tf = handle.torrent_file()
+            if tf:
+                session.pause()
+                break
+            time.sleep(1)
+            tout += 1
+            if tout > timeout:
+                log.debug("【Downloader】种子获取超时")
+                return None, "种子获取超时"
+
         ti = libtorrent.torrent_info(tf)
         torrent_file = libtorrent.create_torrent(ti)
         torrent_file.set_comment(ti.comment())

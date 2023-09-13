@@ -555,12 +555,14 @@ class FileTransfer:
                 media_type = MediaType.MOVIE if download_info.TYPE in MovieTypes else MediaType.TV
                 tmdb_info = self.media.get_tmdb_info(mtype=media_type, tmdbid=download_info.TMDBID)
                 season_str = download_info.SE.split(" ")[0]
-                season = int(season_str[1, len(season_str)])
-                episode_str = download_info.SE.split(" ")[1]
-                episode = (
-                    EpisodeFormat(details=int(episode_str[1, len(episode_str)])),
-                    False
-                )
+                season = int(season_str[1:len(season_str)])
+                if len(download_info.SE.split(" ")) > 1:
+                    episode_str = download_info.SE.split(" ")[1]
+                    if episode_str.find("-") == -1:
+                        episode = (
+                            EpisodeFormat(eformat="", details=episode_str.replace("E", "")),
+                            False
+                        )
 
         # 成功标识
         success_flag = True

@@ -97,7 +97,7 @@ class Aria2(_IDownloadClient):
             true_path, replace_flag = self.get_replace_path(path, self.download_dir)
             # 开启目录隔离，未进行目录替换的不处理
             if match_path and not replace_flag:
-                log.debug(f"【{self.client_name}】{self.name} 开启目录隔离，但 {torrent.name} 未匹配下载目录范围")
+                log.debug(f"【{self.client_name}】{self.name} 开启目录隔离，但 {torrent['bittorrent']['info']['name']} 未匹配下载目录范围")
                 continue
             trans_tasks.append({'path': os.path.join(true_path, name).replace("\\", "/"), 'id': torrent.get("gid")})
         return trans_tasks
@@ -134,7 +134,7 @@ class Aria2(_IDownloadClient):
     def delete_torrents(self, delete_file, ids):
         if not self._client:
             return False
-        return self._client.remove(gid=ids)
+        return self._client.forceRemove(gid=ids)
 
     def get_download_dirs(self):
         return []
