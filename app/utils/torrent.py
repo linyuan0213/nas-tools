@@ -286,7 +286,7 @@ class Torrent:
         return can_download_list_item
 
     @staticmethod
-    def magent2torrent(url, path, timeout=20):
+    def magent2torrent(url, path, timeout=30):
         """
         磁力链接转种子文件
         :param url: 磁力链接
@@ -309,7 +309,6 @@ class Torrent:
             if tout > timeout:
                 log.debug("【Downloader】元数据获取超时")
                 return None, "种子元数据获取超时"
-        session.pause()
         log.debug("【Downloader】获取元数据完成")
         tout = 0
         while True:
