@@ -1,5 +1,6 @@
 import os.path
 import re
+import zhconv
 
 import log
 from app.downloader import Downloader
@@ -89,6 +90,10 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
                     en_title = _media.get_tmdb_en_title(media_info)
                     if en_title:
                         search_en_name = en_title
+
+            # 繁体中文
+            search_zhtw_name = _media.get_tmdb_zhtw_title(media_info)
+            search_zhcn_name = zhconv.convert(search_zhtw_name, "zh-hans")
             # 两次搜索名称
             second_search_name = None
             if Config().get_config("laboratory").get("search_en_title"):
@@ -131,11 +136,24 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
     if filters:
         filter_args.update(filters)
     # 开始搜索
-    log.info("【Web】开始搜索 %s ..." % content)
+    log.info("【Web】开始通过 %s 搜索 ..." % first_search_name)
     media_list = _searcher.search_medias(key_word=first_search_name,
                                          filter_args=filter_args,
                                          match_media=media_info,
                                          in_from=SearchType.WEB)
+
+    # 添加繁体搜索
+    search_zhcn_list = [search_zhtw_name, search_zhcn_name]
+    media_zhtw_list = []
+    for search_name in search_zhcn_list:
+        log.info("【Web】开始通过 %s 搜索 ..." % search_name)
+        media_zhtw_list.extend(_searcher.search_medias(key_word=search_name,
+                                            filter_args=filter_args,
+                                            match_media=media_info,
+                                            in_from=SearchType.WEB))
+
+    media_list = media_list + media_zhtw_list
+
     # 使用第二名称重新搜索
     if ident_flag \
             and len(media_list) == 0 \
@@ -150,6 +168,17 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
                                              filter_args=filter_args,
                                              match_media=media_info,
                                              in_from=SearchType.WEB)
+
+    # 根据 org_string 去重列表
+    unique_media_list = []
+    media_seen = set()
+    for d in media_list:
+        org_string = StringUtils.md5_hash(d.org_string + d.site)
+        if org_string not in media_seen:
+            unique_media_list.append(d)
+            media_seen.add(org_string)
+    media_list = unique_media_list
+
     # 清空缓存结果
     _searcher.delete_all_search_torrents()
     # 结束进度

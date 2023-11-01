@@ -1929,6 +1929,18 @@ class Media:
             return en_info.get("title") if media_info.type == MediaType.MOVIE else en_info.get("name")
         return None
 
+    def get_tmdb_zhtw_title(self, media_info):
+        """
+        获取TMDB的繁体中文名称
+        """
+        zhtw_info = self.get_tmdb_info(mtype=media_info.type,
+                                     tmdbid=media_info.tmdb_id,
+                                     language="zh-TW",
+                                     chinese=False)
+        if zhtw_info:
+            return zhtw_info.get("title") if media_info.type == MediaType.MOVIE else zhtw_info.get("name")
+        return None
+
     def get_episode_title(self, media_info, language=None):
         """
         获取剧集的标题
