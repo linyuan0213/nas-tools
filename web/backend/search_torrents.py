@@ -45,6 +45,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
     _process.start(ProgressKey.Search)
     # 识别媒体
     media_info = None
+    search_zhcn_list = []
     if ident_flag:
 
         # 有TMDBID或豆瓣ID
@@ -94,6 +95,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
             # 繁体中文
             search_zhtw_name = _media.get_tmdb_zhtw_title(media_info)
             search_zhcn_name = zhconv.convert(search_zhtw_name, "zh-hans")
+            search_zhcn_list = [search_zhtw_name, search_zhcn_name]
             # 两次搜索名称
             second_search_name = None
             if Config().get_config("laboratory").get("search_en_title"):
@@ -143,7 +145,6 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
                                          in_from=SearchType.WEB)
 
     # 添加繁体搜索
-    search_zhcn_list = [search_zhtw_name, search_zhcn_name]
     media_zhtw_list = []
     for search_name in search_zhcn_list:
         log.info("【Web】开始通过 %s 搜索 ..." % search_name)
