@@ -143,16 +143,15 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
                                          in_from=SearchType.WEB)
 
     # 添加繁体搜索
-    search_zhcn_list = [search_zhtw_name, search_zhcn_name]
-    media_zhtw_list = []
-    for search_name in search_zhcn_list:
-        log.info("【Web】开始通过 %s 搜索 ..." % search_name)
-        media_zhtw_list.extend(_searcher.search_medias(key_word=search_name,
+    if ident_flag:
+        log.info("【Web】开始通过 %s 搜索 ..." % search_zhtw_name)
+        media_zhtw_list = []
+        media_zhtw_list.extend(_searcher.search_medias(key_word=search_zhtw_name,
                                             filter_args=filter_args,
                                             match_media=media_info,
                                             in_from=SearchType.WEB))
 
-    media_list = media_list + media_zhtw_list
+        media_list = media_list + media_zhtw_list
 
     # 使用第二名称重新搜索
     if ident_flag \
