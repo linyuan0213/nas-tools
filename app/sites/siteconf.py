@@ -2,9 +2,12 @@ import os
 import pickle
 import random
 import time
+import re
+import json
 from functools import lru_cache
 
 from lxml import etree
+from urllib.parse import urlsplit
 
 from app.helper import ChromeHelper
 from app.utils import ExceptionUtils, StringUtils, RequestUtils
@@ -115,59 +118,80 @@ class SiteConf:
         :return: 种子属性，包含FREE 2XFREE HR PEER_COUNT等属性
         """
         ret_attr = {
-            "free": False,
-            "2xfree": False,
-            "hr": False,
-            "peer_count": 0
-        }
-        if not torrent_url:
-            return ret_attr
-        xpath_strs = self.get_grap_conf(torrent_url)
-        if not xpath_strs:
-            return ret_attr
-        html_text = self.__get_site_page_html(url=torrent_url,
-                                              cookie=cookie,
-                                              ua=ua,
-                                              render=xpath_strs.get('RENDER'),
-                                              proxy=proxy)
-        if not html_text:
-            return ret_attr
-        try:
-            html = etree.HTML(html_text)
-            # 检测2XFREE
-            for xpath_str in xpath_strs.get("2XFREE"):
-                if html.xpath(xpath_str):
-                    ret_attr["free"] = True
-                    ret_attr["2xfree"] = True
-            # 检测FREE
-            for xpath_str in xpath_strs.get("FREE"):
-                if html.xpath(xpath_str):
-                    ret_attr["free"] = True
-            # 检测HR
-            for xpath_str in xpath_strs.get("HR"):
-                if html.xpath(xpath_str):
-                    ret_attr["hr"] = True
-            # 检测PEER_COUNT当前做种人数
-            for xpath_str in xpath_strs.get("PEER_COUNT"):
-                peer_count_dom = html.xpath(xpath_str)
-                if peer_count_dom:
-                    peer_count_str = ''.join(peer_count_dom[0].itertext())
-                    peer_count_digit_str = ""
-                    for m in peer_count_str:
-                        if m.isdigit():
-                            peer_count_digit_str = peer_count_digit_str + m
-                        if m == " ":
-                            break
-                    ret_attr["peer_count"] = int(peer_count_digit_str) if len(peer_count_digit_str) > 0 else 0
-        except Exception as err:
-            ExceptionUtils.exception_traceback(err)
+                "free": False,
+                "2xfree": False,
+                "hr": False,
+                "peer_count": 0
+            }
+        if 'm-team' in torrent_url:
+            split_url = urlsplit(torrent_url)
+            base_url = f"{split_url.scheme}://{split_url.netloc}"
+            detail_url = f"{base_url}/api/torrent/detail"
+            res = re.findall(r'\d+', torrent_url)
+            param = res[0]
+            json_text = self.__get_site_page_html(url=detail_url,
+                                    cookie=cookie,
+                                    ua=ua,
+                                    proxy=proxy,
+                                    param=param)
+            json_data = json.loads(json_text)
+            if json_data['message'] != "SUCCESS":
+                return ret_attr
+            discount = json_data['data']['status']['discount']
+            seeders = json_data['data']['status']['seeders']
+            if discount == 'FREE':
+                ret_attr["free"] = True
+            ret_attr['peer_count'] = int(seeders)
+
+        else:
+            if not torrent_url:
+                return ret_attr
+            xpath_strs = self.get_grap_conf(torrent_url)
+            if not xpath_strs:
+                return ret_attr
+            html_text = self.__get_site_page_html(url=torrent_url,
+                                                cookie=cookie,
+                                                ua=ua,
+                                                render=xpath_strs.get('RENDER'),
+                                                proxy=proxy)
+            if not html_text:
+                return ret_attr
+            try:
+                html = etree.HTML(html_text)
+                # 检测2XFREE
+                for xpath_str in xpath_strs.get("2XFREE"):
+                    if html.xpath(xpath_str):
+                        ret_attr["free"] = True
+                        ret_attr["2xfree"] = True
+                # 检测FREE
+                for xpath_str in xpath_strs.get("FREE"):
+                    if html.xpath(xpath_str):
+                        ret_attr["free"] = True
+                # 检测HR
+                for xpath_str in xpath_strs.get("HR"):
+                    if html.xpath(xpath_str):
+                        ret_attr["hr"] = True
+                # 检测PEER_COUNT当前做种人数
+                for xpath_str in xpath_strs.get("PEER_COUNT"):
+                    peer_count_dom = html.xpath(xpath_str)
+                    if peer_count_dom:
+                        peer_count_str = ''.join(peer_count_dom[0].itertext())
+                        peer_count_digit_str = ""
+                        for m in peer_count_str:
+                            if m.isdigit():
+                                peer_count_digit_str = peer_count_digit_str + m
+                            if m == " ":
+                                break
+                        ret_attr["peer_count"] = int(peer_count_digit_str) if len(peer_count_digit_str) > 0 else 0
+            except Exception as err:
+                ExceptionUtils.exception_traceback(err)
         # 随机休眼后再返回
         time.sleep(round(random.uniform(1, 5), 1))
         return ret_attr
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def __get_site_page_html(url, cookie, ua, render=False, proxy=False):
+    def __get_site_page_html(url, cookie, ua, render=False, proxy=False, param=None):
         chrome = ChromeHelper(headless=True)
         if render and chrome.get_status():
             # 开渲染
@@ -175,6 +199,23 @@ class SiteConf:
                 # 等待页面加载完成
                 time.sleep(10)
                 return chrome.get_html()
+        elif 'm-team' in url:
+            param = {'id': param}
+            headers = {}
+            headers.update({
+                    "User-Agent": f"{ua}"
+                })
+            headers.update({
+                "contentType": 'application/json;charset=UTF-8'
+            })
+            res = RequestUtils(
+                cookies=cookie,
+                headers=headers,
+                proxies=Config().get_proxies() if proxy else None
+            ).post_res(url=url, data=param)
+            if res and res.status_code == 200:
+                res.encoding = res.apparent_encoding
+                return res.text
         else:
             res = RequestUtils(
                 cookies=cookie,
