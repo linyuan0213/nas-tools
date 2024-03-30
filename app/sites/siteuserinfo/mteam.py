@@ -5,7 +5,7 @@ import base64
 from urllib.parse import urljoin
 
 from app.sites.siteuserinfo._base import _ISiteUserInfo, SITE_BASE_ORDER
-from app.utils import RequestUtils
+from app.utils import RequestUtils, JsonUtils
 from app.utils.types import SiteSchema
 from config import Config
 
@@ -36,7 +36,6 @@ class MteamUserInfo(_ISiteUserInfo):
         self._parse_seeding_pages()
         self.seeding_info = json.dumps(self.seeding_info)
 
-
     def _parse_favicon(self, html_text):
         """
         解析站点favicon,返回base64 fav图标
@@ -51,14 +50,17 @@ class MteamUserInfo(_ISiteUserInfo):
             self.site_favicon = base64.b64encode(res.content).decode()
 
     def _parse_user_base_info(self, html_text):
+        if not JsonUtils.is_valid_json(html_text):
+            return
+
         json_data = json.loads(html_text)
 
         user_profile = self._get_page_content(self._base_url + '/api/member/profile', params={})
         user_profile = json.loads(user_profile)
-        if user_profile['message'] == 'SUCCESS' and json_data['data'] is not None:
-            userid = user_profile['data']['id']
-            self.username = json_data['data']['username']
-            self.bonus = json_data['data']['memberCount']['bonus']
+        if user_profile.get('message') == 'SUCCESS' and json_data.get('data') is not None:
+            userid = user_profile.get('data').get('id') or ''
+            self.username = json_data.get('data').get('username') or ''
+            self.bonus = json_data.get('data').get('memberCount').get('bonus') or ''
             self._torrent_seeding_page = '/api/member/getUserTorrentList'
             self._torrent_seeding_params = {"userid": userid, "type": "SEEDING", "pageNumber": 1, "pageSize": 25}
 
@@ -82,25 +84,31 @@ class MteamUserInfo(_ISiteUserInfo):
             '8': '總督/Ultimate User',
             '9': '大臣/mTorrent Master'
         }
+        if not JsonUtils.is_valid_json(html_text):
+            return
         json_data = json.loads(html_text)
-        if json_data['data'] is not None:
+        if json_data.get('data') is not None:
             # 用户等级
-            role = json_data['data']['role']
+            role = json_data.get('data').get('role') or ''
             self.user_level = role_dict.get(role, '其他')
 
             # 加入日期
-            self.join_at = json_data['data']['createdDate']
+            self.join_at = json_data.get('data').get('createdDate')
 
     def _parse_user_traffic_info(self, html_text):
         json_data = json.loads(html_text)
-        if json_data['data'] is not None:
-            self.upload = int(json_data['data']['memberCount']['uploaded'])
+        if json_data.get('data') is not None:
+            self.upload = int(json_data.get('data').get('memberCount').get('uploaded'))
 
-            self.download = int(json_data['data']['memberCount']['downloaded'])
+            self.download = int(json_data.get('data').get('memberCount').get('downloaded'))
 
-            self.ratio = json_data['data']['memberCount']['shareRate']
+            self.ratio = json_data.get('data').get('memberCount').get('shareRate')
 
     def _parse_user_torrent_seeding_info(self, html_text, multi_page=False):
+
+        if not JsonUtils.is_valid_json(html_text):
+            return None
+
         json_data = json.loads(html_text)
 
         page_seeding = 0
@@ -108,11 +116,11 @@ class MteamUserInfo(_ISiteUserInfo):
         page_seeding_info = []
         next_page = None
 
-        if json_data['data'] is not None:
-            page_seeding = len(json_data['data']['data'])
-            for data in json_data['data']['data']:
-                size = int(data['torrent']['size'])
-                seeders = data['torrent']['status']['seeders']
+        if json_data.get('data') is not None:
+            page_seeding = len(json_data.get('data').get('data'))
+            for data in json_data.get('data').get('data'):
+                size = int(data.get('torrent').get('size'))
+                seeders = data.get('torrent').get('status').get('seeders')
 
                 page_seeding_size += size
                 page_seeding_info.append([seeders, size])
@@ -121,8 +129,8 @@ class MteamUserInfo(_ISiteUserInfo):
             self.seeding_size += page_seeding_size
             self.seeding_info.extend(page_seeding_info)
 
-            page_num = int(json_data['data']['pageNumber'])
-            total_pages = int(json_data['data']['totalPages'])
+            page_num = int(json_data.get('data').get('pageNumber'))
+            total_pages = int(json_data.get('data').get('totalPages'))
 
             next_page = page_num + 1
             self._torrent_seeding_params['pageNumber'] = next_page

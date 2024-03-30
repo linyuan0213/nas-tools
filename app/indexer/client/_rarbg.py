@@ -1,4 +1,5 @@
 import requests
+import re
 
 import log
 from app.utils import RequestUtils

@@ -21,7 +21,7 @@ class SiteHelper:
         """
         if JsonUtils.is_valid_json(html_text):
             json_data = json.loads(html_text)
-            if 'message' in json_data and json_data['message'] == 'SUCCESS':
+            if json_data.get('message') == 'SUCCESS':
                 return True
             else:
                 return False
