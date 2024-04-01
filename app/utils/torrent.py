@@ -2,7 +2,6 @@ import datetime
 import os.path
 import time
 import re
-import tempfile
 from urllib.parse import unquote
 
 import libtorrent
