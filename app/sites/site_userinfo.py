@@ -173,6 +173,8 @@ class SiteUserInfo(object):
         headers = site_info.get("headers")
         if JsonUtils.is_valid_json(headers):
             headers = json.loads(headers)
+        else:
+            headers = {}
         unread_msg_notify = site_info.get("unread_msg_notify")
         chrome = site_info.get("chrome")
         proxy = site_info.get("proxy")
