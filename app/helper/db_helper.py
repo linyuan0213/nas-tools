@@ -1779,6 +1779,11 @@ class DbHelper:
         """
         if not enclosure:
             return None
+        if 'm-team' in enclosure:
+            tid = StringUtils.get_tid_by_url(enclosure)
+            mt_torrents = self._db.query(SITEBRUSHTORRENTS).filter(SITEBRUSHTORRENTS.ENCLOSURE.like("%m-team%")).all()
+            return list(filter(lambda torrent: StringUtils.get_tid_by_url(torrent.ENCLOSURE) == tid, mt_torrents))
+
         return self._db.query(SITEBRUSHTORRENTS).filter(SITEBRUSHTORRENTS.ENCLOSURE == enclosure).first()
 
     def is_brushtask_torrent_exists(self, brush_id, title, enclosure):

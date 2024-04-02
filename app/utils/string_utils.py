@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import random
 import re
+import base64
 from urllib import parse
 
 import cn2an
@@ -545,3 +546,20 @@ class StringUtils:
             return True
         else:
             return False
+
+    @staticmethod
+    def get_tid_by_url(url):
+        """
+        馒头下载链接获取种子id
+        """
+        # 解析URL
+        parsed_url = parse.urlparse(url)
+
+        # 解析查询参数
+        params = parse.parse_qs(parsed_url.query)
+
+        credential = params.get('credential')[0]
+        sign_data = base64.b64decode(credential).decode('utf-8')
+        sign_params = parse.parse_qs(sign_data)
+
+        return sign_params.get('tid')[0]
