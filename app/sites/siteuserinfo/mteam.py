@@ -44,7 +44,7 @@ class MteamUserInfo(_ISiteUserInfo):
         """
         self._favicon_url = urljoin(self._base_url, '/favicon.ico')
 
-        res = RequestUtils(cookies=self._site_cookie, session=self._session, timeout=60, headers=self._ua).get_res(
+        res = RequestUtils(cookies=self._site_cookie, session=self._session, headers=self._site_headers, timeout=60).get_res(
             url=self._favicon_url)
         if res:
             self.site_favicon = base64.b64encode(res.content).decode()
@@ -55,7 +55,7 @@ class MteamUserInfo(_ISiteUserInfo):
 
         json_data = json.loads(html_text)
 
-        user_profile = self._get_page_content(self._base_url + '/api/member/profile', params={})
+        user_profile = self._get_page_content(self._base_url + '/api/member/profile', params={}, headers=self._site_headers)
         user_profile = json.loads(user_profile)
         if user_profile.get('message') == 'SUCCESS' and json_data.get('data') is not None:
             userid = user_profile.get('data').get('id') or ''
@@ -182,14 +182,14 @@ class MteamUserInfo(_ISiteUserInfo):
             next_page = self._parse_user_torrent_seeding_info(
                 self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
                                        self._torrent_seeding_params,
-                                       self._torrent_seeding_headers))
+                                       self._site_headers))
 
             # 其他页处理
             while next_page:
                 next_page = self._parse_user_torrent_seeding_info(
                     self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
                                            self._torrent_seeding_params,
-                                           self._torrent_seeding_headers),
+                                           self._site_headers),
                     multi_page=True)
 
     def _parse_message_unread_links(self, html_text, msg_links):

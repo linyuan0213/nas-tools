@@ -5,7 +5,7 @@ import log
 from app.helper import ChromeHelper, SiteHelper, DbHelper
 from app.message import Message
 from app.sites.site_limiter import SiteRateLimiter
-from app.utils import RequestUtils, StringUtils
+from app.utils import RequestUtils, StringUtils, JsonUtils
 from app.utils.commons import singleton
 from config import Config
 
@@ -61,11 +61,12 @@ class Sites:
             site_signurl = site.SIGNURL
             site_cookie = site.COOKIE
             site_uses = site.INCLUDE or ''
+            site_headers = site_note.get('headers')
             uses = []
             if site_uses:
                 rss_enable = True if "D" in site_uses and site_rssurl else False
-                brush_enable = True if "S" in site_uses and site_rssurl and site_cookie else False
-                statistic_enable = True if "T" in site_uses and (site_rssurl or site_signurl) and site_cookie else False
+                brush_enable = True if "S" in site_uses and site_rssurl and (site_cookie or site_headers) else False
+                statistic_enable = True if "T" in site_uses and (site_rssurl or site_signurl) and (site_cookie or site_headers) else False
                 uses.append("D") if rss_enable else None
                 uses.append("S") if brush_enable else None
                 uses.append("T") if statistic_enable else None
@@ -87,6 +88,7 @@ class Sites:
                 "statistic_enable": statistic_enable,
                 "uses": uses,
                 "ua": site_note.get("ua"),
+                "headers": site_note.get("headers"),
                 "parse": True if site_note.get("parse") == "Y" else False,
                 "unread_msg_notify": True if site_note.get("message") == "Y" else False,
                 "chrome": True if site_note.get("chrome") == "Y" else False,
@@ -257,8 +259,14 @@ class Sites:
         if not site_info:
             return False, "站点不存在", 0
         site_cookie = site_info.get("cookie")
-        if not site_cookie:
-            return False, "未配置站点Cookie", 0
+        headers = site_info.get("headers")
+        if not site_cookie and not headers:
+            return False, "未配置站点Cookie或headers", 0
+
+        if JsonUtils.is_valid_json(headers):
+            headers = json.loads(headers)
+        else:
+            headers = {}
         ua = site_info.get("ua") or Config().get_ua()
         site_url = StringUtils.get_base_url(site_info.get("signurl") or site_info.get("rssurl"))
         if not site_url:
@@ -291,8 +299,9 @@ class Sites:
             # m-team处理
             if 'm-team' in site_url:
                 url = site_url + '/api/member/profile'
+                headers.update({'User-Agent': ua})
                 res = RequestUtils(cookies=site_cookie,
-                                headers=ua,
+                                headers=headers,
                                 proxies=Config().get_proxies() if site_info.get("proxy") else None
                             ).post_res(url=url, data={})
             else:

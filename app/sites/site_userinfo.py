@@ -9,7 +9,7 @@ import log
 from app.helper import ChromeHelper, SubmoduleHelper, DbHelper
 from app.message import Message
 from app.sites.sites import Sites
-from app.utils import RequestUtils, ExceptionUtils, StringUtils
+from app.utils import RequestUtils, ExceptionUtils, StringUtils, JsonUtils
 from app.utils.commons import singleton
 from config import Config
 
@@ -54,11 +54,11 @@ class SiteUserInfo(object):
         return None
 
     def build(self, url, site_id, site_name,
-              site_cookie=None, ua=None, emulate=None, proxy=False):
-        if not site_cookie:
+              site_cookie=None, site_headers=None, ua=None, emulate=None, proxy=False):
+        if not site_cookie and not site_headers:
             return None
         session = requests.Session()
-        log.debug(f"【Sites】站点 {site_name} url={url} site_cookie={site_cookie} ua={ua}")
+        log.debug(f"【Sites】站点 {site_name} url={url} site_cookie={site_cookie} site_headers={site_headers} ua={ua}")
 
         # 站点流控
         if self.sites.check_ratelimit(site_id):
@@ -80,10 +80,11 @@ class SiteUserInfo(object):
         else:
             proxies = Config().get_proxies() if proxy else None
             if 'm-team' in url:
+                site_headers.update({'User-Agent': ua})
                 profile_url = url + '/api/member/profile'
                 res = RequestUtils(cookies=site_cookie,
                                 session=session,
-                                headers=ua,
+                                headers=site_headers,
                                 proxies=proxies
                             ).post_res(url=profile_url, data={})
             else:
@@ -101,7 +102,7 @@ class SiteUserInfo(object):
                 # 单独处理m-team
                 if 'm-team' in url:
                     json_data = json.loads(html_text)
-                    if 'message' in json_data and json_data['message'] != "SUCCESS":
+                    if json_data.get('message') != "SUCCESS":
                         return None
                 else:
                 # 第一次登录反爬
@@ -154,7 +155,7 @@ class SiteUserInfo(object):
         if not site_schema:
             log.error("【Sites】站点 %s 无法识别站点类型" % site_name)
             return None
-        return site_schema(site_name, url, site_cookie, html_text, session=session, ua=ua, emulate=emulate, proxy=proxy)
+        return site_schema(site_name, url, site_cookie, html_text, session=session, ua=ua, site_headers=site_headers, emulate=emulate, proxy=proxy)
 
     def __refresh_site_data(self, site_info):
         """
@@ -169,6 +170,9 @@ class SiteUserInfo(object):
             return
         site_cookie = site_info.get("cookie")
         ua = site_info.get("ua")
+        headers = site_info.get("headers")
+        if JsonUtils.is_valid_json(headers):
+            headers = json.loads(headers)
         unread_msg_notify = site_info.get("unread_msg_notify")
         chrome = site_info.get("chrome")
         proxy = site_info.get("proxy")
@@ -178,6 +182,7 @@ class SiteUserInfo(object):
                                         site_name=site_name,
                                         site_cookie=site_cookie,
                                         ua=ua,
+                                        site_headers=headers,
                                         emulate=chrome,
                                         proxy=proxy)
             if site_user_info:

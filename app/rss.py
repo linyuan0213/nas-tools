@@ -2,6 +2,7 @@ import re
 from threading import Lock
 
 import log
+import json
 from app.downloader import Downloader
 from app.filter import Filter
 from app.helper import DbHelper, RssHelper
@@ -9,7 +10,7 @@ from app.media import Media
 from app.media.meta import MetaInfo
 from app.sites import Sites, SiteConf
 from app.subscribe import Subscribe
-from app.utils import ExceptionUtils, Torrent
+from app.utils import ExceptionUtils, Torrent, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import MediaType, SearchType
 
@@ -115,6 +116,11 @@ class Rss:
                 site_id = site_info.get("id")
                 site_cookie = site_info.get("cookie")
                 site_ua = site_info.get("ua")
+                site_headers = site_info.get("headers")
+                if JsonUtils.is_valid_json(site_headers):
+                    site_headers = json.loads(site_headers)
+                else:
+                    site_headers = {}
                 # 是否解析种子详情
                 site_parse = site_info.get("parse")
                 # 是否使用代理
@@ -191,6 +197,7 @@ class Rss:
                             site_filter_rule=site_fliter_rule,
                             site_cookie=site_cookie,
                             site_parse=site_parse,
+                            site_headers=site_headers,
                             site_ua=site_ua,
                             site_proxy=site_proxy)
                         for msg in match_msg:
@@ -325,6 +332,7 @@ class Rss:
                           site_cookie,
                           site_parse,
                           site_ua,
+                          site_headers,
                           site_proxy):
         """
         判断种子是否命中订阅
@@ -336,6 +344,7 @@ class Rss:
         :param site_cookie: 站点的Cookie
         :param site_parse: 是否解析种子详情
         :param site_ua: 站点请求UA
+        :param site_headers: 站点请求头
         :param site_proxy: 是否使用代理
         :return: 匹配到的订阅ID、是否洗版、总集数、匹配规则的资源顺序、上传因子、下载因子，匹配的季（电视剧）
         """
@@ -449,6 +458,7 @@ class Rss:
                 torrent_attr = self.siteconf.check_torrent_attr(torrent_url=media_info.page_url,
                                                                 cookie=site_cookie,
                                                                 ua=site_ua,
+                                                                headers=site_headers,
                                                                 proxy=site_proxy)
                 if torrent_attr.get('2xfree'):
                     download_volume_factor = 0.0

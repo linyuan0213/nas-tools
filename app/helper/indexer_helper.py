@@ -43,6 +43,7 @@ class IndexerHelper:
                     proxy=False,
                     parser=None,
                     ua=None,
+                    headers=None,
                     render=None,
                     language=None,
                     pri=None):
@@ -61,6 +62,7 @@ class IndexerHelper:
                                    proxy=proxy,
                                    parser=parser,
                                    ua=ua,
+                                   headers=headers,
                                    render=render,
                                    builtin=True,
                                    language=language,
@@ -80,6 +82,7 @@ class IndexerConf(object):
                  proxy=False,
                  parser=None,
                  ua=None,
+                 headers=None,
                  render=None,
                  builtin=True,
                  language=None,
@@ -114,6 +117,8 @@ class IndexerConf(object):
         self.cookie = cookie
         # User-Agent
         self.ua = ua
+        # 请求头
+        self.headers = headers
         # 过滤规则
         self.rule = rule
         # 是否公开站点

@@ -10,7 +10,7 @@ from lxml import etree
 from urllib.parse import urlsplit
 
 from app.helper import ChromeHelper
-from app.utils import ExceptionUtils, StringUtils, RequestUtils
+from app.utils import ExceptionUtils, StringUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from config import Config
 
@@ -108,12 +108,13 @@ class SiteConf:
                 return v
         return {}
 
-    def check_torrent_attr(self, torrent_url, cookie, ua=None, proxy=False):
+    def check_torrent_attr(self, torrent_url, cookie, ua=None, headers=None, proxy=False):
         """
         检验种子是否免费，当前做种人数
         :param torrent_url: 种子的详情页面
         :param cookie: 站点的Cookie
         :param ua: 站点的ua
+        :param ua: 站点的请求头
         :param proxy: 是否使用代理
         :return: 种子属性，包含FREE 2XFREE HR PEER_COUNT等属性
         """
@@ -129,16 +130,19 @@ class SiteConf:
             detail_url = f"{base_url}/api/torrent/detail"
             res = re.findall(r'\d+', torrent_url)
             param = res[0]
+            # 这里headers必须是string类型
+            headers = json.dumps(headers)
             json_text = self.__get_site_page_html(url=detail_url,
                                     cookie=cookie,
                                     ua=ua,
+                                    headers=headers,
                                     proxy=proxy,
                                     param=param)
             json_data = json.loads(json_text)
-            if json_data['message'] != "SUCCESS":
+            if json_data.get('message') != "SUCCESS":
                 return ret_attr
-            discount = json_data['data']['status']['discount']
-            seeders = json_data['data']['status']['seeders']
+            discount = json_data.get('data').get('status').get('discount')
+            seeders = json_data.get('data').get('status').get('seeders')
             if discount == 'FREE':
                 ret_attr["free"] = True
             ret_attr['peer_count'] = int(seeders)
@@ -191,7 +195,11 @@ class SiteConf:
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def __get_site_page_html(url, cookie, ua, render=False, proxy=False, param=None):
+    def __get_site_page_html(url, cookie, ua, headers=None, render=False, proxy=False, param=None):
+        if JsonUtils.is_valid_json(headers):
+            headers = json.loads(headers)
+        else:
+            headers = {}
         chrome = ChromeHelper(headless=True)
         if render and chrome.get_status():
             # 开渲染
@@ -201,10 +209,6 @@ class SiteConf:
                 return chrome.get_html()
         elif 'm-team' in url:
             param = {'id': param}
-            headers = {}
-            headers.update({
-                    "User-Agent": f"{ua}"
-                })
             headers.update({
                 "contentType": 'application/json;charset=UTF-8'
             })

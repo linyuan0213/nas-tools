@@ -1,5 +1,6 @@
 import re
 import time
+import json
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import ThreadPool
@@ -19,7 +20,7 @@ from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
-from app.utils import RequestUtils, ExceptionUtils, StringUtils, SchedulerUtils
+from app.utils import RequestUtils, ExceptionUtils, StringUtils, SchedulerUtils, JsonUtils
 from app.utils.types import EventType
 from config import Config
 
@@ -430,9 +431,14 @@ class AutoSignIn(_IPluginModule):
             site_url = site_info.get("signurl")
             site_cookie = site_info.get("cookie")
             ua = site_info.get("ua")
-            if not site_url or not site_cookie:
-                self.warn("未配置 %s 的站点地址或Cookie，无法签到" % str(site))
+            headers = site_info.get("headers")
+            if (not site_url or not site_cookie) and not headers:
+                self.warn("未配置 %s 的Cookie或请求头，无法签到" % str(site))
                 return ""
+            if JsonUtils.is_valid_json(headers):
+                headers = json.loads(headers)
+            else:
+                headers = {}
             chrome = ChromeHelper()
             if site_info.get("chrome") and chrome.get_status():
                 # 首页
@@ -504,11 +510,12 @@ class AutoSignIn(_IPluginModule):
                 # 访问链接
                 # m-team处理
                 if 'm-team' in site_url:
+                    headers.update({'User-Agent': ua})
                     if not site_url.endswith('/'):
                         site_url = site_url + '/'
                     url = site_url + 'api/member/profile'
                     res = RequestUtils(cookies=site_cookie,
-                                    headers=ua,
+                                    headers=headers,
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
                                 ).post_res(url=url, data={})
                 else:

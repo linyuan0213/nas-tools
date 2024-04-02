@@ -72,13 +72,15 @@ class BuiltinIndexer(_IIndexClient):
         for site in Sites().get_sites():
             url = site.get("signurl") or site.get("rssurl")
             cookie = site.get("cookie")
-            if not url or not cookie:
+            headers = site.get("headers")
+            if (not url or not cookie) and not headers:
                 continue
             render = False if not chrome_ok else site.get("chrome")
             indexer = IndexerHelper().get_indexer(url=url,
                                                   siteid=site.get("id"),
                                                   cookie=cookie,
                                                   ua=site.get("ua"),
+                                                  headers=site.get("headers"),
                                                   name=site.get("name"),
                                                   rule=site.get("rule"),
                                                   pri=site.get('pri'),

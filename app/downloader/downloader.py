@@ -18,7 +18,7 @@ from app.mediaserver import MediaServer
 from app.message import Message
 from app.plugins import EventManager
 from app.sites import Sites, SiteSubtitle
-from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberUtils, RequestUtils
+from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import MediaType, DownloaderType, SearchType, RmtMode, EventType, SystemConfigKey
 from config import Config, PT_TAG, RMT_MEDIAEXT, PT_TRANSFER_INTERVAL
@@ -1500,11 +1500,19 @@ class Downloader:
         split_url = urlsplit(page_url)
         base_url = f"{split_url.scheme}://{split_url.netloc}"
         site_info = Sites().get_sites(siteurl=base_url)
-        cookie=site_info.get("cookie")
-        ua=site_info.get("ua")
-        proxy=site_info.get("proxy")
+        cookie = site_info.get("cookie")
+        headers = site_info.get("headers")
+        if JsonUtils.is_valid_json(headers):
+            headers = json.loads(headers)
+        else:
+            headers = {}
+        headers.update({
+                "contentType": "application/json; charset=utf-8",
+                "User-Agent": f"{site_info.get('ua')}"
+            })
+        proxy = site_info.get("proxy")
         media_id = (re.findall(r'\d+', page_url) or [''])[0]
-        res = RequestUtils(headers=ua,
+        res = RequestUtils(headers=headers,
                         cookies=cookie,
                         proxies=proxy,
                         timeout=15).post_res(url=f'{base_url}/api/torrent/genDlToken', data={'id': media_id})

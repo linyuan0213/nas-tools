@@ -2,7 +2,7 @@ import re
 import json
 
 import log
-from app.utils import RequestUtils
+from app.utils import RequestUtils, JsonUtils
 from config import Config
 
 
@@ -29,6 +29,10 @@ class MteamSpider(object):
                 self._proxy = Config().get_proxies()
             self._cookie = indexer.cookie
             self._ua = indexer.ua
+            if JsonUtils.is_valid_json(indexer.headers):
+                self._headers = json.loads(indexer.headers)
+            else:
+                self._headers = {}
         self.init_config()
 
     def init_config(self):
@@ -45,11 +49,12 @@ class MteamSpider(object):
             }
 
         params = json.dumps(params, separators=(',', ':'))
-        res = RequestUtils(
-            headers={
+        self._headers.update({
                 "Content-Type": "application/json; charset=utf-8",
                 "User-Agent": f"{self._ua}"
-            },
+            })
+        res = RequestUtils(
+            headers=self._headers,
             cookies=self._cookie,
             proxies=self._proxy,
             timeout=30
@@ -59,7 +64,6 @@ class MteamSpider(object):
             results = res.json().get('data', {}).get("data") or []
             for result in results:
                 imdbid = (re.findall(r'tt\d+', result.get('imdb')) or [''])[0]
-                # enclosure = self.__get_torrent_url(result.get('id'))
                 torrent = {
                     'indexer': self._indexerid,
                     'title': result.get('name'),

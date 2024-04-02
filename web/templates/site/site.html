@@ -273,6 +273,13 @@
               </select>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label required">请求头参数 <span class="form-help"
+                  title='自定义请求头参数，格式{"xxx": "xxx"}，多个参数按逗号分隔' data-bs-toggle="tooltip">?</span></label>
+                  <input type="text" class="form-control" id="site_headers" value="" placeholder="请求头参数">
+            </div>
+          </div>
           <div class="col-lg-8">
             <div class="mb-3">
             <label class="form-label">User-Agent <span class="form-help"
@@ -469,6 +476,7 @@
     $("#site_cookie").val('');
     $("#site_rule").val('');
     $("#site_ua").val('');
+    $("#site_headers").val('');
     $("#site_chrome").val('N');
     $("#site_proxy").val('N');
     $("#site_parse").val('Y');
@@ -496,6 +504,7 @@
         $("#site_signurl").val(ret.site.signurl);
         $("#site_cookie").val(ret.site.cookie);
         $("#site_ua").val(ret.site.ua);
+        $("#site_headers").val(ret.site.headers);
         $("#site_download_setting").val(ret.site.download_setting);
         if (ret.site.parse) {
           $("#site_parse").val("Y");
@@ -593,6 +602,7 @@
       $("#site_rssurl").removeClass("is-invalid");
     };
     let ua = $("#site_ua").val();
+    let headers = $("#site_headers").val();
     let chrome = $("#site_chrome").val();
     let proxy = $("#site_proxy").val();
     let subtitle = $("#site_subtitle").val();
@@ -631,6 +641,7 @@
         "download_setting": site_download_setting,
         "parse": site_parse,
         "ua": ua,
+        "headers": headers,
         "chrome": chrome,
         "proxy": proxy,
         "message": site_unread_msg_notify,

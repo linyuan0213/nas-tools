@@ -1,6 +1,7 @@
 import re
 import sys
 import time
+import json
 from datetime import datetime
 
 import pytz
@@ -14,7 +15,7 @@ from app.helper import DbHelper, RssHelper
 from app.media.meta import MetaInfo
 from app.message import Message
 from app.sites import Sites, SiteConf
-from app.utils import StringUtils, ExceptionUtils
+from app.utils import StringUtils, ExceptionUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import BrushDeleteType
 from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config
@@ -128,6 +129,7 @@ class BrushTask(object):
                 "rss_url_show": task.RSSURL,
                 "cookie": site_info.get("cookie"),
                 "ua": site_info.get("ua"),
+                "headers": site_info.get("headers"),
                 "download_count": task.DOWNLOAD_COUNT,
                 "remove_count": task.REMOVE_COUNT,
                 "download_size": StringUtils.str_filesize(task.DOWNLOAD_SIZE),
@@ -166,6 +168,12 @@ class BrushTask(object):
         rss_free = taskinfo.get("free")
         downloader_id = taskinfo.get("downloader")
         ua = taskinfo.get("ua")
+        headers = taskinfo.get("headers")
+        if JsonUtils.is_valid_json(headers):
+            headers = json.loads(taskinfo.get("headers"))
+        else:
+            headers = {}
+        headers.update({'User-Agent': ua})
         state = taskinfo.get("state")
         if state != 'Y':
             log.info("【Brush】刷流任务 %s 已停止下载新种！" % task_name)
@@ -186,8 +194,8 @@ class BrushTask(object):
         if not rss_url:
             log.error("【Brush】站点 %s 未配置RSS订阅地址，无法刷流！" % site_name)
             return
-        if rss_free and not cookie:
-            log.warn("【Brush】站点 %s 未配置Cookie，无法开启促销刷流" % site_name)
+        if rss_free and (not cookie and not taskinfo.get("headers")):
+            log.warn("【Brush】站点 %s 未配置Cookie或请求头，无法开启促销刷流" % site_name)
             return
         # 下载器参数
         downloader_cfg = self.downloader.get_downloader_conf(downloader_id)
@@ -248,6 +256,7 @@ class BrushTask(object):
                                              siteid=site_id,
                                              cookie=cookie,
                                              ua=ua,
+                                             headers=headers,
                                              proxy=site_proxy):
                     continue
                 # 检查能否添加当前种子，判断是否超过保种体积大小
@@ -664,6 +673,7 @@ class BrushTask(object):
                          siteid,
                          cookie,
                          ua,
+                         headers,
                          proxy):
         """
         检查种子是否符合刷流过滤条件
@@ -675,6 +685,7 @@ class BrushTask(object):
         :param siteid: 站点ID
         :param cookie: Cookie
         :param ua: User-Agent
+        :param headers: 请求头
         :return: 是否命中
         """
         if not rss_rule:
@@ -716,6 +727,7 @@ class BrushTask(object):
             torrent_attr = self.siteconf.check_torrent_attr(torrent_url=torrent_url,
                                                             cookie=cookie,
                                                             ua=ua,
+                                                            headers=headers,
                                                             proxy=proxy)
             torrent_peer_count = torrent_attr.get("peer_count")
             log.debug("【Brush】%s 解析详情, %s" % (title, torrent_attr))
