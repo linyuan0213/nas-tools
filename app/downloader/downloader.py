@@ -798,6 +798,8 @@ class Downloader:
         # 下载掉所有的电影
         for item in download_list:
             if item.type == MediaType.MOVIE:
+                if 'm-team' in item.page_url:
+                    item.enclosure = Downloader().get_download_url(item.page_url)
                 __download(item)
 
         # 电视剧整季匹配
@@ -821,6 +823,9 @@ class Downloader:
                     if item.get_episode_list():
                         continue
                     if need_tmdbid == item.tmdb_id:
+                        # 单独处理m-team
+                        if 'm-team' in item.page_url:
+                            item.enclosure = Downloader().get_download_url(item.page_url)
                         if set(item_season).issubset(set(need_season)):
                             if len(item_season) == 1:
                                 # 只有一季的可能是命名错误，需要打开种子鉴别，只有实际集数大于等于总集数才下载
