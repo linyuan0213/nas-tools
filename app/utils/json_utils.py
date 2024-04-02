@@ -29,6 +29,8 @@ class JsonUtils:
         判断是否是有效的json格式字符串
         """
         try:
+            if not text:
+                return False
             json.loads(text)
             return True
         except json.JSONDecodeError:
