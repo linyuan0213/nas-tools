@@ -115,6 +115,8 @@ class TorrentSpider(feapder.AirSpider):
         self.category = indexer.category
         self.list = indexer.torrents.get('list', {})
         self.fields = indexer.torrents.get('fields')
+        self.browse_list = indexer.torrents.get('browse_list')
+        self.browse_fields = indexer.torrents.get('browse_fields')
         self.render = indexer.render
         self.domain = indexer.domain
         self.page = page
@@ -144,6 +146,7 @@ class TorrentSpider(feapder.AirSpider):
 
         # 种子搜索相对路径
         paths = self.search.get('paths', [])
+        params = self.search.get('params')
         torrentspath = ""
         if len(paths) == 1:
             torrentspath = paths[0].get('path', '')
@@ -236,6 +239,9 @@ class TorrentSpider(feapder.AirSpider):
             }
             # 有单独浏览路径
             if self.browse:
+                if self.browse_list:
+                    self.list = self.browse_list
+                    self.fields = self.browse_fields
                 torrentspath = self.browse.get("path")
                 if self.browse.get("start"):
                     start_page = int(self.browse.get("start")) + int(self.page or 0)
@@ -248,9 +254,15 @@ class TorrentSpider(feapder.AirSpider):
             searchurl = self.domain + str(torrentspath).format(**inputs_dict)
 
         log.info(f"【Spider】开始请求：{searchurl}")
-        yield feapder.Request(url=searchurl,
-                              use_session=True,
-                              render=self.render)
+        if params:
+            yield feapder.Request(url=searchurl,
+                                use_session=True,
+                                data=params,
+                                render=self.render)
+        else:
+            yield feapder.Request(url=searchurl,
+                                use_session=True,
+                                render=self.render)
 
     def download_midware(self, request):
         request.headers = {

@@ -27,7 +27,9 @@
      1. 复制令牌到 nas-tools 站点维护
      2. 添加请求头参数 格式：{"x-api-key": "xxxx"}
 
+### 开启公开站点
 
+在 config.yaml 的 laboratory 添加 ```show_more_sites: true```
 
 ### Docker 镜像地址：
 

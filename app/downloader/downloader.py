@@ -328,12 +328,7 @@ class Downloader:
                 return None, None, "下载链接为空"
             # 获取种子内容，磁力链不解析
             if url.startswith("magnet:"):
-                file_dir = Config().get_temp_path()
-                torrent_file, retmsg = Torrent().magent2torrent(url, file_dir)
-                if not torrent_file:
-                    return {"code": -1, "msg": f"下载种子文件失败： {retmsg}"}
-                url = os.path.basename(torrent_file)
-                content, dl_files_folder, dl_files, retmsg = Torrent().read_torrent_content(torrent_file)
+                content = url
             else:
                 # 获取Cookie和ua等
                 site_info = self.sites.get_sites(siteurl=url)

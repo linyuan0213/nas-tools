@@ -696,14 +696,17 @@ class WebAction:
                     ua=site_info.get("ua"),
                     proxy=site_info.get("proxy")
                 )
+                media_info = Media().get_media_info(title=os.path.basename(file_path))
+                if media_info:
+                    media_info.site = "WEB"
+                if not file_path:
+                    return {"code": -1, "msg": f"下载种子文件失败： {retmsg}"}
+
             else:
-                file_dir = Config().get_temp_path()
-                file_path, retmsg = Torrent().magent2torrent(url, file_dir)
-            if not file_path:
-                return {"code": -1, "msg": f"下载种子文件失败： {retmsg}"}
-            media_info = Media().get_media_info(title=os.path.basename(file_path))
-            if media_info:
-                media_info.site = "WEB"
+                media_info = MetaInfo('')
+                media_info.enclosure = url
+                file_path = None
+
             # 添加下载
             Downloader().download(media_info=media_info,
                                   download_dir=dl_dir,

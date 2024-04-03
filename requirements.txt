@@ -31,7 +31,7 @@ flask-compress==1.13
 flask-restx==1.0.6
 flask-sock==0.6.0
 func_timeout==4.3.5
-greenlet==1.1.3.post0
+greenlet==3.0.3
 h11==0.14.0
 humanize==4.4.0
 icalendar==5.0.4
@@ -45,7 +45,6 @@ jsonpath==0.82
 jsonschema==4.16.0
 loguru==0.6.0
 lxml==4.9.1
-libtorrent==2.0.7
 Mako==1.2.3
 MarkupSafe==2.1.1
 matplotlib-inline==0.1.6
