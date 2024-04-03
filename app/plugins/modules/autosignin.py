@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import ThreadPool
 from threading import Event
+from urllib.parse import urlsplit
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -510,10 +511,9 @@ class AutoSignIn(_IPluginModule):
                 # 访问链接
                 # m-team处理
                 if 'm-team' in site_url:
+                    split_url = urlsplit(site_url)
+                    url = f"{split_url.scheme}://{split_url.netloc}/api/member/profile"
                     headers.update({'User-Agent': ua})
-                    if not site_url.endswith('/'):
-                        site_url = site_url + '/'
-                    url = site_url + 'api/member/profile'
                     res = RequestUtils(cookies=site_cookie,
                                     headers=headers,
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
