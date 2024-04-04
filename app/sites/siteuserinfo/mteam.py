@@ -62,7 +62,7 @@ class MteamUserInfo(_ISiteUserInfo):
             self.username = json_data.get('data').get('username') or ''
             self.bonus = json_data.get('data').get('memberCount').get('bonus') or ''
             self._torrent_seeding_page = '/api/member/getUserTorrentList'
-            self._torrent_seeding_params = {"userid": userid, "type": "SEEDING", "pageNumber": 1, "pageSize": 25}
+            self._torrent_seeding_params = {"userid": userid, "type": "SEEDING", "pageNumber": 1, "pageSize": 100}
 
     def _parse_site_page(self, html_text):
         pass
