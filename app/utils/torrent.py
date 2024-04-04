@@ -4,7 +4,6 @@ import time
 import re
 from urllib.parse import unquote
 
-import libtorrent
 from bencode import bdecode
 
 import log
