@@ -480,7 +480,7 @@ class AutoSignIn(_IPluginModule):
                         return f"【{site}】模拟登录失败！"
                 # 开始仿真
                 try:
-                    checkin_obj = WebDriverWait(driver=chrome.browser, timeout=6).until(
+                    checkin_obj = WebDriverWait(driver=chrome.browser, timeout=10).until(
                         es.element_to_be_clickable((By.XPATH, xpath_str)))
                     if checkin_obj:
                         checkin_obj.click()
@@ -519,8 +519,9 @@ class AutoSignIn(_IPluginModule):
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
                                 ).post_res(url=url, data={})
                 else:
+                    headers.update({'User-Agent': ua})
                     res = RequestUtils(cookies=site_cookie,
-                                    headers=ua,
+                                    headers=headers,
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
                                     ).get_res(url=site_url)
                 if res and res.status_code in [200, 500, 403]:

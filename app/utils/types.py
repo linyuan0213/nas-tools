@@ -96,6 +96,7 @@ class SiteSchema(Enum):
     FileList = "FileList"
     TNode = "TNode"
     Mteam = "M-Team"
+    HHCLUB = "HHCLUB"
 
 
 # 可监听事件
