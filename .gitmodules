@@ -1,6 +1,6 @@
 [submodule "third_party/feapder"]
 	path = third_party/feapder
-	url = https://github.com/jxxghp/feapder
+	url = https://github.com/Boris-code/feapder.git
 [submodule "third_party/qbittorrent-api"]
 	path = third_party/qbittorrent-api
 	url = https://github.com/rmartin16/qbittorrent-api
