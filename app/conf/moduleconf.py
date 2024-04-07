@@ -492,6 +492,10 @@ class ModuleConf(object):
                 "name": "刷流删种",
                 "fuc_name": "brushtask_remove"
             },
+            "brushtask_pause": {
+                "name": "刷流种子暂停",
+                "fuc_name": "brushtask_pause"
+            },
             "auto_remove_torrents": {
                 "name": "自动删种",
                 "fuc_name": "auto_remove_torrents"

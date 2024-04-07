@@ -105,18 +105,18 @@ class NexusPhpHhclubSiteUserInfo(_ISiteUserInfo):
         html = etree.HTML(html_text)
 
         upload_match = html.xpath('//span[contains(text(), "上传量")]/following-sibling::span')
-        self.upload = StringUtils.num_filesize(upload_match[0]) if upload_match else 0
+        self.upload = StringUtils.num_filesize(upload_match[0].text) if upload_match else 0
         download_match = html.xpath('//span[contains(text(), "下载量")]/following-sibling::span')
-        self.download = StringUtils.num_filesize(download_match[0]) if download_match else 0
+        self.download = StringUtils.num_filesize(download_match[0].text) if download_match else 0
         ratio_match = html.xpath('//span[contains(text(), "分享率")]/following-sibling::span')
         # 计算分享率
         calc_ratio = 0.0 if self.download <= 0.0 else round(self.upload / self.download, 3)
         # 优先使用页面上的分享率
-        self.ratio = StringUtils.str_float(ratio_match[0]) if ratio_match else calc_ratio
+        self.ratio = StringUtils.str_float(ratio_match[0].xpath('string(*)')) if ratio_match else calc_ratio
         self.leeching = 0
-        tmps = html.xpath('//span[contains(text(), "憨豆")]/following-sibling::div/text()')
+        tmps = ''.join(html.xpath('//span[contains(text(), "憨豆")]/following-sibling::div/text()'))
         if tmps:
-            bonus_text = str(tmps[1]).strip()
+            bonus_text = tmps.strip()
             bonus_match = re.search(r"([\d,.]+)", bonus_text)
             if bonus_match and bonus_match.group(1).strip():
                 self.bonus = StringUtils.str_float(bonus_match.group(1))

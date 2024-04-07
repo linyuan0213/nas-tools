@@ -3,6 +3,7 @@ import sys
 import time
 import json
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -18,7 +19,7 @@ from app.sites import Sites, SiteConf
 from app.utils import StringUtils, ExceptionUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import BrushDeleteType
-from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config
+from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config, BRUSH_PAUSE_TORRENTS_INTERVAL
 
 
 @singleton
@@ -84,6 +85,10 @@ class BrushTask(object):
                 self._scheduler.add_job(func=self.remove_tasks_torrents,
                                         trigger='interval',
                                         seconds=BRUSH_REMOVE_TORRENTS_INTERVAL)
+
+                self._scheduler.add_job(func=self.pause_task_torrents,
+                                        trigger='interval',
+                                        seconds=BRUSH_PAUSE_TORRENTS_INTERVAL)
                 # 启动
                 self._scheduler.print_jobs()
                 self._scheduler.start()
@@ -1001,3 +1006,118 @@ class BrushTask(object):
         判断种子是否已经处理过
         """
         return self.dbhelper.get_brushtask_torrent_by_enclosure(enclosure)
+
+    def pause_task_torrents(self):
+        """
+        检查非free的所有任务正在下载的种子并进行暂停
+        由定时服务调用
+        """
+        def __send_message(_task_name, _torrent_name, _download_name, _add_time):
+            """
+            发送删种消息
+            """
+            _msg_title = f"【刷流任务 {_task_name} 暂停做种】"
+            _msg_text = f"下载器名：{_download_name}\n" \
+                        f"种子名称：{_torrent_name}\n" \
+                        f"添加时间：{_add_time}\n" \
+                        f"暂停时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}\n" \
+                        "暂停原因: free 时间到期"
+            self.message.send_brushtask_pause_message(title=_msg_title, text=_msg_text)
+
+        # 遍历所有任务
+        for taskid, taskinfo in self._brush_tasks.items():
+            if taskinfo.get("state") == 'N':
+                continue
+
+            task_name = taskinfo.get("name")
+            rss_url = taskinfo.get("rss_url")
+            downloader_id = taskinfo.get("downloader")
+            sendmessage = taskinfo.get("sendmessage")
+            site_id = taskinfo.get("site_id")
+            ua = taskinfo.get("ua")
+            headers = taskinfo.get("headers")
+            if JsonUtils.is_valid_json(headers):
+                headers = json.loads(taskinfo.get("headers"))
+            else:
+                headers = {}
+            headers.update({'User-Agent': ua})
+            state = taskinfo.get("state")
+            if state != 'Y':
+                log.info("【Brush】刷流任务 %s 已停止下载新种！" % task_name)
+                return
+
+            # 查询站点信息
+            site_info = self.sites.get_sites(siteid=site_id)
+            if not site_info:
+                log.error("【Brush】刷流任务 %s 的站点已不存在，无法刷流！" % task_name)
+                return
+            # 站点属性
+            site_id = site_info.get("id")
+            site_name = site_info.get("name")
+            site_proxy = site_info.get("proxy")
+            site_cookie = site_info.get("cookie")
+
+            split_url = urlsplit(rss_url)
+            site_base_url = f"{split_url.scheme}://{split_url.netloc}"
+
+            log.info("【Brush】开始站点 %s 的非免费种子暂停任务：%s..." % (site_name, task_name))
+            # 当前任务种子详情
+            task_torrents = self.get_brushtask_torrents(taskid)
+            torrent_id_maps = {item.DOWNLOAD_ID: item.ENCLOSURE for item in task_torrents if item.DOWNLOAD_ID}
+            torrent_ids = list(torrent_id_maps.keys())
+            # 没有种子ID的不处理
+            if not torrent_id_maps:
+                continue
+            # 下载器参数
+            downloader_cfg = self.downloader.get_downloader_conf(downloader_id)
+            if not downloader_cfg:
+                log.warn("【Brush】任务 %s 下载器不存在" % task_name)
+                continue
+            # 下载器的类型
+            downloader_type = downloader_cfg.get("type")
+            # 下载器名称
+            downlaod_name = downloader_cfg.get("name")
+            # 查询下载器中正在下载的所有种子
+            torrents = self.downloader.get_downloading_torrents(downloader_id=downloader_id,
+                                                                ids=torrent_ids)
+            # 有错误不处理了，避免误删种子
+            if torrents is None:
+                log.warn("【Brush】任务 %s 获取正在下载种子失败" % task_name)
+                continue
+            for torrent in torrents:
+                torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
+                                                        torrent=torrent)
+
+                torrent_id = torrent_info.get('id')
+                # 种子名称
+                torrent_name = torrent.get('name')
+                # 种子添加时间
+                add_time = torrent_info.get("add_time")
+                if torrent_id_maps.get(torrent_id):
+                    enclosure = torrent_id_maps.get(torrent_id)
+                    if 'm-team' in enclosure:
+                        tid = StringUtils.get_tid_by_url(enclosure)
+                        torrent_url = f'{site_base_url}/detail/{tid}'
+                    else:
+                        res = re.findall(r'id=(\d+)', enclosure)
+                        if res:
+                            tid = res[0]
+                            torrent_url = f'{site_base_url}/details.php?id={tid}'
+                        else:
+                            return
+
+                    torrent_attr = self.siteconf.check_torrent_attr(torrent_url=torrent_url,
+                                                        cookie=site_cookie,
+                                                        ua=ua,
+                                                        headers=headers,
+                                                        proxy=site_proxy)
+                    log.debug("【Brush】%s 解析详情 %s" % (torrent_url, torrent_attr))
+                    if not (torrent_attr.get('2xfree') or torrent_attr.get('free')):
+                        self.downloader.stop_torrents(downloader_id, [torrent_id])
+                        log.info("【Brush】%s 资源免费到期暂停" % torrent_name)
+
+                        if sendmessage:
+                            __send_message(_task_name=task_name,
+                                        _torrent_name=torrent_name,
+                                        _download_name=downlaod_name,
+                                        _add_time=add_time)

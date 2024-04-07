@@ -729,3 +729,21 @@ class Message(object):
         )
         self.init_config()
         return ret
+
+    def send_brushtask_pause_message(self, title, text):
+        """
+        发送刷流暂停种子的消息
+        """
+        if not title or not text:
+            return
+        # 插入消息中心
+        self.messagecenter.insert_system_message(title=title, content=text)
+        # 发送消息
+        for client in self._active_clients:
+            if "brushtask_pause" in client.get("switchs"):
+                self.__sendmsg(
+                    client=client,
+                    title=title,
+                    text=text,
+                    url="brushtask"
+                )
