@@ -100,7 +100,7 @@ class CustomWordImport(_IPluginModule):
                         {
                             'title': '导入周期',
                             'required': "",
-                            'tooltip': '设置自动备份时间周期，支持5位cron表达式',
+                            'tooltip': '设置自动导入时间周期，支持5位cron表达式',
                             'type': 'text',
                             'content': [
                                 {
@@ -180,7 +180,7 @@ class CustomWordImport(_IPluginModule):
 
             # 周期运行
             if self._cron:
-                self.info(f"定时备份服务启动，周期：{self._cron}")
+                self.info(f"定时导入自定义识别词服务启动，周期：{self._cron}")
                 self._scheduler.add_job(self.__custom_word_import,
                                         CronTrigger.from_crontab(self._cron))
 
@@ -193,7 +193,7 @@ class CustomWordImport(_IPluginModule):
         """
         自动导入
         """
-        self.info(f"当前时间 {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))} 开始备份")
+        self.info(f"当前时间 {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))} 开始导入自定义识别词")
 
         ua = Config().get_config('app').get('user_agent')
         github_path = self._github_path or self._default_path
