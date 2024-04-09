@@ -558,6 +558,8 @@ class StringUtils:
         # 解析查询参数
         params = parse.parse_qs(parsed_url.query)
 
+        if not params.get('credential'):
+            return None
         credential = params.get('credential')[0]
         sign_data = base64.b64decode(credential).decode('utf-8')
         sign_params = parse.parse_qs(sign_data)
