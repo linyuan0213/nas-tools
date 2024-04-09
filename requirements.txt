@@ -66,7 +66,7 @@ pycparser==2.21
 pycryptodome==3.19.1
 Pygments==2.15.0
 PyJWT==2.6.0
-pymongo==4.2.0
+pymongo==4.6.3
 PyMySQL==1.0.2
 pyperclip==1.8.2
 pypushdeer==0.0.3
