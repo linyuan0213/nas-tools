@@ -1133,7 +1133,7 @@ class BrushTask(object):
                     log.debug("【Brush】%s 解析详情 %s" % (torrent_url, torrent_attr))
                     if not (torrent_attr.get('2xfree') or torrent_attr.get('free')):
                         self.downloader.stop_torrents(downloader_id, [torrent_id])
-                        log.info("【Brush】站点%s 种子%s免费到期暂停" % (site_name, torrent_name)
+                        log.info("【Brush】站点%s 种子%s免费到期暂停" % (site_name, torrent_name))
 
                         if sendmessage:
                             __send_message(_task_name=task_name,
