@@ -35,7 +35,7 @@ greenlet==3.0.3
 h11==0.14.0
 humanize==4.4.0
 icalendar==5.0.4
-idna==3.3
+idna==3.7
 influxdb==5.3.1
 itsdangerous==2.1.2
 iso639==0.1.4
