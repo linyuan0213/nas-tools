@@ -236,20 +236,26 @@ class CustomWordImport(_IPluginModule):
                     tmdb_info = self._media.get_tmdb_info(media_type, tmdb_id)
                     if not tmdb_info:
                         continue
+                    if media_type == MediaType.MOVIE:
+                        title = tmdb_info.get("title")
+                        year = tmdb_info.get("release_date")[0:4]
+                        season_count = 0
+                    elif media_type == MediaType.ANIME or media_type == MediaType.TV:
+                        title = tmdb_info.get("name")
+                        year = tmdb_info.get("first_air_date")[0:4]
+                        season_count = tmdb_info.get("number_of_seasons")
 
                     if not self._wordshelper.is_custom_word_group_existed(tmdbid=tmdb_id, gtype=gtype):
-                        self._wordshelper.insert_custom_word_groups(title=tmdb_info.get("name"),
-                                            year=tmdb_info.get(
-                                                "first_air_date")[0:4],
-                                            gtype=2,
+                        self.info(f"添加识别词组\n（tmdb_id：{tmdb_id}）")
+                        self._wordshelper.insert_custom_word_groups(title=title,
+                                            year=year,
+                                            gtype=gtype,
                                             tmdbid=tmdb_id,
-                                            season_count=tmdb_info.get("number_of_seasons"))
+                                            season_count=season_count)
 
                     custom_word_groups = self._wordshelper.get_custom_word_groups(tmdbid=tmdb_id, gtype=gtype)
                     if custom_word_groups:
                         group_id = custom_word_groups[0].ID
-                else:
-                    group_id = -1
 
                 for import_word_info in rules:
                     replaced = import_word_info.get("replaced")
@@ -260,6 +266,8 @@ class CustomWordImport(_IPluginModule):
                     whelp = import_word_info.get("help")
                     wtype = int(import_word_info.get("type"))
                     season = import_word_info.get("season")
+                    if gtype == 1:
+                        season = -2
                     regex = 1
                     # 屏蔽, 替换, 替换+集偏移
                     if wtype in [1, 2, 3]:
