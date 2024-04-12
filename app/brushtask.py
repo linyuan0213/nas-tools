@@ -473,12 +473,19 @@ class BrushTask(object):
                     uploaded = torrent_info.get("uploaded")
                     # 下载量
                     downloaded = torrent_info.get("downloaded")
+                    # 等待时间
+                    status = torrent_info.get("status")
+                    pingding_time = None
+                    if status == "download_pending" or status == "stalledDL":
+                        pingding_time = iatime
                     # 判断是否符合删除条件
                     need_delete, delete_type = self.__check_remove_rule(remove_rule=remove_rule,
                                                                         ratio=ratio,
                                                                         dltime=dltime,
                                                                         avg_upspeed=avg_upspeed,
-                                                                        iatime=iatime)
+                                                                        iatime=iatime,
+                                                                        pingding_time=pingding_time
+                                                                        )
                     if need_delete:
                         log.info(
                             "【Brush】%s 达到删种条件：%s，删除下载任务..." % (torrent_name, delete_type.value))
@@ -824,7 +831,8 @@ class BrushTask(object):
                             uploaded=None,
                             dltime=None,
                             avg_upspeed=None,
-                            iatime=None):
+                            iatime=None,
+                            pingding_time=None):
         """
         检查是否符合删种规则
         :param remove_rule: 删种规则
@@ -874,6 +882,14 @@ class BrushTask(object):
                     if len(rule_times) > 1 and rule_times[1]:
                         if float(iatime) > float(rule_times[1]) * 3600:
                             return True, BrushDeleteType.IATIME
+            if remove_rule.get("pending_time") and pingding_time:
+                rule_pingding = remove_rule.get("pending").split("#")
+                if rule_pingding[0]:
+                    if len(rule_pingding) > 1 and rule_pingding[1]:
+                        if float(pingding_time) > float(rule_pingding[1]) * 3600:
+                            return True, BrushDeleteType.PINGDINGTIME
+
+
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
         return False, BrushDeleteType.NOTDELETE
@@ -908,9 +924,9 @@ class BrushTask(object):
             total_size = torrent.get("total_size")
             # 添加时间
             add_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(torrent.get("added_on") or 0))
-
+            # 状态
+            status = torrent.get('state')
         else:
-
             # ID
             torrent_id = torrent.hashString
             # 做种时间
@@ -944,6 +960,8 @@ class BrushTask(object):
             # 添加时间
             add_time = time.strftime('%Y-%m-%d %H:%M:%S',
                                      time.localtime(torrent.date_added.timestamp() if torrent.date_added else 0))
+            # 状态
+            status = torrent.status
 
         return {
             "id": torrent_id,
@@ -955,7 +973,8 @@ class BrushTask(object):
             "iatime": iatime,
             "dltime": dltime,
             "total_size": total_size,
-            "add_time": add_time
+            "add_time": add_time,
+            "status": status
         }
 
     def stop_service(self):

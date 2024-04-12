@@ -672,6 +672,30 @@
               </div>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">下载等待时间(小时) <span class="form-help" title="超过设定时间未下载时会删除下载任务"
+                                                             data-bs-toggle="tooltip">?</span></label>
+              <div class="input-group">
+                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false" id="brushtask_pingding_time_btn">
+                  忽略
+                </button>
+                <input type="hidden" id="brushtask_pingding_time_do">
+                <div class="dropdown-menu" style="">
+                  <a class="dropdown-item" id="brushtask_pingdingtime_do_" href="javascript:void(0)"
+                     onclick="filter_item_change('', 'brushtask_pingding_time',$(this))">
+                    忽略
+                  </a>
+                  <a class="dropdown-item" id="brushtask_pingding_time_do_gt" href="javascript:void(0)"
+                     onclick="filter_item_change('gt', 'brushtask_pingding_time',$(this))">
+                    大于
+                  </a>
+                </div>
+                <input type="text" class="form-control" id="brushtask_pingding_time" readonly>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -796,6 +820,11 @@
         if (ret.task.rss_rule.pubdate) {
           let pubdate_str = ret.task.rss_rule.pubdate.split('#');
           filter_item_change(pubdate_str[0], 'brushtask_pubdate', $('#brushtask_pubdate_do_' + pubdate_str[0]), pubdate_str[1])
+        }
+        //等待未活动时间
+        if (ret.task.remove_rule.pingding_time) {
+          let pingding_time_str = ret.task.remove_rule.pingding_time.split('#');
+          filter_item_change(pingding_time_str[0], 'brushtask_pingding_time', $('#brushtask_pingding_time_do_' + pingding_time_str[0]), pingding_time_str[1])
         }
         //上传限速
         $("#brushtask_upspeed").val(ret.task.rss_rule.upspeed);
@@ -1070,6 +1099,20 @@
       $("#brushtask_iatime").removeClass("is-invalid");
     }
 
+    //等待未活动时间
+    let brushtask_pingding_time_do = $("#brushtask_pingding_time_do").val();
+    let brushtask_pingding_time = $("#brushtask_pingding_time").val();
+    if (brushtask_pingding_time_do && !brushtask_pingding_time) {
+      $("#brushtask_pingding_time").addClass("is-invalid");
+      return;
+    } else {
+      if (brushtask_pingding_time && isNaN(brushtask_pingding_time)) {
+        $("#brushtask_pingding_time").addClass("is-invalid");
+        return;
+      }
+      $("#brushtask_pingding_time").removeClass("is-invalid");
+    }
+
     // 参数
     const params = {
       brushtask_id: brushtask_id,
@@ -1099,7 +1142,8 @@
       brushtask_iatime: brushtask_iatime_do + "#" + brushtask_iatime,
       brushtask_upspeed: brushtask_upspeed,
       brushtask_downspeed: brushtask_downspeed,
-      brushtask_pubdate: brushtask_pubdate_do + "#" + brushtask_pubdate
+      brushtask_pubdate: brushtask_pubdate_do + "#" + brushtask_pubdate,
+      brushtask_pingding_time: brushtask_pingding_time_do + "#" + brushtask_pingding_time,
     };
 
     ajax_post("add_brushtask", params, function (ret) {
