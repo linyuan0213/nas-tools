@@ -34,3 +34,7 @@
 ### Docker 镜像地址：
 
 [linyuan0213/nas-tools](https://hub.docker.com/r/linyuan0213/nas-tools)
+
+### 帮助
+
+TG群： [https://t.me/+UxUIoJMmH2YwYWE1](https://t.me/+UxUIoJMmH2YwYWE1)
