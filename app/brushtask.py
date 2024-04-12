@@ -337,7 +337,7 @@ class BrushTask(object):
                 downloader_id = taskinfo.get("downloader")
                 remove_rule = taskinfo.get("remove_rule")
                 sendmessage = taskinfo.get("sendmessage")
-
+                log.info("【Brush】开始自动删种任务：%s..." % (task_name))
                 # 当前任务种子详情
                 task_torrents = self.get_brushtask_torrents(taskid)
                 torrent_ids = [item.DOWNLOAD_ID for item in task_torrents if item.DOWNLOAD_ID]
@@ -883,7 +883,7 @@ class BrushTask(object):
                         if float(iatime) > float(rule_times[1]) * 3600:
                             return True, BrushDeleteType.IATIME
             if remove_rule.get("pending_time") and pingding_time:
-                rule_pingding = remove_rule.get("pending").split("#")
+                rule_pingding = remove_rule.get("pending_time").split("#")
                 if rule_pingding[0]:
                     if len(rule_pingding) > 1 and rule_pingding[1]:
                         if float(pingding_time) > float(rule_pingding[1]) * 3600:
@@ -1133,7 +1133,7 @@ class BrushTask(object):
                     log.debug("【Brush】%s 解析详情 %s" % (torrent_url, torrent_attr))
                     if not (torrent_attr.get('2xfree') or torrent_attr.get('free')):
                         self.downloader.stop_torrents(downloader_id, [torrent_id])
-                        log.info("【Brush】%s 资源免费到期暂停" % torrent_name)
+                        log.info("【Brush】站点%s 种子%s免费到期暂停" % (site_name, torrent_name)
 
                         if sendmessage:
                             __send_message(_task_name=task_name,
