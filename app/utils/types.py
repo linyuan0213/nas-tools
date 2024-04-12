@@ -80,7 +80,7 @@ class BrushDeleteType(Enum):
     DLTIME = "下载耗时"
     AVGUPSPEED = "平均上传速度"
     IATIME = "未活动时间"
-    PINGDINGTIME = "等待时间"
+    PENDINGTIME = "等待时间"
 
 
 # 站点框架

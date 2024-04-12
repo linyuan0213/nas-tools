@@ -2000,7 +2000,7 @@ class WebAction:
         brushtask_pubdate = data.get("brushtask_pubdate")
         brushtask_upspeed = data.get("brushtask_upspeed")
         brushtask_downspeed = data.get("brushtask_downspeed")
-        brushtask_pingding_time = data.get("brushtask_pingding_time")
+        brushtask_pending_time = data.get("brushtask_pending_time")
         # 选种规则
         rss_rule = {
             "free": brushtask_free,
@@ -2022,7 +2022,7 @@ class WebAction:
             "dltime": brushtask_dltime,
             "avg_upspeed": brushtask_avg_upspeed,
             "iatime": brushtask_iatime,
-            "pingding_time": brushtask_pingding_time
+            "pending_time": brushtask_pending_time
         }
         # 添加记录
         item = {

@@ -475,16 +475,16 @@ class BrushTask(object):
                     downloaded = torrent_info.get("downloaded")
                     # 等待时间
                     status = torrent_info.get("status")
-                    pingding_time = None
+                    pending_time = None
                     if status == "download_pending" or status == "stalledDL":
-                        pingding_time = iatime
+                        pending_time = iatime
                     # 判断是否符合删除条件
                     need_delete, delete_type = self.__check_remove_rule(remove_rule=remove_rule,
                                                                         ratio=ratio,
                                                                         dltime=dltime,
                                                                         avg_upspeed=avg_upspeed,
                                                                         iatime=iatime,
-                                                                        pingding_time=pingding_time
+                                                                        pending_time=pending_time
                                                                         )
                     if need_delete:
                         log.info(
@@ -832,7 +832,7 @@ class BrushTask(object):
                             dltime=None,
                             avg_upspeed=None,
                             iatime=None,
-                            pingding_time=None):
+                            pending_time=None):
         """
         检查是否符合删种规则
         :param remove_rule: 删种规则
@@ -882,13 +882,12 @@ class BrushTask(object):
                     if len(rule_times) > 1 and rule_times[1]:
                         if float(iatime) > float(rule_times[1]) * 3600:
                             return True, BrushDeleteType.IATIME
-            if remove_rule.get("pending_time") and pingding_time:
-                rule_pingding = remove_rule.get("pending_time").split("#")
-                if rule_pingding[0]:
-                    if len(rule_pingding) > 1 and rule_pingding[1]:
-                        if float(pingding_time) > float(rule_pingding[1]) * 3600:
-                            return True, BrushDeleteType.PINGDINGTIME
-
+            if remove_rule.get("pending_time") and pending_time:
+                rule_pending = remove_rule.get("pending_time").split("#")
+                if rule_pending[0]:
+                    if len(rule_pending) > 1 and rule_pending[1]:
+                        if float(pending_time) > float(rule_pending[1]) * 3600:
+                            return True, BrushDeleteType.PENDINGTIME
 
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
