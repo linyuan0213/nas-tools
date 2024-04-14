@@ -64,6 +64,16 @@ class MteamSpider(object):
             results = res.json().get('data', {}).get("data") or []
             for result in results:
                 imdbid = (re.findall(r'tt\d+', result.get('imdb')) or [''])[0]
+                discount = result.get('status').get('discount')
+                downloadvolumefactor = 0
+                if discount == "FREE":
+                    downloadvolumefactor = 0
+                elif discount == "PERCENT_50":
+                    downloadvolumefactor = 0.5
+                elif discount == "PERCENT_70":
+                    downloadvolumefactor = 0.3
+                else:
+                    downloadvolumefactor = 1.0
                 torrent = {
                     'indexer': self._indexerid,
                     'title': result.get('name'),
@@ -74,7 +84,7 @@ class MteamSpider(object):
                     'seeders': result.get('status').get('seeders'),
                     'peers': result.get('status').get('leechers'),
                     'grabs': result.get('status').get('timesCompleted'),
-                    'downloadvolumefactor': 0.0,
+                    'downloadvolumefactor': downloadvolumefactor,
                     'uploadvolumefactor': 1.0,
                     'page_url': self._pageurl % (self._domain, result.get('id')),
                     'imdbid': imdbid
