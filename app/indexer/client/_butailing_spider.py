@@ -163,6 +163,8 @@ class ButailingSpider(feapder.AirSpider):
         request.headers = {
             "user-agent": self.ua
         }
+        if self.proxies:
+            request.proxies = self.proxies
         return request
 
     def validate(self, request, response):
