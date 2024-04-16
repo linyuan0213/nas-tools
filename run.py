@@ -71,7 +71,6 @@ def get_run_config(forcev4=False):
         _web_port = int(app_conf.get('web_port')) if str(app_conf.get('web_port', '')).isdigit() else 3000
         _ssl_cert = app_conf.get('ssl_cert')
         _ssl_key = app_conf.get('ssl_key')
-        _ssl_key = app_conf.get('ssl_key')
         _debug = True if app_conf.get("debug") else False
 
     app_arg = dict(host=_web_host, port=_web_port, debug=_debug, threaded=True, use_reloader=False)
