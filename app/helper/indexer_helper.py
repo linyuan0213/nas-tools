@@ -79,7 +79,7 @@ class IndexerConf(object):
                  name=None,
                  rule=None,
                  public=None,
-                 proxy=False,
+                 proxy=None,
                  parser=None,
                  ua=None,
                  headers=None,

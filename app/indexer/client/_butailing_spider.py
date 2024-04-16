@@ -14,7 +14,6 @@ from app.utils import StringUtils
 from app.utils.exception_utils import ExceptionUtils
 from app.utils.types import MediaType
 from config import Config
-from feapder.utils.tools import urlencode
 
 
 class ButailingSpider(feapder.AirSpider):
