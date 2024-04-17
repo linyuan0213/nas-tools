@@ -27,6 +27,10 @@
      1. 复制令牌到 nas-tools 站点维护
      2. 添加请求头参数 格式：{"x-api-key": "xxxx"}
 
+  3. 馒头签到
+
+     馒头签到需要添加 cookie，通过cookie访问接口，不排除禁用账户的可能
+
 ### 开启公开站点
 
 在 config.yaml 的 laboratory 添加 ```show_more_sites: true```

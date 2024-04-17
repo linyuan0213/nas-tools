@@ -82,8 +82,7 @@ class SiteUserInfo(object):
             if 'm-team' in url:
                 site_headers.update({'User-Agent': ua})
                 profile_url = url + '/api/member/profile'
-                res = RequestUtils(cookies=site_cookie,
-                                session=session,
+                res = RequestUtils(session=session,
                                 headers=site_headers,
                                 proxies=proxies
                             ).post_res(url=profile_url, data={})
@@ -105,7 +104,8 @@ class SiteUserInfo(object):
                     if json_data.get('message') != "SUCCESS":
                         return None
                 else:
-                # 第一次登录反爬
+
+                    # 第一次登录反爬
                     if html_text.find("title") == -1:
                         i = html_text.find("window.location")
                         if i == -1:

@@ -512,12 +512,16 @@ class AutoSignIn(_IPluginModule):
                 # m-team处理
                 if 'm-team' in site_url:
                     split_url = urlsplit(site_url)
-                    url = f"{split_url.scheme}://{split_url.netloc}/api/member/profile"
-                    headers.update({'User-Agent': ua})
+                    url = f"{split_url.scheme}://{split_url.netloc}/api/member/updateLastBrowse"
+                    headers = {
+                        "accept": "application/json, text/plain, */*",
+                        "content-type": "application/json",
+                        "user-agent": ua
+                    }
                     res = RequestUtils(cookies=site_cookie,
                                     headers=headers,
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
-                                ).post_res(url=url, data={})
+                                ).post_res(url=url, data='')
                 else:
                     headers.update({'User-Agent': ua})
                     res = RequestUtils(cookies=site_cookie,

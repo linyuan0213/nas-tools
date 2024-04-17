@@ -300,8 +300,7 @@ class Sites:
             if 'm-team' in site_url:
                 url = site_url + '/api/member/profile'
                 headers.update({'User-Agent': ua})
-                res = RequestUtils(cookies=site_cookie,
-                                headers=headers,
+                res = RequestUtils(headers=headers,
                                 proxies=Config().get_proxies() if site_info.get("proxy") else None
                             ).post_res(url=url, data={})
             else:

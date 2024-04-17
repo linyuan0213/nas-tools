@@ -133,7 +133,7 @@ class SiteConf:
             # 这里headers必须是string类型
             headers = json.dumps(headers)
             json_text = self.__get_site_page_html(url=detail_url,
-                                    cookie=cookie,
+                                    cookie="",
                                     ua=ua,
                                     headers=headers,
                                     proxy=proxy,

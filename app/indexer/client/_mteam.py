@@ -55,7 +55,6 @@ class MteamSpider(object):
             })
         res = RequestUtils(
             headers=self._headers,
-            cookies=self._cookie,
             proxies=self._proxy,
             timeout=30
         ).post_res(url=self._searchurl, data=params)
