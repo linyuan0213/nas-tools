@@ -148,6 +148,16 @@
                   </div>
                 </div>
                 <div class="datagrid-item">
+                  <div class="datagrid-title">停种规则</div>
+                  <div class="datagrid-content">
+                    {% if Task.stop_rule|brush_rule_string|safe %}
+                      {{ Task.stop_rule|brush_rule_string|safe }}
+                    {% else %}
+                      未启用
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="datagrid-item">
                   <div class="datagrid-title">保种体积</div>
                   <div class="datagrid-content">
                     {% if Task.seed_size %}{{ Task.total_size }} GB / {{ Task.seed_size }} GB{% else %}无限制{% endif %}</div>
@@ -683,7 +693,7 @@
                 </button>
                 <input type="hidden" id="brushtask_pending_time_do">
                 <div class="dropdown-menu" style="">
-                  <a class="dropdown-item" id="brushtask_pendingtime_do_" href="javascript:void(0)"
+                  <a class="dropdown-item" id="brushtask_pending_time_do_" href="javascript:void(0)"
                      onclick="filter_item_change('', 'brushtask_pending_time',$(this))">
                     忽略
                   </a>
@@ -694,6 +704,18 @@
                 </div>
                 <input type="text" class="form-control" id="brushtask_pending_time" readonly>
               </div>
+            </div>
+          </div>
+        </div>
+        <div class="hr-text hr-text-center hr-text-spaceless mt-1 mb-3">停种规则（或）</div>
+        <div class="row">
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="brushtask_stopfree">
+                <span class="form-check-label">Free 到期暂停 <span class="form-help" title="开启后free到期后悔自动暂停种子"
+                                                              data-bs-toggle="tooltip">?</span></span>
+              </label>
             </div>
           </div>
         </div>
@@ -830,6 +852,13 @@
         $("#brushtask_upspeed").val(ret.task.rss_rule.upspeed);
         //下载限速
         $("#brushtask_downspeed").val(ret.task.rss_rule.downspeed);
+        
+        // 暂停种子
+        if (ret.task.stop_rule.stopfree === "Y") {
+          $("#brushtask_stopfree").prop("checked", true);
+        } else {
+          $("#brushtask_stopfree").prop("checked", false);
+        }
         //弹窗
         $("#modal-brushtask").modal('show');
       }
@@ -1113,6 +1142,9 @@
       $("#brushtask_pending_time").removeClass("is-invalid");
     }
 
+    // 暂停种子
+    let brushtask_stopfree = $("#brushtask_stopfree").prop('checked');
+
     // 参数
     const params = {
       brushtask_id: brushtask_id,
@@ -1144,6 +1176,7 @@
       brushtask_downspeed: brushtask_downspeed,
       brushtask_pubdate: brushtask_pubdate_do + "#" + brushtask_pubdate,
       brushtask_pending_time: brushtask_pending_time_do + "#" + brushtask_pending_time,
+      brushtask_stopfree: brushtask_stopfree
     };
 
     ajax_post("add_brushtask", params, function (ret) {

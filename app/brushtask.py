@@ -18,8 +18,8 @@ from app.message import Message
 from app.sites import Sites, SiteConf
 from app.utils import StringUtils, ExceptionUtils, JsonUtils
 from app.utils.commons import singleton
-from app.utils.types import BrushDeleteType
-from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config, BRUSH_PAUSE_TORRENTS_INTERVAL
+from app.utils.types import BrushDeleteType, BrushStopType
+from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config, BRUSH_STOP_TORRENTS_INTERVAL
 
 
 @singleton
@@ -86,9 +86,9 @@ class BrushTask(object):
                                         trigger='interval',
                                         seconds=BRUSH_REMOVE_TORRENTS_INTERVAL)
 
-                self._scheduler.add_job(func=self.pause_task_torrents,
+                self._scheduler.add_job(func=self.stop_task_torrents,
                                         trigger='interval',
-                                        seconds=BRUSH_PAUSE_TORRENTS_INTERVAL)
+                                        seconds=BRUSH_STOP_TORRENTS_INTERVAL)
                 # 启动
                 self._scheduler.print_jobs()
                 self._scheduler.start()
@@ -128,6 +128,7 @@ class BrushTask(object):
                 "free": task.FREELEECH,
                 "rss_rule": eval(task.RSS_RULE),
                 "remove_rule": eval(task.REMOVE_RULE),
+                "stop_rule": eval(task.STOP_RULE if task.STOP_RULE else "{'stopfree': 'Y'}"),
                 "seed_size": task.SEED_SIZE,
                 "total_size": total_size,
                 "rss_url": task.RSSURL if task.RSSURL else site_info.get("rssurl"),
@@ -894,6 +895,25 @@ class BrushTask(object):
         return False, BrushDeleteType.NOTDELETE
 
     @staticmethod
+    def __check_stop_rule(stop_rule,
+                          torrent_attr=None):
+        """
+        检查是否符合停种规则
+        :param stop_rule: 停种规则
+        :param torrent_status: 种子状态是否free
+        """
+        if not stop_rule:
+            return False
+
+        if stop_rule.get("stopfree") and torrent_attr:
+            rule_stopfree = stop_rule.get("stopfree")
+            if rule_stopfree:
+                if rule_stopfree == "Y" and not (torrent_attr.get('2xfree') or torrent_attr.get('free')):
+                    return True, BrushStopType.FREEEND
+
+        return False, BrushStopType.NOTSTOP
+
+    @staticmethod
     def __get_torrent_dict(downloader_type, torrent):
 
         # 当前时间戳
@@ -1025,7 +1045,7 @@ class BrushTask(object):
         """
         return self.dbhelper.get_brushtask_torrent_by_enclosure(enclosure)
 
-    def pause_task_torrents(self):
+    def stop_task_torrents(self):
         """
         检查非free的所有任务正在下载的种子并进行暂停
         由定时服务调用
@@ -1049,6 +1069,7 @@ class BrushTask(object):
 
             task_name = taskinfo.get("name")
             rss_url = taskinfo.get("rss_url")
+            stop_rule = taskinfo.get("stop_rule")
             downloader_id = taskinfo.get("downloader")
             sendmessage = taskinfo.get("sendmessage")
             site_id = taskinfo.get("site_id")
@@ -1130,10 +1151,11 @@ class BrushTask(object):
                                                         headers=headers,
                                                         proxy=site_proxy)
                     log.debug("【Brush】%s 解析详情 %s" % (torrent_url, torrent_attr))
-                    if not (torrent_attr.get('2xfree') or torrent_attr.get('free')):
-                        self.downloader.stop_torrents(downloader_id, [torrent_id])
-                        log.info("【Brush】站点%s 种子%s免费到期暂停" % (site_name, torrent_name))
 
+                    need_stop, stop_type = self.__check_stop_rule(stop_rule, torrent_attr=torrent_attr)
+                    if need_stop:
+                        log.info("【Brush】%s 触发停种条件：%s，暂停任务..." % (torrent_name, stop_type.value))
+                        self.downloader.stop_torrents(downloader_id, [torrent_id])
                         if sendmessage:
                             __send_message(_task_name=task_name,
                                         _torrent_name=torrent_name,

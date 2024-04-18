@@ -369,6 +369,7 @@ class SITEBRUSHTASK(Base):
     FREELEECH = Column(Text)
     RSS_RULE = Column(Text)
     REMOVE_RULE = Column(Text)
+    STOP_RULE = Column(Text, nullable=False, default="")
     SEED_SIZE = Column(Text)
     INTEVAL = Column(Text)
     LABEL = Column(Text)

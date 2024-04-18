@@ -2001,6 +2001,7 @@ class WebAction:
         brushtask_upspeed = data.get("brushtask_upspeed")
         brushtask_downspeed = data.get("brushtask_downspeed")
         brushtask_pending_time = data.get("brushtask_pending_time")
+        brushtask_stopfree = 'Y' if data.get("brushtask_stopfree") else 'N'
         # 选种规则
         rss_rule = {
             "free": brushtask_free,
@@ -2024,6 +2025,10 @@ class WebAction:
             "iatime": brushtask_iatime,
             "pending_time": brushtask_pending_time
         }
+        # 停种规则
+        stop_rule = {
+            "stopfree": brushtask_stopfree
+        }
         # 添加记录
         item = {
             "name": brushtask_name,
@@ -2039,6 +2044,7 @@ class WebAction:
             "state": brushtask_state,
             "rss_rule": rss_rule,
             "remove_rule": remove_rule,
+            "stop_rule": stop_rule,
             "sendmessage": brushtask_sendmessage
         }
         BrushTask().update_brushtask(brushtask_id, item)
@@ -2566,6 +2572,13 @@ class WebAction:
                 rule_htmls.append(
                     '<span class="badge badge-outline text-orange me-1 mb-1" title="未活动时间">未活动时间: %s %s小时</span>'
                     % (rule_filter_string.get(iatimes[0]), iatimes[1]))
+
+        if rules.get("stopfree"):
+            stopfree = rules.get("stopfree")
+            if stopfree == "Y":
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期暂停">Free 到期暂停: 开</span>')
+            else:
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期暂停">Free 到期暂停: 关</span>')
 
         return "<br>".join(rule_htmls)
 
