@@ -83,6 +83,11 @@ class BrushDeleteType(Enum):
     PENDINGTIME = "等待时间"
 
 
+class BrushStopType(Enum):
+    FREEEND = "Free 到期"
+    NOTSTOP = "不暂停"
+
+
 # 站点框架
 class SiteSchema(Enum):
     DiscuzX = "Discuz!"
