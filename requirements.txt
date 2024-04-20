@@ -112,6 +112,3 @@ Werkzeug==2.3.8
 wsproto==1.2.0
 zhconv==1.4.3
 typing-extensions==4.10.0
-opencv-python==4.9.0.80
-numpy==1.25.2
-ddddocr==1.4.11
