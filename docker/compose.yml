@@ -17,3 +17,12 @@ services:
     network_mode: bridge
     hostname: nas-tools
     container_name: nas-tools
+    depends_on:
+      - ocr
+
+  ocr:
+    image: linyuan0213/nas-tools-ocr:latest
+    container_name: nas-tools-ocr
+    ports:
+      - 9300:9300
+    restart: always

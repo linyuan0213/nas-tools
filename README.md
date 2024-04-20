@@ -31,50 +31,59 @@
 
      馒头模拟登录需要添加 cookie，通过cookie访问接口，不排除禁用账户的可能
 
+
+### 验证码识别
+
+安装 docker 镜像 [linyuan0213/nas-tools-ocr](https://hub.docker.com/r/linyuan0213/nas-tools-ocr) 
+
+使用 docker-compose 参考 docker/compose.yml 文件
+
+在 nas-tools 设置 > 基础设置 > 实验室 里添加 部署的 ocr 容器网址，格式：http://127.0.0.1:9300
+
 ### 插件
 
 - 自定义识别词
 
-  ​	tmdb id获取：[tmdb](https://www.themoviedb.org/?language=zh-CN) 网站搜索关键词，打开相关电影复制url对应数字id， 如 https://www.themoviedb.org/movie/693134-dune-part-two?language=zh-CN tmdb id 为693134
+  	tmdb id获取：[tmdb](https://www.themoviedb.org/?language=zh-CN) 网站搜索关键词，打开相关电影复制url对应数字id， 如 https://www.themoviedb.org/movie/693134-dune-part-two?language=zh-CN tmdb id 为693134
 
-  
+
   - 通用识别词维护：
 
-    ​	编辑 [通用识别词](https://pad.xcreal.cc/p/通用识别词) 添加关键词
-
-    ​	格式如下：
-
-    ​		屏蔽：被替换词
-
-    ​		替换：被替换词@@替换词
-
-    ​		替换+集偏移：被替换词@@替换词@@前定位词@@后定位词@@集偏移
-
-    ​		集偏移：前定位词@@后定位词@@集偏移
+    	编辑 [通用识别词](https://pad.xcreal.cc/p/通用识别词) 添加关键词
+    	
+    	格式如下：
+    	
+    		屏蔽：被替换词
+    	
+    		替换：被替换词@@替换词
+    	
+    		替换+集偏移：被替换词@@替换词@@前定位词@@后定位词@@集偏移
+    	
+    		集偏移：前定位词@@后定位词@@集偏移
 
   - 电影识别词维护：
 
-    ​	编辑 [电影识别词](https://pad.xcreal.cc/p/电影识别词) 添加关键词
-
-    ​	格式如下：
-
-    ​		屏蔽：tmdb id@@被替换词
-
-    ​		替换：tmdb id@@被替换词@@替换词
-
-    ​		替换+集偏移：tmdb id@@被替换词@@替换词@@前定位词@@后定位词@@集偏移
-
-    ​		集偏移：tmdb id@@前定位词@@后定位词@@集偏移
+    	编辑 [电影识别词](https://pad.xcreal.cc/p/电影识别词) 添加关键词
+    	
+    	格式如下：
+    	
+    		屏蔽：tmdb id@@被替换词
+    	
+    		替换：tmdb id@@被替换词@@替换词
+    	
+    		替换+集偏移：tmdb id@@被替换词@@替换词@@前定位词@@后定位词@@集偏移
+    	
+    		集偏移：tmdb id@@前定位词@@后定位词@@集偏移
 
   - 电视识别词维护：
 
-    ​	编辑 [电视识别词](https://pad.xcreal.cc/p/电视识别词) 添加关键词
+    	编辑 [电视识别词](https://pad.xcreal.cc/p/电视识别词) 添加关键词
 
        格式同电影识别词
 
   - 动漫识别词维护：
 
-    ​	编辑 [动漫识别词](https://pad.xcreal.cc/p/动漫识别词) 添加关键词
+    	编辑 [动漫识别词](https://pad.xcreal.cc/p/动漫识别词) 添加关键词
 
        格式同电影识别词
 
@@ -83,6 +92,7 @@
     **如果有好用的识别词，请共同维护**
 
   
+
 ### 开启公开站点
 
 在 config.yaml 的 laboratory 添加 ```show_more_sites: true```
