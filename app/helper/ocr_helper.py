@@ -10,7 +10,7 @@ class OcrHelper:
     if ocr_server_host:
         _ocr_b64_url = ocr_server_host + "/ocr/base64"
     else:
-        _ocr_b64_url = ''
+        _ocr_b64_url = None
 
     def get_captcha_text(self, image_url=None, image_b64=None, cookie=None, ua=None):
         """
@@ -20,6 +20,10 @@ class OcrHelper:
         :param cookie: 下载图片使用的cookie
         :param ua: 下载图片使用的ua
         """
+
+        if not self._ocr_b64_url:
+            return ""
+
         if image_url:
             ret = RequestUtils(headers=ua,
                                cookies=cookie).get_res(image_url)
