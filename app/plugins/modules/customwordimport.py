@@ -16,7 +16,6 @@ from app.media import Media
 from app.helper import WordsHelper
 
 
-
 class CustomWordImport(_IPluginModule):
     # 插件名称
     module_name = "自定义识别词导入"
@@ -47,12 +46,11 @@ class CustomWordImport(_IPluginModule):
     # 任务执行间隔
     _cron = None
     _status = None
-    _github_path = None
-    _default_path = 'https://github.com/linyuan0213/MediaRecognitionRule'
+    _word_path = None
+    _default_path = 'https://pad.xcreal.cc'
     _onlyonce = False
     _notify = False
-    _file_list = ['common.yaml', 'tv.yaml', 'movie.yaml', 'anime.yaml']
-    _github_raw_url = 'https://raw.githubusercontent.com'
+    _file_list = ['通用识别词', '电视识别词', '电影识别词', '动漫识别词']
     # 退出事件
     _event = Event()
 
@@ -110,14 +108,14 @@ class CustomWordImport(_IPluginModule):
                             ]
                         },
                         {
-                            'title': 'github 地址',
+                            'title': '识别词导入 地址',
                             'required': "",
-                            'tooltip': 'github 地址（默认地址 https://github.com/linyuan0213/MediaRecognitionRule）',
+                            'tooltip': '地址（默认地址 https://pad.xcreal.cc）',
                             'type': 'text',
                             'content': [
                                 {
-                                    'id': 'github_path',
-                                    'placeholder': 'https://github.com/linyuan0213/MediaRecognitionRule',
+                                    'id': 'word_path',
+                                    'placeholder': 'https://pad.xcreal.cc',
                                 }
                             ]
                         }
@@ -148,7 +146,7 @@ class CustomWordImport(_IPluginModule):
             self._enabled = config.get("enabled")
             self._cron = config.get("cron")
             self._status = config.get("status")
-            self._github_path = config.get("github_path")
+            self._word_path = config.get("word_path")
             self._notify = config.get("notify")
             self._onlyonce = config.get("onlyonce")
             self._media = Media()
@@ -173,7 +171,7 @@ class CustomWordImport(_IPluginModule):
                     "enabled": self._enabled,
                     "cron": self._cron,
                     "status": self._status,
-                    "github_path": self._github_path,
+                    "word_path": self._word_path,
                     "notify": self._notify,
                     "onlyonce": self._onlyonce,
                 })
@@ -196,15 +194,15 @@ class CustomWordImport(_IPluginModule):
         self.info(f"当前时间 {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))} 开始导入自定义识别词")
 
         ua = Config().get_config('app').get('user_agent')
-        github_path = self._github_path or self._default_path
+        word_path = self._word_path or self._default_path
+        success_word_cnt = 0
 
-        self.info(f"github url {github_path} ")
-
-        split_url = urlsplit(github_path)
-        url_path = split_url.path
+        split_url = urlsplit(word_path)
+        base_url = f"{split_url.scheme}://{split_url.netloc}"
+        self.info(f"识别词 url {base_url} ")
 
         for file_name in self._file_list:
-            download_url = f'{self._github_raw_url}{url_path}/master/{file_name}'
+            download_url = f'{base_url}/p/{file_name}/export/txt'
             self.info(f'开始下载规则：{download_url}')
             headers = {
                 "user-agent": ua,
@@ -213,25 +211,30 @@ class CustomWordImport(_IPluginModule):
             res = RequestUtils(headers=headers).get_res(download_url)
             if res.status_code != 200:
                 return
-            yaml = ruamel.yaml.YAML()
-            custom_word_dict = yaml.load(res.text)
-            if not custom_word_dict:
-                continue
+
+            word_list = [line for line in res.text.splitlines() if line.strip() and not line.strip().startswith('#')]
             media_type = None
             gtype = None
             group_id = -1
-            if 'tv' in file_name:
+            if '电视' in file_name:
                 media_type = MediaType.TV
                 gtype = 2
-            if 'movie' in file_name:
+            if '电影' in file_name:
                 media_type = MediaType.MOVIE
                 gtype = 1
-            if 'anime' in file_name:
+            if '动漫' in file_name:
                 media_type = MediaType.ANIME
                 gtype = 2
 
-            for tmdb_id, rules in custom_word_dict.items():
-                self.info(f'开始导入：{tmdb_id}')
+            for word_line in word_list:
+                if '通用' not in file_name:
+                    tmdb_id, *word = word_line.split("@@")
+                    word = '@@'.join(word)
+                    self.info(f'导入：{tmdb_id}')
+                else:
+                    word = word_line
+                    self.info('导入通用识别词')
+                import_word_info = self.__parse_rule(word)
                 if media_type:
                     tmdb_info = self._media.get_tmdb_info(media_type, tmdb_id)
                     if not tmdb_info:
@@ -257,46 +260,47 @@ class CustomWordImport(_IPluginModule):
                     if custom_word_groups:
                         group_id = custom_word_groups[0].ID
 
-                for import_word_info in rules:
-                    replaced = import_word_info.get("replaced")
-                    replace = import_word_info.get("replace")
-                    front = import_word_info.get("front")
-                    back = import_word_info.get("back")
-                    offset = import_word_info.get("offset")
-                    whelp = import_word_info.get("help")
-                    wtype = int(import_word_info.get("type"))
-                    season = import_word_info.get("season")
-                    if gtype == 1:
-                        season = -2
-                    regex = 1
-                    # 屏蔽, 替换, 替换+集偏移
-                    if wtype in [1, 2, 3]:
-                        if self._wordshelper.is_custom_words_existed(replaced=replaced):
-                            self.info(f"识别词已存在\n（被替换词：{replaced}）")
-                            continue
-                    # 集偏移
-                    elif wtype == 4:
-                        if self._wordshelper.is_custom_words_existed(front=front, back=back):
-                            self.info(f"识别词已存在\n（前后定位词：{front}@{back}")
-                            continue
-                    self._wordshelper.insert_custom_word(replaced=replaced,
-                                                    replace=replace,
-                                                    front=front,
-                                                    back=back,
-                                                    offset=offset,
-                                                    wtype=wtype,
-                                                    gid=group_id,
-                                                    season=season,
-                                                    enabled=1 if self._status else 0,
-                                                    regex=regex,
-                                                    whelp=whelp if whelp else "")
+                replaced = import_word_info.get("replaced")
+                replace = import_word_info.get("replace")
+                front = import_word_info.get("front")
+                back = import_word_info.get("back")
+                offset = import_word_info.get("offset")
+                whelp = ""
+                wtype = int(import_word_info.get("type"))
+                season = -1
+                if gtype == 1:
+                    season = -2
+                regex = 1
+                # 屏蔽, 替换, 替换+集偏移
+                if wtype in [1, 2, 3]:
+                    if self._wordshelper.is_custom_words_existed(replaced=replaced):
+                        self.info(f"识别词已存在\n（被替换词：{replaced}）")
+                        continue
+                # 集偏移
+                elif wtype == 4:
+                    if self._wordshelper.is_custom_words_existed(front=front, back=back):
+                        self.info(f"识别词已存在\n（前后定位词：{front}@{back}")
+                        continue
+                self._wordshelper.insert_custom_word(replaced=replaced,
+                                                replace=replace,
+                                                front=front,
+                                                back=back,
+                                                offset=offset,
+                                                wtype=wtype,
+                                                gid=group_id,
+                                                season=season,
+                                                enabled=1 if self._status else 0,
+                                                regex=regex,
+                                                whelp=whelp if whelp else "")
+                # 统计导入成功的识别词数
+                success_word_cnt = success_word_cnt + 1
 
-        self.info('自定义识别词导入任务完成')
+        self.info(f'自定义识别词导入任务完成，导入成功 {success_word_cnt} 个识别词')
         # 发送通知
         if self._notify:
             next_run_time = self._scheduler.get_jobs()[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')
             self.send_message(title="【自定义识别词导入任务完成】",
-                              text=f"自定义识别词导入{'成功' if True else '失败'}\n"
+                              text=f"导入成功 {success_word_cnt} 个识别词\n"
                                    f"下次导入时间: {next_run_time}")
 
     def stop_service(self):
@@ -316,3 +320,44 @@ class CustomWordImport(_IPluginModule):
 
     def get_state(self):
         return self._enabled and self._cron
+
+    def __parse_rule(self, rule):
+        """
+        解析自定义识别词规则
+        """
+        if not rule:
+            return None
+        rule_list = rule.split("@@")
+
+        word_dict = {
+            "type": -1,
+            "replaced": "",
+            "replace": "",
+            "front": "",
+            "back": "",
+            "offset": ""
+        }
+        if len(rule_list) == 1:
+            word_dict['type'] = 1
+            word_dict['replaced'] = rule_list[0]
+
+        elif len(rule_list) == 2:
+            word_dict['type'] = 2
+            word_dict['replaced'] = rule_list[0]
+            word_dict['replace'] = rule_list[1]
+        elif len(rule_list) == 5:
+            word_dict['type'] = 3
+            word_dict['replaced'] = rule_list[0]
+            word_dict['replace'] = rule_list[1]
+            word_dict['front'] = rule_list[2]
+            word_dict['back'] = rule_list[3]
+            word_dict['offset'] = rule_list[4]
+        elif len(rule_list) == 3:
+            word_dict['type'] = 4
+            word_dict['front'] = rule_list[0]
+            word_dict['back'] = rule_list[1]
+            word_dict['offset'] = rule_list[2]
+        else:
+            return None
+
+        return word_dict

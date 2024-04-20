@@ -565,3 +565,12 @@ class StringUtils:
         sign_params = parse.parse_qs(sign_data)
 
         return sign_params.get('tid')[0]
+
+    @staticmethod
+    def replace_strings(text, replacements):
+        """
+        替换多个字符串
+        """
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+        return text
