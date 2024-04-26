@@ -13,6 +13,8 @@ if not config:
 
 ROOT_PATH = os.path.dirname(os.path.abspath(config))
 LOG_PATH = os.path.join(ROOT_PATH, 'logs')
+if not os.path.exists(LOG_PATH):
+    os.makedirs(LOG_PATH)
 
 port = os.environ.get('NT_PORT') if os.environ.get('NT_PORT') else 3000
 
