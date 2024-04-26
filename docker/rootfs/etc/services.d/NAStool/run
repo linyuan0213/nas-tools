@@ -10,4 +10,4 @@ else
 fi
 exec \
     s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost ${NT_PORT}" \
-    cd ${WORKDIR} s6-setuidgid nt sh start-server.sh
+    cd ${WORKDIR} s6-setuidgid nt sh ./start-server.sh
