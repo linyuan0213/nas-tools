@@ -186,7 +186,7 @@ class Scheduler:
 
         # 定时刷新壁纸
         scheduler_queue.put({
-                        "func_str": "get_login_wallpaper",
+            "func_str": "get_login_wallpaper",
                         "args": [],
                         "trigger": "interval",
                         "hours": REFRESH_WALLPAPER_INTERVAL,
@@ -204,37 +204,36 @@ class Scheduler:
                 time.sleep(5)
                 continue
 
-            with self._lock:
-                job = None
-                if data.get('func_desc'):
-                    if data.get('type') == 'plugin':
-                        func = ReflectUtils.get_plugin_method(
-                            data.get('func_str'))
-                    else:
-                        func = ReflectUtils.get_func_by_str(
-                            __name__, data.get('func_str'))
-                    job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
-                                                   func=func,
-                                                   func_desc=data.get(
-                                                       'func_desc'),
-                                                   cron=data.get('cron'),
-                                                   next_run_time=data.get('next_run_time'))
+            job = None
+            if data.get('func_desc'):
+                if data.get('type') == 'plugin':
+                    func = ReflectUtils.get_plugin_method(
+                        data.get('func_str'))
                 else:
-                    if data.get('type') == 'plugin':
-                        func = ReflectUtils.get_plugin_method(
-                            data.get('func_str'))
-                        data.pop("func_str")
-                        data.pop("type")
-                    else:
-                        func = ReflectUtils.get_func_by_str(
-                            __name__, data.get('func_str'))
-                        data.pop("func_str")
+                    func = ReflectUtils.get_func_by_str(
+                        __name__, data.get('func_str'))
+                job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
+                                               func=func,
+                                               func_desc=data.get(
+                                                   'func_desc'),
+                                               cron=data.get('cron'),
+                                               next_run_time=data.get('next_run_time'))
+            else:
+                if data.get('type') == 'plugin':
+                    func = ReflectUtils.get_plugin_method(
+                        data.get('func_str'))
+                    data.pop("func_str")
+                    data.pop("type")
+                else:
+                    func = ReflectUtils.get_func_by_str(
+                        __name__, data.get('func_str'))
+                    data.pop("func_str")
 
-                    job = self.scheduler.start_job({
-                        "func": func,
-                        **data
-                    })
-                log.info(f'【System】成功添加任务 {job}')
+                job = self.scheduler.start_job({
+                    "func": func,
+                    **data
+                })
+            log.info(f'【System】成功添加任务 {job}')
 
     def stop_service(self):
         self.scheduler.stop_service()
