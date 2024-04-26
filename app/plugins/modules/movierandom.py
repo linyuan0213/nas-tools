@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from jinja2 import Template
 
@@ -16,6 +15,9 @@ from app.plugins.modules._base import _IPluginModule
 from app.subscribe import Subscribe
 from app.utils.types import SearchType, RssType, MediaType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class MovieRandom(_IPluginModule):
@@ -47,6 +49,7 @@ class MovieRandom(_IPluginModule):
     rsshelper = None
     subscribe = None
     _scheduler = None
+    _jobstore = "plugin"
     _enable = False
     _onlyonce = False
     _cron = None
@@ -275,16 +278,29 @@ class MovieRandom(_IPluginModule):
 
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"电影随机服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__random,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "MovieRandom.random_movie",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
+
             if self._onlyonce:
-                self.info(f"电影随机服务启动，立即运行一次")
-                self._scheduler.add_job(self.__random, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("电影随机服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "MovieRandom.random_movie",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
+
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -296,12 +312,8 @@ class MovieRandom(_IPluginModule):
                     "vote": self._vote,
                     "date": self._date,
                 })
-            if self._scheduler.get_jobs():
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
 
-    def __random(self):
+    def random_movie(self):
         """
         随机获取一部tmdb电影下载
         """
@@ -476,12 +488,9 @@ class MovieRandom(_IPluginModule):
         停止服务
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'random_movie' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

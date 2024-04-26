@@ -18,6 +18,9 @@ from app.utils.types import MediaType, SearchType, RssType
 from config import Config
 from web.backend.web_utils import WebUtils
 
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
+
 
 class DoubanRank(_IPluginModule):
     # 插件名称
@@ -64,6 +67,7 @@ class DoubanRank(_IPluginModule):
     _ranks = []
     _vote = 0
     _scheduler = None
+    _jobstore = 'plugin'
 
     def init_config(self, config: dict = None):
         self.mediaserver = MediaServer()
@@ -90,16 +94,28 @@ class DoubanRank(_IPluginModule):
 
         # 启动服务
         if self.get_state() or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"订阅服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__refresh_rss,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "DoubanRank.refresh_rss",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
             if self._onlyonce:
-                self.info(f"订阅服务启动，立即运行一次")
-                self._scheduler.add_job(self.__refresh_rss, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("订阅服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "DoubanRank.refresh_rss",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
+
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -110,10 +126,6 @@ class DoubanRank(_IPluginModule):
                     "vote": self._vote,
                     "rss_addrs": "\n".join(self._rss_addrs)
                 })
-            if self._scheduler.get_jobs():
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
 
     def get_state(self):
         return self._enable and self._cron and (self._ranks or self._rss_addrs)
@@ -367,17 +379,14 @@ class DoubanRank(_IPluginModule):
         停止服务
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'refresh_rss' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))
 
-    def __refresh_rss(self):
+    def refresh_rss(self):
         """
         刷新RSS
         """

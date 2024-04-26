@@ -4,7 +4,6 @@ import time
 from datetime import datetime, timedelta
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from threading import Event
@@ -12,6 +11,9 @@ from app.plugins.modules._base import _IPluginModule
 from app.utils import SystemUtils
 from config import Config
 from web.action import WebAction
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class AutoBackup(_IPluginModule):
@@ -38,6 +40,8 @@ class AutoBackup(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = 'plugin'
+    _job_id = None
 
     # 设置开关
     _enabled = False
@@ -153,14 +157,20 @@ class AutoBackup(_IPluginModule):
 
         # 启动服务
         if self._enabled or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
 
             # 运行一次
             if self._onlyonce:
-                self.info(f"备份服务启动，立即运行一次")
-                self._scheduler.add_job(self.__backup, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("备份服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "AutoBackup.backup",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -176,15 +186,15 @@ class AutoBackup(_IPluginModule):
             # 周期运行
             if self._cron:
                 self.info(f"定时备份服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__backup,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "AutoBackup.backup",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
 
-            # 启动任务
-            if self._scheduler.get_jobs():
-                self._scheduler.print_jobs()
-                self._scheduler.start()
-
-    def __backup(self):
+    def backup(self):
         """
         自动备份、删除备份
         """
@@ -229,25 +239,25 @@ class AutoBackup(_IPluginModule):
 
         # 发送通知
         if self._notify:
-            next_run_time = self._scheduler.get_jobs()[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')
-            self.send_message(title="【自动备份任务完成】",
-                              text=f"创建备份{'成功' if zip_file else '失败'}\n"
-                                   f"清理备份数量 {del_cnt}\n"
-                                   f"剩余备份数量 {bk_cnt - del_cnt} \n"
-                                   f"下次备份时间: {next_run_time}")
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'backup' in job.name:
+                        next_run_time = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')
+                        self.send_message(title="【自动备份任务完成】",
+                                        text=f"创建备份{'成功' if zip_file else '失败'}\n"
+                                            f"清理备份数量 {del_cnt}\n"
+                                            f"剩余备份数量 {bk_cnt - del_cnt} \n"
+                                            f"下次备份时间: {next_run_time}")
 
     def stop_service(self):
         """
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'backup' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))
 

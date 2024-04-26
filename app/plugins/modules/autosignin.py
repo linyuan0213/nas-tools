@@ -8,7 +8,6 @@ from threading import Event
 from urllib.parse import urlsplit
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from lxml import etree
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as es
@@ -24,6 +23,9 @@ from app.sites.sites import Sites
 from app.utils import RequestUtils, ExceptionUtils, StringUtils, SchedulerUtils, JsonUtils
 from app.utils.types import EventType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class AutoSignIn(_IPluginModule):
@@ -51,7 +53,8 @@ class AutoSignIn(_IPluginModule):
     # 私有属性
     siteconf = None
     _scheduler = None
-
+    _jobstore = "plugin"
+    _job_id = None
     # 设置开关
     _enabled = False
     # 任务执行间隔
@@ -209,7 +212,7 @@ class AutoSignIn(_IPluginModule):
             self.debug(f"加载站点签到：{self._site_schema}")
 
             # 定时服务
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
 
             # 清理缓存即今日历史
             if self._clean:
@@ -217,10 +220,16 @@ class AutoSignIn(_IPluginModule):
 
             # 运行一次
             if self._onlyonce:
-                self.info(f"签到服务启动，立即运行一次")
-                self._scheduler.add_job(self.sign_in, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("签到服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "AutoSignIn.sign_in",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
 
             if self._onlyonce or self._clean:
                 # 关闭一次性开关|清理缓存开关
@@ -240,16 +249,15 @@ class AutoSignIn(_IPluginModule):
 
             # 周期运行
             if self._cron:
-                self.info(f"定时签到服务启动，周期：{self._cron}")
-                SchedulerUtils.start_job(scheduler=self._scheduler,
-                                         func=self.sign_in,
-                                         func_desc="自动签到",
-                                         cron=str(self._cron))
-
-            # 启动任务
-            if self._scheduler.get_jobs():
-                self._scheduler.print_jobs()
-                self._scheduler.start()
+                self._job_id = self.info(f"定时签到服务启动，周期：{self._cron}")
+                scheduler_queue.put({
+                        "func_str": "AutoSignIn.sign_in",
+                        "func_desc": "自动签到",
+                        "type": 'plugin',
+                        "args": [],
+                        "cron": str(self._cron),
+                        "jobstore": self._jobstore
+                    })
 
     @staticmethod
     def get_command():
@@ -383,15 +391,18 @@ class AutoSignIn(_IPluginModule):
                     signin_message += retry_msg
                 Message().send_site_signin_message(signin_message)
 
-                next_run_time = self._scheduler.get_jobs()[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')
-                # 签到汇总信息
-                self.send_message(title="【自动签到任务完成】",
-                                  text=f"本次签到数量: {len(sign_sites)} \n"
-                                       f"命中重试数量: {len(retry_sites) if self._retry_keyword else 0} \n"
-                                       f"强制签到数量: {len(self._special_sites)} \n"
-                                       f"下次签到数量: {len(set(retry_sites + self._special_sites))} \n"
-                                       f"下次签到时间: {next_run_time} \n"
-                                       f"详见签到消息")
+                if self._scheduler and self._scheduler.SCHEDULER:
+                    for job in self._scheduler.get_jobs(self._jobstore):
+                        if 'signin' in job.name:
+                            next_run_time = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')
+                            # 签到汇总信息
+                            self.send_message(title="【自动签到任务完成】",
+                                            text=f"本次签到数量: {len(sign_sites)} \n"
+                                                f"命中重试数量: {len(retry_sites) if self._retry_keyword else 0} \n"
+                                                f"强制签到数量: {len(self._special_sites)} \n"
+                                                f"下次签到数量: {len(set(retry_sites + self._special_sites))} \n"
+                                                f"下次签到时间: {next_run_time} \n"
+                                                f"详见签到消息")
         else:
             self.error("站点签到任务失败！")
 
@@ -557,13 +568,10 @@ class AutoSignIn(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'signin' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))
 

@@ -12,8 +12,8 @@ from functools import wraps
 from math import floor
 from pathlib import Path
 from threading import Lock
-from urllib import parse
 from urllib.parse import unquote
+from redis import Redis
 
 from flask import Flask, request, json, render_template, make_response, session, send_from_directory, send_file, \
     redirect, Response
@@ -22,6 +22,7 @@ from flask_login import LoginManager, login_user, login_required, current_user
 from flask_sock import Sock
 from icalendar import Calendar, Event, Alarm
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_session import Session
 
 import log
 from app.brushtask import BrushTask
@@ -41,7 +42,7 @@ from app.sync import Sync
 from app.torrentremover import TorrentRemover
 from app.utils import DomUtils, SystemUtils, ExceptionUtils, StringUtils
 from app.utils.types import *
-from config import PT_TRANSFER_INTERVAL, Config, TMDB_API_DOMAINS
+from config import PT_TRANSFER_INTERVAL, REDIS_HOST, REDIS_PORT, Config, TMDB_API_DOMAINS
 from web.action import WebAction
 from web.apiv1 import apiv1_bp
 from web.backend.WXBizMsgCrypt3 import WXBizMsgCrypt
@@ -49,6 +50,7 @@ from web.backend.user import User
 from web.backend.wallpaper import get_login_wallpaper
 from web.backend.web_utils import WebUtils
 from web.security import require_auth
+from web.cache import cache
 
 # 配置文件锁
 ConfigLock = Lock()
@@ -59,11 +61,20 @@ App.wsgi_app = ProxyFix(App.wsgi_app)
 App.config['JSON_AS_ASCII'] = False
 App.config['JSON_SORT_KEYS'] = False
 App.config['SOCK_SERVER_OPTIONS'] = {'ping_interval': 25}
+
 App.secret_key = os.urandom(24)
 App.permanent_session_lifetime = datetime.timedelta(days=30)
 
+# Session
+App.config['SESSION_TYPE'] = 'redis'
+App.config['SESSION_REDIS'] = Redis(host=REDIS_HOST, port=REDIS_PORT)
+Session(App)
+
 # Flask Socket
 Sock = Sock(App)
+
+# 缓存
+cache.init_app(App)
 
 # 启用压缩
 Compress(App)
@@ -238,6 +249,7 @@ def web():
 
 # 开始
 @App.route('/index', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='index')
 @login_required
 def index():
     # 媒体服务器类型
@@ -287,6 +299,7 @@ def index():
 
 # 资源搜索页面
 @App.route('/search', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='search')
 @login_required
 def search():
     # 权限
@@ -352,6 +365,7 @@ def rss_history():
 
 # 订阅日历页面
 @App.route('/rss_calendar', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='rss_calendar')
 @login_required
 def rss_calendar():
     Today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
@@ -458,6 +472,7 @@ def recommend():
 
 # 推荐页面
 @App.route('/ranking', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='ranking')
 @login_required
 def ranking():
     return render_template("discovery/ranking.html",
@@ -466,6 +481,7 @@ def ranking():
 
 # 豆瓣电影
 @App.route('/douban_movie', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='douban_movie')
 @login_required
 def douban_movie():
     return render_template("discovery/recommend.html",
@@ -478,6 +494,7 @@ def douban_movie():
 
 # 豆瓣电视剧
 @App.route('/douban_tv', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='douban_tv')
 @login_required
 def douban_tv():
     return render_template("discovery/recommend.html",
@@ -489,6 +506,7 @@ def douban_tv():
 
 
 @App.route('/tmdb_movie', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='tmdb_movie')
 @login_required
 def tmdb_movie():
     return render_template("discovery/recommend.html",
@@ -500,6 +518,7 @@ def tmdb_movie():
 
 
 @App.route('/tmdb_tv', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='tmdb_tv')
 @login_required
 def tmdb_tv():
     return render_template("discovery/recommend.html",
@@ -512,6 +531,7 @@ def tmdb_tv():
 
 # Bangumi每日放送
 @App.route('/bangumi', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='bangumi')
 @login_required
 def discovery_bangumi():
     return render_template("discovery/ranking.html",
@@ -581,6 +601,7 @@ def torrent_remove():
 
 # 数据统计页面
 @App.route('/statistics', methods=['POST', 'GET'])
+@cache.cached(timeout=300, key_prefix='statistics')
 @login_required
 def statistics():
     # 刷新单个site

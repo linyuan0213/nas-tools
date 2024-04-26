@@ -1,7 +1,5 @@
 import time
 
-from apscheduler.schedulers.background import BackgroundScheduler
-
 from app.downloader import Downloader
 from app.helper.security_helper import SecurityHelper
 from app.mediaserver import MediaServer
@@ -9,7 +7,9 @@ from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.utils import ExceptionUtils
 from app.utils.types import MediaServerType, EventType
-from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class SpeedLimiter(_IPluginModule):
@@ -38,6 +38,7 @@ class SpeedLimiter(_IPluginModule):
     _downloader = None
     _mediaserver = None
     _scheduler = None
+    _jobstore = 'plugin'
     # 任务执行间隔
     _interval = 300
 
@@ -277,13 +278,15 @@ class SpeedLimiter(_IPluginModule):
 
         # 启动限速任务
         if self._limit_enabled:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
-            self._scheduler.add_job(func=self.__check_playing_sessions,
-                                    args=[self._mediaserver.get_type(), True],
-                                    trigger='interval',
-                                    seconds=self._interval)
-            self._scheduler.print_jobs()
-            self._scheduler.start()
+            self._scheduler = SchedulerService()
+            scheduler_queue.put({
+                        "func_str": "SpeedLimiter.check_playing_sessions",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "interval",
+                        "seconds": self._interval,
+                        "jobstore": self._jobstore
+                    })
             self.info("播放限速服务启动")
 
     def get_state(self):
@@ -345,7 +348,7 @@ class SpeedLimiter(_IPluginModule):
         检查emby Webhook消息
         """
         if self._limit_enabled and event.event_data.get("Event") in ["playback.start", "playback.stop"]:
-            self.__check_playing_sessions(_mediaserver_type=MediaServerType.EMBY,
+            self.check_playing_sessions(_mediaserver_type=MediaServerType.EMBY,
                                           time_check=False,
                                           message=event.event_data.get("Title"))
 
@@ -355,7 +358,7 @@ class SpeedLimiter(_IPluginModule):
         检查jellyfin Webhook消息
         """
         if self._limit_enabled and event.event_data.get("NotificationType") in ["PlaybackStart", "PlaybackStop"]:
-            self.__check_playing_sessions(_mediaserver_type=MediaServerType.JELLYFIN, time_check=False)
+            self.check_playing_sessions(_mediaserver_type=MediaServerType.JELLYFIN, time_check=False)
 
     @EventHandler.register(EventType.PlexWebhook)
     def plex_action(self, event):
@@ -363,9 +366,9 @@ class SpeedLimiter(_IPluginModule):
         检查plex Webhook消息
         """
         if self._limit_enabled and event.event_data.get("event") in ["media.play", "media.stop"]:
-            self.__check_playing_sessions(_mediaserver_type=MediaServerType.PLEX, time_check=False)
+            self.check_playing_sessions(_mediaserver_type=MediaServerType.PLEX, time_check=False)
 
-    def __check_playing_sessions(self, _mediaserver_type, time_check=False, message=""):
+    def check_playing_sessions(self, _mediaserver_type, time_check=False, message=""):
         """
         检查是否限速
         """
@@ -482,10 +485,11 @@ class SpeedLimiter(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._scheduler.shutdown()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'check_playing_sessions' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
+                        self._event.set()
+                        self._event.clear()
         except Exception as e:
             print(str(e))

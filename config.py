@@ -80,6 +80,10 @@ XVFB_PATH = [
     "/usr/local/bin/Xvfb"
 ]
 
+# redis 配置
+REDIS_HOST = "127.0.0.1"
+REDIS_PORT = "6379"
+
 # 线程锁
 lock = Lock()
 

@@ -2,7 +2,6 @@ from datetime import datetime
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.downloader import Downloader
@@ -10,6 +9,9 @@ from app.message import Message
 from app.plugins.modules._base import _IPluginModule
 from app.utils.types import DownloaderType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class TorrentMark(_IPluginModule):
@@ -36,6 +38,7 @@ class TorrentMark(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = 'plugin'
     downloader = None
     # 限速开关
     _enable = False
@@ -127,15 +130,28 @@ class TorrentMark(_IPluginModule):
 
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"标记服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.auto_mark,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "TorrentMark.auto_mark",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
+
             if self._onlyonce:
-                self.info(f"标记服务启动，立即运行一次")
-                self._scheduler.add_job(self.auto_mark, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())))
+                self.info("标记服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "TorrentMark.auto_mark",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())),
+                        "jobstore": self._jobstore
+                    })
+
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -144,10 +160,6 @@ class TorrentMark(_IPluginModule):
                     "cron": self._cron,
                     "downloaders": self._downloaders
                 })
-            if self._cron or self._onlyonce:
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
 
     def get_state(self):
         return True if self._enable and self._cron and self._downloaders else False
@@ -242,12 +254,9 @@ class TorrentMark(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'auto_mark' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

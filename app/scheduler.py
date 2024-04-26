@@ -1,30 +1,40 @@
 import datetime
+import time
 
 import pytz
-from apscheduler.executors.pool import ThreadPoolExecutor
-from apscheduler.schedulers.background import BackgroundScheduler
+
+from threading import Lock
 
 import log
-from app.helper import MetaHelper
+from app.helper import MetaHelper, ThreadHelper, SubmoduleHelper
 from app.mediaserver import MediaServer
 from app.rss import Rss
 from app.sites import SiteUserInfo
 from app.subscribe import Subscribe
 from app.sync import Sync
-from app.utils import ExceptionUtils, SchedulerUtils
+from app.brushtask import BrushTask
+from app.downloader import Downloader
+from app.rsschecker import RssChecker
+from app.torrentremover import TorrentRemover
+from app.utils import SchedulerUtils, StringUtils, ReflectUtils
 from app.utils.commons import singleton
 from config import METAINFO_SAVE_INTERVAL, \
     SYNC_TRANSFER_INTERVAL, RSS_CHECK_INTERVAL, \
     RSS_REFRESH_TMDB_INTERVAL, META_DELETE_UNKNOWN_INTERVAL, REFRESH_WALLPAPER_INTERVAL, Config
 from web.backend.wallpaper import get_login_wallpaper
 
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
+
 
 @singleton
 class Scheduler:
-    SCHEDULER = None
+    scheduler = None
     _pt = None
     _douban = None
     _media = None
+    _jobstore = 'default'
+    _lock = Lock()
 
     def __init__(self):
         self.init_config()
@@ -32,29 +42,29 @@ class Scheduler:
     def init_config(self):
         self._pt = Config().get_config('pt')
         self._media = Config().get_config('media')
-        self.stop_service()
+        self.scheduler = SchedulerService()
+        self.scheduler.start_service()
         self.run_service()
 
     def run_service(self):
         """
         读取配置，启动定时服务
         """
-        self.SCHEDULER = BackgroundScheduler(timezone=Config().get_timezone(),
-                                             executors={
-                                                 'default': ThreadPoolExecutor(20)
-                                             })
-        if not self.SCHEDULER:
+
+        if not self.scheduler:
             return
+
         if self._pt:
             # 数据统计
             ptrefresh_date_cron = self._pt.get('ptrefresh_date_cron')
             if ptrefresh_date_cron:
                 tz = pytz.timezone(Config().get_timezone())
-                SchedulerUtils.start_job(scheduler=self.SCHEDULER,
-                                         func=SiteUserInfo().refresh_site_data_now,
-                                         func_desc="数据统计",
-                                         cron=str(ptrefresh_date_cron),
-                                         next_run_time=datetime.datetime.now(tz) + datetime.timedelta(minutes=1))
+                scheduler_queue.put({
+                    "func_str": "SiteUserInfo.refresh_site_data_now",
+                    "func_desc": "数据统计",
+                    "cron": str(ptrefresh_date_cron),
+                    "next_run_time": datetime.datetime.now(tz) + datetime.timedelta(minutes=1)
+                })
 
             # RSS下载器
             pt_check_interval = self._pt.get('pt_check_interval')
@@ -70,7 +80,14 @@ class Scheduler:
                 if pt_check_interval:
                     if pt_check_interval < 300:
                         pt_check_interval = 300
-                    self.SCHEDULER.add_job(Rss().rssdownload, 'interval', seconds=pt_check_interval)
+
+                    scheduler_queue.put({
+                        "func_str": "Rss.rssdownload",
+                        "args": [],
+                        "trigger": "interval",
+                        "seconds": pt_check_interval,
+                        "jobstore": self._jobstore
+                    })
                     log.info("RSS订阅服务启动")
 
             # RSS订阅定时搜索
@@ -87,10 +104,18 @@ class Scheduler:
                 if search_rss_interval:
                     if search_rss_interval < 6:
                         search_rss_interval = 6
-                    self.SCHEDULER.add_job(Subscribe().subscribe_search_all, 'interval', hours=search_rss_interval)
+
+                    scheduler_queue.put({
+                        "func_str": "Subscribe.subscribe_search_all",
+                        "args": [],
+                        "trigger": "interval",
+                        "hours": search_rss_interval,
+                        "jobstore": self._jobstore
+                    })
+
                     log.info("订阅定时搜索服务启动")
 
-        # 媒体库同步
+        # # 媒体库同步
         if self._media:
             mediasync_interval = self._media.get("mediasync_interval")
             if mediasync_interval:
@@ -99,47 +124,117 @@ class Scheduler:
                         mediasync_interval = int(mediasync_interval)
                     else:
                         try:
-                            mediasync_interval = round(float(mediasync_interval))
+                            mediasync_interval = round(
+                                float(mediasync_interval))
                         except Exception as e:
                             log.info("豆瓣同步服务启动失败：%s" % str(e))
                             mediasync_interval = 0
                 if mediasync_interval:
-                    self.SCHEDULER.add_job(MediaServer().sync_mediaserver, 'interval', hours=mediasync_interval)
+                    scheduler_queue.put({
+                        "func_str": "MediaServer.sync_mediaserver",
+                        "args": [],
+                        "trigger": "interval",
+                        "hours": mediasync_interval,
+                        "jobstore": self._jobstore
+                    })
                     log.info("媒体库同步服务启动")
 
         # 元数据定时保存
-        self.SCHEDULER.add_job(MetaHelper().save_meta_data, 'interval', seconds=METAINFO_SAVE_INTERVAL)
+        scheduler_queue.put({
+            "func_str": "MetaHelper.save_meta_data",
+                        "args": [],
+                        "trigger": "interval",
+                        "seconds": METAINFO_SAVE_INTERVAL,
+                        "jobstore": self._jobstore
+        })
 
         # 定时把队列中的监控文件转移走
-        self.SCHEDULER.add_job(Sync().transfer_mon_files, 'interval', seconds=SYNC_TRANSFER_INTERVAL)
+        scheduler_queue.put({
+            "func_str": "Sync.transfer_mon_files",
+                        "args": [],
+                        "trigger": "interval",
+                        "seconds": SYNC_TRANSFER_INTERVAL,
+                        "jobstore": self._jobstore
+        })
 
         # RSS队列中搜索
-        self.SCHEDULER.add_job(Subscribe().subscribe_search, 'interval', seconds=RSS_CHECK_INTERVAL)
+        scheduler_queue.put({
+            "func_str": "Subscribe.subscribe_search",
+                        "args": [],
+                        "trigger": "interval",
+                        "seconds": RSS_CHECK_INTERVAL,
+                        "jobstore": self._jobstore
+        })
 
         # 豆瓣RSS转TMDB，定时更新TMDB数据
-        self.SCHEDULER.add_job(Subscribe().refresh_rss_metainfo, 'interval', hours=RSS_REFRESH_TMDB_INTERVAL)
+        scheduler_queue.put({
+            "func_str": "Subscribe.refresh_rss_metainfo",
+                        "args": [],
+                        "trigger": "interval",
+                        "hours": RSS_REFRESH_TMDB_INTERVAL,
+                        "jobstore": self._jobstore
+        })
 
         # 定时清除未识别的缓存
-        self.SCHEDULER.add_job(MetaHelper().delete_unknown_meta, 'interval', hours=META_DELETE_UNKNOWN_INTERVAL)
+        scheduler_queue.put({
+            "func_str": "MetaHelper.delete_unknown_meta",
+                        "args": [],
+                        "trigger": "interval",
+                        "hours": META_DELETE_UNKNOWN_INTERVAL,
+                        "jobstore": self._jobstore
+        })
 
         # 定时刷新壁纸
-        self.SCHEDULER.add_job(get_login_wallpaper,
-                               'interval',
-                               hours=REFRESH_WALLPAPER_INTERVAL,
-                               next_run_time=datetime.datetime.now())
+        scheduler_queue.put({
+                        "func_str": "get_login_wallpaper",
+                        "args": [],
+                        "trigger": "interval",
+                        "hours": REFRESH_WALLPAPER_INTERVAL,
+                        "next_run_time": datetime.datetime.now(),
+                        "jobstore": self._jobstore
+        })
 
-        self.SCHEDULER.print_jobs()
+        ThreadHelper().start_thread(self.add_task, ())
 
-        self.SCHEDULER.start()
+    def add_task(self):
+        while self.scheduler.SCHEDULER:
+
+            data = scheduler_queue.get()
+            if not data:
+                time.sleep(5)
+                continue
+
+            with self._lock:
+                job = None
+                if data.get('func_desc'):
+                    if data.get('type') == 'plugin':
+                        func = ReflectUtils.get_plugin_method(
+                            data.get('func_str'))
+                    else:
+                        func = ReflectUtils.get_func_by_str(
+                            __name__, data.get('func_str'))
+                    job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
+                                                   func=func,
+                                                   func_desc=data.get(
+                                                       'func_desc'),
+                                                   cron=data.get('cron'),
+                                                   next_run_time=data.get('next_run_time'))
+                else:
+                    if data.get('type') == 'plugin':
+                        func = ReflectUtils.get_plugin_method(
+                            data.get('func_str'))
+                        data.pop("func_str")
+                        data.pop("type")
+                    else:
+                        func = ReflectUtils.get_func_by_str(
+                            __name__, data.get('func_str'))
+                        data.pop("func_str")
+
+                    job = self.scheduler.start_job({
+                        "func": func,
+                        **data
+                    })
+                log.info(f'【System】成功添加任务 {job}')
 
     def stop_service(self):
-        """
-        停止定时服务
-        """
-        try:
-            if self.SCHEDULER:
-                self.SCHEDULER.remove_all_jobs()
-                self.SCHEDULER.shutdown()
-                self.SCHEDULER = None
-        except Exception as e:
-            ExceptionUtils.exception_traceback(e)
+        self.scheduler.stop_service()

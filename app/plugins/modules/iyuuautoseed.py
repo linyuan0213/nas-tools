@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from jinja2 import Template
 from lxml import etree
@@ -18,6 +17,9 @@ from app.sites import Sites
 from app.utils import RequestUtils, JsonUtils
 from app.utils.types import DownloaderType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class IYUUAutoSeed(_IPluginModule):
@@ -44,6 +46,7 @@ class IYUUAutoSeed(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = "plugin"
     downloader = None
     iyuuhelper = None
     sites = None
@@ -230,19 +233,30 @@ class IYUUAutoSeed(_IPluginModule):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
             self.iyuuhelper = IyuuHelper(token=self._token)
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 try:
-                    self._scheduler.add_job(self.auto_seed,
-                                            CronTrigger.from_crontab(self._cron))
+                    scheduler_queue.put({
+                        "func_str": "IYUUAutoSeed.auto_seed",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
                     self.info(f"辅种服务启动，周期：{self._cron}")
                 except Exception as err:
                     self.error(f"运行周期格式不正确：{str(err)}")
             if self._onlyonce:
-                self.info(f"辅种服务启动，立即运行一次")
-                self._scheduler.add_job(self.auto_seed, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("辅种服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "IYUUAutoSeed.auto_seed",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
                 # 关闭一次性开关
                 self._onlyonce = False
             if self._clearcache:
@@ -253,12 +267,18 @@ class IYUUAutoSeed(_IPluginModule):
                 # 保存配置
                 self.__update_config()
 
-            if self._scheduler.get_jobs():
-                # 追加种子校验服务
-                self._scheduler.add_job(self.check_recheck, 'interval', minutes=3)
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'auto_seed' in job.name:
+                        # 追加种子校验服务
+                        scheduler_queue.put({
+                                        "func_str": "IYUUAutoSeed.check_recheck",
+                                        "type": 'plugin',
+                                        "args": [],
+                                        "trigger": 'interval',
+                                        "minutes": 3,
+                                        "jobstore": self._jobstore
+                                    })
 
     def get_state(self):
         return True if self._enable and self._cron and self._token and self._downloaders else False
@@ -886,12 +906,9 @@ class IYUUAutoSeed(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'auto_seed' in job.name or 'check_recheck' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

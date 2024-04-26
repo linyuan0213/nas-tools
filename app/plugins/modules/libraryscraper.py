@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.media import Scraper
@@ -10,6 +9,9 @@ from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.utils.types import EventType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class LibraryScraper(_IPluginModule):
@@ -36,6 +38,7 @@ class LibraryScraper(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = 'plugin'
     _scraper = None
     # 限速开关
     _cron = None
@@ -156,16 +159,29 @@ class LibraryScraper(_IPluginModule):
 
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"刮削服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__libraryscraper,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "LibraryScraper.libraryscraper",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
+
             if self._onlyonce:
-                self.info(f"刮削服务启动，立即运行一次")
-                self._scheduler.add_job(self.__libraryscraper, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("刮削服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "LibraryScraper.libraryscraper",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
+
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -175,10 +191,6 @@ class LibraryScraper(_IPluginModule):
                     "scraper_path": self._scraper_path,
                     "exclude_path": self._exclude_path
                 })
-            if self._scheduler.get_jobs():
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
 
     def get_state(self):
         return True if self._cron else False
@@ -201,7 +213,7 @@ class LibraryScraper(_IPluginModule):
             mode = 'no_force'
         self._scraper.folder_scraper(path, mode=mode)
 
-    def __libraryscraper(self):
+    def libraryscraper(self):
         """
         开始刮削媒体库
         """
@@ -217,19 +229,18 @@ class LibraryScraper(_IPluginModule):
             self._scraper.folder_scraper(path=path,
                                          exclude_path=self._exclude_path,
                                          mode=self._mode)
-        self.info(f"媒体库刮削完成")
+        self.info("媒体库刮削完成")
 
     def stop_service(self):
         """
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'libraryscraper' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
+                        self._event.set()
+                        self._event.clear()
         except Exception as e:
             print(str(e))

@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from bencode import bdecode, bencode
 
@@ -14,6 +13,9 @@ from app.plugins.modules._base import _IPluginModule
 from app.utils import Torrent
 from app.utils.types import DownloaderType
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class TorrentTransfer(_IPluginModule):
@@ -40,6 +42,7 @@ class TorrentTransfer(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = "plugin"
     downloader = None
     sites = None
     # 限速开关
@@ -300,24 +303,36 @@ class TorrentTransfer(_IPluginModule):
                 self.error(f"源下载器种子文件保存路径不存在：{self._fromtorrentpath}")
                 return
             if isinstance(self._fromdownloader, list) and len(self._fromdownloader) > 1:
-                self.error(f"源下载器只能选择一个")
+                self.error("源下载器只能选择一个")
                 return
             if isinstance(self._todownloader, list) and len(self._todownloader) > 1:
-                self.error(f"目的下载器只能选择一个")
+                self.error("目的下载器只能选择一个")
                 return
             if self._fromdownloader == self._todownloader:
-                self.error(f"源下载器和目的下载器不能相同")
+                self.error("源下载器和目的下载器不能相同")
                 return
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"移转做种服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.transfer,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "TorrentTransfer.transfer",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
             if self._onlyonce:
-                self.info(f"移转做种服务启动，立即运行一次")
-                self._scheduler.add_job(self.transfer, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("移转做种服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "TorrentTransfer.transfer",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
+
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -335,13 +350,20 @@ class TorrentTransfer(_IPluginModule):
                     "nopaths": self._nopaths,
                     "autostart": self._autostart
                 })
-            if self._scheduler.get_jobs():
-                if self._autostart:
-                    # 追加种子校验服务
-                    self._scheduler.add_job(self.check_recheck, 'interval', minutes=3)
-                # 启动服务
-                self._scheduler.print_jobs()
-                self._scheduler.start()
+
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'transfer' in job.name:
+                        if self._autostart:
+                            # 追加种子校验服务
+                            scheduler_queue.put({
+                                "func_str": "TorrentTransfer.check_recheck",
+                                "type": 'plugin',
+                                "args": [],
+                                "trigger": "interval",
+                                "minutes": 3,
+                                "jobstore": self._jobstore
+                            })
 
     def get_state(self):
         return True if self._enable \
@@ -662,12 +684,9 @@ class TorrentTransfer(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'transfer' in job.name or 'check_recheck' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

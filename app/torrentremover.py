@@ -1,8 +1,6 @@
 import json
 from threading import Lock
 
-from apscheduler.schedulers.background import BackgroundScheduler
-
 import log
 from app.conf import ModuleConf
 from app.downloader import Downloader
@@ -10,7 +8,8 @@ from app.helper import DbHelper
 from app.message import Message
 from app.utils import ExceptionUtils
 from app.utils.commons import singleton
-from config import Config
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 lock = Lock()
 
@@ -22,6 +21,7 @@ class TorrentRemover(object):
     dbhelper = None
 
     _scheduler = None
+    _jobstore = "torrent_remove"
     _remove_tasks = {}
 
     def __init__(self):
@@ -63,18 +63,24 @@ class TorrentRemover(object):
         if not self._remove_tasks:
             return
         # 启动删种任务
-        self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+        self._scheduler = SchedulerService()
         remove_flag = False
         for task in self._remove_tasks.values():
             if task.get("enabled") and task.get("interval") and task.get("config"):
                 remove_flag = True
-                self._scheduler.add_job(func=self.auto_remove_torrents,
-                                        args=[task.get("id")],
-                                        trigger='interval',
-                                        seconds=int(task.get("interval")) * 60)
+                scheduler_queue.put({
+                                    "func_str": "TorrentRemover.auto_remove_torrents",
+                                    "args": [task.get("id")],
+                                    "trigger": "interval",
+                                    "seconds": int(task.get("interval")) * 60,
+                                    "jobstore": self._jobstore
+                                    })
+
+                # self._scheduler.add_job(func=self.auto_remove_torrents,
+                #                         args=[task.get("id")],
+                #                         trigger='interval',
+                #                         seconds=int(task.get("interval")) * 60)
         if remove_flag:
-            self._scheduler.print_jobs()
-            self._scheduler.start()
             log.info("自动删种服务启动")
 
     def get_torrent_remove_tasks(self, taskid=None):
@@ -316,10 +322,7 @@ class TorrentRemover(object):
         停止服务
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._scheduler.shutdown()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                self._scheduler.remove_all_jobs(self._jobstore)
         except Exception as e:
             print(str(e))

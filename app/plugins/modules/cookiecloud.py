@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from threading import Event
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.helper import IndexerHelper
@@ -11,6 +10,9 @@ from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
 from app.utils import RequestUtils
 from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class CookieCloud(_IPluginModule):
@@ -38,6 +40,7 @@ class CookieCloud(_IPluginModule):
     # 私有属性
     sites = None
     _scheduler = None
+    _jobstore = "plugin"
     _index_helper = None
     # 设置开关
     _req = None
@@ -180,14 +183,20 @@ class CookieCloud(_IPluginModule):
 
         # 启动服务
         if self._enabled:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
 
             # 运行一次
             if self._onlyonce:
-                self.info(f"同步服务启动，立即运行一次")
-                self._scheduler.add_job(self.__cookie_sync, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("同步服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "CookieCloud.cookie_sync",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -202,13 +211,13 @@ class CookieCloud(_IPluginModule):
             # 周期运行
             if self._cron:
                 self.info(f"同步服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__cookie_sync,
-                                        CronTrigger.from_crontab(self._cron))
-
-            # 启动任务
-            if self._scheduler.get_jobs():
-                self._scheduler.print_jobs()
-                self._scheduler.start()
+                scheduler_queue.put({
+                        "func_str": "CookieCloud.cookie_sync",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
 
     def get_state(self):
         return self._enabled and self._cron
@@ -233,7 +242,7 @@ class CookieCloud(_IPluginModule):
         else:
             return {}, "CookieCloud请求失败，请检查服务器地址、用户KEY及加密密码是否正确", False
 
-    def __cookie_sync(self):
+    def cookie_sync(self):
         """
         同步站点Cookie
         """
@@ -328,12 +337,9 @@ class CookieCloud(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'cookie_sync' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

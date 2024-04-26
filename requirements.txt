@@ -112,3 +112,5 @@ Werkzeug==2.3.8
 wsproto==1.2.0
 zhconv==1.4.3
 typing-extensions==4.10.0
+flask-session==0.8.0
+flask-caching==2.1.0

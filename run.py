@@ -2,6 +2,8 @@ import os
 import signal
 import sys
 import warnings
+import hashlib
+import random
 
 warnings.filterwarnings('ignore')
 
@@ -84,6 +86,8 @@ signal.signal(signal.SIGINT, sigal_handler)
 signal.signal(signal.SIGTERM, sigal_handler)
 
 
+# 系统初始化
+@App.before_first_request
 def init_system():
     # 配置
     log.console('NAStool 当前版本号：%s' % APP_VERSION)
@@ -99,6 +103,8 @@ def init_system():
     check_config()
 
 
+# 启动服务
+@App.before_first_request
 def start_service():
     log.console("开始启动服务...")
     # 启动服务
@@ -107,15 +113,10 @@ def start_service():
     start_config_monitor()
 
 
-# 系统初始化
-init_system()
-
-# 启动服务
-start_service()
-
-
 # 本地运行
 if __name__ == '__main__':
+    # 兼容本地环境
+    os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
     # Windows启动托盘
     if is_windows_exe:
         homepage = Config().get_config('app').get('domain')

@@ -1,7 +1,6 @@
 import time
 from datetime import datetime, timedelta
 from urllib.parse import urlsplit
-import ruamel.yaml
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,6 +13,9 @@ from config import Config
 from app.utils.types import MediaType
 from app.media import Media
 from app.helper import WordsHelper
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class CustomWordImport(_IPluginModule):
@@ -40,6 +42,7 @@ class CustomWordImport(_IPluginModule):
 
     # 私有属性
     _scheduler = None
+    _jobstore = "plugin"
 
     # 设置开关
     _enabled = False
@@ -157,14 +160,20 @@ class CustomWordImport(_IPluginModule):
 
         # 启动服务
         if self._enabled or self._onlyonce:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
 
             # 运行一次
             if self._onlyonce:
-                self.info(f"自定义识别词导入服务启动，立即运行一次")
-                self._scheduler.add_job(self.__custom_word_import, 'date',
-                                        run_date=datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                            seconds=3))
+                self.info("自定义识别词导入服务启动，立即运行一次")
+                scheduler_queue.put({
+                        "func_str": "CustomWordImport.custom_word_import",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                                                                seconds=3),
+                        "jobstore": self._jobstore
+                    })
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -179,15 +188,15 @@ class CustomWordImport(_IPluginModule):
             # 周期运行
             if self._cron:
                 self.info(f"定时导入自定义识别词服务启动，周期：{self._cron}")
-                self._scheduler.add_job(self.__custom_word_import,
-                                        CronTrigger.from_crontab(self._cron))
+                scheduler_queue.put({
+                        "func_str": "CustomWordImport.custom_word_import",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
 
-            # 启动任务
-            if self._scheduler.get_jobs():
-                self._scheduler.print_jobs()
-                self._scheduler.start()
-
-    def __custom_word_import(self):
+    def custom_word_import(self):
         """
         自动导入
         """
@@ -298,7 +307,10 @@ class CustomWordImport(_IPluginModule):
         self.info(f'自定义识别词导入任务完成，导入成功 {success_word_cnt} 个识别词')
         # 发送通知
         if self._notify:
-            next_run_time = self._scheduler.get_jobs()[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'custom_word_import' in job.name:
+                        next_run_time = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')
             self.send_message(title="【自定义识别词导入任务完成】",
                               text=f"导入成功 {success_word_cnt} 个识别词\n"
                                    f"下次导入时间: {next_run_time}")
@@ -308,13 +320,10 @@ class CustomWordImport(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._event.set()
-                    self._scheduler.shutdown()
-                    self._event.clear()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'custom_word_import' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))
 

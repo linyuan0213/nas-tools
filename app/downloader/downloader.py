@@ -5,8 +5,6 @@ import json
 import re
 from urllib.parse import urlsplit
 
-from apscheduler.schedulers.background import BackgroundScheduler
-
 import log
 from app.conf import ModuleConf
 from app.conf import SystemConfig
@@ -22,6 +20,9 @@ from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberU
 from app.utils.commons import singleton
 from app.utils.types import MediaType, DownloaderType, SearchType, RmtMode, EventType, SystemConfigKey
 from config import Config, PT_TAG, RMT_MEDIAEXT, PT_TRANSFER_INTERVAL
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 lock = Lock()
 client_lock = Lock()
@@ -40,6 +41,7 @@ class Downloader:
     # 下载器ID-名称枚举类
     _DownloaderEnum = None
     _scheduler = None
+    _jobstore = 'download'
 
     message = None
     mediaserver = None
@@ -226,14 +228,17 @@ class Downloader:
         # 启动转移任务
         if not self._monitor_downloader_ids:
             return
-        self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+        self._scheduler = SchedulerService()
         for downloader_id in self._monitor_downloader_ids:
-            self._scheduler.add_job(func=self.transfer,
-                                    args=[downloader_id],
-                                    trigger='interval',
-                                    seconds=PT_TRANSFER_INTERVAL)
-        self._scheduler.print_jobs()
-        self._scheduler.start()
+            scheduler_queue.put({
+                                "func_str": "Downloader.transfer",
+                                "args": [downloader_id],
+                                "trigger": "interval",
+                                "seconds": PT_TRANSFER_INTERVAL,
+                                "jobstore": self._jobstore
+                                })
+
+        # self._scheduler.print_jobs(jobstore=self._jobstore)
         log.info("下载文件转移服务启动，目的目录：媒体库")
 
     def __get_client(self, did=None):
@@ -1380,11 +1385,8 @@ class Downloader:
         停止服务
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._scheduler.shutdown()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                self._scheduler.remove_all_jobs(jobstore=self._jobstore)
         except Exception as e:
             print(str(e))
 

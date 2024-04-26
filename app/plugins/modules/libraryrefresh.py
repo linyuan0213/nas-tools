@@ -4,10 +4,9 @@ from app.plugins.modules._base import _IPluginModule
 from app.utils.types import EventType
 from datetime import datetime, timedelta
 from app.utils import ExceptionUtils
-from apscheduler.schedulers.background import BackgroundScheduler
 
-from config import Config
-
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 class LibraryRefresh(_IPluginModule):
     # 插件名称
@@ -34,6 +33,7 @@ class LibraryRefresh(_IPluginModule):
     # 私有属性
     _enable = False
     _scheduler = None
+    _jobstore = "plugin"
     _refresh_delay = 0
 
     mediaserver = None
@@ -59,7 +59,7 @@ class LibraryRefresh(_IPluginModule):
 
         if self._refresh_delay > 0:
             self.info(f"媒体库延迟刷新服务启动，延迟 {self._refresh_delay} 秒刷新媒体库")
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
+            self._scheduler = SchedulerService()
         else:
             self.info("媒体库实时刷新服务启动")
 
@@ -106,15 +106,16 @@ class LibraryRefresh(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._scheduler.shutdown()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'refresh_library' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
+                        self._event.set()
+                        self._event.clear()
         except Exception as e:
             print(str(e))
 
-    def __refresh_library(self, event_data):
+    def refresh_library(self, event_data):
         mediaserver_type = self.mediaserver.get_type().value
         media_info = event_data.get("media_info")
         if media_info:
@@ -154,12 +155,15 @@ class LibraryRefresh(_IPluginModule):
             # 使用 date 触发器添加任务到调度器
             formatted_run_date = run_date.strftime("%Y-%m-%d %H:%M:%S")
             self.info(f"新增延迟刷新任务，将在 {formatted_run_date} 刷新媒体库")
-            self._scheduler.add_job(func=self.__refresh_library, args=[event.event_data], trigger='date',
-                                    run_date=run_date)
+            scheduler_queue.put({
+                        "func_str": "LibraryRefresh.refresh_library",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": "date",
+                        "run_date": run_date,
+                        "jobstore": self._jobstore
+                    })
 
-            # 启动调度器（懒启动）
-            if not self._scheduler.running:
-                self._scheduler.start()
         else:
             # 不延迟刷新
-            self.__refresh_library(event.event_data)
+            self.refresh_library(event.event_data)

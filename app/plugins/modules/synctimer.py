@@ -1,9 +1,10 @@
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.plugins.modules._base import _IPluginModule
 from app.sync import Sync
-from config import Config
+
+from app.scheduler_service import SchedulerService
+from app.queue import scheduler_queue
 
 
 class SyncTimer(_IPluginModule):
@@ -31,6 +32,7 @@ class SyncTimer(_IPluginModule):
     # 私有属性
     _sync = None
     _scheduler = None
+    _jobstore = "plugin"
     # 限速开关
     _cron = None
 
@@ -72,17 +74,20 @@ class SyncTimer(_IPluginModule):
 
         # 启动定时任务
         if self._cron:
-            self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
-            self._scheduler.add_job(func=self.__timersync,
-                                    trigger=CronTrigger.from_crontab(self._cron))
-            self._scheduler.print_jobs()
-            self._scheduler.start()
+            self._scheduler = SchedulerService()
+            scheduler_queue.put({
+                        "func_str": "SyncTimer.timersync",
+                        "type": 'plugin',
+                        "args": [],
+                        "trigger": CronTrigger.from_crontab(self._cron),
+                        "jobstore": self._jobstore
+                    })
             self.info(f"目录定时同步服务启动，周期：{self._cron}")
 
     def get_state(self):
         return True if self._cron else False
 
-    def __timersync(self):
+    def timersync(self):
         """
         开始同步
         """
@@ -95,10 +100,9 @@ class SyncTimer(_IPluginModule):
         退出插件
         """
         try:
-            if self._scheduler:
-                self._scheduler.remove_all_jobs()
-                if self._scheduler.running:
-                    self._scheduler.shutdown()
-                self._scheduler = None
+            if self._scheduler and self._scheduler.SCHEDULER:
+                for job in self._scheduler.get_jobs(self._jobstore):
+                    if 'timersync' in job.name:
+                        self._scheduler.remove_job(job.id, self._jobstore)
         except Exception as e:
             print(str(e))

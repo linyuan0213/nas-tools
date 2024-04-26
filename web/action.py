@@ -49,6 +49,7 @@ from config import RMT_MEDIAEXT, RMT_SUBEXT, RMT_AUDIO_TRACK_EXT, Config
 from web.backend.search_torrents import search_medias_for_web, search_media_by_message
 from web.backend.user import User
 from web.backend.web_utils import WebUtils
+from web.cache import cache
 
 
 class WebAction:
@@ -541,6 +542,7 @@ class WebAction:
         """
         WEB搜索资源
         """
+        cache.delete("search")
         search_word = data.get("search_word")
         ident_flag = False if data.get("unident") else True
         filters = data.get("filters")
@@ -636,21 +638,6 @@ class WebAction:
             return {"code": 1, "msg": ret_msg or "如连接正常，请检查下载任务是否存在"}
         return {"code": 0, "msg": "下载成功"}
 
-    # @staticmethod
-    # def __get_download_url(page_url):
-    #     split_url = urlsplit(page_url)
-    #     base_url = f"{split_url.scheme}://{split_url.netloc}"
-    #     site_info = Sites().get_sites(siteurl=base_url)
-    #     cookie=site_info.get("cookie")
-    #     ua=site_info.get("ua")
-    #     proxy=site_info.get("proxy")
-    #     media_id = (re.findall(r'\d+', page_url) or [''])[0]
-    #     res = RequestUtils(headers=ua,
-    #                     cookies=cookie,
-    #                     proxies=proxy,
-    #                     timeout=15).post_res(url=f'{base_url}/api/torrent/genDlToken', data={'id': media_id})
-    #     if res and res.status_code == 200:
-    #         return res.json().get('data', '')
 
     @staticmethod
     def __download_torrent(data):
@@ -4923,6 +4910,7 @@ class WebAction:
         """
         强制刷新站点数据,并发送站点统计的消息
         """
+        cache.delete("statistics")
         # 强制刷新站点数据,并发送站点统计的消息
         SiteUserInfo().refresh_site_data_now()
 

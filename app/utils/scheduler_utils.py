@@ -23,11 +23,12 @@ class SchedulerUtils:
           3、配置固定时间，如08:00；
           4、配置间隔，单位小时，比如23.5；
         """
+        job = None
         if cron:
             cron = cron.strip()
             if cron.count(" ") == 4:
                 try:
-                    scheduler.add_job(func=func,
+                    job = scheduler.add_job(func=func,
                                       trigger=CronTrigger.from_crontab(cron),
                                       next_run_time=next_run_time)
                 except Exception as e:
@@ -53,7 +54,7 @@ class SchedulerUtils:
                                                        minute=task_time_count % 60,
                                                        next_run_time=next_run_time)
 
-                    scheduler.add_job(start_random_job,
+                    job = scheduler.add_job(start_random_job,
                                       "cron",
                                       hour=start_hour,
                                       minute=start_minute,
@@ -69,7 +70,7 @@ class SchedulerUtils:
                 except Exception as e:
                     log.info("%s时间 配置格式错误：%s" % (func_desc, str(e)))
                     hour = minute = 0
-                scheduler.add_job(func,
+                job = scheduler.add_job(func,
                                   "cron",
                                   hour=hour,
                                   minute=minute,
@@ -82,11 +83,12 @@ class SchedulerUtils:
                     log.info("%s时间 配置格式错误：%s" % (func_desc, str(e)))
                     hours = 0
                 if hours:
-                    scheduler.add_job(func,
+                    job = scheduler.add_job(func,
                                       "interval",
                                       hours=hours,
                                       next_run_time=next_run_time)
                     log.info("%s服务启动" % func_desc)
+        return job
 
     @staticmethod
     def start_range_job(scheduler, func, func_desc, hour, minute, next_run_time=None):
