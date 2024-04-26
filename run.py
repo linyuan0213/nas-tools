@@ -113,6 +113,8 @@ def start_service():
     start_config_monitor()
 
 
+os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
+
 # 本地运行
 if __name__ == '__main__':
     # 兼容本地环境

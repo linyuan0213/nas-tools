@@ -337,10 +337,14 @@ class Downloader:
             else:
                 # 获取Cookie和ua等
                 site_info = self.sites.get_sites(siteurl=url)
+                cookie = site_info.get("cookie")
+                if 'm-team' in url:
+                    cookie = None
+
                 # 下载种子文件，并读取信息
                 _, content, dl_files_folder, dl_files, retmsg = Torrent().get_torrent_info(
                     url=url,
-                    cookie=site_info.get("cookie"),
+                    cookie=cookie,
                     ua=site_info.get("ua"),
                     referer=page_url if site_info.get("referer") else None,
                     proxy=proxy if proxy is not None else site_info.get("proxy")
