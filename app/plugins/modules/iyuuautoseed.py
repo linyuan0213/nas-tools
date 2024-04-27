@@ -227,13 +227,16 @@ class IYUUAutoSeed(_IPluginModule):
             self._permanent_error_caches = config.get("permanent_error_caches") or []
             self._error_caches = [] if self._clearcache else config.get("error_caches") or []
             self._success_caches = [] if self._clearcache else config.get("success_caches") or []
+
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
             self.iyuuhelper = IyuuHelper(token=self._token)
-            self._scheduler = SchedulerService()
             if self._cron:
                 try:
                     scheduler_queue.put({
@@ -267,18 +270,15 @@ class IYUUAutoSeed(_IPluginModule):
                 # 保存配置
                 self.__update_config()
 
-            if self._scheduler and self._scheduler.SCHEDULER:
-                for job in self._scheduler.get_jobs(self._jobstore):
-                    if 'auto_seed' in job.name:
-                        # 追加种子校验服务
-                        scheduler_queue.put({
-                                        "func_str": "IYUUAutoSeed.check_recheck",
-                                        "type": 'plugin',
-                                        "args": [],
-                                        "trigger": 'interval',
-                                        "minutes": 3,
-                                        "jobstore": self._jobstore
-                                    })
+            # 追加种子校验服务
+            scheduler_queue.put({
+                            "func_str": "IYUUAutoSeed.check_recheck",
+                            "type": 'plugin',
+                            "args": [],
+                            "trigger": 'interval',
+                            "minutes": 3,
+                            "jobstore": self._jobstore
+                        })
 
     def get_state(self):
         return True if self._enable and self._cron and self._token and self._downloaders else False

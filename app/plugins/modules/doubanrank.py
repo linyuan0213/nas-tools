@@ -89,12 +89,14 @@ class DoubanRank(_IPluginModule):
                 self._rss_addrs = []
             self._ranks = config.get("ranks") or []
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动服务
         if self.get_state() or self._onlyonce:
-            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"订阅服务启动，周期：{self._cron}")
                 scheduler_queue.put({

@@ -293,9 +293,12 @@ class TorrentTransfer(_IPluginModule):
             self._nopaths = config.get("nopaths")
             self._autostart = config.get("autostart")
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
             # 检查配置
@@ -311,7 +314,6 @@ class TorrentTransfer(_IPluginModule):
             if self._fromdownloader == self._todownloader:
                 self.error("源下载器和目的下载器不能相同")
                 return
-            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"移转做种服务启动，周期：{self._cron}")
                 scheduler_queue.put({
@@ -351,19 +353,16 @@ class TorrentTransfer(_IPluginModule):
                     "autostart": self._autostart
                 })
 
-            if self._scheduler and self._scheduler.SCHEDULER:
-                for job in self._scheduler.get_jobs(self._jobstore):
-                    if 'transfer' in job.name:
-                        if self._autostart:
-                            # 追加种子校验服务
-                            scheduler_queue.put({
-                                "func_str": "TorrentTransfer.check_recheck",
-                                "type": 'plugin',
-                                "args": [],
-                                "trigger": "interval",
-                                "minutes": 3,
-                                "jobstore": self._jobstore
-                            })
+            if self._autostart:
+                # 追加种子校验服务
+                scheduler_queue.put({
+                    "func_str": "TorrentTransfer.check_recheck",
+                    "type": 'plugin',
+                    "args": [],
+                    "trigger": "interval",
+                    "minutes": 3,
+                    "jobstore": self._jobstore
+                })
 
     def get_state(self):
         return True if self._enable \

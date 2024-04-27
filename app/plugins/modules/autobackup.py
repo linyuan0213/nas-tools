@@ -152,13 +152,14 @@ class AutoBackup(_IPluginModule):
             self._notify = config.get("notify")
             self._onlyonce = config.get("onlyonce")
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动服务
         if self._enabled or self._onlyonce:
-            self._scheduler = SchedulerService()
-
             # 运行一次
             if self._onlyonce:
                 self.info("备份服务启动，立即运行一次")
@@ -193,6 +194,7 @@ class AutoBackup(_IPluginModule):
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
+
 
     def backup(self):
         """

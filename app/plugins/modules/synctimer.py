@@ -69,12 +69,14 @@ class SyncTimer(_IPluginModule):
         if config:
             self._cron = config.get("cron")
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务
         if self._cron:
-            self._scheduler = SchedulerService()
             scheduler_queue.put({
                         "func_str": "SyncTimer.timersync",
                         "type": 'plugin',

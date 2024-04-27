@@ -154,12 +154,14 @@ class LibraryScraper(_IPluginModule):
             self._scraper_path = config.get("scraper_path")
             self._exclude_path = config.get("exclude_path")
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"刮削服务启动，周期：{self._cron}")
                 scheduler_queue.put({

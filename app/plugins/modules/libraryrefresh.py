@@ -8,6 +8,7 @@ from app.utils import ExceptionUtils
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
 
+
 class LibraryRefresh(_IPluginModule):
     # 插件名称
     module_name = "刷新媒体库"
@@ -52,6 +53,7 @@ class LibraryRefresh(_IPluginModule):
                 ExceptionUtils.exception_traceback(e)
                 self._refresh_delay = 0
 
+        self._scheduler = SchedulerService()
         self.stop_service()
 
         if not self._enable:
@@ -59,7 +61,7 @@ class LibraryRefresh(_IPluginModule):
 
         if self._refresh_delay > 0:
             self.info(f"媒体库延迟刷新服务启动，延迟 {self._refresh_delay} 秒刷新媒体库")
-            self._scheduler = SchedulerService()
+
         else:
             self.info("媒体库实时刷新服务启动")
 

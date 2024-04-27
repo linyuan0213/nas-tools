@@ -1,6 +1,9 @@
 import importlib
 import pkgutil
 
+from app.conf import SystemConfig
+from app.plugins import PluginManager
+
 
 class ReflectUtils:
 
@@ -38,10 +41,22 @@ class ReflectUtils:
             "app.plugins.modules",
             filter_func=lambda _, obj: hasattr(obj, 'module_name')
         )
+        plugin_manager = PluginManager()
         for plugin in plugins:
             if plugin.__name__ == class_name:
-                return getattr(plugin(), func_name)
+                pid = plugin.__name__
+                return plugin_manager.get_plugin_method(pid, func_name)
         return None
+
+    @staticmethod
+    def get_plugin_config(pid):
+        if not pid:
+            return
+
+        systemconfig = SystemConfig()
+        return systemconfig.get(f"plugin.{pid}") or {}
+
+
 
     @staticmethod
     def get_class_by_name(lib_path, class_name):

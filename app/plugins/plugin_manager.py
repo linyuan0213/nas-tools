@@ -134,6 +134,12 @@ class PluginManager:
         except Exception as err:
             print(str(err), traceback.format_exc())
 
+    def get_running_plugin_ids(self):
+        """
+        获取所有运行态插件ID
+        """
+        return list(self._running_plugins.keys())
+
     def reload_plugin(self, pid):
         """
         生效插件配置
@@ -332,3 +338,13 @@ class PluginManager:
         if not hasattr(self._running_plugins[pid], method):
             return None
         return getattr(self._running_plugins[pid], method)(*args, **kwargs)
+
+    def get_plugin_method(self, pid, method):
+        """
+        获取插件方法
+        """
+        if not self._running_plugins.get(pid):
+            return None
+        if not hasattr(self._running_plugins[pid], method):
+            return None
+        return getattr(self._running_plugins[pid], method)

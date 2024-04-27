@@ -16,7 +16,8 @@ from app.brushtask import BrushTask
 from app.downloader import Downloader
 from app.rsschecker import RssChecker
 from app.torrentremover import TorrentRemover
-from app.utils import SchedulerUtils, StringUtils, ReflectUtils
+from app.utils import SchedulerUtils, StringUtils
+from app.utils.reflect_utils import ReflectUtils
 from app.utils.commons import singleton
 from config import METAINFO_SAVE_INTERVAL, \
     SYNC_TRANSFER_INTERVAL, RSS_CHECK_INTERVAL, \
@@ -205,35 +206,39 @@ class Scheduler:
                 continue
 
             job = None
-            if data.get('func_desc'):
-                if data.get('type') == 'plugin':
-                    func = ReflectUtils.get_plugin_method(
-                        data.get('func_str'))
+            func_str = data.get('func_str')
+            try:
+                if data.get('func_desc'):
+                    if data.get('type') == 'plugin':
+                        func = ReflectUtils.get_plugin_method(
+                            data.get('func_str'))
+                    else:
+                        func = ReflectUtils.get_func_by_str(
+                            __name__, data.get('func_str'))
+                    job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
+                                                func=func,
+                                                func_desc=data.get(
+                                                    'func_desc'),
+                                                cron=data.get('cron'),
+                                                next_run_time=data.get('next_run_time'))
                 else:
-                    func = ReflectUtils.get_func_by_str(
-                        __name__, data.get('func_str'))
-                job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
-                                               func=func,
-                                               func_desc=data.get(
-                                                   'func_desc'),
-                                               cron=data.get('cron'),
-                                               next_run_time=data.get('next_run_time'))
-            else:
-                if data.get('type') == 'plugin':
-                    func = ReflectUtils.get_plugin_method(
-                        data.get('func_str'))
-                    data.pop("func_str")
-                    data.pop("type")
-                else:
-                    func = ReflectUtils.get_func_by_str(
-                        __name__, data.get('func_str'))
-                    data.pop("func_str")
+                    if data.get('type') == 'plugin':
+                        func = ReflectUtils.get_plugin_method(
+                            data.get('func_str'))
+                        data.pop("func_str")
+                        data.pop("type")
+                    else:
+                        func = ReflectUtils.get_func_by_str(
+                            __name__, data.get('func_str'))
+                        data.pop("func_str")
 
-                job = self.scheduler.start_job({
-                    "func": func,
-                    **data
-                })
-            log.info(f'【System】成功添加任务 {job}')
+                    job = self.scheduler.start_job({
+                        "func": func,
+                        **data
+                    })
+                log.info(f'【System】成功添加任务 {job}')
+            except Exception as err:
+                log.error(f"【System】添加任务失败：{func_str} {str(err)}")
 
     def stop_service(self):
         self.scheduler.stop_service()

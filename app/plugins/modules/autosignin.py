@@ -201,18 +201,20 @@ class AutoSignIn(_IPluginModule):
             self._onlyonce = config.get("onlyonce")
             self._clean = config.get("clean")
 
+        # 定时服务
+        self._scheduler = SchedulerService()
+
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动服务
         if self._enabled or self._onlyonce:
             # 加载模块
             self._site_schema = SubmoduleHelper.import_submodules('app.plugins.modules._autosignin',
                                                                   filter_func=lambda _, obj: hasattr(obj, 'match'))
             self.debug(f"加载站点签到：{self._site_schema}")
-
-            # 定时服务
-            self._scheduler = SchedulerService()
 
             # 清理缓存即今日历史
             if self._clean:

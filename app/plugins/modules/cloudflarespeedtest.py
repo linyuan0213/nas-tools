@@ -206,12 +206,14 @@ class CloudflareSpeedTest(_IPluginModule):
             self._notify = config.get("notify")
             self._check = config.get("check")
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"Cloudflare CDN优选服务启动，周期：{self._cron}")
                 scheduler_queue.put({
@@ -235,10 +237,6 @@ class CloudflareSpeedTest(_IPluginModule):
                     })
                 self._onlyonce = False
                 self.__update_config()
-
-            if self._cron or self._onlyonce:
-                # 启动服务
-                print(self._scheduler.get_job(self._job_id, self._jobstore))
 
     def cloudflareSpeedTest(self):
         """

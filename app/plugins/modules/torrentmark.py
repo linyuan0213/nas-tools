@@ -125,12 +125,15 @@ class TorrentMark(_IPluginModule):
             self._onlyonce = config.get("onlyonce")
             self._cron = config.get("cron")
             self._downloaders = config.get("downloaders")
+
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动定时任务 & 立即运行一次
         if self.get_state() or self._onlyonce:
-            self._scheduler = SchedulerService()
             if self._cron:
                 self.info(f"标记服务启动，周期：{self._cron}")
                 scheduler_queue.put({

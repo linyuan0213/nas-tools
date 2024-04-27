@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from urllib.parse import urlsplit
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from threading import Event
@@ -155,13 +154,14 @@ class CustomWordImport(_IPluginModule):
             self._media = Media()
             self._wordshelper = WordsHelper()
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动服务
         if self._enabled or self._onlyonce:
-            self._scheduler = SchedulerService()
-
             # 运行一次
             if self._onlyonce:
                 self.info("自定义识别词导入服务启动，立即运行一次")

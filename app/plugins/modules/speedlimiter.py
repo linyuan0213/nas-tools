@@ -273,12 +273,14 @@ class SpeedLimiter(_IPluginModule):
             # 限速关闭
             self._limit_enabled = False
 
+        self._scheduler = SchedulerService()
         # 移出现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动限速任务
         if self._limit_enabled:
-            self._scheduler = SchedulerService()
             scheduler_queue.put({
                         "func_str": "SpeedLimiter.check_playing_sessions",
                         "type": 'plugin',

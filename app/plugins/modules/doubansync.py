@@ -108,13 +108,14 @@ class DoubanSync(_IPluginModule):
             if self._types:
                 if isinstance(self._types, str):
                     self._types = self._types.split(',')
-
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
         # 启动服务
+    def run_service(self):
         if self.get_state() or self._onlyonce:
-            self._scheduler = SchedulerService()
             if self._interval:
                 self.info(f"豆瓣全量同步服务启动，周期：{self._interval} 小时，类型：{self._types}，用户：{self._users}")
                 scheduler_queue.put({

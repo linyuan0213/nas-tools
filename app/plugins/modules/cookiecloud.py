@@ -178,13 +178,14 @@ class CookieCloud(_IPluginModule):
                 self._enabled = False
                 self.info(msg)
 
+        self._scheduler = SchedulerService()
         # 停止现有任务
         self.stop_service()
+        self.run_service()
 
+    def run_service(self):
         # 启动服务
         if self._enabled:
-            self._scheduler = SchedulerService()
-
             # 运行一次
             if self._onlyonce:
                 self.info("同步服务启动，立即运行一次")
