@@ -199,8 +199,10 @@ class WebUtils:
         """
         带缓存的请求
         """
-        if url.find('douban'):
+        if url.find('douban') != -1:
             ret = RequestUtils(referer="https://movie.douban.com").get_res(url)
+        elif url.find('tmdb') != -1:
+            ret = RequestUtils(proxies=Config().get_proxies()).get_res(url)
         else:
             ret = RequestUtils().get_res(url)
         if ret:
