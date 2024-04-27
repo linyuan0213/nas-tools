@@ -18,13 +18,13 @@ if not os.path.exists(LOG_PATH):
 
 port = os.environ.get('NT_PORT') if os.environ.get('NT_PORT') else 3000
 
-bind = [f'0.0.0.0:{port}', f'[::]:{port}']  # 绑定ip和端口号
+bind = f'[::]:{port}'  # 绑定ip和端口号
 timeout = 60  # 超时
 daemon = False  # 是否后台运行
 debug = False
-workers = 2  # 进程数
+workers = 1  # 进程数
 worker_class = "gthread"
-threads = 5  # 指定每个进程开启的线程数
+threads = 10  # 指定每个进程开启的线程数
 loglevel = 'info'  # 日志级别，这个日志级别指的是错误日志的级别，而访问日志的级别无法设置
 pidfile = os.path.join(ROOT_PATH, "gunicorn.pid")  # 存放Gunicorn进程pid的位置，便于跟踪
 
