@@ -2201,6 +2201,7 @@ class WebAction:
         :param data: {"days":累计时间}
         :return:
         """
+        cache.delete("statistics")
         if not data or "days" not in data or not isinstance(data["days"], int):
             return {"code": 1, "msg": "查询参数错误"}
 
