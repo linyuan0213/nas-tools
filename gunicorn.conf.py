@@ -18,7 +18,7 @@ if not os.path.exists(LOG_PATH):
 
 port = os.environ.get('NT_PORT') if os.environ.get('NT_PORT') else 3000
 
-bind = f'0.0.0.0:{port}'  # 绑定ip和端口号
+bind = [f'0.0.0.0:{port}', f'[::]:{port}']  # 绑定ip和端口号
 timeout = 60  # 超时
 daemon = False  # 是否后台运行
 debug = False
