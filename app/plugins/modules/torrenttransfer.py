@@ -320,6 +320,7 @@ class TorrentTransfer(_IPluginModule):
                         "func_str": "TorrentTransfer.transfer",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "TorrentTransfer.transfer_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -329,6 +330,7 @@ class TorrentTransfer(_IPluginModule):
                         "func_str": "TorrentTransfer.transfer",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "TorrentTransfer.transfer_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
@@ -359,6 +361,7 @@ class TorrentTransfer(_IPluginModule):
                     "func_str": "TorrentTransfer.check_recheck",
                     "type": 'plugin',
                     "args": [],
+                    "job_id": "TorrentTransfer.check_recheck",
                     "trigger": "interval",
                     "minutes": 3,
                     "jobstore": self._jobstore

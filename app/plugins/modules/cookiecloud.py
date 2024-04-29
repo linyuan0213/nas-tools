@@ -193,6 +193,7 @@ class CookieCloud(_IPluginModule):
                         "func_str": "CookieCloud.cookie_sync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "CookieCloud.cookie_sync_1",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
@@ -216,6 +217,7 @@ class CookieCloud(_IPluginModule):
                         "func_str": "CookieCloud.cookie_sync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "CookieCloud.cookie_sync_2",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })

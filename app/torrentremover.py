@@ -71,15 +71,12 @@ class TorrentRemover(object):
                 scheduler_queue.put({
                                     "func_str": "TorrentRemover.auto_remove_torrents",
                                     "args": [task.get("id")],
+                                    "job_id": f"TorrentRemover.auto_remove_torrents_{task.get('id')}",
                                     "trigger": "interval",
                                     "seconds": int(task.get("interval")) * 60,
                                     "jobstore": self._jobstore
                                     })
 
-                # self._scheduler.add_job(func=self.auto_remove_torrents,
-                #                         args=[task.get("id")],
-                #                         trigger='interval',
-                #                         seconds=int(task.get("interval")) * 60)
         if remove_flag:
             log.info("自动删种服务启动")
 

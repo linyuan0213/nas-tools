@@ -81,6 +81,7 @@ class SyncTimer(_IPluginModule):
                         "func_str": "SyncTimer.timersync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "SyncTimer.timersync",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })

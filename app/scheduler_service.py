@@ -5,6 +5,7 @@ import log
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.util import undefined
 
 from app.utils.commons import singleton
 from config import Config
@@ -62,27 +63,30 @@ class SchedulerService:
                     'seconds': task.get('seconds')
                 }
 
-            if task.get("next_run_time"):
-                return self.SCHEDULER.add_job(func=task.get("func"), args=task.get("args"),
-                                              trigger=task.get("trigger"),
-                                              **trigger_args,
-                                              next_run_time=task.get(
-                                                  "next_run_time"),
-                                              jobstore=task.get('jobstore'))
-            else:
-                return self.SCHEDULER.add_job(func=task.get("func"), args=task.get("args"),
-                                              trigger=task.get("trigger"),
-                                              **trigger_args,
-                                              jobstore=task.get('jobstore'))
+            next_run_time = task.get("next_run_time")
+            if not next_run_time:
+                next_run_time = undefined
+
+            return self.SCHEDULER.add_job(func=task.get("func"), args=task.get("args"),
+                                          trigger=task.get("trigger"),
+                                          **trigger_args,
+                                          id=task.get("job_id"),
+                                          next_run_time=next_run_time,
+                                          jobstore=task.get('jobstore'),
+                                          replace_existing=True)
         elif task.get('trigger') == 'date':
             return self.SCHEDULER.add_job(func=task.get("func"), args=task.get("args"),
                                           trigger=task.get("trigger"),
+                                          id=task.get("job_id"),
                                           run_date=task.get("run_date"),
-                                          jobstore=task.get('jobstore'))
+                                          jobstore=task.get('jobstore'),
+                                          replace_existing=True)
         else:
             return self.SCHEDULER.add_job(func=task.get("func"), args=task.get("args"),
                                           trigger=task.get("trigger"),
-                                          jobstore=task.get('jobstore'))
+                                          id=task.get("job_id"),
+                                          jobstore=task.get('jobstore'),
+                                          replace_existing=True)
 
     def print_jobs(self, jobstore=None):
         """

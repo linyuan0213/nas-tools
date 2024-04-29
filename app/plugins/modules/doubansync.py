@@ -122,6 +122,7 @@ class DoubanSync(_IPluginModule):
                         "func_str": "DoubanSync.sync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "DoubanSync.sync_1",
                         "trigger": "interval",
                         "hours": self._interval,
                         "jobstore": self._jobstore
@@ -133,6 +134,7 @@ class DoubanSync(_IPluginModule):
                         "func_str": "DoubanSync.sync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "DoubanSync.sync_2",
                         "trigger": "interval",
                         "hours": self._rss_interval,
                         "jobstore": self._jobstore
@@ -144,6 +146,7 @@ class DoubanSync(_IPluginModule):
                         "func_str": "DoubanSync.sync",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "DoubanSync.sync_3",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

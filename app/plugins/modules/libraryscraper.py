@@ -168,6 +168,7 @@ class LibraryScraper(_IPluginModule):
                         "func_str": "LibraryScraper.libraryscraper",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "LibraryScraper.libraryscraper_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -178,6 +179,7 @@ class LibraryScraper(_IPluginModule):
                         "func_str": "LibraryScraper.libraryscraper",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "LibraryScraper.libraryscraper_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

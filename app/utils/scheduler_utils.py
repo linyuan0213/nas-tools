@@ -11,7 +11,7 @@ import log
 class SchedulerUtils:
 
     @staticmethod
-    def start_job(scheduler, func, func_desc, cron, next_run_time=undefined):
+    def start_job(scheduler, func, func_desc, cron, job_id=None, next_run_time=undefined):
         """
         解析任务的定时规则,启动定时服务
         :param func: 可调用的一个函数,在指定时间运行
@@ -24,15 +24,21 @@ class SchedulerUtils:
           4、配置间隔，单位小时，比如23.5；
         """
         job = None
+        if not next_run_time:
+            next_run_time = undefined
         if cron:
             cron = cron.strip()
             if cron.count(" ") == 4:
                 try:
                     job = scheduler.add_job(func=func,
-                                      trigger=CronTrigger.from_crontab(cron),
-                                      next_run_time=next_run_time)
+                                            id=job_id,
+                                            trigger=CronTrigger.from_crontab(
+                                                cron),
+                                            next_run_time=next_run_time,
+                                            replace_existing=True)
                 except Exception as e:
-                    log.info("%s时间cron表达式配置格式错误：%s %s" % (func_desc, cron, str(e)))
+                    log.info("%s时间cron表达式配置格式错误：%s %s" %
+                             (func_desc, cron, str(e)))
             elif '-' in cron:
                 try:
                     time_range = cron.split("-")
@@ -46,23 +52,29 @@ class SchedulerUtils:
                     end_minute = int(end_time_range_array[1])
 
                     def start_random_job():
-                        task_time_count = random.randint(start_hour * 60 + start_minute, end_hour * 60 + end_minute)
+                        task_time_count = random.randint(
+                            start_hour * 60 + start_minute, end_hour * 60 + end_minute)
                         SchedulerUtils.start_range_job(scheduler=scheduler,
                                                        func=func,
+                                                       job_id=f"{job_id}_1",
                                                        func_desc=func_desc,
-                                                       hour=math.floor(task_time_count / 60),
+                                                       hour=math.floor(
+                                                           task_time_count / 60),
                                                        minute=task_time_count % 60,
                                                        next_run_time=next_run_time)
 
                     job = scheduler.add_job(start_random_job,
-                                      "cron",
-                                      hour=start_hour,
-                                      minute=start_minute,
-                                      next_run_time=next_run_time)
+                                            "cron",
+                                            id=job_id,
+                                            hour=start_hour,
+                                            minute=start_minute,
+                                            next_run_time=next_run_time,
+                                            replace_existing=True)
                     log.info("%s服务时间范围随机模式启动，起始时间于%s:%s" % (
                         func_desc, str(start_hour).rjust(2, '0'), str(start_minute).rjust(2, '0')))
                 except Exception as e:
-                    log.info("%s时间 时间范围随机模式 配置格式错误：%s %s" % (func_desc, cron, str(e)))
+                    log.info("%s时间 时间范围随机模式 配置格式错误：%s %s" %
+                             (func_desc, cron, str(e)))
             elif cron.find(':') != -1:
                 try:
                     hour = int(cron.split(":")[0])
@@ -71,10 +83,12 @@ class SchedulerUtils:
                     log.info("%s时间 配置格式错误：%s" % (func_desc, str(e)))
                     hour = minute = 0
                 job = scheduler.add_job(func,
-                                  "cron",
-                                  hour=hour,
-                                  minute=minute,
-                                  next_run_time=next_run_time)
+                                        "cron",
+                                        id=job_id,
+                                        hour=hour,
+                                        minute=minute,
+                                        next_run_time=next_run_time,
+                                        replace_existing=True)
                 log.info("%s服务启动" % func_desc)
             else:
                 try:
@@ -84,14 +98,15 @@ class SchedulerUtils:
                     hours = 0
                 if hours:
                     job = scheduler.add_job(func,
-                                      "interval",
-                                      hours=hours,
-                                      next_run_time=next_run_time)
+                                            "interval",
+                                            hours=hours,
+                                            next_run_time=next_run_time,
+                                            replace_existing=True)
                     log.info("%s服务启动" % func_desc)
         return job
 
     @staticmethod
-    def start_range_job(scheduler, func, func_desc, hour, minute, next_run_time=None):
+    def start_range_job(scheduler, func, func_desc, hour, minute, job_id=None, next_run_time=undefined):
         year = datetime.datetime.now().year
         month = datetime.datetime.now().month
         day = datetime.datetime.now().day
@@ -108,5 +123,8 @@ class SchedulerUtils:
             return
         scheduler.add_job(func,
                           "date",
-                          run_date=datetime.datetime(year, month, day, hour, minute, second),
-                          next_run_time=next_run_time)
+                          id=job_id,
+                          run_date=datetime.datetime(
+                              year, month, day, hour, minute, second),
+                          next_run_time=next_run_time,
+                          replace_existing=True)

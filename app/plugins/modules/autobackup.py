@@ -167,6 +167,7 @@ class AutoBackup(_IPluginModule):
                         "func_str": "AutoBackup.backup",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "AutoBackup.backup_1",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
@@ -191,10 +192,10 @@ class AutoBackup(_IPluginModule):
                         "func_str": "AutoBackup.backup",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "AutoBackup.backup_2",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
-
 
     def backup(self):
         """

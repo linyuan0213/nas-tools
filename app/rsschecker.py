@@ -134,10 +134,6 @@ class RssChecker(object):
         if not self._rss_tasks:
             return
         # 启动RSS任务
-        # self._scheduler = BackgroundScheduler(timezone=Config().get_timezone(),
-        #                                       executors={
-        #                                           'default': ThreadPoolExecutor(30)
-        #                                       })
         self._scheduler = SchedulerService()
         rss_flag = False
         for task in self._rss_tasks:
@@ -149,26 +145,21 @@ class RssChecker(object):
                     scheduler_queue.put({
                                 "func_str": "RssChecker.check_task_rss",
                                 "args": [task.get("id")],
+                                "job_id": f"RssChecker.check_task_rss_{task.get('id')}",
                                 "trigger": "interval",
                                 "seconds": int(cron) * 60,
                                 "jobstore": self._jobstore
                                 })
-                    # self._scheduler.add_job(func=self.check_task_rss,
-                    #                         args=[task.get("id")],
-                    #                         trigger='interval',
-                    #                         seconds=int(cron) * 60)
                 elif cron.count(" ") == 4:
                     # cron表达式
                     try:
                         scheduler_queue.put({
                                 "func_str": "RssChecker.check_task_rss",
                                 "args": [task.get("id")],
+                                "job_id": f"RssChecker.check_task_rss_{task.get('id')}",
                                 "trigger": CronTrigger.from_crontab(cron),
                                 "jobstore": self._jobstore
                                 })
-                        # self._scheduler.add_job(func=self.check_task_rss,
-                        #                         args=[task.get("id")],
-                        #                         trigger=CronTrigger.from_crontab(cron))
                         rss_flag = True
                     except Exception as e:
                         log.info("%s 自定义订阅cron表达式 配置格式错误：%s %s" % (task.get("name"), cron, str(e)))

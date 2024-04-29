@@ -287,6 +287,7 @@ class MovieRandom(_IPluginModule):
                         "func_str": "MovieRandom.random_movie",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "MovieRandom.random_movie_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -297,6 +298,7 @@ class MovieRandom(_IPluginModule):
                         "func_str": "MovieRandom.random_movie",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "MovieRandom.random_movie_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

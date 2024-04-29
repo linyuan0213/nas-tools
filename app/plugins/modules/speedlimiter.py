@@ -285,6 +285,7 @@ class SpeedLimiter(_IPluginModule):
                         "func_str": "SpeedLimiter.check_playing_sessions",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "SpeedLimiter.check_playing_sessions",
                         "trigger": "interval",
                         "seconds": self._interval,
                         "jobstore": self._jobstore

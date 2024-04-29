@@ -59,7 +59,6 @@ class BrushTask(object):
         self._torrents_cache = []
         # 启动RSS任务
         if self._brush_tasks:
-            # self._scheduler = BackgroundScheduler(timezone=Config().get_timezone())
             self._scheduler = SchedulerService()
             # running_task 计数
             running_task = 0
@@ -73,6 +72,7 @@ class BrushTask(object):
                             scheduler_queue.put({
                                                 "func_str": "BrushTask.check_task_rss",
                                                 "args": [task.get("id")],
+                                                "job_id": f"BrushTask.check_task_rss_{task.get('id')}",
                                                 "trigger": "interval",
                                                 "seconds": int(cron) * 60,
                                                 "jobstore": self._jobstore
@@ -84,6 +84,7 @@ class BrushTask(object):
                                 scheduler_queue.put({
                                     "func_str": "BrushTask.check_task_rss",
                                                 "args": [task.get("id")],
+                                                "job_id": f"BrushTask.check_task_rss_{task.get('id')}",
                                                 "trigger": CronTrigger.from_crontab(cron),
                                                 "jobstore": self._jobstore
                                 })
@@ -99,6 +100,7 @@ class BrushTask(object):
                 scheduler_queue.put({
                                     "func_str": "BrushTask.remove_tasks_torrents",
                                     "args": [],
+                                    "job_id": "BrushTask.remove_tasks_torrents",
                                     "trigger": "interval",
                                     "seconds": BRUSH_REMOVE_TORRENTS_INTERVAL,
                                     "jobstore": self._jobstore
@@ -106,6 +108,7 @@ class BrushTask(object):
                 scheduler_queue.put({
                                     "func_str": "BrushTask.stop_task_torrents",
                                     "args": [],
+                                    "job_id": "BrushTask.stop_task_torrents",
                                     "trigger": "interval",
                                     "seconds": BRUSH_STOP_TORRENTS_INTERVAL,
                                     "jobstore": self._jobstore

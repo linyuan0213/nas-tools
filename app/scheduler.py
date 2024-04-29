@@ -62,6 +62,7 @@ class Scheduler:
                 tz = pytz.timezone(Config().get_timezone())
                 scheduler_queue.put({
                     "func_str": "SiteUserInfo.refresh_site_data_now",
+                    "job_id": "SiteUserInfo.refresh_site_data_now",
                     "func_desc": "数据统计",
                     "cron": str(ptrefresh_date_cron),
                     "next_run_time": datetime.datetime.now(tz) + datetime.timedelta(minutes=1)
@@ -85,6 +86,7 @@ class Scheduler:
                     scheduler_queue.put({
                         "func_str": "Rss.rssdownload",
                         "args": [],
+                        "job_id": "Rss.rssdownload",
                         "trigger": "interval",
                         "seconds": pt_check_interval,
                         "jobstore": self._jobstore
@@ -109,6 +111,7 @@ class Scheduler:
                     scheduler_queue.put({
                         "func_str": "Subscribe.subscribe_search_all",
                         "args": [],
+                        "job_id": "Subscribe.subscribe_search_all",
                         "trigger": "interval",
                         "hours": search_rss_interval,
                         "jobstore": self._jobstore
@@ -134,6 +137,7 @@ class Scheduler:
                     scheduler_queue.put({
                         "func_str": "MediaServer.sync_mediaserver",
                         "args": [],
+                        "job_id": "MediaServer.sync_mediaserver",
                         "trigger": "interval",
                         "hours": mediasync_interval,
                         "jobstore": self._jobstore
@@ -145,6 +149,7 @@ class Scheduler:
             "func_str": "MetaHelper.save_meta_data",
                         "args": [],
                         "trigger": "interval",
+                        "job_id": "MetaHelper.save_meta_data",
                         "seconds": METAINFO_SAVE_INTERVAL,
                         "jobstore": self._jobstore
         })
@@ -153,6 +158,7 @@ class Scheduler:
         scheduler_queue.put({
             "func_str": "Sync.transfer_mon_files",
                         "args": [],
+                        "job_id": "Sync.transfer_mon_files",
                         "trigger": "interval",
                         "seconds": SYNC_TRANSFER_INTERVAL,
                         "jobstore": self._jobstore
@@ -162,6 +168,7 @@ class Scheduler:
         scheduler_queue.put({
             "func_str": "Subscribe.subscribe_search",
                         "args": [],
+                        "job_id": "Subscribe.subscribe_search",
                         "trigger": "interval",
                         "seconds": RSS_CHECK_INTERVAL,
                         "jobstore": self._jobstore
@@ -171,6 +178,7 @@ class Scheduler:
         scheduler_queue.put({
             "func_str": "Subscribe.refresh_rss_metainfo",
                         "args": [],
+                        "job_id": "Subscribe.refresh_rss_metainfo",
                         "trigger": "interval",
                         "hours": RSS_REFRESH_TMDB_INTERVAL,
                         "jobstore": self._jobstore
@@ -180,6 +188,7 @@ class Scheduler:
         scheduler_queue.put({
             "func_str": "MetaHelper.delete_unknown_meta",
                         "args": [],
+                        "job_id": "MetaHelper.delete_unknown_meta",
                         "trigger": "interval",
                         "hours": META_DELETE_UNKNOWN_INTERVAL,
                         "jobstore": self._jobstore
@@ -190,6 +199,7 @@ class Scheduler:
             "func_str": "get_login_wallpaper",
                         "args": [],
                         "trigger": "interval",
+                        "job_id": "get_login_wallpaper",
                         "hours": REFRESH_WALLPAPER_INTERVAL,
                         "next_run_time": datetime.datetime.now(),
                         "jobstore": self._jobstore
@@ -216,11 +226,12 @@ class Scheduler:
                         func = ReflectUtils.get_func_by_str(
                             __name__, data.get('func_str'))
                     job = SchedulerUtils.start_job(scheduler=self.scheduler.SCHEDULER,
-                                                func=func,
-                                                func_desc=data.get(
-                                                    'func_desc'),
-                                                cron=data.get('cron'),
-                                                next_run_time=data.get('next_run_time'))
+                                                   func=func,
+                                                   job_id=data.get('job_id'),
+                                                   func_desc=data.get(
+                                                       'func_desc'),
+                                                   cron=data.get('cron'),
+                                                   next_run_time=data.get('next_run_time'))
                 else:
                     if data.get('type') == 'plugin':
                         func = ReflectUtils.get_plugin_method(
@@ -236,7 +247,7 @@ class Scheduler:
                         "func": func,
                         **data
                     })
-                log.info(f'【System】成功添加任务 {job}')
+                log.info(f'【System】成功添加任务 {job.id}: {job}')
             except Exception as err:
                 log.error(f"【System】添加任务失败：{func_str} {str(err)}")
 

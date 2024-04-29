@@ -243,6 +243,7 @@ class IYUUAutoSeed(_IPluginModule):
                         "func_str": "IYUUAutoSeed.auto_seed",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "IYUUAutoSeed.auto_seed_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -255,6 +256,7 @@ class IYUUAutoSeed(_IPluginModule):
                         "func_str": "IYUUAutoSeed.auto_seed",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "IYUUAutoSeed.auto_seed_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
@@ -275,6 +277,7 @@ class IYUUAutoSeed(_IPluginModule):
                             "func_str": "IYUUAutoSeed.check_recheck",
                             "type": 'plugin',
                             "args": [],
+                            "job_id": "IYUUAutoSeed.check_recheck",
                             "trigger": 'interval',
                             "minutes": 3,
                             "jobstore": self._jobstore

@@ -233,6 +233,7 @@ class Downloader:
             scheduler_queue.put({
                                 "func_str": "Downloader.transfer",
                                 "args": [downloader_id],
+                                "job_id": "Downloader.transfer",
                                 "trigger": "interval",
                                 "seconds": PT_TRANSFER_INTERVAL,
                                 "jobstore": self._jobstore

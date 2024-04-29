@@ -220,6 +220,7 @@ class CloudflareSpeedTest(_IPluginModule):
                         "func_str": "CloudflareSpeedTest.cloudflareSpeedTest",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "CloudflareSpeedTest.cloudflareSpeedTest_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -230,6 +231,7 @@ class CloudflareSpeedTest(_IPluginModule):
                         "func_str": "CloudflareSpeedTest.cloudflareSpeedTest",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "CloudflareSpeedTest.cloudflareSpeedTest_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

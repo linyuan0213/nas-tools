@@ -103,6 +103,7 @@ class DoubanRank(_IPluginModule):
                         "func_str": "DoubanRank.refresh_rss",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "DoubanRank.refresh_rss_1",
                         "trigger": CronTrigger.from_crontab(self._cron),
                         "jobstore": self._jobstore
                     })
@@ -112,6 +113,7 @@ class DoubanRank(_IPluginModule):
                         "func_str": "DoubanRank.refresh_rss",
                         "type": 'plugin',
                         "args": [],
+                        "job_id": "DoubanRank.refresh_rss_2",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
