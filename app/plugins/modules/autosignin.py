@@ -7,6 +7,7 @@ from multiprocessing.pool import ThreadPool
 from threading import Event
 from urllib.parse import urlsplit
 
+from httpx import head
 import pytz
 from lxml import etree
 from selenium.webdriver.common.by import By
@@ -224,15 +225,15 @@ class AutoSignIn(_IPluginModule):
             if self._onlyonce:
                 self.info("签到服务启动，立即运行一次")
                 scheduler_queue.put({
-                        "func_str": "AutoSignIn.sign_in",
-                        "type": 'plugin',
-                        "args": [],
-                        "job_id": "AutoSignIn.sign_in_1",
-                        "trigger": "date",
-                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                                                seconds=3),
-                        "jobstore": self._jobstore
-                    })
+                    "func_str": "AutoSignIn.sign_in",
+                    "type": 'plugin',
+                    "args": [],
+                    "job_id": "AutoSignIn.sign_in_1",
+                    "trigger": "date",
+                    "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                            seconds=3),
+                    "jobstore": self._jobstore
+                })
 
             if self._onlyonce or self._clean:
                 # 关闭一次性开关|清理缓存开关
@@ -254,14 +255,14 @@ class AutoSignIn(_IPluginModule):
             if self._cron:
                 self._job_id = self.info(f"定时签到服务启动，周期：{self._cron}")
                 scheduler_queue.put({
-                        "func_str": "AutoSignIn.sign_in",
-                        "func_desc": "自动签到",
-                        "type": 'plugin',
-                        "args": [],
-                        "job_id": "AutoSignIn.sign_in_2",
-                        "cron": str(self._cron),
-                        "jobstore": self._jobstore
-                    })
+                    "func_str": "AutoSignIn.sign_in",
+                    "func_desc": "自动签到",
+                    "type": 'plugin',
+                    "args": [],
+                    "job_id": "AutoSignIn.sign_in_2",
+                    "cron": str(self._cron),
+                    "jobstore": self._jobstore
+                })
 
     @staticmethod
     def get_command():
@@ -301,9 +302,11 @@ class AutoSignIn(_IPluginModule):
             # 今天已签到站点
             already_sign_sites = today_history['sign']
             # 今日未签站点
-            no_sign_sites = [site_id for site_id in self._sign_sites if site_id not in already_sign_sites]
+            no_sign_sites = [
+                site_id for site_id in self._sign_sites if site_id not in already_sign_sites]
             # 签到站点 = 需要重签+今日未签+特殊站点
-            sign_sites = list(set(retry_sites + no_sign_sites + self._special_sites))
+            sign_sites = list(
+                set(retry_sites + no_sign_sites + self._special_sites))
             if sign_sites:
                 self.info(f"今日 {today} 已签到，开始重签重试站点、特殊站点、未签站点")
             else:
@@ -339,7 +342,8 @@ class AutoSignIn(_IPluginModule):
             # 失败｜错误
             failed_msg = []
 
-            sites = {site.get('name'): site.get("id") for site in Sites().get_site_dict()}
+            sites = {site.get('name'): site.get("id")
+                     for site in Sites().get_site_dict()}
             for s in status:
                 # 记录本次命中重试关键词的站点
                 if self._retry_keyword:
@@ -349,7 +353,8 @@ class AutoSignIn(_IPluginModule):
                         match = re.search(self._retry_keyword, s)
                         if match:
                             if site_id:
-                                self.debug(f"站点 {site_names[0]} 命中重试关键词 {self._retry_keyword}")
+                                self.debug(
+                                    f"站点 {site_names[0]} 命中重试关键词 {self._retry_keyword}")
                                 retry_sites.append(str(site_id))
                                 # 命中的站点
                                 retry_msg.append(s)
@@ -389,7 +394,8 @@ class AutoSignIn(_IPluginModule):
             # 发送通知
             if self._notify:
                 # 签到详细信息 登录成功、签到成功、已签到、仿真签到成功、失败--命中重试
-                signin_message = login_success_msg + sign_success_msg + already_sign_msg + fz_sign_msg + failed_msg
+                signin_message = login_success_msg + sign_success_msg + \
+                    already_sign_msg + fz_sign_msg + failed_msg
                 if len(retry_msg) > 0:
                     signin_message.append("——————命中重试—————")
                     signin_message += retry_msg
@@ -398,15 +404,16 @@ class AutoSignIn(_IPluginModule):
                 if self._scheduler and self._scheduler.SCHEDULER:
                     for job in self._scheduler.get_jobs(self._jobstore):
                         if 'signin' in job.name:
-                            next_run_time = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')
+                            next_run_time = job.next_run_time.strftime(
+                                '%Y-%m-%d %H:%M:%S')
                             # 签到汇总信息
                             self.send_message(title="【自动签到任务完成】",
-                                            text=f"本次签到数量: {len(sign_sites)} \n"
-                                                f"命中重试数量: {len(retry_sites) if self._retry_keyword else 0} \n"
-                                                f"强制签到数量: {len(self._special_sites)} \n"
-                                                f"下次签到数量: {len(set(retry_sites + self._special_sites))} \n"
-                                                f"下次签到时间: {next_run_time} \n"
-                                                f"详见签到消息")
+                                              text=f"本次签到数量: {len(sign_sites)} \n"
+                                              f"命中重试数量: {len(retry_sites) if self._retry_keyword else 0} \n"
+                                              f"强制签到数量: {len(self._special_sites)} \n"
+                                              f"下次签到数量: {len(set(retry_sites + self._special_sites))} \n"
+                                              f"下次签到时间: {next_run_time} \n"
+                                              f"详见签到消息")
         else:
             self.error("站点签到任务失败！")
 
@@ -528,21 +535,24 @@ class AutoSignIn(_IPluginModule):
                 if 'm-team' in site_url:
                     split_url = urlsplit(site_url)
                     url = f"{split_url.scheme}://{split_url.netloc}/api/member/updateLastBrowse"
-                    headers = {
+                    headers.update({
                         "accept": "application/json, text/plain, */*",
                         "content-type": "application/json",
                         "user-agent": ua
-                    }
-                    res = RequestUtils(cookies=site_cookie,
-                                    headers=headers,
-                                    proxies=Config().get_proxies() if site_info.get("proxy") else None
-                                ).post_res(url=url, data='')
+                    })
+                    headers.pop("x-api-key")
+                    if not headers.get("authorization"):
+                        self.warn(f"{site} 请填写请求头 authorization 参数")
+                        return f"【{site}】{site} 请填写请求头 authorization 参数！"
+                    res = RequestUtils(headers=headers,
+                                       proxies=Config().get_proxies() if site_info.get("proxy") else None
+                                       ).post_res(url=url, data='')
                 else:
                     headers.update({'User-Agent': ua})
                     res = RequestUtils(cookies=site_cookie,
-                                    headers=headers,
-                                    proxies=Config().get_proxies() if site_info.get("proxy") else None
-                                    ).get_res(url=site_url)
+                                       headers=headers,
+                                       proxies=Config().get_proxies() if site_info.get("proxy") else None
+                                       ).get_res(url=site_url)
                 if res and res.status_code in [200, 500, 403]:
                     if not SiteHelper.is_logged_in(res.text):
                         if under_challenge(res.text):
