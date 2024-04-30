@@ -5,7 +5,7 @@ function __debug {
 
 exec \
     s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost 6379" \
-    s6-setuidgid root $(which redis-server)
+    s6-setuidgid root $(which redis-server) /config/redis.conf
 
 }
 
@@ -13,7 +13,7 @@ function __false {
 
 exec \
     s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost 6379" \
-    s6-setuidgid root $(which redis-server) > /dev/null 2>&1
+    s6-setuidgid root $(which redis-server) /config/redis.conf > /dev/null 2>&1
 
 }
 
