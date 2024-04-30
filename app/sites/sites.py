@@ -377,3 +377,20 @@ class Sites:
                                                   ua=ua)
         self.init_config()
         return ret
+
+    def update_site_note(self, siteid, note):
+        """
+        更新站点 note
+        """
+        ret = self.dbhelper.update_config_site_note(tid=siteid, note=note)
+        self.init_config()
+        return ret
+
+    def get_site_note_by_id(self, siteid):
+        """
+        根据站点id获取站点配置
+        """
+        sites = self.dbhelper.get_site_by_id(tid=siteid)
+        if sites:
+            site_note = self.__get_site_note_items(sites[0].NOTE)
+            return site_note

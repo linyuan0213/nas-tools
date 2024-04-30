@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from datetime import datetime, timedelta
 from threading import Event
@@ -190,15 +191,15 @@ class CookieCloud(_IPluginModule):
             if self._onlyonce:
                 self.info("同步服务启动，立即运行一次")
                 scheduler_queue.put({
-                        "func_str": "CookieCloud.cookie_sync",
-                        "type": 'plugin',
-                        "args": [],
-                        "job_id": "CookieCloud.cookie_sync_1",
-                        "trigger": "date",
-                        "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
-                                                                seconds=3),
-                        "jobstore": self._jobstore
-                    })
+                    "func_str": "CookieCloud.cookie_sync",
+                    "type": 'plugin',
+                    "args": [],
+                    "job_id": "CookieCloud.cookie_sync_1",
+                    "trigger": "date",
+                    "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
+                            seconds=3),
+                    "jobstore": self._jobstore
+                })
                 # 关闭一次性开关
                 self._onlyonce = False
                 self.update_config({
@@ -214,13 +215,13 @@ class CookieCloud(_IPluginModule):
             if self._cron:
                 self.info(f"同步服务启动，周期：{self._cron}")
                 scheduler_queue.put({
-                        "func_str": "CookieCloud.cookie_sync",
-                        "type": 'plugin',
-                        "args": [],
-                        "job_id": "CookieCloud.cookie_sync_2",
-                        "trigger": CronTrigger.from_crontab(self._cron),
-                        "jobstore": self._jobstore
-                    })
+                    "func_str": "CookieCloud.cookie_sync",
+                    "type": 'plugin',
+                    "args": [],
+                    "job_id": "CookieCloud.cookie_sync_2",
+                    "trigger": CronTrigger.from_crontab(self._cron),
+                    "jobstore": self._jobstore
+                })
 
     def get_state(self):
         return self._enabled and self._cron
@@ -232,14 +233,19 @@ class CookieCloud(_IPluginModule):
         if not self._server or not self._key or not self._password:
             return {}, "CookieCloud参数不正确", False
         req_url = "%s/get/%s" % (self._server, self._key)
-        ret = self._req.post_res(url=req_url, json={"password": self._password})
+        ret = self._req.post_res(
+            url=req_url, json={"password": self._password})
         if ret and ret.status_code == 200:
             result = ret.json()
+            content = {}
             if not result:
                 return {}, "", True
             if result.get("cookie_data"):
-                return result.get("cookie_data"), "", True
-            return result, "", True
+                content['cookie_data'] = result.get("cookie_data")
+            if result.get("local_storage_data"):
+                content['local_storage_data'] = result.get(
+                    "local_storage_data")
+            return content, "", True
         elif ret:
             return {}, "同步CookieCloud失败，错误码：%s" % ret.status_code, False
         else:
@@ -261,19 +267,28 @@ class CookieCloud(_IPluginModule):
             self.__send_message(msg)
             return
         # 整理数据,使用domain域名的最后两级作为分组依据
-        domain_groups = defaultdict(list)
-        for site, cookies in contents.items():
+        domain_cookie_groups = defaultdict(list)
+        domain_storage_groups = {}
+        cookie_content = contents.get("cookie_data")
+        local_storage = contents.get("local_storage_data")
+        for site, cookies in cookie_content.items():
             for cookie in cookies:
                 domain_parts = cookie["domain"].split(".")[-2:]
                 domain_key = tuple(domain_parts)
-                domain_groups[domain_key].append(cookie)
+                domain_cookie_groups[domain_key].append(cookie)
+
+        for site, storage in local_storage.items():
+            domain_parts = site.split(".")[-2:]
+            domain_key = tuple(domain_parts)
+            domain_storage_groups[domain_key] = storage
+
         # 计数
         update_count = 0
         add_count = 0
         # 索引器
-        for domain, content_list in domain_groups.items():
+        for domain, content_list in domain_cookie_groups.items():
             if self._event.is_set():
-                self.info(f"同步服务停止")
+                self.info("同步服务停止")
                 return
             if not content_list:
                 continue
@@ -297,10 +312,12 @@ class CookieCloud(_IPluginModule):
             site_info = self.sites.get_sites_by_suffix(domain_url)
             if site_info:
                 # 检查站点连通性
-                success, _, _ = self.sites.test_connection(site_id=site_info.get("id"))
+                success, _, _ = self.sites.test_connection(
+                    site_id=site_info.get("id"))
                 if not success:
                     # 已存在且连通失败的站点更新Cookie
-                    self.sites.update_site_cookie(siteid=site_info.get("id"), cookie=cookie_str)
+                    self.sites.update_site_cookie(
+                        siteid=site_info.get("id"), cookie=cookie_str)
                     update_count += 1
             else:
                 # 查询是否在索引器范围
@@ -316,11 +333,35 @@ class CookieCloud(_IPluginModule):
                         rss_uses='T'
                     )
                     add_count += 1
+        for domain, content in domain_storage_groups.items():
+            if not content:
+                continue
+            # 域名
+            domain_url = ".".join(domain)
+            site_info = self.sites.get_sites_by_suffix(domain_url)
+            if site_info:
+                if content.get("auth"):
+                    headers = site_info.get("headers")
+                    headers = json.loads(headers)
+                    headers.update({
+                        "authorization": content.get("auth")
+                    })
+                    headers = json.dumps(headers)
+
+                    # 更新 headers
+                    note = self.sites.get_site_note_by_id(site_info.get("id"))
+                    if isinstance(note, dict):
+                        note.update({
+                            "headers": headers
+                        })
+                        note = json.dumps(note)
+                        self.sites.update_site_note(site_info.get("id"), note)
+
         # 发送消息
         if update_count or add_count:
             msg = f"更新了 {update_count} 个站点的Cookie数据，新增了 {add_count} 个站点"
         else:
-            msg = f"同步完成，但未更新任何站点数据！"
+            msg = "同步完成，但未更新任何站点数据！"
         self.info(msg)
         # 发送消息
         if self._notify:
