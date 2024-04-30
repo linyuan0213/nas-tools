@@ -12,24 +12,20 @@
 
 - 不需要模拟登陆只用添加令牌
 
-  1. cookie 获取
-
-     1. 按下F12
-     2. 点击Network 
-     3. 刷新网页查看Network界面的变化 
-     4. 点击Network界面下的Headers 
-     5. 找到Cookie并复制后面内容
-
-  2. 令牌获取
+  1. 令牌获取
 
      打开馒头 控制台 > 实验室 > 存取令牌 > 建立存取令牌
 
      1. 复制令牌到 nas-tools 站点维护
-     2. 添加请求头参数 格式：{"x-api-key": "xxxx"}
+     2. 添加请求头参数 格式：{"x-api-key": "令牌"}
 
-  3. 馒头签到
-
-     馒头模拟登录需要添加 cookie，通过cookie访问接口，不排除禁用账户的可能
+  2. 馒头签到
+     
+     馒头模拟登录需要添加 auth 参数，通过 auth 访问接口，不排除禁用账户的可能
+     添加请求头参数 格式：{"x-api-key": "令牌", "authorization": "auth参数"}
+     
+     auth参数获取方式
+     ![mt-auth.png](https://raw.github.com/linyuan0213/nas-tools/master/img/mt-auth.png)
 
 
 ### 验证码识别
