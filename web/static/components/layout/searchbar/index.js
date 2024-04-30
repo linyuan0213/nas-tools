@@ -147,19 +147,6 @@ export class LayoutSearchbar extends CustomElement {
                 <a class="dropdown-item hide-theme-dark" href="?theme=dark" role="button">暗黑风格</a>
                 <a class="dropdown-item hide-theme-light" href="?theme=light" role="button">明亮风格</a>
                 <div class="dropdown-divider"></div>
-                ${this.layout_useradmin === "1"
-                ? html`
-                    <a class="dropdown-item" data-bs-toggle="offcanvas" href="#offcanvasEnd" role="button"
-                      aria-controls="offcanvasEnd">消息中心</a>
-                    <a class="dropdown-item" href="javascript:show_logging_modal()" role="button">实时日志</a>
-                    <div class="dropdown-divider"></div>
-                    ${["Docker", "Synology"].includes(this.layout_systemflag)
-                    ? html`
-                      <a href="javascript:restart()" class="dropdown-item">重启</a>
-                      <a href="javascript:update()" class="dropdown-item">更新</a>`
-                    : nothing }
-                  `
-                : nothing }
                 <a href="javascript:logout()" class="dropdown-item">
                   注销 <span class="text-muted mx-3">${this.layout_username}</span>
                 </a>

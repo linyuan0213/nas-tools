@@ -3,7 +3,6 @@ import time
 import json
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool as ThreadPool
-from multiprocessing.pool import ThreadPool
 from threading import Event
 from urllib.parse import urlsplit
 
@@ -20,7 +19,7 @@ from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
-from app.utils import RequestUtils, ExceptionUtils, StringUtils, SchedulerUtils, JsonUtils
+from app.utils import RequestUtils, ExceptionUtils, StringUtils, JsonUtils
 from app.utils.types import EventType
 from config import Config
 
