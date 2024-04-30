@@ -7,7 +7,6 @@ from multiprocessing.pool import ThreadPool
 from threading import Event
 from urllib.parse import urlsplit
 
-from httpx import head
 import pytz
 from lxml import etree
 from selenium.webdriver.common.by import By
