@@ -21,7 +21,7 @@ class SiteHelper:
         """
         if JsonUtils.is_valid_json(html_text):
             json_data = json.loads(html_text)
-            if json_data.get('message') == 'SUCCESS':
+            if json_data.get('message') == 'SUCCESS' or json_data.get('success'):
                 return True
             else:
                 return False
@@ -44,6 +44,11 @@ class SiteHelper:
                 return True
         user_info_div = html.xpath('//div[@class="user-info-side"]')
         if user_info_div:
+            return True
+
+        # 朱雀
+        x_csrf_token = html.xpath("//head/meta[contains(@name, 'x-csrf-token')]")
+        if x_csrf_token:
             return True
 
         return False

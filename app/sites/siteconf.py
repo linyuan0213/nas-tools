@@ -119,76 +119,115 @@ class SiteConf:
         :return: 种子属性，包含FREE 2XFREE HR PEER_COUNT等属性
         """
         ret_attr = {
-                "free": False,
-                "2xfree": False,
-                "hr": False,
-                "peer_count": 0
-            }
-        if 'm-team' in torrent_url:
-            split_url = urlsplit(torrent_url)
-            base_url = f"{split_url.scheme}://{split_url.netloc}"
-            detail_url = f"{base_url}/api/torrent/detail"
-            res = re.findall(r'\d+', torrent_url)
-            param = res[0]
+            "free": False,
+            "2xfree": False,
+            "hr": False,
+            "peer_count": 0
+        }
+        try:
             # 这里headers必须是string类型
             headers = json.dumps(headers)
-            json_text = self.__get_site_page_html(url=detail_url,
-                                    cookie="",
-                                    ua=ua,
-                                    headers=headers,
-                                    proxy=proxy,
-                                    param=param)
-            json_data = json.loads(json_text)
-            if json_data.get('message') != "SUCCESS":
-                return ret_attr
-            discount = json_data.get('data').get('status').get('discount')
-            seeders = json_data.get('data').get('status').get('seeders')
-            if discount == 'FREE':
-                ret_attr["free"] = True
-            ret_attr['peer_count'] = int(seeders)
+            if 'm-team' in torrent_url:
+                split_url = urlsplit(torrent_url)
+                base_url = f"{split_url.scheme}://{split_url.netloc}"
+                detail_url = f"{base_url}/api/torrent/detail"
+                res = re.findall(r'\d+', torrent_url)
+                param = res[0]
 
-        else:
-            if not torrent_url:
-                return ret_attr
-            xpath_strs = self.get_grap_conf(torrent_url)
-            if not xpath_strs:
-                return ret_attr
-            html_text = self.__get_site_page_html(url=torrent_url,
-                                                cookie=cookie,
-                                                ua=ua,
-                                                render=xpath_strs.get('RENDER'),
-                                                proxy=proxy)
-            if not html_text:
-                return ret_attr
-            try:
-                html = etree.HTML(html_text)
-                # 检测2XFREE
-                for xpath_str in xpath_strs.get("2XFREE"):
-                    if html.xpath(xpath_str):
-                        ret_attr["free"] = True
-                        ret_attr["2xfree"] = True
-                # 检测FREE
-                for xpath_str in xpath_strs.get("FREE"):
-                    if html.xpath(xpath_str):
-                        ret_attr["free"] = True
-                # 检测HR
-                for xpath_str in xpath_strs.get("HR"):
-                    if html.xpath(xpath_str):
-                        ret_attr["hr"] = True
-                # 检测PEER_COUNT当前做种人数
-                for xpath_str in xpath_strs.get("PEER_COUNT"):
-                    peer_count_dom = html.xpath(xpath_str)
-                    if peer_count_dom:
-                        peer_count_str = ''.join(peer_count_dom[0].itertext())
-                        peer_count_digit_str = ""
-                        for m in peer_count_str:
-                            if m.isdigit():
-                                peer_count_digit_str = peer_count_digit_str + m
-                            if m == " ":
-                                break
-                        ret_attr["peer_count"] = int(peer_count_digit_str) if len(peer_count_digit_str) > 0 else 0
-            except Exception as err:
-                ExceptionUtils.exception_traceback(err)
+                json_text = self.__get_site_page_html(url=detail_url,
+                                                      cookie="",
+                                                      ua=ua,
+                                                      headers=headers,
+                                                      proxy=proxy,
+                                                      param=param)
+                json_data = json.loads(json_text)
+                if json_data.get('message') != "SUCCESS":
+                    return ret_attr
+                discount = json_data.get('data').get('status').get('discount')
+                seeders = json_data.get('data').get('status').get('seeders')
+                if discount == 'FREE':
+                    ret_attr["free"] = True
+                ret_attr['peer_count'] = int(seeders)
+            else:
+                if not torrent_url:
+                    return ret_attr
+                xpath_strs = self.get_grap_conf(torrent_url)
+                if not xpath_strs:
+                    return ret_attr
+
+                if 'fsm' in torrent_url:
+                    tid = re.findall(r'\d+', torrent_url)[0] or ""
+                    split_url = urlsplit(torrent_url)
+                    base_url = f"{split_url.scheme}://{split_url.netloc}"
+                    torrent_url = f"{base_url}/api/Torrents/details?tid={tid}&page=1"
+
+                html_text = self.__get_site_page_html(url=torrent_url,
+                                                      cookie=cookie,
+                                                      ua=ua,
+                                                      headers=headers,
+                                                      render=xpath_strs.get(
+                                                          'RENDER'),
+                                                      proxy=proxy)
+                if not html_text:
+                    return ret_attr
+                if JsonUtils.is_valid_json(html_text):
+                    # 检测2XFREE
+                    for xpath_str in xpath_strs.get("2XFREE"):
+                        name = JsonUtils.get_json_object(
+                            html_text, xpath_str.split('=')[0])
+                        if name == xpath_str.split('=')[1]:
+                            ret_attr["free"] = True
+                            ret_attr["2xfree"] = True
+
+                    # 检测FREE
+                    for xpath_str in xpath_strs.get("FREE"):
+                        name = JsonUtils.get_json_object(
+                            html_text, xpath_str.split('=')[0])
+                        if name == xpath_str.split('=')[1]:
+                            ret_attr["free"] = True
+
+                    # 检测HR
+                    for xpath_str in xpath_strs.get("HR"):
+                        if JsonUtils.get_json_object(html_text, xpath_str):
+                            ret_attr["hr"] = True
+
+                    # 检测PEER_COUNT当前做种人数
+                    for xpath_str in xpath_strs.get("PEER_COUNT"):
+                        peer_count = JsonUtils.get_json_object(
+                            html_text, xpath_str)
+                        ret_attr["peer_count"] = int(
+                            peer_count) if len(peer_count) > 0 else 0
+                else:
+                    html = etree.HTML(html_text)
+                    # 检测2XFREE
+                    for xpath_str in xpath_strs.get("2XFREE"):
+                        if html.xpath(xpath_str):
+                            ret_attr["free"] = True
+                            ret_attr["2xfree"] = True
+                    # 检测FREE
+                    for xpath_str in xpath_strs.get("FREE"):
+                        if html.xpath(xpath_str):
+                            ret_attr["free"] = True
+                    # 检测HR
+                    for xpath_str in xpath_strs.get("HR"):
+                        if html.xpath(xpath_str):
+                            ret_attr["hr"] = True
+                    # 检测PEER_COUNT当前做种人数
+                    for xpath_str in xpath_strs.get("PEER_COUNT"):
+                        peer_count_dom = html.xpath(xpath_str)
+                        if peer_count_dom:
+                            peer_count_str = ''.join(
+                                peer_count_dom[0].itertext())
+                            peer_count_digit_str = ""
+                            for m in peer_count_str:
+                                if m.isdigit():
+                                    peer_count_digit_str = peer_count_digit_str + m
+                                if m == " ":
+                                    break
+                            ret_attr["peer_count"] = int(peer_count_digit_str) if len(
+                                peer_count_digit_str) > 0 else 0
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
         # 随机休眼后再返回
         time.sleep(round(random.uniform(1, 5), 1))
         return ret_attr
@@ -213,7 +252,6 @@ class SiteConf:
                 "contentType": 'application/json;charset=UTF-8'
             })
             res = RequestUtils(
-                cookies=cookie,
                 headers=headers,
                 proxies=Config().get_proxies() if proxy else None
             ).post_res(url=url, data=param)
@@ -223,7 +261,7 @@ class SiteConf:
         else:
             res = RequestUtils(
                 cookies=cookie,
-                headers=ua,
+                headers=headers,
                 proxies=Config().get_proxies() if proxy else None
             ).get_res(url=url)
             if res and res.status_code == 200:

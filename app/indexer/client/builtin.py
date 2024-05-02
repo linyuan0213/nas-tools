@@ -13,6 +13,7 @@ from app.indexer.client._tnode import TNodeSpider
 from app.indexer.client._torrentleech import TorrentLeech
 from app.indexer.client._mteam import MteamSpider
 from app.indexer.client._butailing import Butailing
+from app.indexer.client._fsm import FSMSpider
 from app.sites import Sites
 from app.utils import StringUtils
 from app.utils.types import SearchType, IndexerType, ProgressKey, SystemConfigKey
@@ -168,6 +169,8 @@ class BuiltinIndexer(_IIndexClient):
                 error_flag, result_array = MteamSpider(indexer).search(keyword=search_word)
             elif indexer.parser == "ButailingSpider":
                 error_flag, result_array = Butailing(indexer).search(keyword=search_word)
+            elif indexer.parser == "FSMSpider":
+                error_flag, result_array = FSMSpider(indexer).search(keyword=search_word)
             else:
                 error_flag, result_array = self.__spider_search(
                     keyword=search_word,
@@ -228,10 +231,11 @@ class BuiltinIndexer(_IIndexClient):
             error_flag, result_array = TorrentLeech(indexer).search(keyword=keyword,
                                                                     page=page)
         elif indexer.parser == "MteamSpider":
-            error_flag, result_array = MteamSpider(indexer).search(keyword=keyword,
-                                                                    page=page)
+            error_flag, result_array = MteamSpider(indexer).search(keyword=keyword, page=page)
         elif indexer.parser == "ButailingSpider":
             error_flag, result_array = Butailing(indexer).search(keyword=keyword)
+        elif indexer.parser == "FSMSpider":
+            error_flag, result_array = FSMSpider(indexer).search(keyword=keyword, page=page)
         else:
             error_flag, result_array = self.__spider_search(indexer=indexer,
                                                             page=page,

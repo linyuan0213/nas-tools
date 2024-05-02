@@ -103,6 +103,7 @@ class SiteSchema(Enum):
     TNode = "TNode"
     Mteam = "M-Team"
     HHCLUB = "HHCLUB"
+    FSM = "FSM"
 
 
 # 可监听事件

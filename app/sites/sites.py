@@ -65,8 +65,10 @@ class Sites:
             uses = []
             if site_uses:
                 rss_enable = True if "D" in site_uses and site_rssurl else False
-                brush_enable = True if "S" in site_uses and site_rssurl and (site_cookie or site_headers) else False
-                statistic_enable = True if "T" in site_uses and (site_rssurl or site_signurl) and (site_cookie or site_headers) else False
+                brush_enable = True if "S" in site_uses and site_rssurl and (
+                    site_cookie or site_headers) else False
+                statistic_enable = True if "T" in site_uses and (
+                    site_rssurl or site_signurl) and (site_cookie or site_headers) else False
                 uses.append("D") if rss_enable else None
                 uses.append("S") if brush_enable else None
                 uses.append("T") if statistic_enable else None
@@ -102,7 +104,8 @@ class Sites:
             # 以ID存储
             self._siteByIds[site.ID] = site_info
             # 以域名存储
-            site_strict_url = StringUtils.get_url_domain(site.SIGNURL or site.RSSURL)
+            site_strict_url = StringUtils.get_url_domain(
+                site.SIGNURL or site.RSSURL)
             if site_strict_url:
                 self._siteByUrls[site_strict_url] = site_info
             # 初始化站点限速器
@@ -121,7 +124,8 @@ class Sites:
         """
         加载图标到内存
         """
-        self._site_favicons = {site.SITE: site.FAVICON for site in self.dbhelper.get_site_favicons()}
+        self._site_favicons = {
+            site.SITE: site.FAVICON for site in self.dbhelper.get_site_favicons()}
 
     def get_sites(self,
                   siteid=None,
@@ -268,12 +272,18 @@ class Sites:
         else:
             headers = {}
         ua = site_info.get("ua") or Config().get_ua()
-        site_url = StringUtils.get_base_url(site_info.get("signurl") or site_info.get("rssurl"))
+        headers.update({'User-Agent': ua})
+        site_url = StringUtils.get_base_url(
+            site_info.get("signurl") or site_info.get("rssurl"))
         if not site_url:
             return False, "未配置站点地址", 0
         # 站点特殊处理...
         if '1ptba' in site_url:
             site_url = site_url + '/index.php'
+
+        if 'fsm' in site_url:
+            site_url = site_url + '/api/Users/infos'
+
         chrome = ChromeHelper()
         if site_info.get("chrome") and chrome.get_status():
             # 计时
@@ -299,15 +309,14 @@ class Sites:
             # m-team处理
             if 'm-team' in site_url:
                 url = site_url + '/api/member/profile'
-                headers.update({'User-Agent': ua})
                 res = RequestUtils(headers=headers,
-                                proxies=Config().get_proxies() if site_info.get("proxy") else None
-                            ).post_res(url=url, data={})
+                                   proxies=Config().get_proxies() if site_info.get("proxy") else None
+                                   ).post_res(url=url, data={})
             else:
                 res = RequestUtils(cookies=site_cookie,
-                                headers=ua,
-                                proxies=Config().get_proxies() if site_info.get("proxy") else None
-                                ).get_res(url=site_url)
+                                   headers=headers,
+                                   proxies=Config().get_proxies() if site_info.get("proxy") else None
+                                   ).get_res(url=site_url)
             seconds = int((datetime.now() - start_time).microseconds / 1000)
             if res and res.status_code == 200:
                 if not SiteHelper.is_logged_in(res.text):
