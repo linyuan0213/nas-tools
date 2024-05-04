@@ -11,7 +11,8 @@ services:
       - PUID=0    # 想切换为哪个用户来运行程序，该用户的uid
       - PGID=0    # 想切换为哪个用户来运行程序，该用户的gid
       - UMASK=000 # 掩码权限，默认000，可以考虑设置为022
-      - NASTOOL_AUTO_UPDATE=false  # 如需在启动容器时自动升级程程序请设置为true
+      - WORKERS=3  # 设置进程数，不填写该参数默认为 cpu核心数 * 2 + 1
+      - NT_PORT=3000 # 不填写 默认3000
     restart: always
     network_mode: bridge
     hostname: nas-tools

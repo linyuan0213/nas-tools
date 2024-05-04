@@ -1,4 +1,5 @@
 import redis
+import pickle
 
 from config import REDIS_HOST, REDIS_PORT
 
@@ -36,3 +37,31 @@ class RedisStore:
 
     def delete(self, *keys):
         self.client.delete(*keys)
+
+    def add_object(self, key, obj_id, obj):
+        serialize_obj = pickle.dumps(obj)
+        self.client.hset(key, obj_id, serialize_obj)
+
+    def load_object(self, key, obj_id):
+        serialize_obj = self.client.hget(key, obj_id)
+        if serialize_obj:
+            return pickle.loads(serialize_obj)
+        else:
+            return None
+
+    def delete_obj(self, key, obj_id):
+        self.client.hdel(key, obj_id)
+
+    def get_all_object_keys(self, key):
+        return [key.decode('utf-8') for key in self.client.hkeys(key)]
+
+    def get_all_object_vals(self, key):
+        return [pickle.loads(val) for val in self.client.hvals(key)]
+
+    def get_all_key_values(self, key):
+        all_key_values = {}
+        hash_data = self.client.hgetall(key)
+        for hash_key, serialized_value in hash_data.items():
+            value = pickle.loads(serialized_value)
+            all_key_values[hash_key.decode('utf-8')] = value
+        return all_key_values

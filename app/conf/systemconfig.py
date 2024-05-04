@@ -5,7 +5,6 @@ from app.utils.commons import singleton
 from app.utils.types import SystemConfigKey
 
 
-@singleton
 class SystemConfig:
     # 系统设置
     systemconfig = {}

@@ -39,6 +39,7 @@ ENV S6_SERVICES_GRACETIME=30000 \
     PUID=0 \
     PGID=0 \
     UMASK=000 \
+    NT_PORT=3000 \
     WORKDIR="/nas-tools"
 RUN mkdir ${WORKDIR}
 ADD ./ ${WORKDIR}/

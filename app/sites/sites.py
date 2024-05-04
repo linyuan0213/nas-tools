@@ -6,11 +6,9 @@ from app.helper import ChromeHelper, SiteHelper, DbHelper
 from app.message import Message
 from app.sites.site_limiter import SiteRateLimiter
 from app.utils import RequestUtils, StringUtils, JsonUtils
-from app.utils.commons import singleton
 from config import Config
 
 
-@singleton
 class Sites:
     message = None
     dbhelper = None
