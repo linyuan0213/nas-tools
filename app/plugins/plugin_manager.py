@@ -107,7 +107,6 @@ class PluginManager:
         plugins.sort(key=lambda x: x.module_order if hasattr(x, "module_order") else 0)
         # 用户已安装插件列表
         user_plugins = SystemConfig().get(SystemConfigKey.UserInstalledPlugins) or []
-        log.debug(f"user_plugins: {user_plugins}")
         self._plugins = {}
         for plugin in plugins:
             module_id = plugin.__name__
