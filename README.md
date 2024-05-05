@@ -6,26 +6,38 @@
 - 支持新版馒头刷流和下载
 - 3.3.0 以上版本通过 gunicorn 部署，并且依赖redis，其他版本安装请自行安装redis，docker 3.2.6及以下版本需要重新拉取新镜像
 
-### 馒头站点维护
+### 站点维护
 
-- 添加 User-Agent
+1. 馒头站点维护
+   - 添加 User-Agent
 
-- 不需要模拟登陆只用添加令牌
+   - 不需要模拟登陆只用添加令牌
 
-  1. 令牌获取
+   1. 令牌获取
 
-     打开馒头 控制台 > 实验室 > 存取令牌 > 建立存取令牌
+      打开馒头 控制台 > 实验室 > 存取令牌 > 建立存取令牌
 
-     1. 复制令牌到 nas-tools 站点维护
-     2. 添加请求头参数 格式：{"x-api-key": "令牌"}
+      1. 复制令牌到 nas-tools 站点维护
+      2. 添加请求头参数 格式：{"x-api-key": "令牌"}
 
-  2. 馒头签到
-     
-     馒头模拟登录需要添加 auth 参数，通过 auth 访问接口，不排除禁用账户的可能
-     添加请求头参数 格式：{"x-api-key": "令牌", "authorization": "auth参数"}
-     
-     auth参数获取方式
-     ![mt-auth.png](https://raw.github.com/linyuan0213/nas-tools/master/img/mt-auth.png)
+   2. 馒头签到
+      
+      馒头模拟登录需要添加 auth 参数，通过 auth 访问接口，不排除禁用账户的可能
+      添加请求头参数 格式：{"x-api-key": "令牌", "authorization": "auth参数"}
+      
+      auth参数获取方式
+      ![mt-auth.png](https://raw.github.com/linyuan0213/nas-tools/master/img/mt-auth.png)
+
+2. FSM站点维护
+   - 添加 User-Agent
+
+   - API TOKEN 获取方式
+      1. 进入站点下拉到最后，找到API链接，点击进入，如图
+         ![fsm-api-1.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-1.png)
+      2. 点击一键生成生成 API TOKEN，如图
+         ![fsm-api-2.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-2.png)
+      3. 添加请求头参数，格式： {"APITOKEN": "这里填 api token"}， 将复制的API TOKEN 填入
+
 
 
 ### 验证码识别

@@ -41,7 +41,7 @@ from app.subscribe import Subscribe
 from app.sync import Sync
 from app.torrentremover import TorrentRemover
 from app.utils import DomUtils, SystemUtils, ExceptionUtils, StringUtils
-from app.utils.types import *
+from app.utils.types import SystemConfigKey, OsType, MediaServerType, EventType, SearchType, RssType, MediaType
 from config import PT_TRANSFER_INTERVAL, REDIS_HOST, REDIS_PORT, Config, TMDB_API_DOMAINS
 from web.action import WebAction
 from web.apiv1 import apiv1_bp
@@ -224,7 +224,8 @@ def web():
     PixDict = ModuleConf.TORRENT_SEARCH_PARAMS.get("pix")
     SiteFavicons = Sites().get_site_favicon()
     Indexers = Indexer().get_indexers()
-    SearchSource = "douban" if Config().get_config("laboratory").get("use_douban_titles") else "tmdb"
+    SearchSource = "douban" if Config().get_config(
+        "laboratory").get("use_douban_titles") else "tmdb"
     CustomScriptCfg = SystemConfig().get(SystemConfigKey.CustomScript)
     Menus = WebAction().get_user_menus().get("menus") or []
     Commands = WebAction().get_commands()
@@ -249,7 +250,7 @@ def web():
 
 # 开始
 @App.route('/index', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='index')
+@cache.cached(timeout=43200, key_prefix='index')
 @login_required
 def index():
     # 媒体服务器类型
@@ -299,7 +300,7 @@ def index():
 
 # 资源搜索页面
 @App.route('/search', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='search')
+@cache.cached(timeout=43200, key_prefix='search')
 @login_required
 def search():
     # 权限
@@ -325,7 +326,8 @@ def search():
 @login_required
 def movie_rss():
     RssItems = WebAction().get_movie_rss_list().get("result")
-    RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
+    RuleGroups = {str(group["id"]): group["name"]
+                  for group in Filter().get_rule_groups()}
     DownloadSettings = Downloader().get_download_setting()
     return render_template("rss/movie_rss.html",
                            Count=len(RssItems),
@@ -340,7 +342,8 @@ def movie_rss():
 @login_required
 def tv_rss():
     RssItems = WebAction().get_tv_rss_list().get("result")
-    RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
+    RuleGroups = {str(group["id"]): group["name"]
+                  for group in Filter().get_rule_groups()}
     DownloadSettings = Downloader().get_download_setting()
     return render_template("rss/tv_rss.html",
                            Count=len(RssItems),
@@ -384,8 +387,10 @@ def rss_calendar():
 @login_required
 def sites():
     CfgSites = Sites().get_sites()
-    RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
-    DownloadSettings = {did: attr["name"] for did, attr in Downloader().get_download_setting().items()}
+    RuleGroups = {str(group["id"]): group["name"]
+                  for group in Filter().get_rule_groups()}
+    DownloadSettings = {did: attr["name"] for did,
+                        attr in Downloader().get_download_setting().items()}
     ChromeOk = ChromeHelper().get_status()
     CookieCloudCfg = SystemConfig().get(SystemConfigKey.CookieCloud)
     CookieUserInfoCfg = SystemConfig().get(SystemConfigKey.CookieUserInfo)
@@ -415,6 +420,8 @@ def open_app():
     return render_template("openapp.html")
 
 # 站点资源页面
+
+
 @App.route('/resources', methods=['POST', 'GET'])
 @login_required
 def resources():
@@ -453,7 +460,8 @@ def recommend():
     Keyword = request.args.get("keyword") or ""
     Source = request.args.get("source") or ""
     FilterKey = request.args.get("filter") or ""
-    Params = json.loads(request.args.get("params")) if request.args.get("params") else {}
+    Params = json.loads(request.args.get("params")
+                        ) if request.args.get("params") else {}
     return render_template("discovery/recommend.html",
                            Type=Type,
                            SubType=SubType,
@@ -466,13 +474,14 @@ def recommend():
                            Keyword=Keyword,
                            Source=Source,
                            Filter=FilterKey,
-                           FilterConf=ModuleConf.DISCOVER_FILTER_CONF.get(FilterKey) if FilterKey else {},
+                           FilterConf=ModuleConf.DISCOVER_FILTER_CONF.get(
+                               FilterKey) if FilterKey else {},
                            Params=Params)
 
 
 # 推荐页面
 @App.route('/ranking', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='ranking')
+@cache.cached(timeout=43200, key_prefix='ranking')
 @login_required
 def ranking():
     return render_template("discovery/ranking.html",
@@ -481,7 +490,7 @@ def ranking():
 
 # 豆瓣电影
 @App.route('/douban_movie', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='douban_movie')
+@cache.cached(timeout=43200, key_prefix='douban_movie')
 @login_required
 def douban_movie():
     return render_template("discovery/recommend.html",
@@ -494,7 +503,7 @@ def douban_movie():
 
 # 豆瓣电视剧
 @App.route('/douban_tv', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='douban_tv')
+@cache.cached(timeout=43200, key_prefix='douban_tv')
 @login_required
 def douban_tv():
     return render_template("discovery/recommend.html",
@@ -506,7 +515,7 @@ def douban_tv():
 
 
 @App.route('/tmdb_movie', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='tmdb_movie')
+@cache.cached(timeout=43200, key_prefix='tmdb_movie')
 @login_required
 def tmdb_movie():
     return render_template("discovery/recommend.html",
@@ -518,7 +527,7 @@ def tmdb_movie():
 
 
 @App.route('/tmdb_tv', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='tmdb_tv')
+@cache.cached(timeout=43200, key_prefix='tmdb_tv')
 @login_required
 def tmdb_tv():
     return render_template("discovery/recommend.html",
@@ -531,7 +540,7 @@ def tmdb_tv():
 
 # Bangumi每日放送
 @App.route('/bangumi', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='bangumi')
+@cache.cached(timeout=43200, key_prefix='bangumi')
 @login_required
 def discovery_bangumi():
     return render_template("discovery/ranking.html",
@@ -601,7 +610,7 @@ def torrent_remove():
 
 # 数据统计页面
 @App.route('/statistics', methods=['POST', 'GET'])
-@cache.cached(timeout=300, key_prefix='statistics')
+@cache.cached(timeout=43200, key_prefix='statistics')
 @login_required
 def statistics():
     # 刷新单个site
@@ -620,7 +629,8 @@ def statistics():
     SiteRatios = []
     SiteErrs = {}
     # 站点上传下载
-    SiteData = SiteUserInfo().get_site_data(specify_sites=refresh_site, force=refresh_force)
+    SiteData = SiteUserInfo().get_site_data(
+        specify_sites=refresh_site, force=refresh_force)
     if isinstance(SiteData, dict):
         for name, data in SiteData.items():
             if not data:
@@ -653,7 +663,8 @@ def statistics():
     #    days=2)
 
     # 站点用户数据
-    SiteUserStatistics = WebAction().get_site_user_statistics({"encoding": "DICT"}).get("data")
+    SiteUserStatistics = WebAction().get_site_user_statistics(
+        {"encoding": "DICT"}).get("data")
 
     return render_template("site/statistics.html",
                            TotalDownload=TotalDownload,
@@ -769,7 +780,8 @@ def history():
     pagenum = request.args.get("pagenum")
     keyword = request.args.get("s") or ""
     current_page = request.args.get("page")
-    Result = WebAction().get_transfer_history({"keyword": keyword, "page": current_page, "pagenum": pagenum})
+    Result = WebAction().get_transfer_history(
+        {"keyword": keyword, "page": current_page, "pagenum": pagenum})
     PageRange = WebUtils.get_page_range(current_page=Result.get("currentPage"),
                                         total_page=Result.get("totalPage"))
 
@@ -799,7 +811,8 @@ def tmdbcache():
         current_page = 1
     else:
         current_page = int(current_page)
-    total_count, tmdb_caches = MetaHelper().dump_meta_data(search_str, current_page, page_num)
+    total_count, tmdb_caches = MetaHelper().dump_meta_data(
+        search_str, current_page, page_num)
     total_page = floor(total_count / page_num) + 1
     page_range = WebUtils.get_page_range(current_page=current_page,
                                          total_page=total_page)
@@ -822,7 +835,8 @@ def unidentification():
     pagenum = request.args.get("pagenum")
     keyword = request.args.get("s") or ""
     current_page = request.args.get("page")
-    Result = WebAction().get_unknown_list_by_page({"keyword": keyword, "page": current_page, "pagenum": pagenum})
+    Result = WebAction().get_unknown_list_by_page(
+        {"keyword": keyword, "page": current_page, "pagenum": pagenum})
     PageRange = WebUtils.get_page_range(current_page=Result.get("currentPage"),
                                         total_page=Result.get("totalPage"))
     return render_template("rename/unidentification.html",
@@ -1015,8 +1029,10 @@ def filterrule():
 def user_rss():
     Tasks = RssChecker().get_rsstask_info()
     RssParsers = RssChecker().get_userrss_parser()
-    RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
-    DownloadSettings = {did: attr["name"] for did, attr in Downloader().get_download_setting().items()}
+    RuleGroups = {str(group["id"]): group["name"]
+                  for group in Filter().get_rule_groups()}
+    DownloadSettings = {did: attr["name"] for did,
+                        attr in Downloader().get_download_setting().items()}
     RestypeDict = ModuleConf.TORRENT_SEARCH_PARAMS.get("restype")
     PixDict = ModuleConf.TORRENT_SEARCH_PARAMS.get("pix")
     return render_template("rss/user_rss.html",
@@ -1135,7 +1151,8 @@ def wechat():
             return "NAStool微信交互服务正常！<br>微信回调配置步聚：<br>1、在微信企业应用接收消息设置页面生成Token和EncodingAESKey并填入设置->消息通知->微信对应项，打开微信交互开关。<br>2、保存并重启本工具，保存并重启本工具，保存并重启本工具。<br>3、在微信企业应用接收消息设置页面输入此地址：http(s)://IP:PORT/wechat（IP、PORT替换为本工具的外网访问地址及端口，需要有公网IP并做好端口转发，最好有域名）。"
         sVerifyEchoStr = request.args.get("echostr")
         log.info("收到微信验证请求: echostr= %s" % sVerifyEchoStr)
-        ret, sEchoStr = wxcpt.VerifyURL(sVerifyMsgSig, sVerifyTimeStamp, sVerifyNonce, sVerifyEchoStr)
+        ret, sEchoStr = wxcpt.VerifyURL(
+            sVerifyMsgSig, sVerifyTimeStamp, sVerifyNonce, sVerifyEchoStr)
         if ret != 0:
             log.error("微信请求验证失败 VerifyURL ret: %s" % str(ret))
         # 验证URL成功，将sEchoStr返回给企业号
@@ -1144,7 +1161,8 @@ def wechat():
         try:
             sReqData = request.data
             log.debug("收到微信请求：%s" % str(sReqData))
-            ret, sMsg = wxcpt.DecryptMsg(sReqData, sVerifyMsgSig, sVerifyTimeStamp, sVerifyNonce)
+            ret, sMsg = wxcpt.DecryptMsg(
+                sReqData, sVerifyMsgSig, sVerifyTimeStamp, sVerifyNonce)
             if ret != 0:
                 log.error("解密微信消息失败 DecryptMsg ret = %s" % str(ret))
                 return make_response("ok", 200)
@@ -1188,7 +1206,8 @@ def wechat():
                 # 校验用户有权限执行交互命令
                 if conf.get("adminUser") and not any(
                         user_id == admin_user for admin_user in str(conf.get("adminUser")).split(";")):
-                    Message().send_channel_msg(channel=SearchType.WX, title="用户无权限执行菜单命令", user_id=user_id)
+                    Message().send_channel_msg(channel=SearchType.WX,
+                                               title="用户无权限执行菜单命令", user_id=user_id)
                     return make_response(content, 200)
                 # 事件消息
                 event_key = DomUtils.tag_value(root_node, "EventKey")
@@ -1210,7 +1229,8 @@ def wechat():
             return make_response(content, 200)
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
-            log.error("微信消息处理发生错误：%s - %s" % (str(err), traceback.format_exc()))
+            log.error("微信消息处理发生错误：%s - %s" %
+                      (str(err), traceback.format_exc()))
             return make_response("ok", 200)
 
 
@@ -1224,9 +1244,11 @@ def plex_webhook():
     request_json = json.loads(request.form.get('payload', {}))
     log.debug("收到Plex Webhook报文：%s" % str(request_json))
     # 事件类型
-    event_match = request_json.get("event") in ["media.play", "media.stop", "library.new"]
+    event_match = request_json.get(
+        "event") in ["media.play", "media.stop", "library.new"]
     # 媒体类型
-    type_match = request_json.get("Metadata", {}).get("type") in ["movie", "episode", "show"]
+    type_match = request_json.get("Metadata", {}).get("type") in [
+        "movie", "episode", "show"]
     # 是否直播
     is_live = request_json.get("Metadata", {}).get("live") == "1"
     # 如果事件类型匹配,媒体类型匹配,不是直播
@@ -1320,7 +1342,8 @@ def telegram():
         # 获取用户名
         user_name = message.get("from", {}).get("username")
         if text:
-            log.info(f"收到Telegram消息：userid={user_id}, username={user_name}, text={text}")
+            log.info(
+                f"收到Telegram消息：userid={user_id}, username={user_name}, text={text}")
             # 检查权限
             if text.startswith("/"):
                 if str(user_id) not in interactive_client.get("client").get_admin():
@@ -1360,19 +1383,22 @@ def synology():
         return 'NAStool未启用Synology Chat交互'
     msg_data = request.form
     if not SecurityHelper().check_synology_ip(request.remote_addr):
-        log.error("收到来自 %s 的非法Synology Chat消息：%s" % (request.remote_addr, msg_data))
+        log.error("收到来自 %s 的非法Synology Chat消息：%s" %
+                  (request.remote_addr, msg_data))
         return '不允许的IP地址请求'
     if msg_data:
         token = msg_data.get("token")
         if not interactive_client.get("client").check_token(token):
-            log.error("收到来自 %s 的非法Synology Chat消息：token校验不通过！" % request.remote_addr)
+            log.error("收到来自 %s 的非法Synology Chat消息：token校验不通过！" %
+                      request.remote_addr)
             return 'token校验不通过'
         text = msg_data.get("text")
         user_id = int(msg_data.get("user_id"))
         # 获取用户名
         user_name = msg_data.get("username")
         if text:
-            log.info(f"收到Synology Chat消息：userid={user_id}, username={user_name}, text={text}")
+            log.info(
+                f"收到Synology Chat消息：userid={user_id}, username={user_name}, text={text}")
             WebAction().handle_message_job(msg=text,
                                            in_from=SearchType.SYNOLOGY,
                                            user_id=user_id,
@@ -1498,7 +1524,8 @@ def slack():
             username = msg_json.get("user", {}).get("name")
         elif msg_json.get("type") == "event_callback":
             userid = msg_json.get('event', {}).get('user')
-            text = re.sub(r"<@[0-9A-Z]+>", "", msg_json.get("event", {}).get("text"), flags=re.IGNORECASE).strip()
+            text = re.sub(r"<@[0-9A-Z]+>", "", msg_json.get("event",
+                          {}).get("text"), flags=re.IGNORECASE).strip()
             username = ""
         elif msg_json.get("type") == "shortcut":
             userid = msg_json.get("user", {}).get("id")
@@ -1506,7 +1533,8 @@ def slack():
             username = msg_json.get("user", {}).get("username")
         else:
             return "Error"
-        log.info(f"收到Slack消息：userid={userid}, username={username}, text={text}")
+        log.info(
+            f"收到Slack消息：userid={userid}, username={username}, text={text}")
         WebAction().handle_message_job(msg=text,
                                        in_from=SearchType.SLACK,
                                        user_id=userid,
@@ -1562,7 +1590,8 @@ def subscribe():
     if notification_type not in ["MEDIA_APPROVED", "MEDIA_AUTO_APPROVED"]:
         return make_response("ok", 200)
     subject = req_json.get("subject")
-    media_type = MediaType.MOVIE if req_json.get("media", {}).get("media_type") == "movie" else MediaType.TV
+    media_type = MediaType.MOVIE if req_json.get("media", {}).get(
+        "media_type") == "movie" else MediaType.TV
     tmdbId = req_json.get("media", {}).get("tmdbId")
     if not media_type or not tmdbId or not subject:
         return make_response("请求参数不正确！", 500)
@@ -1583,7 +1612,8 @@ def subscribe():
         seasons = []
         for extra in req_json.get("extra", []):
             if extra.get("name") == "Requested Seasons":
-                seasons = [int(str(sea).strip()) for sea in extra.get("value").split(", ") if str(sea).isdigit()]
+                seasons = [int(str(sea).strip()) for sea in extra.get(
+                    "value").split(", ") if str(sea).isdigit()]
                 break
         for season in seasons:
             code, msg, _ = Subscribe().add_rss_subscribe(mtype=media_type,
@@ -1713,7 +1743,8 @@ def stream_logging():
                     logs = list(log.LOG_QUEUE)[-log.LOG_INDEX:]
                     log.LOG_INDEX = 0
                     if _source:
-                        logs = [lg for lg in logs if lg.get("source") == _source]
+                        logs = [lg for lg in logs if lg.get(
+                            "source") == _source]
                 else:
                     logs = []
                 time.sleep(1)
