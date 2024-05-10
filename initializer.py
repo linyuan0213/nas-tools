@@ -58,6 +58,8 @@ def check_config():
         # 检查HTTPS
         ssl_cert = Config().get_config('app').get('ssl_cert')
         ssl_key = Config().get_config('app').get('ssl_key')
+        if os.environ.get('NT_PORT'):
+            web_port = os.environ.get('NT_PORT')
         if not ssl_cert or not ssl_key:
             log.info(f"未启用https，请使用 http://IP:{str(web_port)} 访问管理页面")
         else:
