@@ -501,6 +501,9 @@ class Downloader:
                     else:
                         save_dir = None
                         subtitle_dir = visit_dir
+                        downloader.delete_torrents(ids=download_id, delete_file=True)
+                        __download_fail("请检查下载任务保存目录是否正确")
+                        return downloader_id, None, f"下载器 {downloader_name} 添加下载任务失败，请检查下载任务保存目录是否正确"
                 # 登记下载历史，记录下载目录
                 self.dbhelper.insert_download_history(media_info=media_info,
                                                       downloader=downloader_id,
