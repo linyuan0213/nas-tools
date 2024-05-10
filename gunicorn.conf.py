@@ -30,5 +30,5 @@ pidfile = os.path.join(ROOT_PATH, "gunicorn.pid")  # 存放Gunicorn进程pid的�
 
 access_log_format = '%(t)s %(p)s %(h)s "%(r)s" %(s)s %(L)s %(b)s %(f)s" "%(a)s"'  # 设置gunicorn访问日志格式，错误日志无法设置
 accesslog = os.path.join(LOG_PATH, "gunicorn_access.log")  # 访问日志文件
-errorlog = os.path.join(LOG_PATH, "gunicorn_error.log")  # 错误日志文件
+errorlog = '-'  # 错误日志文件
 graceful_timeout = 10
