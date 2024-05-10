@@ -1,0 +1,14 @@
+#!/usr/bin/with-contenv bash
+
+PID=$(pgrep -f "python config_monitor.py")
+
+# 检查进程是否正在运行
+if [ -z "$PID" ]; then
+    echo "进程未找到或未运行."
+    exit 1
+fi
+
+# 向进程发送终止信号
+kill -TERM $PID
+
+echo "进程已停止."
