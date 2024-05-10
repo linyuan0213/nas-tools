@@ -22,6 +22,7 @@ from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config, BRUSH_STOP_TORRENTS_I
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
+from app.utils import RedisStore
 
 
 @singleton
@@ -33,6 +34,7 @@ class BrushTask(object):
     dbhelper = None
     rsshelper = None
     downloader = None
+    redis_store = None
     _scheduler = None
     _jobstore = "brushtask"
     _brush_tasks = {}
@@ -51,6 +53,7 @@ class BrushTask(object):
         self.siteconf = SiteConf()
         self.filter = Filter()
         self.downloader = Downloader()
+        self.redis_store = RedisStore()
         # 移除现有任务
         self.stop_service()
         # 读取刷流任务列表
@@ -427,7 +430,9 @@ class BrushTask(object):
                     # 下载量
                     downloaded = torrent_info.get("downloaded")
                     # 平均上传速度
-                    avg_upspeed = torrent_info.get("avg_upspeed")
+                    last_uploaded = self.redis_store.hget('torrent', torrent_id) if self.redis_store.hget('torrent', torrent_id) else 0
+                    avg_upspeed = (torrent_info.get("uploaded") - int(last_uploaded)) / (BRUSH_REMOVE_TORRENTS_INTERVAL * 60)
+                    self.redis_store.hset('torrent', torrent_id, uploaded)
                     # 未活跃时间
                     iatime = torrent_info.get("iatime")
                     # 判断是否符合删除条件
@@ -440,6 +445,7 @@ class BrushTask(object):
                     if need_delete:
                         log.info(
                             "【Brush】%s 做种达到删种条件：%s，删除任务..." % (torrent_name, delete_type.value))
+                        self.redis_store.hdel('torrent', torrent_id)
                         if sendmessage:
                             __send_message(_task_name=task_name,
                                            _delete_type=delete_type,
@@ -502,7 +508,9 @@ class BrushTask(object):
                     # 下载耗时
                     dltime = torrent_info.get("dltime")
                     # 平均上传速度
-                    avg_upspeed = torrent_info.get("avg_upspeed")
+                    last_uploaded = self.redis_store.hget('torrent', torrent_id) if self.redis_store.hget('torrent', torrent_id) else 0
+                    avg_upspeed = (torrent_info.get("uploaded") - int(last_uploaded)) / (BRUSH_REMOVE_TORRENTS_INTERVAL * 60)
+                    self.redis_store.hset('torrent', torrent_id, uploaded)
                     # 未活跃时间
                     iatime = torrent_info.get("iatime")
                     # 上传量
@@ -525,6 +533,7 @@ class BrushTask(object):
                     if need_delete:
                         log.info(
                             "【Brush】%s 达到删种条件：%s，删除下载任务..." % (torrent_name, delete_type.value))
+                        self.redis_store.hdel('torrent', torrent_id)
                         if sendmessage:
                             __send_message(_task_name=task_name,
                                            _delete_type=delete_type,
@@ -917,7 +926,7 @@ class BrushTask(object):
                     if len(rule_times) > 1 and rule_times[1]:
                         if float(dltime) > float(rule_times[1]) * 3600:
                             return True, BrushDeleteType.DLTIME
-            if remove_rule.get("avg_upspeed") and avg_upspeed:
+            if remove_rule.get("avg_upspeed") and avg_upspeed is not None:
                 rule_avg_upspeeds = remove_rule.get("avg_upspeed").split("#")
                 if rule_avg_upspeeds[0]:
                     if len(rule_avg_upspeeds) > 1 and rule_avg_upspeeds[1]:
