@@ -1289,6 +1289,8 @@ class WebAction:
             if key == "test" and value:
                 config_test = True
                 continue
+            if key == "media.media_server" and value:
+                cache.delete("index")
             # 生效配置
             cfg = self.set_config_value(cfg, key, value)
 
