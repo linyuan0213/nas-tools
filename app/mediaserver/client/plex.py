@@ -573,7 +573,7 @@ class Plex(_IMediaClient):
                 else:
                     name = "%s 第%s季第%s集" % (item.grandparentTitle, item.parentIndex, item.index)
             link = self.get_play_url(item.key)
-            image = self.get_nt_image_url(item.artUrl)
+            image = self.get_nt_image_url(item.thumbUrl)
             ret_resume.append({
                 "id": item.key,
                 "name": name,

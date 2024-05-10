@@ -159,6 +159,32 @@ class Emby(_IMediaClient):
                 return self.get_nt_image_url(url=image_url, remote=True)
             return image_url
 
+    def __get_thumb_url(self, item_id, image_tag, remote=True, inner=False):
+        """
+        获取Thumb图片地址
+        :param: item_id: 在Emby中的ID
+        :param: image_tag: 图片的tag
+        :param: remote 是否远程使用，TG微信等客户端调用应为True
+        :param: inner 是否NT内部调用，为True是会使用NT中转
+        """
+        if not self._host or not self._apikey:
+            return ""
+        if not image_tag or not item_id:
+            return ""
+        if not remote:
+            image_url = f"{self._host}Items/{item_id}/"\
+                        f"Images/Thumb?tag={image_tag}&maxWidth=666&api_key={self._apikey}&quality=90"
+            if inner:
+                return self.get_nt_image_url(image_url)
+            return image_url
+        else:
+            host = self._play_host or self._host
+            image_url = f"{host}Items/{item_id}/"\
+                        f"Images/Thumb?tag={image_tag}&maxWidth=666&api_key={self._apikey}&quality=90"
+            if IpUtils.is_internal(host):
+                return self.get_nt_image_url(url=image_url, remote=True)
+            return image_url
+
     def get_server_id(self):
         """
         获得服务器信息
@@ -750,16 +776,16 @@ class Emby(_IMediaClient):
                         else:
                             title = f'{item.get("SeriesName")} 第{item.get("ParentIndexNumber")}季第{item.get("IndexNumber")}集'
                     if item_type == MediaType.MOVIE.value:
-                        if item.get("BackdropImageTags"):
-                            image = self.__get_backdrop_url(item_id=item.get("Id"),
-                                                            image_tag=item.get("BackdropImageTags")[0],
+                        if item.get("ImageTags"):
+                            image = self.__get_thumb_url(item_id=item.get("Id"),
+                                                            image_tag=item.get("ImageTags").get("Thumb"),
                                                             remote=False,
                                                             inner=True)
                         else:
                             image = self.get_local_image_by_id(item.get("Id"), remote=False, inner=True)
                     else:
-                        image = self.__get_backdrop_url(item_id=item.get("SeriesId"),
-                                                        image_tag=item.get("SeriesPrimaryImageTag"),
+                        image = self.__get_thumb_url(item_id=item.get("SeriesId"),
+                                                        image_tag=item.get("ParentThumbImageTag"),
                                                         remote=False,
                                                         inner=True)
                         if not image:
