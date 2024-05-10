@@ -58,7 +58,7 @@ pymongo==4.6.3
 PyMySQL==1.0.2
 pyperclip==1.8.2
 pypushdeer==0.0.3
-pyquery==1.4.3
+pyquery==2.0.0
 pyrsistent==0.18.1
 python-dateutil==2.8.2
 python_hosts==1.0.3
