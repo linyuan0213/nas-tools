@@ -109,11 +109,13 @@ def start_service():
     log.console("开始启动服务...")
     # 启动服务
     WebAction.start_service()
-    # 监听配置文件变化
-    start_config_monitor()
+    # 初始化浏览器驱动
+    init_chrome()
 
 
-os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
+# 调试用
+if os.environ.get('FLASK_DEBUG') == "1":
+    os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
 
 # 本地运行
 if __name__ == '__main__':
@@ -129,17 +131,14 @@ if __name__ == '__main__':
         sys.stdout = NullWriter()
         sys.stderr = NullWriter()
 
-
         def traystart():
             TrayIcon(homepage, log_path)
-
 
         if len(os.popen("tasklist| findstr %s" % os.path.basename(sys.executable), 'r').read().splitlines()) <= 2:
             p1 = threading.Thread(target=traystart, daemon=True)
             p1.start()
 
-    # 初始化浏览器驱动
-    init_chrome()
-
+    # 监听配置文件变化
+    start_config_monitor()
     # Flask启动
     App.run(**get_run_config(is_windows_exe))
