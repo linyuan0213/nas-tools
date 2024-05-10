@@ -19,6 +19,9 @@ class RedisStore:
     def hget(self, name, key):
         return self.client.hget(name, key)
 
+    def hdel(self, name, key):
+        self.client.hdel(name, key)
+
     def hgetall(self, name):
         return self.client.hgetall(name)
 
