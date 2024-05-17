@@ -7,7 +7,6 @@ from app.conf import SystemConfig
 from app.helper import IndexerHelper, IndexerConf, ProgressHelper, ChromeHelper, DbHelper
 from app.indexer.client._base import _IIndexClient
 from app.indexer.client._rarbg import Rarbg
-from app.indexer.client._render_spider import RenderSpider
 from app.indexer.client._spider import TorrentSpider
 from app.indexer.client._tnode import TNodeSpider
 from app.indexer.client._torrentleech import TorrentLeech
@@ -159,10 +158,6 @@ class BuiltinIndexer(_IIndexClient):
                 error_flag, result_array = Rarbg(indexer).search(
                     keyword=search_word,
                     imdb_id=match_media.imdb_id if match_media else None)
-            elif indexer.parser == "RenderSpider":
-                error_flag, result_array = RenderSpider(indexer).search(
-                    keyword=search_word,
-                    mtype=match_media.type if match_media and match_media.tmdb_info else None)
             elif indexer.parser == "TorrentLeech":
                 error_flag, result_array = TorrentLeech(indexer).search(keyword=search_word)
             elif indexer.parser == "MteamSpider":
@@ -218,10 +213,7 @@ class BuiltinIndexer(_IIndexClient):
         # 计算耗时
         start_time = datetime.datetime.now()
 
-        if indexer.parser == "RenderSpider":
-            error_flag, result_array = RenderSpider(indexer).search(keyword=keyword,
-                                                                    page=page)
-        elif indexer.parser == "RarBg":
+        if indexer.parser == "RarBg":
             error_flag, result_array = Rarbg(indexer).search(keyword=keyword,
                                                              page=page)
         elif indexer.parser == "TNodeSpider":
@@ -251,7 +243,7 @@ class BuiltinIndexer(_IIndexClient):
         return result_array
 
     @staticmethod
-    def __spider_search(indexer, keyword=None, page=None, mtype=None, timeout=30):
+    def __spider_search(indexer, keyword=None, page=None, mtype=None, timeout=60):
         """
         根据关键字搜索单个站点
         :param: indexer: 站点配置

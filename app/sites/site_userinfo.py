@@ -6,7 +6,7 @@ from threading import Lock
 import requests
 
 import log
-from app.helper import ChromeHelper, SubmoduleHelper, DbHelper
+from app.helper import SubmoduleHelper, DbHelper, DrissionPageHelper
 from app.message import Message
 from app.sites.sites import Sites
 from app.utils import RequestUtils, ExceptionUtils, StringUtils, JsonUtils
@@ -67,18 +67,14 @@ class SiteUserInfo(object):
 
         site_headers.update({'User-Agent': ua})
         # 检测环境，有浏览器内核的优先使用仿真签到
-        chrome = ChromeHelper()
-        if emulate and chrome.get_status():
-            if not chrome.visit(url=url, ua=ua, cookie=site_cookie, proxy=proxy):
-                log.error("【Sites】%s 无法打开网站" % site_name)
-                return None
+        # chrome = ChromeHelper()
+        chrome = DrissionPageHelper()
+        if emulate:
+            html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)
             # 循环检测是否过cf
-            cloudflare = chrome.pass_cloudflare()
-            if not cloudflare:
+            if not html_text:
                 log.error("【Sites】%s 跳转站点失败" % site_name)
                 return None
-            # 判断是否已签到
-            html_text = chrome.get_html()
         else:
             proxies = Config().get_proxies() if proxy else None
             if 'fsm' in url:

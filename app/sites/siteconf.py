@@ -9,7 +9,8 @@ from functools import lru_cache
 from lxml import etree
 from urllib.parse import urlsplit
 
-from app.helper import ChromeHelper
+from app.helper.drissionpage_helper import DrissionPageHelper
+from app.sites import Sites
 from app.utils import ExceptionUtils, StringUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from config import Config
@@ -161,12 +162,12 @@ class SiteConf:
                     base_url = f"{split_url.scheme}://{split_url.netloc}"
                     torrent_url = f"{base_url}/api/Torrents/details?tid={tid}&page=1"
 
+                site_info = Sites().get_sites(siteurl=torrent_url)
                 html_text = self.__get_site_page_html(url=torrent_url,
                                                       cookie=cookie,
                                                       ua=ua,
                                                       headers=headers,
-                                                      render=xpath_strs.get(
-                                                          'RENDER'),
+                                                      render=site_info.get('chrome'),
                                                       proxy=proxy)
                 if not html_text:
                     return ret_attr
@@ -239,13 +240,12 @@ class SiteConf:
             headers = json.loads(headers)
         else:
             headers = {}
-        chrome = ChromeHelper(headless=True)
+        chrome = DrissionPageHelper()
         if render and chrome.get_status():
             # 开渲染
-            if chrome.visit(url=url, cookie=cookie, ua=ua, proxy=proxy):
-                # 等待页面加载完成
-                time.sleep(10)
-                return chrome.get_html()
+            html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=proxy)
+            if html_text:
+                return html_text
         elif 'm-team' in url:
             param = {'id': param}
             headers.update({

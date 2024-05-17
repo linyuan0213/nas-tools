@@ -7,6 +7,8 @@ from jinja2 import Template
 from pyquery import PyQuery
 
 import feapder
+from app.helper.drissionpage_helper import DrissionPageHelper
+from app.sites import Sites
 import log
 from app.helper import RedisHelper
 from app.utils import StringUtils, SystemUtils, RequestUtils
@@ -89,6 +91,8 @@ class TorrentSpider(feapder.AirSpider):
     torrents_info = {}
     # 种子列表
     torrents_info_array = []
+    #站点信息
+    site_info = None
 
     def setparam(self, indexer,
                  keyword: [str, list] = None,
@@ -134,6 +138,7 @@ class TorrentSpider(feapder.AirSpider):
             self.referer = referer
         self.result_num = Config().get_config('pt').get('site_search_result_num') or 100
         self.torrents_info_array = []
+        self.site_info = Sites().get_sites(siteurl=indexer.domain)
 
     def start_requests(self):
         """
@@ -265,13 +270,21 @@ class TorrentSpider(feapder.AirSpider):
                                 render=self.render)
 
     def download_midware(self, request):
-        request.headers = {
-            "User-Agent": self.ua
-        }
-        request.cookies = RequestUtils.cookie_parse(self.cookie)
-        if self.proxies:
-            request.proxies = self.proxies
-        return request
+        response = None
+        if not self.site_info.get('chrome'):
+            request.headers = {
+                "User-Agent": self.ua
+            }
+            request.cookies = RequestUtils.cookie_parse(self.cookie)
+            if self.proxies:
+                request.proxies = self.proxies
+        else:
+            chrome = DrissionPageHelper()
+            if chrome.get_status():
+                html_text = chrome.get_page_html(url=request.url, cookies=self.cookie, ua=self.ua, proxies=self.proxies)
+                if html_text:
+                    response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
+        return request, response
 
     def Gettitle_default(self, torrent):
         # title default
@@ -307,7 +320,12 @@ class TorrentSpider(feapder.AirSpider):
         # title optional
         if 'description' not in self.fields:
             return
-        selector = self.fields.get('description', {})
+        selector = copy.deepcopy(self.fields.get('description', {}))
+        if self.site_info.get('chrome') and selector.get('selector', '').find('table') != -1:
+            tmp_selector = selector.get('selector', '')
+            tmp_selector = tmp_selector.replace('tr >', 'tbody > tr > ')
+            selector['selector'] = tmp_selector
+
         if "selector" in selector \
                 or "selectors" in selector:
             description = torrent(selector.get('selector', selector.get('selectors', ''))).clone()
@@ -537,7 +555,12 @@ class TorrentSpider(feapder.AirSpider):
         # labels
         if 'labels' not in self.fields:
             return
-        selector = self.fields.get('labels', {})
+        selector = copy.deepcopy(self.fields.get('labels', {}))
+        if self.site_info.get('chrome') and selector.get('selector', '').find('table') != -1:
+            tmp_selector = selector.get('selector', '')
+            tmp_selector = tmp_selector.replace('tr >', 'tbody > tr > ')
+            selector['selector'] = tmp_selector
+
         labels = torrent(selector.get("selector", "")).clone()
         self.__remove(labels, selector)
         items = self.__attribute_or_text(labels, selector)
@@ -653,6 +676,8 @@ class TorrentSpider(feapder.AirSpider):
             html_doc = PyQuery(html_text)
             # 种子筛选器
             torrents_selector = self.list.get('selector', '')
+            if self.site_info.get('chrome') and torrents_selector.find('tr:has') != -1:
+                torrents_selector = torrents_selector.replace('> tr:has', ' > tbody > tr:has')
             # 遍历种子html列表
             for torn in html_doc(torrents_selector):
                 self.torrents_info_array.append(copy.deepcopy(self.Getinfo(PyQuery(torn))))

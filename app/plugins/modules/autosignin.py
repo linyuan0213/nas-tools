@@ -1,5 +1,4 @@
 import re
-import time
 import json
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool as ThreadPool
@@ -8,12 +7,10 @@ from urllib.parse import urlsplit
 
 import pytz
 from lxml import etree
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as es
-from selenium.webdriver.support.wait import WebDriverWait
 
-from app.helper import ChromeHelper, SubmoduleHelper, SiteHelper
+from app.helper import SubmoduleHelper, SiteHelper
 from app.helper.cloudflare_helper import under_challenge
+from app.helper.drissionpage_helper import DrissionPageHelper
 from app.message import Message
 from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
@@ -460,26 +457,17 @@ class AutoSignIn(_IPluginModule):
                 headers = json.loads(headers)
             else:
                 headers = {}
-            chrome = ChromeHelper()
+            chrome = DrissionPageHelper()
             if site_info.get("chrome") and chrome.get_status():
                 # 首页
                 self.info("开始站点仿真签到：%s" % site)
                 home_url = StringUtils.get_base_url(site_url)
                 if "1ptba" in home_url:
                     home_url = f"{home_url}/index.php"
-                if not chrome.visit(url=home_url, ua=ua, cookie=site_cookie, proxy=site_info.get("proxy")):
+                html_text = chrome.get_page_html(url=home_url, ua=ua, cookies=site_cookie, proxies=site_info.get("proxy"))
+                if not html_text:
                     self.warn("%s 无法打开网站" % site)
                     return f"【{site}】仿真签到失败，无法打开网站！"
-                # 循环检测是否过cf
-                cloudflare = chrome.pass_cloudflare()
-                if not cloudflare:
-                    self.warn("%s 跳转站点失败" % site)
-                    return f"【{site}】仿真签到失败，跳转站点失败！"
-                # 判断是否已签到
-                html_text = chrome.get_html()
-                if not html_text:
-                    self.warn("%s 获取站点源码失败" % site)
-                    return f"【{site}】仿真签到失败，获取站点源码失败！"
                 # 查找签到按钮
                 html = etree.HTML(html_text)
                 xpath_str = None
@@ -500,23 +488,20 @@ class AutoSignIn(_IPluginModule):
                         return f"【{site}】模拟登录失败！"
                 # 开始仿真
                 try:
-                    checkin_obj = WebDriverWait(driver=chrome.browser, timeout=10).until(
-                        es.element_to_be_clickable((By.XPATH, xpath_str)))
-                    if checkin_obj:
-                        checkin_obj.click()
-                        # 检测是否过cf
-                        time.sleep(3)
-                        if under_challenge(chrome.get_html()):
-                            cloudflare = chrome.pass_cloudflare()
-                            if not cloudflare:
-                                self.info("%s 仿真签到失败，无法通过Cloudflare" % site)
-                                return f"【{site}】仿真签到失败，无法通过Cloudflare！"
+                    html_text = chrome.get_page_html(url=home_url,
+                                                     ua=ua,
+                                                     cookies=site_cookie,
+                                                     proxies=site_info.get("proxy"),
+                                                     callback=lambda page: page(f'x:{xpath_str}').click(by_js=True))
+                    if not html_text:
+                        self.info("%s 仿真签到失败，无法通过Cloudflare" % site)
+                        return f"【{site}】仿真签到失败，无法通过Cloudflare！"
 
-                        # 判断是否已签到   [签到已得125, 补签卡: 0]
-                        if re.search(r'已签|签到已得', chrome.get_html(), re.IGNORECASE):
-                            return f"【{site}】签到成功"
-                        self.info("%s 仿真签到成功" % site)
-                        return f"【{site}】仿真签到成功"
+                    # 判断是否已签到   [签到已得125, 补签卡: 0]
+                    if re.search(r'已签|签到已得', html_text, re.IGNORECASE):
+                        return f"【{site}】签到成功"
+                    self.info("%s 仿真签到成功" % site)
+                    return f"【{site}】仿真签到成功"
                 except Exception as e:
                     ExceptionUtils.exception_traceback(e)
                     self.warn("%s 仿真签到失败：%s" % (site, str(e)))
