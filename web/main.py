@@ -1850,3 +1850,13 @@ def str_filesize(size):
 @App.template_filter('hash')
 def md5_hash(text):
     return StringUtils.md5_hash(text)
+
+
+# 健康检查
+@App.route('/healthcheck', methods=['GET'])
+def healthcheck():
+    return {
+            "code": 0,
+            "success": True,
+            "data": {}
+    }

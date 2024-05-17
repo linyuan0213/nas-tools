@@ -53,7 +53,10 @@ RUN mkdir ${HOME} \
     && echo 'fs.inotify.max_user_watches=5242880' >> /etc/sysctl.conf \
     && echo 'fs.inotify.max_user_instances=5242880' >> /etc/sysctl.conf \
     && echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf \
-    && echo "nt ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
+    && echo "nt ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers 
+
+HEALTHCHECK --interval=30s --timeout=30s --retries=3 \
+    CMD wget -qO- http://localhost:${NT_PORT}/healthcheck || exit 1
 EXPOSE 3000
 VOLUME ["/config"]
 ENTRYPOINT [ "/init" ]
