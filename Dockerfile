@@ -14,6 +14,8 @@ RUN apk add --no-cache --virtual .build-deps \
     && if [ "$(uname -m)" = "x86_64" ]; then ARCH=amd64; elif [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; fi \
     && curl https://dl.min.io/client/mc/release/linux-${ARCH}/mc --create-dirs -o /usr/bin/mc \
     && chmod +x /usr/bin/mc \
+    && python -m venv .venv \
+    && source .venv/bin/activate \
     && pip install --upgrade pip setuptools wheel \
     && pip install cython \
     && pip install gunicorn \
