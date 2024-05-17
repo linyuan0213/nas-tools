@@ -24,12 +24,13 @@ from icalendar import Calendar, Event, Alarm
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_session import Session
 
+from app.helper.drissionpage_helper import DrissionPageHelper
 import log
 from app.brushtask import BrushTask
 from app.conf import ModuleConf, SystemConfig
 from app.downloader import Downloader
 from app.filter import Filter
-from app.helper import SecurityHelper, MetaHelper, ChromeHelper, ThreadHelper
+from app.helper import SecurityHelper, MetaHelper, ThreadHelper
 from app.indexer import Indexer
 from app.media.meta import MetaInfo
 from app.mediaserver import MediaServer
@@ -391,7 +392,7 @@ def sites():
                   for group in Filter().get_rule_groups()}
     DownloadSettings = {did: attr["name"] for did,
                         attr in Downloader().get_download_setting().items()}
-    ChromeOk = ChromeHelper().get_status()
+    ChromeOk = DrissionPageHelper().get_status()
     CookieCloudCfg = SystemConfig().get(SystemConfigKey.CookieCloud)
     CookieUserInfoCfg = SystemConfig().get(SystemConfigKey.CookieUserInfo)
     return render_template("site/site.html",
