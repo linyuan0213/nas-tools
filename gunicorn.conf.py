@@ -2,6 +2,8 @@
 import os
 import hashlib
 import random
+import ruamel.yaml
+
 
 
 os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
@@ -10,6 +12,13 @@ config = os.environ.get('NASTOOL_CONFIG')
 if not config:
     print("环境变量 NASTOOL_CONFIG 不存在")
     os._exit(-1)
+ssl_cert = ''
+ssl_key = ''
+with open(config, 'r') as f:
+    yaml = ruamel.yaml.YAML()
+    cf = yaml.load(f)
+    ssl_cert = cf.get('app').get('ssl_cert')
+    ssl_key = cf.get('app').get('ssl_key')
 
 ROOT_PATH = os.path.dirname(os.path.abspath(config))
 LOG_PATH = os.path.join(ROOT_PATH, 'logs')
@@ -32,3 +41,5 @@ access_log_format = '%(t)s %(p)s %(h)s "%(r)s" %(s)s %(L)s %(b)s %(f)s" "%(a)s"'
 accesslog = os.path.join(LOG_PATH, "gunicorn_access.log")  # 访问日志文件
 errorlog = '-'  # 错误日志文件
 graceful_timeout = 10
+keyfile = ssl_key
+certfile = ssl_cert
