@@ -62,6 +62,7 @@ class SiteCookie(object):
         :param proxy: 是否使用内置代理
         :return: cookie、ua、message
         """
+        # TODO 更改为DrissionPage
         if not url or not username or not password:
             return None, None, "参数错误"
         # 全局锁

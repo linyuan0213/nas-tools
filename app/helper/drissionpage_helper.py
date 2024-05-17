@@ -12,6 +12,8 @@ class DrissionPageHelper:
         self.co.set_timeouts(base=2, script=3)
         self.co.set_retry(times=3, interval=2)
         self.co.incognito(True)
+        self.co.set_argument('--headless', 'new')
+        self.co.set_argument('--no-sandbox')
 
     def get_status(self):
         return True

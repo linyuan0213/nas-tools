@@ -1,4 +1,4 @@
-FROM alpine:3.17 AS Builder
+FROM alpine:3.19 AS Builder
 
 COPY ./package_list.txt /tmp/
 COPY ./requirements.txt /tmp/

@@ -8,7 +8,7 @@ bash
 fuse3
 xvfb
 inotify-tools
-chromium-chromedriver
+chromium
 s6-overlay
 ffmpeg
 redis
