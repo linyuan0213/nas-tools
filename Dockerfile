@@ -1,4 +1,4 @@
-FROM alpine:3.19 AS Builder
+FROM python:3.11-alpine3.19 AS Builder
 
 COPY ./package_list.txt /tmp/
 COPY ./requirements.txt /tmp/
@@ -9,13 +9,10 @@ RUN apk add --no-cache --virtual .build-deps \
         libxml2-dev \
         libxslt-dev \
     && apk add --no-cache $(cat /tmp/package_list.txt) \
-    && ln -sf /usr/bin/python3 /usr/bin/python \
     && curl https://rclone.org/install.sh | bash \
     && if [ "$(uname -m)" = "x86_64" ]; then ARCH=amd64; elif [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; fi \
     && curl https://dl.min.io/client/mc/release/linux-${ARCH}/mc --create-dirs -o /usr/bin/mc \
     && chmod +x /usr/bin/mc \
-    && python -m venv .venv \
-    && source .venv/bin/activate \
     && pip install --upgrade pip setuptools wheel \
     && pip install cython \
     && pip install gunicorn \
