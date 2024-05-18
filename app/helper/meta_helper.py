@@ -194,7 +194,7 @@ class MetaHelper(object):
                         new_meta_data.pop(k)
         else:
             count = 0
-            keys = random.sample(new_meta_data.keys(), 25)
+            keys = random.sample(list(new_meta_data.keys()), 25)
             for k in keys:
                 info = new_meta_data.get(k)
                 expire = info.get(CACHE_EXPIRE_TIMESTAMP_STR)
