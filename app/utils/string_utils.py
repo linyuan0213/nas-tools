@@ -4,7 +4,6 @@ import hashlib
 import random
 import re
 import base64
-import importlib
 from urllib import parse
 
 import cn2an

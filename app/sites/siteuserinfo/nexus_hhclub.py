@@ -155,10 +155,10 @@ class NexusPhpHhclubSiteUserInfo(_ISiteUserInfo):
 
         seeding_torrents = json_data.get('data')
         if seeding_torrents:
-            page_seeding = int(json_data.get('count'))
+            page_seeding = len(seeding_torrents)
 
             for torrent in seeding_torrents:
-                size = int(torrent.get('downloaded'))
+                size = StringUtils.num_filesize(torrent.get('size'))
                 seeders = int(torrent.get('seeders'))
 
                 page_seeding_size += size
