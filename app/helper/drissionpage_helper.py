@@ -35,7 +35,7 @@ class DrissionPageHelper:
                     if "challenge" in target_frame.url and "turnstile" in target_frame.url:
                         try:
                             click = target_frame(
-                                "x://input[@type='checkbox']", timeout=2)
+                                "x://input[@type='checkbox']", timeout=15)
                             if click:
                                 click.click()
                         except Exception as e:
