@@ -24,7 +24,7 @@ class DrissionPageHelper:
         cf = True
         user_tries = tries
         while tries > 0:
-            page.wait(1.5)
+            page.wait(2)
             try:
                 success = False if page(
                     "x://div[@id='challenge-stage']", timeout=10) else True
