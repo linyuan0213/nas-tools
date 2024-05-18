@@ -27,7 +27,7 @@ class DrissionPageHelper:
             page.wait(1.5)
             try:
                 success = False if page(
-                    "x://div[@id='challenge-stage']", timeout=2) else True
+                    "x://div[@id='challenge-stage']", timeout=10) else True
                 if success:
                     page.stop_loading()
                     break
@@ -85,7 +85,7 @@ class DrissionPageHelper:
             logger.debug(f"url: {url} 获取网页源码成功")
             content = page.html
         else:
-            logger.error(f"url: {url}获取网页源码失败")
+            logger.error(f"url: {url} 获取网页源码失败")
         page.quit()
 
         return content
