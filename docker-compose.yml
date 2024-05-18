@@ -17,7 +17,7 @@ services:
     hostname: nas-tools
     container_name: nas-tools
     healthcheck:
-      test: ["CMD", "wget -qO- http://localhost:3000/healthcheck || exit 1"] # 检测方式
+      test: "wget -qO- http://localhost:3000/healthcheck || exit 1" # 检测方式
       interval: 30s  # 多次检测间隔多久 (default: 30s)
       timeout: 30s # 超时时间 (default: 30s)
       retries: 3 # 尝试次数(default: 3)
