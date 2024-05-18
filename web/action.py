@@ -311,8 +311,6 @@ class WebAction:
         Scheduler().stop_service()
         # 停止监控
         Sync().stop_service()
-        # 关闭虚拟显示
-        # DisplayHelper().stop_service()
         # 关闭刷流
         BrushTask().stop_service()
         # 关闭自定义订阅
@@ -330,8 +328,6 @@ class WebAction:
         IndexerHelper()
         # 加载站点配置
         SiteConf()
-        # 启动虚拟显示
-        # DisplayHelper()
         # 启动定时服务
         Scheduler()
         # 启动监控服务

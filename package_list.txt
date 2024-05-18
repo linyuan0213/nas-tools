@@ -1,12 +1,9 @@
 git
-python3-dev
-py3-pip
 tzdata
 zip
 curl
 bash
 fuse3
-xvfb
 inotify-tools
 chromium
 s6-overlay
