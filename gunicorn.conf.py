@@ -3,8 +3,7 @@ import os
 import hashlib
 import random
 import ruamel.yaml
-
-
+import shutil
 
 os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
 
@@ -12,6 +11,12 @@ config = os.environ.get('NASTOOL_CONFIG')
 if not config:
     print("环境变量 NASTOOL_CONFIG 不存在")
     os._exit(-1)
+
+if not os.path.exists(config):
+    os.makedirs(os.path.dirname(config), exist_ok=True)
+    cfg_tp_path = os.path.join('./config', "config.yaml")
+    shutil.copy(cfg_tp_path, config)
+    print("【Config】config.yaml 配置文件不存在，已将配置文件模板复制到配置目录...")
 ssl_cert = ''
 ssl_key = ''
 with open(config, 'r') as f:
