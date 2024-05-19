@@ -1510,6 +1510,9 @@ class Downloader:
 
     @staticmethod
     def get_download_url(page_url):
+        """
+        馒头页面url获取下载链接
+        """
         split_url = urlsplit(page_url)
         base_url = f"{split_url.scheme}://{split_url.netloc}"
         site_info = Sites().get_sites(siteurl=base_url)
