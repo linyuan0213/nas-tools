@@ -397,7 +397,7 @@ class AutoSignIn(_IPluginModule):
                 Message().send_site_signin_message(signin_message)
 
                 if self._scheduler and self._scheduler.SCHEDULER:
-                    for job in self._scheduler.get_jobs(self._jobstore):
+                    for job in self._scheduler.get_jobs():
                         if 'signin' in job.name:
                             next_run_time = job.next_run_time.strftime(
                                 '%Y-%m-%d %H:%M:%S')
@@ -566,9 +566,9 @@ class AutoSignIn(_IPluginModule):
         """
         try:
             if self._scheduler and self._scheduler.SCHEDULER:
-                for job in self._scheduler.get_jobs(self._jobstore):
+                for job in self._scheduler.get_jobs():
                     if 'signin' in job.name:
-                        self._scheduler.remove_job(job.id, self._jobstore)
+                        self._scheduler.remove_job(job.id)
         except Exception as e:
             print(str(e))
 
