@@ -126,6 +126,8 @@ class SiteConf:
             "peer_count": 0
         }
         try:
+            if headers and headers.get("authorization"):
+                headers.pop('authorization')
             # 这里headers必须是string类型
             headers = json.dumps(headers)
             if 'm-team' in torrent_url:
@@ -251,6 +253,8 @@ class SiteConf:
             headers.update({
                 "contentType": 'application/json;charset=UTF-8'
             })
+            if headers.get('authorization'):
+                headers.pop('authorization')
             res = RequestUtils(
                 headers=headers,
                 proxies=Config().get_proxies() if proxy else None

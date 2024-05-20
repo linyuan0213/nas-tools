@@ -523,7 +523,8 @@ class AutoSignIn(_IPluginModule):
                         "content-type": "application/json",
                         "user-agent": ua
                     })
-                    headers.pop("x-api-key")
+                    if headers.get('x-api-key'):
+                        headers.pop("x-api-key")
                     if not headers.get("authorization"):
                         self.warn(f"{site} 请填写请求头 authorization 参数")
                         return f"【{site}】{site} 请填写请求头 authorization 参数！"

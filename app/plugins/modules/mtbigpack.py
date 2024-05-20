@@ -234,6 +234,7 @@ class MTBigPack(_IPluginModule):
             time.sleep(1)
             self._set_collection(url=collection_url,
                                  torrent_id=id, make='false')
+            self._redis_store.hdel('bigpack', id)
             self.info(f"馒头大包收藏移除成功 种子id: {id}")
 
         # 发送通知
@@ -280,7 +281,8 @@ class MTBigPack(_IPluginModule):
         data = json.dumps(param, separators=(',', ':'))
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        headers.pop('authorization')
+        if not headers.get("authorization"):
+            headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
             "User-Agent": f"{self._site_info.get('ua')}"
@@ -313,7 +315,8 @@ class MTBigPack(_IPluginModule):
         data = {"id": torrent_id, "make": f"{make}"}
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        headers.pop('authorization')
+        if not headers.get("authorization"):
+            headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
             "User-Agent": f"{self._site_info.get('ua')}"

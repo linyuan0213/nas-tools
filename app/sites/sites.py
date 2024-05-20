@@ -302,6 +302,8 @@ class Sites:
             start_time = datetime.now()
             # m-team处理
             if 'm-team' in site_url:
+                if headers.get("authorization"):
+                    headers.pop('authorization')
                 url = site_url + '/api/member/profile'
                 res = RequestUtils(headers=headers,
                                    proxies=Config().get_proxies() if site_info.get("proxy") else None

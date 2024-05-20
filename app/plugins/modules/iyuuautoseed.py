@@ -848,6 +848,8 @@ class IYUUAutoSeed(_IPluginModule):
                     headers = json.loads(headers)
                 else:
                     headers = {}
+                if headers.get("authorization"):
+                    headers.pop('authorization')
                 headers.update({
                     'User-Agent': site.get("ua"),
                     'contentType': 'application/json;charset=UTF-8'
