@@ -309,7 +309,8 @@ class BrushTask(object):
                                            site_info=site_info,
                                            title=torrent_name,
                                            enclosure=enclosure,
-                                           size=size):
+                                           size=size,
+                                           page_url=page_url):
                     # 计数
                     success_count += 1
                     # 添加种子后不能超过最大下载数量
@@ -363,6 +364,7 @@ class BrushTask(object):
                 # 需要更新状态的种子
                 update_torrents = []
                 # 任务信息
+                site_id = taskinfo.get("site_id")
                 task_name = taskinfo.get("name")
                 downloader_id = taskinfo.get("downloader")
                 remove_rule = taskinfo.get("remove_rule")
@@ -435,17 +437,23 @@ class BrushTask(object):
                     self.redis_store.hset('torrent', torrent_id, uploaded)
                     # 未活跃时间
                     iatime = torrent_info.get("iatime")
+                    # 获取种子hr属性
+                    page_torrent_id = (self.redis_store.hget('torrent_url', f'{downloader_id}_{torrent_id}') or b'').decode("utf-8")
+                    torrent_attr = json.loads((self.redis_store.hget('torrent_attr', f'{site_id}_{page_torrent_id}') or b'').decode('utf-8') or '{}')
                     # 判断是否符合删除条件
                     need_delete, delete_type = self.__check_remove_rule(remove_rule=remove_rule,
                                                                         seeding_time=seeding_time,
                                                                         ratio=torrent_ratio,
                                                                         uploaded=uploaded,
                                                                         avg_upspeed=avg_upspeed,
-                                                                        iatime=iatime)
+                                                                        iatime=iatime,
+                                                                        torrent_attr=torrent_attr)
                     if need_delete:
                         log.info(
                             "【Brush】%s 做种达到删种条件：%s，删除任务..." % (torrent_name, delete_type.value))
                         self.redis_store.hdel('torrent', torrent_id)
+                        self.redis_store.hdel('torrent_url', f'{downloader_id}_{torrent_id}')
+                        self.redis_store.hdel('torrent_attr', f'{site_id}_{page_torrent_id}')
                         if sendmessage:
                             __send_message(_task_name=task_name,
                                            _delete_type=delete_type,
@@ -648,7 +656,8 @@ class BrushTask(object):
                            site_info,
                            title,
                            enclosure,
-                           size
+                           size,
+                           page_url
                            ):
         """
         添加下载任务，更新任务数据
@@ -672,14 +681,24 @@ class BrushTask(object):
         download_limit = rss_rule.get("downspeed")
         upload_limit = rss_rule.get("upspeed")
         download_dir = taskinfo.get("savepath")
+
+        res = re.findall(r'\d+', page_url)
+        if res:
+            torrent_id = res[0]
+            torrent_attr = json.loads(self.redis_store.hget('torrent_attr', f'{site_info.get("id")}_{torrent_id}').decode('utf-8') or '{}')
+            hr_tag = []
+            if torrent_attr.get("hr"):
+                hr_tag = ['HR']
         tag = taskinfo.get("label").split(
             ',') if taskinfo.get("label") else None
         # 标签
         if not transfer:
             if tag:
                 tag += ["已整理"]
+                tag += hr_tag
             else:
                 tag = ["已整理"]
+                tag += hr_tag
         # 开始下载
         meta_info = MetaInfo(title=title)
         meta_info.set_torrent_info(site=site_info.get("name"),
@@ -716,6 +735,12 @@ class BrushTask(object):
                            f"添加时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}"
                 self.message.send_brushtask_added_message(
                     title=msg_title, text=msg_text)
+
+        # 插入种子页面id， 方便处理hr
+        res = re.findall(r'\d+', page_url)
+        if res:
+            torrent_id = res[0]
+            self.redis_store.hset('torrent_url', f'{downloader_id}_{download_id}', torrent_id)
         # 插入种子数据
         if self.dbhelper.insert_brushtask_torrent(brush_id=taskid,
                                                   title=title,
@@ -797,6 +822,11 @@ class BrushTask(object):
                                                             proxy=proxy)
             torrent_peer_count = torrent_attr.get("peer_count")
             log.debug("【Brush】%s 解析详情, %s" % (title, torrent_attr))
+
+            res = re.findall(r'\d+', torrent_url)
+            if res:
+                torrent_id = res[0]
+                self.redis_store.hset('torrent_attr', f'{siteid}_{torrent_id}', json.dumps(torrent_attr))
 
             # 检查免费状态
             if rss_rule.get("free") == "FREE":
@@ -888,7 +918,8 @@ class BrushTask(object):
                             dltime=None,
                             avg_upspeed=None,
                             iatime=None,
-                            pending_time=None):
+                            pending_time=None,
+                            torrent_attr=None):
         """
         检查是否符合删种规则
         :param remove_rule: 删种规则
@@ -901,13 +932,22 @@ class BrushTask(object):
         """
         if not remove_rule:
             return False
+        hr = False
+        if torrent_attr and torrent_attr.get('hr'):
+            hr = True
         try:
-            if remove_rule.get("time") and seeding_time:
+            if remove_rule.get("time") and seeding_time and not hr:
                 rule_times = remove_rule.get("time").split("#")
                 if rule_times[0]:
                     if len(rule_times) > 1 and rule_times[1]:
                         if float(seeding_time) > float(rule_times[1]) * 3600:
                             return True, BrushDeleteType.SEEDTIME
+            if remove_rule.get("hr_time") and seeding_time and hr:
+                rule_hr_times = remove_rule.get("hr_time").split("#")
+                if rule_hr_times[0]:
+                    if len(rule_hr_times) > 1 and rule_hr_times[1]:
+                        if float(seeding_time) > float(rule_hr_times[1]) * 3600:
+                            return True, BrushDeleteType.HRSEEDTIME
             if remove_rule.get("ratio") and ratio:
                 rule_ratios = remove_rule.get("ratio").split("#")
                 if rule_ratios[0]:

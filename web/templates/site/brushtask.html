@@ -562,6 +562,30 @@
           </div>
           <div class="col-lg-4">
             <div class="mb-3">
+              <label class="form-label">H&R 做种时间(小时) <span class="form-help" title="H&R 做种超过设定时间时会删除下载任务"
+                                                             data-bs-toggle="tooltip">?</span></label>
+              <div class="input-group">
+                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false" id="brushtask_hr_seedtime_btn">
+                  忽略
+                </button>
+                <input type="hidden" id="brushtask_hr_seedtime_do">
+                <div class="dropdown-menu" style="">
+                  <a class="dropdown-item" id="brushtask_hr_seedtime_do_" href="javascript:void(0)"
+                     onclick="filter_item_change('', 'brushtask_hr_seedtime',$(this))">
+                    忽略
+                  </a>
+                  <a class="dropdown-item" id="brushtask_hr_seedtime_do_gt" href="javascript:void(0)"
+                     onclick="filter_item_change('gt', 'brushtask_hr_seedtime',$(this))">
+                    大于
+                  </a>
+                </div>
+                <input type="text" class="form-control" id="brushtask_hr_seedtime" readonly>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
               <label class="form-label">分享率 <span class="form-help" title="分享率超过设定值时会删除下载任务（分享率为上传量与种子大小的比值）"
                                                      data-bs-toggle="tooltip">?</span></label>
               <div class="input-group">
@@ -813,6 +837,11 @@
           let seedtime_str = ret.task.remove_rule.time.split('#');
           filter_item_change(seedtime_str[0], 'brushtask_seedtime', $('#brushtask_seedtime_do_' + seedtime_str[0]), seedtime_str[1])
         }
+        //hr做种时间
+        if (ret.task.remove_rule.hr_time) {
+          let hr_seedtime_str = ret.task.remove_rule.hr_time.split('#');
+          filter_item_change(hr_seedtime_str[0], 'brushtask_hr_seedtime', $('#brushtask_hr_seedtime_do_' + hr_seedtime_str[0]), hr_seedtime_str[1])
+        }
         //做种大小
         if (ret.task.remove_rule.uploadsize) {
           let seedsize_str = ret.task.remove_rule.uploadsize.split('#');
@@ -1062,6 +1091,19 @@
       }
       $("#brushtask_seedtime").removeClass("is-invalid");
     }
+    //hr 做种时间
+    let brushtask_hr_seedtime_do = $("#brushtask_hr_seedtime_do").val();
+    let brushtask_hr_seedtime = $("#brushtask_hr_seedtime").val();
+    if (brushtask_hr_seedtime_do && !brushtask_hr_seedtime) {
+      $("#brushtask_hr_seedtime").addClass("is-invalid");
+      return;
+    } else {
+      if (brushtask_hr_seedtime && isNaN(brushtask_hr_seedtime)) {
+        $("#brushtask_hr_seedtime").addClass("is-invalid");
+        return;
+      }
+      $("#brushtask_hr_seedtime").removeClass("is-invalid");
+    }
     //分享率
     let brushtask_seedratio_do = $("#brushtask_seedratio_do").val();
     let brushtask_seedratio = $("#brushtask_seedratio").val();
@@ -1167,6 +1209,7 @@
       brushtask_dlcount: brushtask_dlcount,
       brushtask_peercount: brushtask_peercount_do + "#" + brushtask_peercount,
       brushtask_seedtime: brushtask_seedtime_do + "#" + brushtask_seedtime,
+      brushtask_hr_seedtime: brushtask_hr_seedtime_do + "#" + brushtask_hr_seedtime,
       brushtask_seedratio: brushtask_seedratio_do + "#" + brushtask_seedratio,
       brushtask_seedsize: brushtask_seedsize_do + "#" + brushtask_seedsize,
       brushtask_dltime: brushtask_dltime_do + "#" + brushtask_dltime,

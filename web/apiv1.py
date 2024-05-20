@@ -1657,6 +1657,7 @@ class BrushTaskUpdate(ClientResource):
     parser.add_argument('brushtask_dlcount', type=int, help='同时下载任务数', location='form')
     parser.add_argument('brushtask_peercount', type=int, help='做种人数限制', location='form')
     parser.add_argument('brushtask_seedtime', type=float, help='做种时间(小时)', location='form')
+    parser.add_argument('brushtask_hr_seedtime', type=float, help='H&R 做种时间(小时)', location='form')
     parser.add_argument('brushtask_seedratio', type=float, help='分享率', location='form')
     parser.add_argument('brushtask_seedsize', type=int, help='上传量(GB)', location='form')
     parser.add_argument('brushtask_dltime', type=float, help='下载耗时(小时)', location='form')

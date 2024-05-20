@@ -1977,6 +1977,7 @@ class WebAction:
         brushtask_dlcount = data.get("brushtask_dlcount")
         brushtask_peercount = data.get("brushtask_peercount")
         brushtask_seedtime = data.get("brushtask_seedtime")
+        brushtask_hr_seedtime = data.get("brushtask_hr_seedtime")
         brushtask_seedratio = data.get("brushtask_seedratio")
         brushtask_seedsize = data.get("brushtask_seedsize")
         brushtask_dltime = data.get("brushtask_dltime")
@@ -2003,6 +2004,7 @@ class WebAction:
         # 删除规则
         remove_rule = {
             "time": brushtask_seedtime,
+            "hr_time": brushtask_hr_seedtime,
             "ratio": brushtask_seedratio,
             "uploadsize": brushtask_seedsize,
             "dltime": brushtask_dltime,

@@ -15,7 +15,7 @@ from app.media.meta import MetaInfo
 from app.mediaserver import MediaServer
 from app.message import Message
 from app.plugins import EventManager
-from app.sites import Sites, SiteSubtitle
+from app.sites import Sites, SiteSubtitle, SiteConf
 from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import MediaType, DownloaderType, SearchType, RmtMode, EventType, SystemConfigKey
@@ -48,6 +48,7 @@ class Downloader:
     filetransfer = None
     media = None
     sites = None
+    siteconf = None
     sitesubtitle = None
     dbhelper = None
     systemconfig = None
@@ -68,6 +69,7 @@ class Downloader:
         self.filetransfer = FileTransfer()
         self.media = Media()
         self.sites = Sites()
+        self.siteconf = SiteConf()
         self.systemconfig = SystemConfig()
         self.eventmanager = EventManager()
         self.sitesubtitle = SiteSubtitle()
@@ -319,7 +321,7 @@ class Downloader:
         page_url = media_info.page_url
         # 默认值
         site_info, dl_files_folder, dl_files, retmsg = {}, "", [], ""
-
+        torrent_attr = {}
         if torrent_file:
             # 有种子文件时解析种子信息
             url = os.path.basename(torrent_file)
@@ -341,6 +343,12 @@ class Downloader:
                 cookie = site_info.get("cookie")
                 if 'm-team' in url:
                     cookie = None
+                if page_url:
+                    torrent_attr = self.siteconf.check_torrent_attr(torrent_url=page_url,
+                                                    cookie=cookie,
+                                                    ua=site_info.get("ua"),
+                                                    headers=site_info.get("headers"),
+                                                    proxy=proxy if proxy is not None else site_info.get("proxy"))
 
                 # 下载种子文件，并读取信息
                 _, content, dl_files_folder, dl_files, retmsg = Torrent().get_torrent_info(
@@ -392,10 +400,17 @@ class Downloader:
         try:
             # 下载设置中的分类
             category = download_attr.get("category")
+
+            # 添加hr tag
+            hr_tag = []
+            if torrent_attr and torrent_attr.get('hr'):
+                hr_tag = ['HR']
+
             # 合并TAG
             tags = download_attr.get("tags")
             if tags:
                 tags = str(tags).split(";")
+                tags.extend(hr_tag)
                 if tag:
                     if isinstance(tag, list):
                         tags.extend(tag)
@@ -405,8 +420,10 @@ class Downloader:
                 if tag:
                     if isinstance(tag, list):
                         tags = tag
+                        tags.extend(hr_tag)
                     else:
                         tags = [tag]
+                        tags.extend(hr_tag)
 
             # 暂停
             if is_paused is None:
@@ -530,6 +547,9 @@ class Downloader:
                 # 发送下载消息
                 if in_from:
                     media_info.user_name = user_name
+                    media_info.hit_and_run = False
+                    if torrent_attr and torrent_attr.get('hr'):
+                        media_info.hit_and_run = True
                     self.message.send_download_message(in_from=in_from,
                                                        can_item=media_info,
                                                        download_setting_name=download_setting_name,
@@ -1521,6 +1541,8 @@ class Downloader:
             headers = json.loads(headers)
         else:
             headers = {}
+        if headers.get("authorization"):
+            headers.pop('authorization')
         headers.update({
                 "contentType": "application/json; charset=utf-8",
                 "User-Agent": f"{site_info.get('ua')}"

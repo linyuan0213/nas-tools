@@ -81,6 +81,7 @@ class BrushDeleteType(Enum):
     AVGUPSPEED = "平均上传速度"
     IATIME = "未活动时间"
     PENDINGTIME = "等待时间"
+    HRSEEDTIME = "H&R 做种时间"
 
 
 class BrushStopType(Enum):
