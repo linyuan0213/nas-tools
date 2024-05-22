@@ -8,6 +8,8 @@ class OcrHelper:
 
     ocr_server_host = Config().get_config("laboratory").get('ocr_server_host')
     if ocr_server_host:
+        if ocr_server_host.endswith("/"):
+            ocr_server_host = ocr_server_host[:-1]
         _ocr_b64_url = ocr_server_host + "/ocr/base64"
     else:
         _ocr_b64_url = None
