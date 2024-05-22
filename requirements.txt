@@ -56,7 +56,7 @@ pycryptodome==3.19.1
 Pygments==2.15.0
 PyJWT==2.6.0
 pymongo==4.7.2
-PyMySQL==1.0.2
+PyMySQL==1.1.1
 pyperclip==1.8.2
 pypushdeer==0.0.3
 pyquery==2.0.0
