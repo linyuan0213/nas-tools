@@ -18,7 +18,7 @@ class FSMUserInfo(_ISiteUserInfo):
 
     @classmethod
     def match(cls, html_text):
-        return "fsm" in html_text
+        return "fsm.name" in html_text
 
     def parse(self):
         """
