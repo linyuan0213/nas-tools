@@ -111,7 +111,7 @@ class Sites:
             self._siteByIds[site.ID] = site_info
             # 以域名存储
             if 'm-team' in site_signurl or 'm-team' in site_rssurl:
-                site_strict_url = MT_URL
+                site_strict_url = StringUtils.get_url_domain(MT_URL)
             else:
                 site_strict_url = StringUtils.get_url_domain(
                     site.SIGNURL or site.RSSURL)

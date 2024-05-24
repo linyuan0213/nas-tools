@@ -19,7 +19,7 @@ from app.sites import Sites, SiteSubtitle, SiteConf
 from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import MediaType, DownloaderType, SearchType, RmtMode, EventType, SystemConfigKey
-from config import Config, PT_TAG, RMT_MEDIAEXT, PT_TRANSFER_INTERVAL
+from config import MT_URL, Config, PT_TAG, RMT_MEDIAEXT, PT_TRANSFER_INTERVAL
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -1533,8 +1533,7 @@ class Downloader:
         """
         馒头页面url获取下载链接
         """
-        split_url = urlsplit(page_url)
-        base_url = f"{split_url.scheme}://{split_url.netloc}"
+        base_url = MT_URL
         site_info = Sites().get_sites(siteurl=base_url)
         headers = site_info.get("headers")
         if JsonUtils.is_valid_json(headers):
