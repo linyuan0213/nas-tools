@@ -188,6 +188,11 @@ class MTBigPack(_IPluginModule):
 
         search_url = f"{base_url}/api/torrent/search"
         collection_url = f"{base_url}/api/torrent/collection"
+        rss_url = f"{base_url}/api/rss/genlink"
+        rss_download_url = self._redis_store.hget('bigpack:rss', 'rss')
+        if not rss_download_url:
+            rss_download_url = self._get_rss(rss_url)
+            self._redis_store.hset('bigpack:rss', 'rss', rss_download_url)
 
         # 获取置顶大包
         data = {
@@ -250,13 +255,15 @@ class MTBigPack(_IPluginModule):
                                 "\n————————————")
         if self._notify and message_list:
             self.send_message(title="【馒头大包推送任务完成】",
-                              text="\n".join(message_list))
+                              text="\n".join(message_list) + "\n" + f'{rss_download_url}')
 
     def stop_service(self):
         """
         退出插件
         """
         try:
+            self._redis_store.hdel('bigpack:rss', 'rss')
+
             if self._scheduler and self._scheduler.SCHEDULER:
                 for job in self._scheduler.get_jobs(self._jobstore):
                     if 'auto_push' in job.name:
@@ -281,7 +288,7 @@ class MTBigPack(_IPluginModule):
         data = json.dumps(param, separators=(',', ':'))
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        if not headers.get("authorization"):
+        if headers.get("authorization"):
             headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
@@ -315,7 +322,7 @@ class MTBigPack(_IPluginModule):
         data = {"id": torrent_id, "make": f"{make}"}
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        if not headers.get("authorization"):
+        if headers.get("authorization"):
             headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
@@ -330,3 +337,45 @@ class MTBigPack(_IPluginModule):
         if res.get('message') == 'SUCCESS':
             return True
         return False
+
+    def _get_rss(self, url):
+        headers = self._site_info.get('headers')
+        headers = json.loads(headers)
+        if headers.get("authorization"):
+            headers.pop('authorization')
+        headers.update({
+            "Content-Type": "application/json; charset=utf-8",
+            "User-Agent": f"{self._site_info.get('ua')}"
+        })
+        proxy = self._site_info.get('proxy')
+        data = {
+            "categories": [
+                "410",
+                "424",
+                "437",
+                "431",
+                "429",
+                "430",
+                "426",
+                "432",
+                "436",
+                "440",
+                "425",
+                "433",
+                "411",
+                "412",
+                "413"
+            ],
+            "labels": 0,
+            "onlyFav": "true",
+            "tkeys": [
+                "ttitle"
+            ],
+            "pageSize": 15
+        }
+        data = json.dumps(data, separators=(',', ':'))
+        response = RequestUtils(headers=headers,
+                                proxies=Config().get_proxies() if proxy else None).post_res(url=url, data=data)
+        res = response.json()
+        if res.get('message') == 'SUCCESS':
+            return res.get('data').get('dlUrl')
