@@ -877,7 +877,7 @@ class IYUUAutoSeed(_IPluginModule):
                 if not res.text:
                     self.warn(f"获取种子下载链接失败，页面内容为空：{page_url}")
                     return None
-                if 'm-team.cc' in site.get('strict_url'):
+                if 'm-team' in site.get('strict_url'):
                     json_data = res.json()
                     if json_data.get('message') == 'SUCCESS':
                         download_url = json_data.get('data')
