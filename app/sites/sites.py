@@ -7,7 +7,7 @@ from app.message import Message
 from app.sites.site_limiter import SiteRateLimiter
 from app.utils import RequestUtils, StringUtils, JsonUtils
 from app.utils.commons import singleton
-from config import Config
+from config import MT_URL, Config
 
 
 @singleton
@@ -76,6 +76,12 @@ class Sites:
                 rss_enable = False
                 brush_enable = False
                 statistic_enable = False
+            strict_url = ''
+            if 'm-team' in site_signurl or 'm-team' in site_rssurl:
+                strict_url = MT_URL
+            else:
+                strict_url = StringUtils.get_base_url(site_signurl or site_rssurl)
+
             site_info = {
                 "id": site.ID,
                 "name": site.NAME,
@@ -99,13 +105,16 @@ class Sites:
                 "limit_interval": site_note.get("limit_interval"),
                 "limit_count": site_note.get("limit_count"),
                 "limit_seconds": site_note.get("limit_seconds"),
-                "strict_url": StringUtils.get_base_url(site_signurl or site_rssurl)
+                "strict_url": strict_url
             }
             # 以ID存储
             self._siteByIds[site.ID] = site_info
             # 以域名存储
-            site_strict_url = StringUtils.get_url_domain(
-                site.SIGNURL or site.RSSURL)
+            if 'm-team' in site_signurl or 'm-team' in site_rssurl:
+                site_strict_url = MT_URL
+            else:
+                site_strict_url = StringUtils.get_url_domain(
+                    site.SIGNURL or site.RSSURL)
             if site_strict_url:
                 self._siteByUrls[site_strict_url] = site_info
             # 初始化站点限速器
@@ -140,6 +149,8 @@ class Sites:
         if siteid:
             return self._siteByIds.get(int(siteid)) or {}
         if siteurl:
+            if 'm-team' in siteurl:
+                siteurl = MT_URL
             return self._siteByUrls.get(StringUtils.get_url_domain(siteurl)) or {}
 
         ret_sites = []
@@ -278,6 +289,9 @@ class Sites:
         if not site_url:
             return False, "未配置站点地址", 0
         # 站点特殊处理...
+        if 'm-team' in site_url:
+            site_url = MT_URL
+
         if '1ptba' in site_url:
             site_url = site_url + '/index.php'
 

@@ -16,7 +16,7 @@ from app.plugins.modules.iyuu.iyuu_helper import IyuuHelper
 from app.sites import Sites
 from app.utils import RequestUtils, JsonUtils
 from app.utils.types import DownloaderType
-from config import Config
+from config import MT_URL, Config
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -646,6 +646,8 @@ class IYUUAutoSeed(_IPluginModule):
         self.total += 1
         # 获取种子站点及下载地址模板
         site_url, download_page = self.iyuuhelper.get_torrent_url(seed.get("sid"))
+        if site_url and 'm-team' in site_url:
+            site_url = MT_URL
         if not site_url or not download_page:
             # 加入缓存
             self._error_caches.append(seed.get("info_hash"))
@@ -796,7 +798,7 @@ class IYUUAutoSeed(_IPluginModule):
                 return True
             if "totheglory.im" in url:
                 return True
-            if 'm-team.cc' in url:
+            if 'm-team' in url:
                 return True
             return False
 
@@ -840,7 +842,7 @@ class IYUUAutoSeed(_IPluginModule):
         从详情页面获取下载链接
         """
         try:
-            if 'm-team.cc' in site.get('strict_url'):
+            if 'm-team' in site.get('strict_url'):
                 page_url = f"{site.get('strict_url')}/{site.get('download_page')}"
                 self.info(f"正在获取种子下载链接：{page_url} ...")
                 headers = site.get('headers')

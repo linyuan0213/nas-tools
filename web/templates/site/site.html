@@ -273,13 +273,6 @@
               </select>
             </div>
           </div>
-          <div class="col-lg-4">
-            <div class="mb-3">
-              <label class="form-label required">请求头参数 <span class="form-help"
-                  title='自定义请求头参数，格式{"xxx": "xxx"}，多个参数按逗号分隔' data-bs-toggle="tooltip">?</span></label>
-                  <input type="text" class="form-control" id="site_headers" value="" placeholder="请求头参数">
-            </div>
-          </div>
           <div class="col-lg-8">
             <div class="mb-3">
             <label class="form-label">User-Agent <span class="form-help"
@@ -293,6 +286,13 @@
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="col-lg-12">
+          <div class="mb-3">
+            <label class="form-label required">请求头参数 <span class="form-help"
+                title='自定义请求头参数，格式{"xxx": "xxx"}，多个参数按逗号分隔' data-bs-toggle="tooltip">?</span></label>
+                <textarea class="form-control" id="site_headers" rows="3" placeholder="请求头参数"></textarea>
           </div>
         </div>
         <details>

@@ -13,7 +13,7 @@ from app.helper.drissionpage_helper import DrissionPageHelper
 from app.sites import Sites
 from app.utils import ExceptionUtils, StringUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
-from config import Config
+from config import MT_URL, Config
 
 
 @singleton
@@ -131,8 +131,7 @@ class SiteConf:
             # 这里headers必须是string类型
             headers = json.dumps(headers)
             if 'm-team' in torrent_url:
-                split_url = urlsplit(torrent_url)
-                base_url = f"{split_url.scheme}://{split_url.netloc}"
+                base_url = MT_URL
                 detail_url = f"{base_url}/api/torrent/detail"
                 res = re.findall(r'\d+', torrent_url)
                 param = res[0]

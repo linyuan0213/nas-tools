@@ -3,7 +3,7 @@ import json
 
 import log
 from app.utils import RequestUtils, JsonUtils
-from config import Config
+from config import MT_URL, Config
 
 
 class MteamSpider(object):
@@ -14,14 +14,15 @@ class MteamSpider(object):
     _cookie = None
     _ua = None
     _size = 100
-    _searchurl = "%sapi/torrent/search"
-    _downloadurl = "%sapi/torrent/genDlToken"
+    _searchurl = "%s/api/torrent/search"
+    _downloadurl = "%s/api/torrent/genDlToken"
     _pageurl = "%sdetail/%s"
 
     def __init__(self, indexer):
         if indexer:
             self._indexerid = indexer.id
-            self._domain = indexer.domain
+            self._visit_domain = indexer.domain
+            self._domain = MT_URL
             self._searchurl = self._searchurl % self._domain
             self._downloadurl = self._downloadurl % self._domain
             self._name = indexer.name
@@ -85,7 +86,7 @@ class MteamSpider(object):
                     'grabs': result.get('status').get('timesCompleted'),
                     'downloadvolumefactor': downloadvolumefactor,
                     'uploadvolumefactor': 1.0,
-                    'page_url': self._pageurl % (self._domain, result.get('id')),
+                    'page_url': self._pageurl % (self._visit_domain, result.get('id')),
                     'imdbid': imdbid
                 }
                 torrents.append(torrent)
