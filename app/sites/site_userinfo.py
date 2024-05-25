@@ -83,7 +83,7 @@ class SiteUserInfo(object):
                 req_url = url
             if 'm-team' in url:
                 req_url = url + '/api/member/profile'
-                if not site_headers.get("authorization"):
+                if site_headers.get("authorization"):
                     site_headers.pop('authorization')
                 res = RequestUtils(session=session,
                                    headers=site_headers,
