@@ -250,12 +250,14 @@ class MTBigPack(_IPluginModule):
             time.sleep(1)
             message_list.append(f"标题：{torrent.get('name')}\n"
                                 f"大小：{StringUtils.str_filesize(torrent.get('size'))}\n"
+                                f"做种人数：{torrent.get('status').get('seeders')}\n"
+                                f"下载人数：{torrent.get('status').get('leechers')}\n"
                                 f"到期时间：{torrent.get('status').get('toppingEndTime')}\n"
                                 f"下载链接：{download_url}\n"
                                 "\n————————————")
         if self._notify and message_list:
             self.send_message(title="【馒头大包推送任务完成】",
-                              text="\n".join(message_list) + "\n" + f'{rss_download_url}')
+                              text="\n".join(message_list) + "\n" + f'RSS订阅链接：{rss_download_url}')
 
     def stop_service(self):
         """
