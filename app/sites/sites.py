@@ -77,7 +77,7 @@ class Sites:
                 brush_enable = False
                 statistic_enable = False
             strict_url = ''
-            if 'm-team' in site_signurl or 'm-team' in site_rssurl:
+            if 'm-team' in site_signurl or (site_rssurl and 'm-team' in site_rssurl):
                 strict_url = MT_URL
             else:
                 strict_url = StringUtils.get_base_url(site_signurl or site_rssurl)
@@ -110,7 +110,7 @@ class Sites:
             # 以ID存储
             self._siteByIds[site.ID] = site_info
             # 以域名存储
-            if 'm-team' in site_signurl or 'm-team' in site_rssurl:
+            if 'm-team' in site_signurl or (site_rssurl and 'm-team' in site_rssurl):
                 site_strict_url = StringUtils.get_url_domain(MT_URL)
             else:
                 site_strict_url = StringUtils.get_url_domain(

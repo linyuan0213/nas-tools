@@ -1050,15 +1050,15 @@ class BrushTask(object):
             # ID
             torrent_id = torrent.hashString
             # 做种时间
-            if not torrent.date_done or torrent.date_done.timestamp() < 1:
+            if not torrent.done_date or torrent.done_date.timestamp() < 1:
                 seeding_time = 0
             else:
-                seeding_time = date_now - int(torrent.date_done.timestamp())
+                seeding_time = date_now - int(torrent.done_date.timestamp())
             # 下载耗时
-            if not torrent.date_added or torrent.date_added.timestamp() < 1:
+            if not torrent.added_date or torrent.added_date.timestamp() < 1:
                 dltime = 0
             else:
-                dltime = date_now - int(torrent.date_added.timestamp())
+                dltime = date_now - int(torrent.added_date.timestamp())
             # 下载量
             downloaded = int(torrent.total_size * torrent.progress / 100)
             # 分享率
@@ -1071,17 +1071,17 @@ class BrushTask(object):
             else:
                 avg_upspeed = uploaded
             # 未活动时间
-            if not torrent.date_active or torrent.date_active.timestamp() < 1:
+            if not torrent.activity_date or torrent.activity_date.timestamp() < 1:
                 iatime = 0
             else:
-                iatime = date_now - int(torrent.date_active.timestamp())
+                iatime = date_now - int(torrent.activity_date.timestamp())
             # 种子大小
             total_size = torrent.total_size
             # 添加时间
             add_time = time.strftime('%Y-%m-%d %H:%M:%S',
-                                     time.localtime(torrent.date_added.timestamp() if torrent.date_added else 0))
+                                     time.localtime(torrent.added_date.timestamp() if torrent.added_date else 0))
             # 状态
-            status = torrent.status
+            status = torrent.status.value
 
         return {
             "id": torrent_id,

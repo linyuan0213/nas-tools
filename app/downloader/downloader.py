@@ -343,11 +343,13 @@ class Downloader:
                 cookie = site_info.get("cookie")
                 if 'm-team' in url:
                     cookie = None
+                headers = site_info.get("headers")
+                headers = json.loads(headers)
                 if page_url:
                     torrent_attr = self.siteconf.check_torrent_attr(torrent_url=page_url,
                                                     cookie=cookie,
                                                     ua=site_info.get("ua"),
-                                                    headers=site_info.get("headers"),
+                                                    headers=headers,
                                                     proxy=proxy if proxy is not None else site_info.get("proxy"))
 
                 # 下载种子文件，并读取信息
