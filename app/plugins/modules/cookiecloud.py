@@ -10,7 +10,7 @@ from app.helper import IndexerHelper
 from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
 from app.utils import RequestUtils
-from config import Config
+from config import MT_URL, Config
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -294,6 +294,8 @@ class CookieCloud(_IPluginModule):
                 continue
             # 域名
             domain_url = ".".join(domain)
+            if 'm-team' in domain_url:
+                domain_url = '.'.join(MT_URL.split('.')[-2:])
             # 只有cf的cookie过滤掉
             cloudflare_cookie = True
             for content in content_list:
@@ -338,6 +340,8 @@ class CookieCloud(_IPluginModule):
                 continue
             # 域名
             domain_url = ".".join(domain)
+            if 'm-team' in domain_url:
+                domain_url = '.'.join(MT_URL.split('.')[-2:])
             site_info = self.sites.get_sites_by_suffix(domain_url)
             if site_info:
                 if content.get("auth"):
@@ -347,7 +351,7 @@ class CookieCloud(_IPluginModule):
                         "authorization": content.get("auth")
                     })
                     headers = json.dumps(headers)
-
+                    self.debug(f"同步 authorization: {headers}")
                     # 更新 headers
                     note = self.sites.get_site_note_by_id(site_info.get("id"))
                     if isinstance(note, dict):
@@ -356,6 +360,7 @@ class CookieCloud(_IPluginModule):
                         })
                         note = json.dumps(note)
                         self.sites.update_site_note(site_info.get("id"), note)
+                        self.info("同步 authorization 成功")
 
         # 发送消息
         if update_count or add_count:
