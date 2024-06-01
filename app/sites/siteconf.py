@@ -1,3 +1,4 @@
+from datetime import timedelta, timezone
 import os
 import pickle
 import random
@@ -6,6 +7,7 @@ import re
 import json
 from functools import lru_cache
 
+import dateutil
 from lxml import etree
 from urllib.parse import urlsplit
 
@@ -123,7 +125,8 @@ class SiteConf:
             "free": False,
             "2xfree": False,
             "hr": False,
-            "peer_count": 0
+            "peer_count": 0,
+            "pubdate": None
         }
         try:
             if headers and headers.get("authorization"):
@@ -228,6 +231,13 @@ class SiteConf:
                                     break
                             ret_attr["peer_count"] = int(peer_count_digit_str) if len(
                                 peer_count_digit_str) > 0 else 0
+
+                    # 检测发布时间
+                    pubdate_xpath = xpath_strs.get("PUBDATE") or []
+                    for xpath_str in pubdate_xpath:
+                        if html.xpath(xpath_str):
+                            ret_attr["pubdate"] = html.xpath(xpath_str)[0]
+
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
         # 随机休眼后再返回

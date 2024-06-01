@@ -2,9 +2,10 @@ import re
 import sys
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlsplit
 
+import dateutil
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 
@@ -876,6 +877,12 @@ class BrushTask(object):
                         return False
 
             # 检查发布时间
+            if torrent_attr.get("pubdate"):
+                # 使用页面时间
+                local_time_str = torrent_attr.get("pubdate")
+                local_time = dateutil.parser.parse(local_time_str)
+                local_time = local_time.replace(tzinfo=timezone(timedelta(hours=8)))
+                pubdate = local_time
             if rss_rule.get("pubdate") and pubdate:
                 rule_pubdates = rss_rule.get("pubdate").split("#")
                 if len(rule_pubdates) >= 2 and rule_pubdates[1]:
