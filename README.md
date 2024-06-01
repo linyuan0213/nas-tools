@@ -1,6 +1,7 @@
 # NAS媒体库管理工具
 
 ### 新增
+
 - 支持 Jackett 和 Prowlarr 索引器
 - 支持 Aria2 下载器
 - 支持新版馒头刷流和下载
@@ -9,6 +10,7 @@
 ### 站点维护
 
 1. 馒头站点维护
+
    - 添加 User-Agent
 
    - 不需要模拟登陆只用添加令牌
@@ -21,22 +23,23 @@
       2. 添加请求头参数 格式：{"x-api-key": "令牌"}
 
    2. 馒头签到
-      
+
       馒头模拟登录需要添加 auth 参数，通过 auth 访问接口，不排除禁用账户的可能
       添加请求头参数 格式：{"x-api-key": "令牌", "authorization": "auth参数"}
-      
+
       auth参数获取方式
       ![mt-auth.png](https://raw.github.com/linyuan0213/nas-tools/master/img/mt-auth.png)
 
 2. FSM站点维护
+
    - 添加 User-Agent
 
    - API TOKEN 获取方式
-      1. 进入站点下拉到最后，找到API链接，点击进入，如图
-         ![fsm-api-1.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-1.png)
-      2. 点击一键生成生成 API TOKEN，如图
-         ![fsm-api-2.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-2.png)
-      3. 添加请求头参数，格式： {"APITOKEN": "这里填 api token"}， 将复制的API TOKEN 填入
+     1. 进入站点下拉到最后，找到API链接，点击进入，如图
+        ![fsm-api-1.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-1.png)
+     2. 点击一键生成生成 API TOKEN，如图
+        ![fsm-api-2.png](https://raw.github.com/linyuan0213/nas-tools/master/img/fsm-api-2.png)
+     3. 添加请求头参数，格式： {"APITOKEN": "这里填 api token"}， 将复制的API TOKEN 填入
 
 
 
@@ -49,65 +52,37 @@
 在 nas-tools 设置 > 基础设置 > 实验室 里添加 部署的 ocr 容器网址，格式：http://127.0.0.1:9300
 
 ### 插件
-
-- 自定义识别词
-
-  	tmdb id获取：[tmdb](https://www.themoviedb.org/?language=zh-CN) 网站搜索关键词，打开相关电影复制url对应数字id， 如 https://www.themoviedb.org/movie/693134-dune-part-two?language=zh-CN tmdb id 为693134
+待完善
 
 
-  - 通用识别词维护：
-
-    	编辑 [通用识别词](https://pad.xcreal.cc/p/通用识别词) 添加关键词
-    	
-    	格式如下：
-    	
-    		屏蔽：被替换词
-    	
-    		替换：被替换词@@替换词
-    	
-    		替换+集偏移：被替换词@@替换词@@前定位词@@后定位词@@集偏移
-    	
-    		集偏移：前定位词@@后定位词@@集偏移
-
-  - 电影识别词维护：
-
-    	编辑 [电影识别词](https://pad.xcreal.cc/p/电影识别词) 添加关键词
-    	
-    	格式如下：
-    	
-    		屏蔽：tmdb id@@被替换词
-    	
-    		替换：tmdb id@@被替换词@@替换词
-    	
-    		替换+集偏移：tmdb id@@被替换词@@替换词@@前定位词@@后定位词@@集偏移
-    	
-    		集偏移：tmdb id@@前定位词@@后定位词@@集偏移
-
-  - 电视识别词维护：
-
-    	编辑 [电视识别词](https://pad.xcreal.cc/p/电视识别词) 添加关键词
-
-       格式同电影识别词
-
-  - 动漫识别词维护：
-
-    	编辑 [动漫识别词](https://pad.xcreal.cc/p/动漫识别词) 添加关键词
-
-       格式同电影识别词
-
-  
-
-    **如果有好用的识别词，请共同维护**
-
-  
 
 ### 开启公开站点
 
 在 config.yaml 的 laboratory 添加 ```show_more_sites: true```
 
+
+
 ### Docker 镜像地址：
 
 [linyuan0213/nas-tools](https://hub.docker.com/r/linyuan0213/nas-tools)
+
+
+
+### 版本更新
+
+#### v3.4.6
+
+##### 功能优化
+
+- 新增 库非 HDFun ilolicon 花梨月下 等站点
+- U2 通过页面获取发布时间
+
+##### 问题修复
+
+- Transmission 种子属性修复
+- CookieCloud 插件同步馒头authorization
+
+
 
 ### 帮助
 
