@@ -251,7 +251,7 @@ def web():
 
 # 开始
 @App.route('/index', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='index')
+@cache.cached(timeout=600, key_prefix='index')
 @login_required
 def index():
     # 媒体服务器类型
@@ -482,7 +482,7 @@ def recommend():
 
 # 推荐页面
 @App.route('/ranking', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='ranking')
+@cache.cached(timeout=600, key_prefix='ranking')
 @login_required
 def ranking():
     return render_template("discovery/ranking.html",
@@ -491,7 +491,7 @@ def ranking():
 
 # 豆瓣电影
 @App.route('/douban_movie', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='douban_movie')
+@cache.cached(timeout=600, key_prefix='douban_movie')
 @login_required
 def douban_movie():
     return render_template("discovery/recommend.html",
@@ -504,7 +504,7 @@ def douban_movie():
 
 # 豆瓣电视剧
 @App.route('/douban_tv', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='douban_tv')
+@cache.cached(timeout=600, key_prefix='douban_tv')
 @login_required
 def douban_tv():
     return render_template("discovery/recommend.html",
@@ -516,7 +516,7 @@ def douban_tv():
 
 
 @App.route('/tmdb_movie', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='tmdb_movie')
+@cache.cached(timeout=600, key_prefix='tmdb_movie')
 @login_required
 def tmdb_movie():
     return render_template("discovery/recommend.html",
@@ -528,7 +528,7 @@ def tmdb_movie():
 
 
 @App.route('/tmdb_tv', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='tmdb_tv')
+@cache.cached(timeout=600, key_prefix='tmdb_tv')
 @login_required
 def tmdb_tv():
     return render_template("discovery/recommend.html",
@@ -541,7 +541,7 @@ def tmdb_tv():
 
 # Bangumi每日放送
 @App.route('/bangumi', methods=['POST', 'GET'])
-@cache.cached(timeout=43200, key_prefix='bangumi')
+@cache.cached(timeout=600, key_prefix='bangumi')
 @login_required
 def discovery_bangumi():
     return render_template("discovery/ranking.html",
