@@ -376,7 +376,7 @@ class IYUUAutoSeed(_IPluginModule):
         state, msg = self.iyuuhelper.bind_site(site=site,
                                                passkey=passkey,
                                                uid=uid)
-        return {"code": 0 if state else 1, "msg": msg}
+        return {"code": 0 if state == [] else 1, "msg": msg}
 
     def __update_config(self):
         self.update_config({
