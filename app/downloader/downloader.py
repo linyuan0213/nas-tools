@@ -344,7 +344,7 @@ class Downloader:
                 if 'm-team' in url:
                     cookie = None
                 headers = site_info.get("headers")
-                headers = json.loads(headers)
+                headers = json.loads(headers) if headers else {'User-Agent': Config().get_ua()}
                 if page_url:
                     torrent_attr = self.siteconf.check_torrent_attr(torrent_url=page_url,
                                                     cookie=cookie,
@@ -944,6 +944,10 @@ class Downloader:
                                      or set(item.get_episode_list()).intersection(set(need_episodes))) \
                                 and len(item.get_season_list()) == 1 \
                                 and item.get_season_list()[0] == need_season:
+                            
+                            # 单独处理m-team
+                            if 'm-team' in item.page_url:
+                                item.enclosure = Downloader().get_download_url(item.page_url)
                             # 检查种子看是否有需要的集
                             torrent_episodes, torrent_path = self.get_torrent_episodes(
                                 url=item.enclosure,
@@ -1296,6 +1300,9 @@ class Downloader:
         解析种子文件，获取集数
         :return: 集数列表、种子路径
         """
+        if not url:
+            log.error("【Downloader】url 链接为空")
+            return [], None
         site_info = self.sites.get_sites(siteurl=url)
         # 保存种子文件
         file_path, _, _, files, retmsg = Torrent().get_torrent_info(

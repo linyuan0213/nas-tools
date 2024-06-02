@@ -1,5 +1,6 @@
 import json
 from threading import Lock
+import traceback
 
 import log
 from app.conf import SystemConfig
@@ -772,6 +773,7 @@ class Subscribe:
             except Exception as err:
                 self.dbhelper.update_rss_movie_state(rssid=rssid, state='R')
                 log.error(f"【Subscribe】电影 {name} 订阅搜索失败：{str(err)}")
+                log.debug(f"异常详细信息: {traceback.format_exc()}")
                 continue
 
     def subscribe_search_tv(self, rssid=None, state="D"):
@@ -910,6 +912,7 @@ class Subscribe:
                                                   seasoninfo=no_exists.get(media_info.tmdb_id))
             except Exception as err:
                 log.error(f"【Subscribe】电视剧 {name} 订阅搜索失败：{str(err)}")
+                log.debug(f"异常详细信息: {traceback.format_exc()}")
                 self.dbhelper.update_rss_tv_state(rssid=rssid, state='R')
                 continue
 
