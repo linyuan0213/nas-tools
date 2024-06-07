@@ -519,11 +519,11 @@ class BrushTask(object):
                     # 平均上传速度
                     last_uploaded = self.redis_store.hget('torrent', torrent_id) if self.redis_store.hget('torrent', torrent_id) else 0
                     avg_upspeed = (torrent_info.get("uploaded") - int(last_uploaded)) / (BRUSH_REMOVE_TORRENTS_INTERVAL * 60)
-                    self.redis_store.hset('torrent', torrent_id, uploaded)
                     # 未活跃时间
                     iatime = torrent_info.get("iatime")
                     # 上传量
                     uploaded = torrent_info.get("uploaded")
+                    self.redis_store.hset('torrent', torrent_id, uploaded)
                     # 下载量
                     downloaded = torrent_info.get("downloaded")
                     # 等待时间
