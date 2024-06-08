@@ -290,7 +290,11 @@ class TorrentSpider(feapder.AirSpider):
         # title default
         if 'title' not in self.fields:
             return
-        selector = self.fields.get('title', {})
+        selector = copy.deepcopy(self.fields.get('title', {}))
+        if self.site_info.get('chrome') and selector.get('selector', '').find('table') != -1:
+            tmp_selector = selector.get('selector', '')
+            tmp_selector = tmp_selector.replace('tr >', 'tbody > tr > ')
+            selector['selector'] = tmp_selector
         if 'selector' in selector:
             title = torrent(selector.get('selector', '')).clone()
             self.__remove(title, selector)
