@@ -166,6 +166,12 @@ class SiteConf:
                     base_url = f"{split_url.scheme}://{split_url.netloc}"
                     torrent_url = f"{base_url}/api/Torrents/details?tid={tid}&page=1"
 
+                if 'yemapt' in torrent_url:
+                    tid = re.findall(r'\d+', torrent_url)[0] or ""
+                    split_url = urlsplit(torrent_url)
+                    base_url = f"{split_url.scheme}://{split_url.netloc}"
+                    torrent_url = f"{base_url}/api/torrent/fetchTorrentDetail?id={tid}&firstView=false"
+
                 site_info = Sites().get_sites(siteurl=torrent_url)
                 html_text = self.__get_site_page_html(url=torrent_url,
                                                       cookie=cookie,
@@ -201,7 +207,7 @@ class SiteConf:
                         peer_count = JsonUtils.get_json_object(
                             html_text, xpath_str)
                         ret_attr["peer_count"] = int(
-                            peer_count) if len(peer_count) > 0 else 0
+                            peer_count) if len(str(peer_count)) > 0 else 0
                 else:
                     html = etree.HTML(html_text)
                     # 检测2XFREE

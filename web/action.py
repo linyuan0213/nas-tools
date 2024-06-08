@@ -571,7 +571,7 @@ class WebAction:
         for res in results:
             enclosure = ''
             # 处理m-tem下载链接
-            if 'm-team' in res.PAGEURL and res.ENCLOSURE is None:
+            if ('m-team' in res.PAGEURL or 'yemapt' in res.PAGEURL) and res.ENCLOSURE is None:
                 enclosure = Downloader().get_download_url(res.PAGEURL)
             else:
                 enclosure = res.ENCLOSURE
@@ -606,7 +606,7 @@ class WebAction:
         description = data.get("description")
         page_url = data.get("page_url")
         # 处理m-tem下载链接
-        if 'm-team' in page_url and enclosure == 'None':
+        if ('m-team' in page_url or 'yemapt' in page_url) and (enclosure == 'None' or enclosure == ''):
             enclosure = Downloader().get_download_url(page_url)
         size = data.get("size")
         seeders = data.get("seeders")

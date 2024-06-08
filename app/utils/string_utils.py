@@ -550,18 +550,25 @@ class StringUtils:
     @staticmethod
     def get_tid_by_url(url):
         """
-        馒头下载链接获取种子id
+        下载链接获取种子id
         """
         # 解析URL
         parsed_url = parse.urlparse(url)
 
         # 解析查询参数
         params = parse.parse_qs(parsed_url.query)
+        if 'm-team' in url:
+            if not params.get('tid'):
+                return None
 
-        if not params.get('tid'):
-            return None
-
-        return params.get('tid')[0]
+            return params.get('tid')[0]
+        if 'yemapt' in url:
+            if not params.get('token'):
+                return None
+            token = params.get('token')[0]
+            decode_str = base64.b64decode(token).decode(encoding='utf-8')
+            tid = decode_str.split('\t')[-1]
+            return tid
 
     @staticmethod
     def replace_strings(text, replacements):

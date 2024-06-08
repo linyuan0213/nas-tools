@@ -298,6 +298,9 @@ class Sites:
         if 'fsm' in site_url:
             site_url = site_url + '/api/Users/infos'
 
+        if 'yemapt' in site_url:
+            site_url = site_url + '/api/user/profile'
+
         if site_info.get("chrome"):
             # 计时
             chrome = DrissionPageHelper()

@@ -105,6 +105,7 @@ class SiteSchema(Enum):
     Mteam = "M-Team"
     HHCLUB = "HHCLUB"
     FSM = "FSM"
+    YemaPT = "YemaPT"
 
 
 # 可监听事件

@@ -79,6 +79,8 @@ class SiteUserInfo(object):
             proxies = Config().get_proxies() if proxy else None
             if 'fsm' in url:
                 req_url = url + '/api/Users/infos'
+            elif 'yemapt' in url:
+                req_url = url + '/api/user/profile'
             else:
                 req_url = url
             if 'm-team' in url:

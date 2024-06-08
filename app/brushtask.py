@@ -1246,6 +1246,9 @@ class BrushTask(object):
                     if 'm-team' in enclosure:
                         tid = StringUtils.get_tid_by_url(enclosure)
                         torrent_url = f'{site_base_url}/detail/{tid}'
+                    elif 'yemapt' in enclosure:
+                        tid = StringUtils.get_tid_by_url(enclosure)
+                        torrent_url = f'{site_base_url}/#/torrent/detail/{tid}/'
                     else:
                         res = re.findall(r'id=(\d+)', enclosure)
                         if res:

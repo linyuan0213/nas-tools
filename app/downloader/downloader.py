@@ -329,7 +329,7 @@ class Downloader:
         else:
             # 没有种子文件解析链接
             url = media_info.enclosure
-            if media_info.page_url and 'm-team' in media_info.page_url and media_info.enclosure is None:
+            if media_info.page_url and not media_info.enclosure:
                 url = Downloader().get_download_url(media_info.page_url)
             if not url:
                 __download_fail("下载链接为空")
@@ -831,7 +831,7 @@ class Downloader:
         # 下载掉所有的电影
         for item in download_list:
             if item.type == MediaType.MOVIE:
-                if 'm-team' in item.page_url:
+                if 'm-team' in item.page_url or 'yemapt' in item.page_url:
                     item.enclosure = Downloader().get_download_url(item.page_url)
                 __download(item)
 
@@ -857,7 +857,7 @@ class Downloader:
                         continue
                     if need_tmdbid == item.tmdb_id:
                         # 单独处理m-team
-                        if 'm-team' in item.page_url:
+                        if 'm-team' in item.page_url or 'yemapt' in item.page_url:
                             item.enclosure = Downloader().get_download_url(item.page_url)
                         if set(item_season).issubset(set(need_season)):
                             if len(item_season) == 1:
@@ -946,7 +946,7 @@ class Downloader:
                                 and item.get_season_list()[0] == need_season:
                             
                             # 单独处理m-team
-                            if 'm-team' in item.page_url:
+                            if 'm-team' in item.page_url or 'yemapt' in item.page_url:
                                 item.enclosure = Downloader().get_download_url(item.page_url)
                             # 检查种子看是否有需要的集
                             torrent_episodes, torrent_path = self.get_torrent_episodes(
@@ -1540,11 +1540,20 @@ class Downloader:
     @staticmethod
     def get_download_url(page_url):
         """
-        馒头页面url获取下载链接
+        页面url获取下载链接
         """
-        base_url = MT_URL
+        if 'm-team' in page_url:
+            base_url = MT_URL
+        else:
+            split_url = urlsplit(page_url)
+            base_url = f"{split_url.scheme}://{split_url.netloc}"
+
         site_info = Sites().get_sites(siteurl=base_url)
         headers = site_info.get("headers")
+
+        proxy = site_info.get("proxy")
+        cookie = site_info.get("cookie")
+        media_id = (re.findall(r'\d+', page_url) or [''])[0]
         if JsonUtils.is_valid_json(headers):
             headers = json.loads(headers)
         else:
@@ -1555,10 +1564,19 @@ class Downloader:
                 "contentType": "application/json; charset=utf-8",
                 "User-Agent": f"{site_info.get('ua')}"
             })
-        proxy = site_info.get("proxy")
-        media_id = (re.findall(r'\d+', page_url) or [''])[0]
-        res = RequestUtils(headers=headers,
-                        proxies=proxy,
-                        timeout=15).post_res(url=f'{base_url}/api/torrent/genDlToken', data={'id': media_id})
-        if res and res.status_code == 200:
-            return res.json().get('data', '')
+        if 'm-team' in page_url:
+            res = RequestUtils(headers=headers,
+                            proxies=proxy,
+                            timeout=15).post_res(url=f'{base_url}/api/torrent/genDlToken', data={'id': media_id})
+            if res and res.status_code == 200:
+                return res.json().get('data', '')
+        if 'yemapt' in page_url:
+            res = RequestUtils(headers=headers,
+                            cookies=cookie,
+                            proxies=proxy,
+                            timeout=15).get_res(url=f'{base_url}/api/torrent/generateDownloadKey?id={media_id}')
+            if res and res.status_code == 200:
+               token = res.json().get('data', '')
+               if token:
+                   return f'{base_url}/api/torrent/download1?token={token}'
+               return ''
