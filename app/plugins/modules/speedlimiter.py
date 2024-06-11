@@ -284,7 +284,7 @@ class SpeedLimiter(_IPluginModule):
             scheduler_queue.put({
                         "func_str": "SpeedLimiter.check_playing_sessions",
                         "type": 'plugin',
-                        "args": [],
+                        "args": [self._mediaserver.get_type(), True],
                         "job_id": "SpeedLimiter.check_playing_sessions",
                         "trigger": "interval",
                         "seconds": self._interval,
