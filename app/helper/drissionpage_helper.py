@@ -58,7 +58,7 @@ class DrissionPageHelper:
                       callback: Callable = None) -> str:
 
         if proxies:
-            proxy = proxies.get('https').split('//')[1]
+            proxy = proxies.get('https')
             self.co.set_proxy(proxy=proxy)
         self.co.headless(headless)
         self.co.set_timeouts(base=timeout, script=5)
