@@ -62,8 +62,14 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/nas-tools:${{ env.app_version }}
             ghcr.io/${{ github.repository_owner }}/nas-tools:latest
             ghcr.io/${{ github.repository_owner }}/nas-tools:${{ env.app_version }}
-            ${{ steps.login-ecr-public.outputs.registry }}/${{ secrets.AWS_REGISTRY_ALIAS }}/nas-tools:latest
-            ${{ steps.login-ecr-public.outputs.registry }}/${{ secrets.AWS_REGISTRY_ALIAS }}/nas-tools:${{ env.app_version }}
 
-      - name: Logout from Amazon ECR
-        run: docker logout ${{ steps.login-ecr-public.outputs.registry }}
+      - name: Push Amazon ECR Public
+      env:
+        REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+        REGISTRY_ALIAS: ${{ secrets.AWS_REGISTRY_ALIAS }}
+        REPOSITORY: nas-tools
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
+        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest
+        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }}
