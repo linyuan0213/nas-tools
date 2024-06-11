@@ -46,5 +46,3 @@ jobs:
           REPOSITORY: nas-tools
         run: |
           docker buildx build --push --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }}
