@@ -65,10 +65,9 @@ jobs:
 
       - name: Push Amazon ECR Public
         env:
-          REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+          REGISTRY: public.ecr.aws
           REGISTRY_ALIAS: ${{ secrets.AWS_REGISTRY_ALIAS }}
           REPOSITORY: nas-tools
-          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
           docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest
