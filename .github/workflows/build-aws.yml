@@ -45,6 +45,6 @@ jobs:
           REGISTRY_ALIAS: ${{ secrets.AWS_REGISTRY_ALIAS }}
           REPOSITORY: nas-tools
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
+          docker buildx build --push --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
           docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest
           docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }}

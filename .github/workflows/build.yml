@@ -39,19 +39,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
-
       - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:
@@ -62,13 +49,3 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/nas-tools:${{ env.app_version }}
             ghcr.io/${{ github.repository_owner }}/nas-tools:latest
             ghcr.io/${{ github.repository_owner }}/nas-tools:${{ env.app_version }}
-
-      - name: Push Amazon ECR Public
-        env:
-          REGISTRY: public.ecr.aws
-          REGISTRY_ALIAS: ${{ secrets.AWS_REGISTRY_ALIAS }}
-          REPOSITORY: nas-tools
-        run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }} .
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:latest
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:${{ env.app_version }}
