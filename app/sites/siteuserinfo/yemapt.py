@@ -112,7 +112,7 @@ class YemaPTUserInfo(_ISiteUserInfo):
             page_seeding = len(json_data.get('data'))
             for data in json_data.get('data'):
                 # 暂时无法获取
-                size = 0
+                size = int(data.get('fileSize'))
                 seeders = 0
 
                 page_seeding_size += size
