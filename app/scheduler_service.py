@@ -154,9 +154,9 @@ class SchedulerService:
                 self.SCHEDULER = BackgroundScheduler(timezone=Config().get_timezone(),
                                                      jobstores=self._jobstores,
                                                      executors={
-                                                         'default': ThreadPoolExecutor(30)},
+                                                         'default': ThreadPoolExecutor(50)},
                                                      job_defaults={
-                                                         'coalesce': False, 'max_instances': 100, 'misfire_grace_time': None}
+                                                         'coalesce': True, 'max_instances': 100, 'misfire_grace_time': None}
                                                      )
 
                 self.SCHEDULER.start()
