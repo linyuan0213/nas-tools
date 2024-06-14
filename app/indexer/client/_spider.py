@@ -633,9 +633,9 @@ class TorrentSpider(feapder.AirSpider):
         移除元素
         """
         if selector and "remove" in selector:
-            removelist = selector.get('remove', '').split(', ')
+            removelist = selector.get('remove', '').split(',')
             for v in removelist:
-                item.remove(v)
+                item.remove(v.strip())
 
     @staticmethod
     def __attribute_or_text(item, selector):
