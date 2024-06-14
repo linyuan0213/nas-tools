@@ -270,7 +270,7 @@ class CookieCloud(_IPluginModule):
         domain_cookie_groups = defaultdict(list)
         domain_storage_groups = {}
         cookie_content = contents.get("cookie_data")
-        local_storage = contents.get("local_storage_data")
+        local_storage = contents.get("local_storage_data") or {}
         for site, cookies in cookie_content.items():
             for cookie in cookies:
                 domain_parts = cookie["domain"].split(".")[-2:]
@@ -278,6 +278,8 @@ class CookieCloud(_IPluginModule):
                 domain_cookie_groups[domain_key].append(cookie)
 
         for site, storage in local_storage.items():
+            if not storage:
+                continue
             domain_parts = site.split(".")[-2:]
             domain_key = tuple(domain_parts)
             domain_storage_groups[domain_key] = storage
