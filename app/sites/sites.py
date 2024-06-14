@@ -305,7 +305,7 @@ class Sites:
             # 计时
             chrome = DrissionPageHelper()
             start_time = datetime.now()
-            html_text = chrome.get_page_html(url=site_url, ua=ua, cookies=site_cookie, proxies=site_info.get("proxy"))
+            html_text = chrome.get_page_html(url=site_url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if site_info.get("proxy") else None)
             seconds = int((datetime.now() - start_time).microseconds / 1000)
             # 判断是否已签到
             if not html_text:

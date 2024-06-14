@@ -1,4 +1,6 @@
 import xml.dom.minidom
+import re
+from urllib.parse import urlsplit
 
 from app.db import MainDb, DbPersist
 from app.db.models import RSSTORRENTS
@@ -61,14 +63,24 @@ class RssHelper:
                         link = DomUtils.tag_value(item, "link", default="")
                         # 种子链接
                         enclosure = DomUtils.tag_value(item, "enclosure", "url", default="")
+
                         if not enclosure and not link:
                             continue
                         # 部分RSS只有link没有enclosure
                         if not enclosure and link:
                             enclosure = link
                             link = None
+                        
+                        # monika rss兼容
+                        if enclosure and 'monikadesign' in enclosure:
+                            tids = re.findall(r'(\d+)\.', enclosure)
+                            if tids:
+                                split_url = urlsplit(enclosure)
+                                link = f"{split_url.scheme}://{split_url.netloc}/torrents/{tids[0]}"
                         # 大小
                         size = DomUtils.tag_value(item, "enclosure", "length", default=0)
+                        if size == 0:
+                            size = StringUtils.num_filesize(DomUtils.tag_value(item, "torrent:size", default=0))
                         if size and str(size).isdigit():
                             size = int(size)
                         else:

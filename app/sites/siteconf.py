@@ -7,7 +7,7 @@ import re
 import json
 from functools import lru_cache
 
-import dateutil
+from loguru import logger
 from lxml import etree
 from urllib.parse import urlsplit
 
@@ -145,6 +145,9 @@ class SiteConf:
                                                       headers=headers,
                                                       proxy=proxy,
                                                       param=param)
+                if not json_text:
+                    logger.debug(f'获取 M-Team 明细数据失败，种子id: {param}')
+                    return ret_attr
                 json_data = json.loads(json_text)
                 if json_data.get('message') != "SUCCESS":
                     return ret_attr
@@ -230,7 +233,7 @@ class SiteConf:
                             peer_count_str = ''.join(
                                 peer_count_dom[0].itertext())
                             peer_count_digit_str = ""
-                            for m in peer_count_str:
+                            for m in peer_count_str.strip():
                                 if m.isdigit():
                                     peer_count_digit_str = peer_count_digit_str + m
                                 if m == " ":
