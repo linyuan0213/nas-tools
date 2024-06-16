@@ -105,8 +105,8 @@ class Scheduler:
                         log.error("订阅定时搜索周期 配置格式错误：%s" % str(e))
                         search_rss_interval = 0
                 if search_rss_interval:
-                    if search_rss_interval < 6:
-                        search_rss_interval = 6
+                    if search_rss_interval < 2:
+                        search_rss_interval = 2
 
                     scheduler_queue.put({
                         "func_str": "Subscribe.subscribe_search_all",
