@@ -222,6 +222,13 @@ class DbHelper:
         """
         self._db.query(TRANSFERHISTORY).filter(TRANSFERHISTORY.ID == int(logid)).delete()
 
+    @DbPersist(_db)
+    def delete_transfer(self):
+        """
+        删除所有识别记录
+        """
+        self._db.query(TRANSFERHISTORY).delete()
+
     def get_transfer_unknown_paths(self):
         """
         查询未识别的记录列表

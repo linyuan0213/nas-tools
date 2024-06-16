@@ -820,6 +820,15 @@ class TransferHistoryDelete(ClientResource):
         return WebAction().api_action(cmd='delete_history', data=self.parser.parse_args())
 
 
+@organization.route('/history/clear')
+class TransferHistoryClear(ClientResource):
+    def post(self):
+        """
+        删除媒体整理历史记录
+        """
+        return WebAction().api_action(cmd='clear_history')
+
+
 @organization.route('/unknown/list')
 class TransferUnknownList(ClientResource):
     @staticmethod

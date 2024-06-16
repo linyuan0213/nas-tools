@@ -72,6 +72,7 @@ class WebAction:
             "rename": self.__rename,
             "rename_udf": self.__rename_udf,
             "delete_history": self.delete_history,
+            "clear_history": self.clear_history,
             "version": self.__version,
             "update_site": self.__update_site,
             "get_site": self.__get_site,
@@ -5201,3 +5202,15 @@ class WebAction:
             "id": item.get("cmd"),
             "name": item.get("desc")
         } for item in PluginManager().get_plugin_commands()]
+
+
+    def clear_history(self):
+        """
+        删除识别记录
+        """
+        _filetransfer = FileTransfer()
+        # 删除记录
+        _filetransfer.delete_transfer()
+        # 删除该识别记录对应的转移记录
+        _filetransfer.truncate_transfer_blacklist()
+        return {"retcode": 0}
