@@ -17,6 +17,15 @@ class MteamSpider(object):
     _searchurl = "%s/api/torrent/search"
     _downloadurl = "%s/api/torrent/genDlToken"
     _pageurl = "%sdetail/%s"
+    _LABEL_MAP = {
+        '1': 'DIY',
+        '2': '国配',
+        '4': '中字',
+        '3': 'DIY|国配',
+        '5': 'DIY|中字',
+        '6': '国配|中字',
+        '7': 'DIY|国配|中字'
+    }
 
     def __init__(self, indexer):
         if indexer:
@@ -74,10 +83,14 @@ class MteamSpider(object):
                     downloadvolumefactor = 0.3
                 else:
                     downloadvolumefactor = 1.0
+                
+                label_id = result.get('labels')
+                labels = self._LABEL_MAP.get(label_id) or ''
                 torrent = {
                     'indexer': self._indexerid,
                     'title': result.get('name'),
                     'description': result.get('smallDescr'),
+                    'labels': labels,
                     'enclosure': None,
                     'pubdate': result.get('createdDate'),
                     'size': result.get('size'),
