@@ -1334,6 +1334,12 @@ class FileTransfer:
         """
         return self.dbhelper.delete_transfer_log_by_id(logid=logid)
 
+    def delete_transfer(self):
+        """
+        删除转移历史记录
+        """
+        return self.dbhelper.delete_transfer()
+
     def delete_transfer_unknown(self, tid):
         """
         删除未知转移记录
