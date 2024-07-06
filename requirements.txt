@@ -83,7 +83,7 @@ transmission-rpc==7.0.5
 typing-extensions==4.10.0
 tzdata==2022.2
 tzlocal==4.2
-urllib3==1.26.18
+urllib3==1.26.19
 watchdog==2.1.9
 websockets==10.3
 Werkzeug==3.0.3
