@@ -18,7 +18,7 @@ from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
 from app.utils import RequestUtils, ExceptionUtils, StringUtils, JsonUtils
 from app.utils.types import EventType
-from config import Config
+from config import MT_URL, Config
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -508,7 +508,7 @@ class AutoSignIn(_IPluginModule):
                     return f"【{site}】签到失败！"
             # 模拟登录
             else:
-                if site_url.find("attendance.php") != -1:
+                if site_url.find("attendance.php") != -1 or site_url.find("checkIn") != -1:
                     checkin_text = "签到"
                 else:
                     checkin_text = "模拟登录"
@@ -516,8 +516,7 @@ class AutoSignIn(_IPluginModule):
                 # 访问链接
                 # m-team处理
                 if 'm-team' in site_url:
-                    split_url = urlsplit(site_url)
-                    url = f"{split_url.scheme}://{split_url.netloc}/api/member/updateLastBrowse"
+                    url = f"{MT_URL}/api/member/updateLastBrowse"
                     headers.update({
                         "accept": "application/json, text/plain, */*",
                         "content-type": "application/json",
