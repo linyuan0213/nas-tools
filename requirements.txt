@@ -83,10 +83,8 @@ transmission-rpc==7.0.5
 typing-extensions==4.10.0
 tzdata==2022.2
 tzlocal==4.2
-undetected-chromedriver==3.5.5
 urllib3==1.26.18
 watchdog==2.1.9
-webdriver-manager==4.0.1
 websockets==10.3
 Werkzeug==3.0.3
 zhconv==1.4.3
