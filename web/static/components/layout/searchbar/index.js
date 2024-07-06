@@ -158,8 +158,11 @@ export class LayoutSearchbar extends CustomElement {
                 <a href="javascript:logout()" class="dropdown-item">
                   注销 <span class="text-muted mx-3">${this.layout_username}</span>
                 </a>
+                <a href="javascript:restart()" class="dropdown-item">
+                  重启
+                </a>
                 <div class="dropdown-divider"></div>
-                <a href="https://wiki.nastool.cn" target="_blank" class="dropdown-item">帮助中心</a>
+                <a href="https://github.com/linyuan0213/nas-tools" target="_blank" class="dropdown-item">帮助中心</a>
               </div>
             </div>
           </div>

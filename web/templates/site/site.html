@@ -49,11 +49,9 @@
             <a href="javascript:edit_site('{{ Site.id }}')" class="btn-action ms-1" title="编辑站点">
               {{ SVG.edit() }}
             </a>
-            {% if ChromeOk %}
-            <a href="javascript:show_site_cookie_ua_modal('{{ Site.id }}', '{{ Site.name }}')" class="btn-action ms-1" title="更新站点Cookie和User-Agent">
-              {{ SVG.refresh_dot() }}
+            <a href="javascript:show_site_test('{{ Site.id }}', '{{ Site.name }}')" class="btn-action ms-1" title="站点测试">
+              {{ SVG.activity_heartbeat() }}
             </a>
-            {% endif %}
             <a href="javascript:remove_site('{{ Site.name }}', '{{ Site.id }}')" class="btn-action ms-1" title="删除站点">
               {{ SVG.x() }}
             </a>
@@ -378,90 +376,39 @@
     </div>
   </div>
 </div>
-<div class="modal modal-blur fade" id="modal-update-site-cookie" tabindex="-1" role="dialog" aria-hidden="true"
+<div class="modal modal-blur fade" id="modal-site-test" tabindex="-1" role="dialog" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="cookieua_modal_title">更新站点</h5>
-        <input type="hidden" id="cookieua_siteid">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-lg">
-            <div class="mb-3">
-              <label class="form-label required">用户名</label>
-              <input type="text" value="{{ CookieUserInfoCfg.username }}" id="cookieua_username" class="form-control" placeholder="站点登录用户名">
-            </div>
-          </div>
-          <div class="col-lg">
-            <div class="mb-3">
-              <label class="form-label required">密码</label>
-              <input type="password" value="{{ CookieUserInfoCfg.password }}" id="cookieua_password" class="form-control" placeholder="登录密码">
-            </div>
-          </div>
-          <div class="col-lg">
-            <div class="mb-3">
-              <label class="form-label">两步验证</label>
-              <input type="text" value="{{ CookieUserInfoCfg.two_step_code }}" id="cookieua_two_step_code" class="form-control" placeholder="如有设置必须填写">
-            </div>
-          </div>
+     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sitetest_modal_title">站点测试</h5>
+          <input type="hidden" id="sitetest_siteid">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="row">
-          <div class="col-xl-4">
-            <div class="mb-3">
-              <label class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="cookieua_ocrflag">
-                <span class="form-check-label">自动识别验证码 <span class="form-help"
-                                                              title="开启时将自动识别验证码并填入，关闭时将显示验证码图片并要求手动填入"
-                                                              data-bs-toggle="tooltip">?</span></span>
-              </label>
-            </div>
-          </div>
+        <div>
+          <table class="table table-vcenter card-table table-hover table-striped">
+            <thead>
+              <tr>
+                <th>连通性</th>
+                <th>耗时</th>
+                <th>错误信息</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="single_sitetest_item"><span class="badge bg-green me-1 mb-1">是</span></td>
+                <td id="single_sitetest_item_time"><span class="text-green">0 毫秒</span></td>
+                <td id="single_sitetest_item_msg"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link me-auto" data-bs-dismiss="modal">取消</button>
+          <button id="single_sitetest_btn" class="btn btn-primary">测试</button>
         </div>
       </div>
-      <div class="progress progress-sm rounded-0" id="sitecookie_process_bar_div">
-        <div class="progress-bar progress-bar-animated progress-bar-indeterminate" id="sitecookie_process_bar"
-             style="width: 0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-        </div>
-      </div>
-      <div class="modal-body" id="cookieua_result_div" style="display: none">
-        <div class="row">
-          <div class="alert" id="cookieua_result" role="alert">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">
-          取消
-        </button>
-        <button onclick="update_site_cookie_ua()" id="sitecookie_action_btn" class="btn btn-primary">开始更新</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal modal-blur fade" id="modal-captcha-code" tabindex="-1" role="dialog" aria-hidden="true"
-     data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-body">
-        <div class="row">
-          <label class="form-label required">请在 30秒 内输入验证码</label>
-          <div class="row mb-3">
-            <div class="col-auto">
-              <input type="hidden" id="captcha_key" value="">
-              <img id="captcha_code_img" src="" alt="">
-            </div>
-            <div class="col">
-              <input class="form-control" id="captcha_code" placeholder="">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <a href="javascript:submit_captcha_code()" class="btn btn-primary">提交</a>
-      </div>
+
     </div>
   </div>
 </div>
@@ -711,150 +658,6 @@
     });
   }
 
-  // 显示更新站点Cookie和UA对话框
-  function show_site_cookie_ua_modal(siteid, sitename){
-    $("#cookieua_siteid").val(siteid);
-    $("#cookieua_modal_title").text("更新站点Cookie - " + sitename);
-    $("#cookieua_result_div").hide();
-    $("#sitecookie_process_bar").attr("style", "width: 0").attr("aria-valuenow", 0);
-    $("#sitecookie_process_bar_div").hide();
-    $("#modal-update-site-cookie").modal("show");
-  }
-
-  // 当前正在处理的站点
-  var refresh_sitecookie_current = "";
-  // 更新站点Cookie和UA
-  function update_site_cookie_ua(){
-    $("#cookieua_result_div").hide();
-    $("#sitecookie_process_bar").attr("style", "width: 0").attr("aria-valuenow", 0);
-    let siteid = $("#cookieua_siteid").val();
-    let username = $("#cookieua_username").val();
-    if (!username) {
-      $("#cookieua_username").addClass("is-invalid");
-      return;
-    }else{
-      $("#cookieua_username").removeClass("is-invalid");
-    }
-    let password = $("#cookieua_password").val();
-    if (!password) {
-      $("#cookieua_password").addClass("is-invalid");
-      return;
-    }else{
-      $("#cookieua_password").removeClass("is-invalid");
-    }
-    let cookieua_two_step_code = $("#cookieua_two_step_code").val();
-
-    $("#sitecookie_action_btn").text("正在更新...").attr("disabled", true);
-    let ocrflag = $("#cookieua_ocrflag").prop("checked");
-    // 发送更新请求
-    ajax_post("update_sites_cookie_ua", { siteid: siteid,
-                                          username: username,
-                                          password: password,
-                                          ocrflag: ocrflag,
-                                          two_step_code: cookieua_two_step_code
-                                          }, function (ret) {
-      $("#sitecookie_process_bar").attr("style", "width: 100%").attr("aria-valuenow", 100);
-      $("#sitecookie_action_btn").attr("disabled", false).text("开始更新");
-      if (ret.code === 0) {
-        $("#cookieua_result").removeClass().addClass("alert alert-success").text(ret.messages);
-      }else{
-        $("#cookieua_result").removeClass().addClass("alert alert-warning").text(ret.messages);
-      }
-      $("#cookieua_result_div").show();
-      refresh_sitecookie_current = "";
-    }, true, false);
-    // 刷新进度
-    refresh_sitecookie_current = siteid;
-    refresh_sitecookie_process(siteid);
-  }
-
-  // 刷新站点更新进度，显示验证码
-  function refresh_sitecookie_process(siteid) {
-    if (siteid !== refresh_sitecookie_current) {
-      return;
-    }
-    $("#sitecookie_process_bar_div").show();
-    // 刷新进度
-    setTimeout(`start_sitecookie_process('${siteid}')`, 2000);
-  }
-
-  // 开始刷新进度条
-  var SiteCookieProgressEs;
-  function start_sitecookie_process(siteid) {
-    stop_sitecookie_progress();
-    SiteCookieProgressEs = new EventSource(`stream-progress?type=sitecookie`);
-    SiteCookieProgressEs.onmessage = function (event) {
-      let ret = JSON.parse(event.data);
-      if (ret.code === 0 && ret.value <= 100) {
-        // 更新进度条
-        $("#sitecookie_process_bar").attr("style", "width: " + ret.value + "%").attr("aria-valuenow", ret.value);
-        // 判断是否要输入验证码
-        if(ret.text.startsWith("data:image")){
-          let code_img = ret.text.split("|")[0]
-          let code_key = ret.text.split("|")[1]
-          show_captcha_code_modal(code_img, code_key, siteid);
-        }
-      }
-      if ($("#modal-update-site-cookie").is(":hidden")) {
-        stop_sitecookie_progress();
-      }
-    };
-  }
-
-  // 停止刷新进度条
-  function stop_sitecookie_progress() {
-    if (SiteCookieProgressEs) {
-      SiteCookieProgressEs.close();
-      SiteCookieProgressEs = undefined;
-    }
-  }
-
-  // 超时隐藏验证码对话框并恢复更新进度
-  function sitecookie_captcha_timeout(siteid) {
-    $("#modal-captcha-code").modal("hide");
-    if (siteid !== refresh_sitecookie_current) {
-      return;
-    }
-    // 恢复刷新
-    $("#modal-update-site-cookie").modal("show");
-    refresh_sitecookie_process(siteid);
-  }
-
-  // 显示验证码输入框
-  function show_captcha_code_modal(code_img, code_key, siteid) {
-    // 关闭上一个框
-    $("#modal-update-site-cookie").modal("hide");
-    // 显示新框
-    $("#captcha_key").val(code_key);
-    $("#captcha_code_img").attr("src", code_img);
-    $("#captcha_code").val("");
-    $("#modal-captcha-code").modal("show");
-    // 超时关闭
-    setTimeout(`sitecookie_captcha_timeout('${siteid}')`, 30000);
-  }
-
-  // 输入验证码
-  function submit_captcha_code(){
-    let code = $("#captcha_key").val();
-    let value = $("#captcha_code").val();
-    if (!value) {
-      $("#captcha_code").addClass("is-invalid");
-      return;
-    }else{
-      $("#captcha_code").removeClass("is-invalid");
-    }
-    ajax_post("set_site_captcha_code", {code: code, value: value}, function (ret) {
-      if (ret.code === 0) {
-        // 关闭框
-        $("#modal-captcha-code").modal("hide");
-        // 显示原框
-        $("#modal-update-site-cookie").modal("show");
-        // 重新刷新状态
-        refresh_sitecookie_process(refresh_sitecookie_current);
-      }
-    });
-  }
-
   // 站点测试按钮
   $("#sitetest_btn").unbind("click").click(async function () {
     let btn_obj = $(this);
@@ -874,6 +677,50 @@
     }
   });
 
+  // 显示更新站点Cookie和UA对话框
+  function show_site_test(siteid, sitename){
+    $("#sitetest_siteid").val(siteid);
+    $("#sitetest_modal_title").text("站点测试 - " + sitename);
+    $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1">是</span>');
+    $(`#single_sitetest_item_time`).html(`<span class="text-green">0 毫秒</span>`);
+    $(`#single_sitetest_item_msg`).html('');
+
+    $("#single_sitetest_btn").text("测试").attr("disabled", false);
+    $("#modal-site-test").modal("show");
+  }
+
+  // 站点测试按钮
+  $("#single_sitetest_btn").unbind("click").click(async function () {
+    let btn_obj = $(this);
+    let siteid = $("#sitetest_siteid").val();
+
+    console.log(siteid)
+    btn_obj.text("测试中...").attr("disabled", true);
+    single_site_test(siteid, ret=>{
+      if (ret) {
+        btn_obj.text("重新测试").attr("disabled", false);
+      }
+    })
+  });
+
+  //单站测试
+  function single_site_test(siteid, callBack) {
+    if (!siteid) {
+      return;
+    }
+    ajax_post("test_site", { id: siteid }, function (ret) {
+      if (ret.code === 0) {
+        $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1">是</span>');
+        $(`#single_sitetest_item_time`).html(`<span class="text-green">${ret.time} 毫秒</span>`);
+        $(`#single_sitetest_item_msg`).html('');
+      } else {
+        $(`#single_sitetest_item`).html('<span class="badge bg-red me-1 mb-1">否</span>');
+        $(`#single_sitetest_item_time`).html(`<span class="text-red">${ret.time} 毫秒</span>`);
+        $(`#single_sitetest_item_msg`).html(`<span class="text-muted">${ret.msg}</span>`);
+      }
+      callBack(true);
+    });
+  }
   // 读取浏览器UA
   function set_user_agent(id) {
     let userAgent = navigator.userAgent;
