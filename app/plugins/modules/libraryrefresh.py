@@ -160,7 +160,7 @@ class LibraryRefresh(_IPluginModule):
             scheduler_queue.put({
                         "func_str": "LibraryRefresh.refresh_library",
                         "type": 'plugin',
-                        "args": [],
+                        "args": [event.event_data],
                         "job_id": "LibraryRefresh.refresh_library",
                         "trigger": "date",
                         "run_date": run_date,
