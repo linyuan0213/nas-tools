@@ -8,8 +8,9 @@ from urllib.parse import urljoin, urlsplit
 import requests
 from lxml import etree
 
+from app.helper.drissionpage_helper import DrissionPageHelper
 import log
-from app.helper import SiteHelper, ChromeHelper
+from app.helper import SiteHelper
 from app.helper.cloudflare_helper import under_challenge
 from app.utils import RequestUtils
 from app.utils.types import SiteSchema
@@ -247,17 +248,14 @@ class _ISiteUserInfo(metaclass=ABCMeta):
             # 如果cloudflare 有防护，尝试使用浏览器仿真
             if under_challenge(res.text):
                 log.debug(f"【Sites】{self.site_name} 检测到Cloudflare，需要浏览器仿真")
-                chrome = ChromeHelper()
+                chrome = DrissionPageHelper()
                 if self._emulate and chrome.get_status():
-                    if not chrome.visit(url=url, ua=self._ua, cookie=self._site_cookie, proxy=self._proxy):
+                    html_text = chrome.get_page_html(url=url, ua=self._ua, cookies=self._site_cookie, proxies=proxies)
+                    if not html_text:
                         log.error(f"【Sites】{self.site_name} 无法打开网站")
-                        return ""
-                    # 循环检测是否过cf
-                    cloudflare = chrome.pass_cloudflare()
-                    if not cloudflare:
-                        log.error(f"【Sites】{self.site_name} 跳转站点失败")
-                        return ""
-                    return chrome.get_html()
+                        return None
+                    else:
+                        return html_text
                 else:
                     log.warn(
                         f"【Sites】{self.site_name} 检测到Cloudflare，需要浏览器仿真，但是浏览器不可用或者未开启浏览器仿真")

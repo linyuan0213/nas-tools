@@ -67,10 +67,9 @@ class SiteUserInfo(object):
 
         site_headers.update({'User-Agent': ua})
         # 检测环境，有浏览器内核的优先使用仿真签到
-        # chrome = ChromeHelper()
         chrome = DrissionPageHelper()
         if emulate:
-            html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)
+            html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if proxy else None)
             # 循环检测是否过cf
             if not html_text:
                 log.error("【Sites】%s 跳转站点失败" % site_name)

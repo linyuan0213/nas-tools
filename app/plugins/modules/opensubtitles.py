@@ -6,7 +6,7 @@ from urllib.parse import quote
 from pyquery import PyQuery
 
 from app.helper import SiteHelper
-from app.helper.chrome_helper import ChromeHelper
+from app.helper.drissionpage_helper import DrissionPageHelper
 from app.plugins import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.utils import RequestUtils, PathUtils, ExceptionUtils
@@ -206,16 +206,14 @@ class OpenSubtitles(_IPluginModule):
         """
         搜索并解析结果
         """
-        chrome = ChromeHelper()
+        chrome = DrissionPageHelper()
         if not chrome.get_status():
             return []
         # 访问页面
         if not chrome.visit(url):
             return []
         # 源码
-        html_text = chrome.get_html()
-        # Cookie
-        cls._cookie = chrome.get_cookies()
+        html_text = chrome.get_page_html(url=url)
         # 解析列表
         ret_subtitles = []
         html_doc = PyQuery(html_text)

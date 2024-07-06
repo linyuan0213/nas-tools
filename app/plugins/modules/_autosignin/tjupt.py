@@ -9,7 +9,7 @@ from PIL import Image
 from lxml import etree
 from bs4 import BeautifulSoup
 
-from app.helper import ChromeHelper
+from app.helper.drissionpage_helper import DrissionPageHelper
 from app.plugins.modules._autosignin._base import _ISiteSigninHandler
 from app.utils import StringUtils, RequestUtils
 from config import Config
@@ -190,12 +190,9 @@ class Tjupt(_ISiteSigninHandler):
 
         # 豆瓣未获取到答案，使用google识图
         image_search_url = f"https://lens.google.com/uploadbyurl?url={img_url}"
-        chrome = ChromeHelper()
-        chrome.visit(url=image_search_url, proxy=Config().get_proxies())
-        # 等待页面加载
-        time.sleep(3)
-        # 获取识图结果
-        html_text = chrome.get_html()
+        chrome = DrissionPageHelper()
+        html_text = chrome.get_page_html(url=image_search_url, ua=ua, proxies=Config().get_proxies() if proxy else None)
+  
         search_results = BeautifulSoup(html_text, "lxml").find_all("div", class_="UAiK1e")
         if not search_results:
             self.info(f'Google识图失败，未获取到识图结果')
