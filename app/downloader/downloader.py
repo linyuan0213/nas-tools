@@ -1259,7 +1259,7 @@ class Downloader:
         """
         根据媒体信息读取一个下载目录的信息
         """
-        if media:
+        if media.type:
             for attr in downloaddir or []:
                 if not attr:
                     continue
