@@ -34,7 +34,7 @@ class RssHelper:
             return []
         site_domain = StringUtils.get_url_domain(url)
         try:
-            ret = RequestUtils(accept_type="application/xml", proxies=Config().get_proxies() if proxy else None).get_res(url)
+            ret = RequestUtils(headers={"Accept": "application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}, proxies=Config().get_proxies() if proxy else None).get_res(url)
             if not ret:
                 return []
             ret.encoding = ret.apparent_encoding
