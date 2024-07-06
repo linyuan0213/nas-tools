@@ -35,7 +35,7 @@ itsdangerous==2.1.2
 iso639==0.1.4
 jedi==0.18.1
 Jinja2==3.1.4
-jsonpath==0.82
+jsonpath==0.82.2
 jsonschema==4.16.0
 loguru==0.6.0
 lxml==5.2.2
