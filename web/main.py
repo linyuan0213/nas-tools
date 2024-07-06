@@ -727,8 +727,8 @@ def service():
     if "subscribe_search_all" in Services:
         search_rss_interval = pt.get('search_rss_interval')
         if str(search_rss_interval).isdigit():
-            if int(search_rss_interval) < 6:
-                search_rss_interval = 6
+            if int(search_rss_interval) < 2:
+                search_rss_interval = 2
             tim_rsssearch = str(int(search_rss_interval)) + " 小时"
             rss_search_state = 'ON'
         else:
