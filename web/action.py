@@ -9,6 +9,7 @@ import shutil
 import signal
 import sqlite3
 import time
+import subprocess
 from math import floor
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -190,7 +191,6 @@ class WebAction:
             "get_indexers": self.__get_indexers,
             "get_download_dirs": self.__get_download_dirs,
             "find_hardlinks": self.__find_hardlinks,
-            "update_sites_cookie_ua": self.__update_sites_cookie_ua,
             "update_site_cookie_ua": self.__update_site_cookie_ua,
             "set_site_captcha_code": self.__set_site_captcha_code,
             "update_torrent_remove_task": self.__update_torrent_remove_task,
@@ -356,16 +356,13 @@ class WebAction:
         # 关闭服务
         self.stop_service()
         # 重启进程
-        if os.name == "nt":
-            os.kill(os.getpid(), getattr(signal, "SIGKILL", signal.SIGTERM))
-        elif SystemUtils.is_synology():
-            os.system(
-                "ps -ef | grep -v grep | grep 'python run.py'|awk '{print $2}'|xargs kill -9")
+        script_path = os.path.join(os.getcwd(), 'restart-server.sh')
+        os.chmod(script_path, 0o755)
+        res = subprocess.run(['bash', script_path], cwd=os.getcwd())
+        if res.returncode == 0:
+            log.info("Nastool 重启成功...")
         else:
-            if SystemUtils.check_process('node'):
-                os.system("pm2 restart NAStool")
-            else:
-                os.system("pkill -f 'python3 run.py'")
+            log.info(f"Nastool 重启失败: {res.stderr.decode()}")
 
     def handle_message_job(self, msg, in_from=SearchType.OT, user_id=None, user_name=None):
         """
@@ -404,6 +401,7 @@ class WebAction:
                     channel=in_from, title="正在运行 %s ..." % command.get("desc"), user_id=user_id)
                 return
 
+        cache.delete("search")
         # 站点搜索或者添加订阅
         ThreadHelper().start_thread(search_media_by_message,
                                     (msg, in_from, user_id, user_name))
@@ -1163,8 +1161,8 @@ class WebAction:
         site_hr = False
         if tid:
             ret = Sites().get_sites(siteid=tid)
-            if ret.get("rssurl"):
-                site_attr = SiteConf().get_grap_conf(ret.get("rssurl"))
+            if ret.get("signurl"):
+                site_attr = SiteConf().get_grap_conf(ret.get("signurl"))
                 if site_attr.get("FREE"):
                     site_free = True
                 if site_attr.get("2XFREE"):
@@ -2637,6 +2635,7 @@ class WebAction:
         """
         开始媒体库同步
         """
+        cache.delete("index")
         librarys = data.get("librarys") or []
         SystemConfig().set(key=SystemConfigKey.SyncLibrary, value=librarys)
         ThreadHelper().start_thread(MediaServer().sync_mediaserver, ())
@@ -3554,7 +3553,7 @@ class WebAction:
             media_type = {"MOV": "电影", "TV": "电视剧", "ANI": "动漫"}.get(mtype)
             # 只需要部分种子标签
             labels = [label for label in str(item.NOTE).split("|")
-                      if label in ["官方", "官组", "中字", "国语", "特效", "特效字幕"]]
+                      if label in ["官方", "官组", "中字", "国语", "粤语", "国配", "特效", "特效字幕"]]
             # 种子信息
             torrent_item = {
                 "id": item.ID,
@@ -4340,29 +4339,6 @@ class WebAction:
                 return {"code": 1}
         return {"code": 0, "data": hardlinks}
 
-    @staticmethod
-    def __update_sites_cookie_ua(data):
-        """
-        更新所有站点的Cookie和UA
-        """
-        siteid = data.get("siteid")
-        username = data.get("username")
-        password = data.get("password")
-        twostepcode = data.get("two_step_code")
-        ocrflag = data.get("ocrflag")
-        # 保存设置
-        SystemConfig().set(key=SystemConfigKey.CookieUserInfo,
-                           value={
-                               "username": username,
-                               "password": password,
-                               "two_step_code": twostepcode
-                           })
-        retcode, messages = SiteCookie().update_sites_cookie_ua(siteid=siteid,
-                                                                username=username,
-                                                                password=password,
-                                                                twostepcode=twostepcode,
-                                                                ocrflag=ocrflag)
-        return {"code": retcode, "messages": messages}
 
     @staticmethod
     def __update_site_cookie_ua(data):
