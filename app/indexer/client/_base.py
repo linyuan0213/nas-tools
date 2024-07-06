@@ -95,8 +95,8 @@ class _IIndexClient(metaclass=ABCMeta):
         # 索引花费时间
         seconds = (datetime.datetime.now() - start_time).seconds
         if len(result_array) == 0:
-            log.warn(f"【{self.index_type}】{indexer.name} 未搜索到数据")
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 未搜索到数据")
+            log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 未搜索到数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
 
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                         itype=self.client_id,
@@ -105,9 +105,9 @@ class _IIndexClient(metaclass=ABCMeta):
                                         )
             return []
         else:
-            log.warn(f"【{self.index_type}】{indexer.name} 返回数据：{len(result_array)}")
+            log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 返回数据：{len(result_array)}")
             # 更新进度
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 返回 {len(result_array)} 条数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 返回 {len(result_array)} 条数据")
             # 索引统计
             self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
                                                     itype=self.client_id,

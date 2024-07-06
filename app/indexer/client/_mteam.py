@@ -1,6 +1,7 @@
 import re
 import json
 
+from app.utils.types import MediaType
 import log
 from app.utils import RequestUtils, JsonUtils
 from config import MT_URL, Config
@@ -48,10 +49,23 @@ class MteamSpider(object):
     def init_config(self):
         self._size = Config().get_config('pt').get('site_search_result_num') or 100
 
-    def search(self, keyword="", page=0):
+    def search(self, keyword="", mtype: MediaType = None, page=0):
+
+        if mtype == MediaType.MOVIE:
+            mode = "movie"
+            categories = []
+        elif mtype == MediaType.TV:
+            mode = "tvshow"
+            categories = []
+        elif mtype == MediaType.ANIME:
+            mode = "normal"
+            categories = ["405"]
+        else:
+            mode = "normal"
+            categories = []
         params = {
-            "mode": "normal",
-            "categories": [],
+            "mode": mode,
+            "categories": categories,
             "visible": 1,
             "keyword": keyword,
             "pageNumber": int(page) + 1,
@@ -63,6 +77,8 @@ class MteamSpider(object):
                 "Content-Type": "application/json; charset=utf-8",
                 "User-Agent": f"{self._ua}"
             })
+        if self._headers.get('authorization'):
+            self._headers.pop('authorization')
         res = RequestUtils(
             headers=self._headers,
             proxies=self._proxy,

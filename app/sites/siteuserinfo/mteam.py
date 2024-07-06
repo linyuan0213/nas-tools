@@ -42,7 +42,7 @@ class MteamUserInfo(_ISiteUserInfo):
         :param html_text:
         :return:
         """
-        self._favicon_url = urljoin(self._base_url, '/favicon.ico')
+        self._favicon_url = 'https://static.m-team.cc/favicon.ico'
 
         res = RequestUtils(cookies=self._site_cookie, session=self._session, headers=self._site_headers, timeout=60).get_res(
             url=self._favicon_url)

@@ -2,9 +2,10 @@ import copy
 import datetime
 import time
 
+from app.helper.drissionpage_helper import DrissionPageHelper
 import log
 from app.conf import SystemConfig
-from app.helper import IndexerHelper, IndexerConf, ProgressHelper, ChromeHelper, DbHelper
+from app.helper import IndexerHelper, IndexerConf, ProgressHelper, DbHelper
 from app.indexer.client._base import _IIndexClient
 from app.indexer.client._rarbg import Rarbg
 from app.indexer.client._spider import TorrentSpider
@@ -69,7 +70,7 @@ class BuiltinIndexer(_IIndexClient):
         indexer_sites = SystemConfig().get(SystemConfigKey.UserIndexerSites) or []
         _indexer_domains = []
         # 检查浏览器状态
-        chrome_ok = ChromeHelper().get_status()
+        chrome_ok = DrissionPageHelper().get_status()
         # 私有站点
         for site in Sites().get_sites():
             url = site.get("signurl") or site.get("rssurl")
@@ -162,13 +163,13 @@ class BuiltinIndexer(_IIndexClient):
             elif indexer.parser == "TorrentLeech":
                 error_flag, result_array = TorrentLeech(indexer).search(keyword=search_word)
             elif indexer.parser == "MteamSpider":
-                error_flag, result_array = MteamSpider(indexer).search(keyword=search_word)
-            elif indexer.parser == "ButailingSpider":
-                error_flag, result_array = Butailing(indexer).search(keyword=search_word)
+                error_flag, result_array = MteamSpider(indexer).search(keyword=search_word,
+                                                                       mtype=match_media.type if match_media and match_media.tmdb_info else None)
             elif indexer.parser == "FSMSpider":
                 error_flag, result_array = FSMSpider(indexer).search(keyword=search_word)
             elif indexer.parser == "YemaPTSpider":
-                error_flag, result_array = YemaPTSpider(indexer).search(keyword=search_word)
+                error_flag, result_array = YemaPTSpider(indexer).search(keyword=search_word,
+                                                                        mtype=match_media.type if match_media and match_media.tmdb_info else None)
             else:
                 error_flag, result_array = self.__spider_search(
                     keyword=search_word,
@@ -187,14 +188,14 @@ class BuiltinIndexer(_IIndexClient):
                                                 result='N' if error_flag else 'Y')
         # 返回结果
         if len(result_array) == 0:
-            log.warn(f"【{self.client_name}】{indexer.name} 未搜索到数据")
+            log.warn(f"【{self.client_name}】{indexer.name} 关键词 {key_word} 未搜索到数据")
             # 更新进度
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 未搜索到数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
             return []
         else:
-            log.warn(f"【{self.client_name}】{indexer.name} 返回数据：{len(result_array)}")
+            log.warn(f"【{self.client_name}】{indexer.name} 关键词 {key_word} 返回数据：{len(result_array)}")
             # 更新进度
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 返回 {len(result_array)} 条数据")
+            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 返回 {len(result_array)} 条数据")
             # 过滤
             return self.filter_search_results(result_array=result_array,
                                               order_seq=order_seq,
@@ -227,8 +228,6 @@ class BuiltinIndexer(_IIndexClient):
                                                                     page=page)
         elif indexer.parser == "MteamSpider":
             error_flag, result_array = MteamSpider(indexer).search(keyword=keyword, page=page)
-        elif indexer.parser == "ButailingSpider":
-            error_flag, result_array = Butailing(indexer).search(keyword=keyword)
         elif indexer.parser == "FSMSpider":
             error_flag, result_array = FSMSpider(indexer).search(keyword=keyword, page=page)
         elif indexer.parser == "YemaPTSpider":

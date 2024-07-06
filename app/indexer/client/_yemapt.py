@@ -2,6 +2,7 @@ import datetime
 import pytz
 import json
 
+from app.utils.types import MediaType
 import log
 from app.utils import RequestUtils, JsonUtils
 from config import Config
@@ -18,6 +19,13 @@ class YemaPTSpider(object):
     _passkey = ""
     _searchurl = "%sapi/torrent/fetchCategoryOpenTorrentList"
     _pageurl = "%sapi/torrent/fetchTorrentDetail?id=%s&firstView=false"
+
+    _LABEL_MAP = {
+        '5': '国语',
+        '6': '中字',
+        '7': '粤语',
+        '8': '英字'
+    }
 
     def __init__(self, indexer):
         if indexer:
@@ -41,12 +49,21 @@ class YemaPTSpider(object):
     def init_config(self):
         self._size = Config().get_config('pt').get('site_search_result_num') or 100
 
-    def search(self, keyword="", page=0):
+    def search(self, keyword="", mtype: MediaType = None, page=0):
         page = int(page) + 1
+        cat_list = []
         if not keyword:
             keyword = ""
         self._searchurl = self._searchurl % (self._domain)
-        cat_list = [4, 5, 13, 14, 15]
+        if mtype == MediaType.MOVIE:
+            cat_list = [4]
+        elif mtype == MediaType.TV:
+            cat_list = [5, 13, 15]
+        elif mtype == MediaType.ANIME:
+            cat_list = [14]
+        else:
+            cat_list = [4, 5, 13, 14, 15]
+
         param = {"keyword": '',"categoryId":4,"pageParam":{"current":1,"pageSize":40,"pageSizeOptions":["10","20","40"],"size":"small"},"sorter":None}
         torrents = []
         for cat in cat_list:
@@ -82,10 +99,13 @@ class YemaPTSpider(object):
 
                     local_tz = pytz.timezone(Config().get_timezone())
                     pubdate = dt_utc.astimezone(local_tz).strftime('%Y-%m-%d %H:%M:%S')
+                    label_ids = result.get("tagList") or []
+                    labels = '|'.join([self._LABEL_MAP.get(label_id) or '' for label_id in label_ids])
                     torrent = {
                         'indexer': self._indexerid,
                         'title': result.get('showName'),
                         'description': result.get('shortDesc'),
+                        'labels': labels,
                         'enclosure': enclosure,
                         'pubdate': pubdate,
                         'size': result.get('fileSize'),

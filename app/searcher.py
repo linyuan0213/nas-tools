@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from app.utils.string_utils import StringUtils
 import log
 from app.helper import DbHelper
 from app.indexer import Indexer
@@ -106,6 +108,7 @@ class Searcher:
                        "seeders": True}
         if filters:
             filter_args.update(filters)
+        search_name_list = []
         if media_info.keyword:
             # 直接使用搜索词搜索
             first_search_name = media_info.keyword
@@ -128,36 +131,53 @@ class Searcher:
                     en_title = self.media.get_tmdb_en_title(media_info)
                     if en_title:
                         search_en_name = en_title
-            # 两次搜索名称
-            second_search_name = None
+
+            # 繁体中文
+            search_zhtw_name = self.media.get_tmdb_zhtw_title(media_info)
+
+            # 多语言搜索
+            search_name_list.append(search_cn_name)
+            search_name_list.append(search_en_name)
+            # 简体中文和繁体中文是否相同
+            if search_zhtw_name != search_cn_name:
+                search_name_list.append(search_zhtw_name)
+            if media_info.original_language != 'cn':
+                search_name_list.append(media_info.original_title)
+
             if Config().get_config("laboratory").get("search_en_title"):
-                if search_en_name:
-                    first_search_name = search_en_name
-                    second_search_name = search_cn_name
-                else:
-                    first_search_name = search_cn_name
-            else:
-                first_search_name = search_cn_name
-                if search_en_name:
-                    second_search_name = search_en_name
+                pass
+
         # 开始搜索
-        log.info("【Searcher】开始搜索 %s ..." % first_search_name)
-        media_list = self.search_medias(key_word=first_search_name,
-                                        filter_args=filter_args,
-                                        match_media=media_info,
-                                        in_from=in_from)
-        # 使用名称重新搜索
-        if len(media_list) == 0 \
-                and second_search_name \
-                and second_search_name != first_search_name:
-            log.info("【Searcher】%s 未搜索到资源,尝试通过 %s 重新搜索 ..." % (first_search_name, second_search_name))
-            media_list = self.search_medias(key_word=second_search_name,
-                                            filter_args=filter_args,
-                                            match_media=media_info,
-                                            in_from=in_from)
+        log.info("【Searcher】开始搜索 %s ..." % search_name_list)
+        # 多线程
+        executor = ThreadPoolExecutor(max_workers=len(search_name_list))
+        all_task = []
+        for search_name in search_name_list:
+            task = executor.submit(self.search_medias,
+                                    search_name,
+                                    filter_args,
+                                    media_info,
+                                    in_from
+                                )
+            all_task.append(task)
+        media_list = []
+        for future in as_completed(all_task):
+            result = future.result()
+            if result:
+                media_list = media_list + result
+
+        # 根据 org_string 去重列表
+        unique_media_list = []
+        media_seen = set()
+        for d in media_list:
+            org_string = StringUtils.md5_hash(d.org_string + d.site)
+            if org_string not in media_seen:
+                unique_media_list.append(d)
+                media_seen.add(org_string)
+        media_list = unique_media_list
 
         if len(media_list) == 0:
-            log.info("【Searcher】%s 未搜索到任何资源" % second_search_name)
+            log.info("【Searcher】%s 未搜索到任何资源" % search_name_list)
             return None, no_exists, 0, 0
         else:
             if in_from in self.message.get_search_types():

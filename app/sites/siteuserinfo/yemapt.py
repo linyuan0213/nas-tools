@@ -72,12 +72,33 @@ class YemaPTUserInfo(_ISiteUserInfo):
         :param html_text:
         :return:
         """
+        role_dict = {
+            0: 'level0/乱民',
+            1: 'level1/小卒',
+            2: 'level2/教喻',
+            3: 'level3/登仕郎',
+            4: 'level4/修职郎',
+            5: 'level5/文林郎',
+            6: 'level6/忠武校尉',
+            7: 'level7/承信将军',
+            8: 'level8/武毅将军',
+            9: 'level9/武节将军',
+            10: 'level10/显威将军',
+            11: 'level11/宣武将军',
+            12: 'level12/定远将军',
+            13: 'level13/昭毅将军',
+            14: 'level14/定国将军',
+            15: 'level15/金吾将军',
+            16: 'level16/光禄大夫',
+            17: 'level17/特近光禄大夫'
+        }
         if not JsonUtils.is_valid_json(html_text):
             return
         json_data = json.loads(html_text)
         if json_data.get('data') is not None:
             # 用户等级
-            self.user_level = json_data.get('data').get('level')
+            level_num = json_data.get('data').get('level')
+            self.user_level = role_dict.get(level_num, '其他')
 
             # 加入日期
             org_date = json_data.get('data').get('registerTime')
