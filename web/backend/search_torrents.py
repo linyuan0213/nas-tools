@@ -102,7 +102,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
             # 简体中文和繁体中文是否相同
             if search_zhtw_name != search_cn_name:
                 search_name_list.append(search_zhtw_name)
-            if media_info.original_language != 'cn':
+            if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
                 search_name_list.append(media_info.original_title)
 
             # 去除空元素

@@ -111,8 +111,7 @@ class Searcher:
         search_name_list = []
         if media_info.keyword:
             # 直接使用搜索词搜索
-            first_search_name = media_info.keyword
-            second_search_name = None
+            search_name_list.append(media_info.keyword)
         else:
             # 中文名
             if media_info.cn_name:
@@ -141,7 +140,7 @@ class Searcher:
             # 简体中文和繁体中文是否相同
             if search_zhtw_name != search_cn_name:
                 search_name_list.append(search_zhtw_name)
-            if media_info.original_language != 'cn':
+            if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
                 search_name_list.append(media_info.original_title)
 
             if Config().get_config("laboratory").get("search_en_title"):

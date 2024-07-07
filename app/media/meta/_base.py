@@ -540,6 +540,13 @@ class MetaBase(object):
             self.original_title = info.get('original_title')
             self.runtime = info.get("runtime")
             self.release_date = info.get('release_date')
+            if info.original_language == "en":
+                self.en_name = info.original_title
+            else:
+                if hasattr(self.tmdb_info, 'translations'):
+                    en_list = list(filter(lambda x : x.get('iso_639_1') == 'en', self.tmdb_info.translations.translations)) or [{}]
+                    self.en_name = en_list[0].get('data', {}).get('name')
+            self.cn_name = info.get('title')
             if self.release_date:
                 self.year = self.release_date[0:4]
             self.category = self.category_handler.get_movie_category(info)
@@ -548,6 +555,15 @@ class MetaBase(object):
             self.original_title = info.get('original_name')
             self.runtime = info.get("episode_run_time")[0] if info.get("episode_run_time") else None
             self.release_date = info.get('first_air_date')
+            self.cn_name = info.get('name')
+            if info.original_language == "en":
+                self.en_name = info.original_name
+            else:
+                if hasattr(self.tmdb_info, 'translations'):
+                    en_list = list(filter(lambda x : x.get('iso_639_1') == 'en', self.tmdb_info.translations.translations)) or [{}]
+                    self.en_name = en_list[0].get('data', {}).get('name')
+
+            self.cn_name = info.get('name')
             if self.release_date:
                 self.year = self.release_date[0:4]
             if self.type == MediaType.TV:
