@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import sleep
 from app.utils.string_utils import StringUtils
 import log
 from app.helper import DbHelper
@@ -109,6 +110,7 @@ class Searcher:
         if filters:
             filter_args.update(filters)
         search_name_list = []
+        max_workers = 1
         if media_info.keyword:
             # 直接使用搜索词搜索
             search_name_list.append(media_info.keyword)
@@ -137,19 +139,21 @@ class Searcher:
             # 多语言搜索
             search_name_list.append(search_cn_name)
             search_name_list.append(search_en_name)
-            # 简体中文和繁体中文是否相同
-            if search_zhtw_name != search_cn_name:
-                search_name_list.append(search_zhtw_name)
-            if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
-                search_name_list.append(media_info.original_title)
-
-            if Config().get_config("laboratory").get("search_en_title"):
-                pass
+            # 开启多语言搜索
+            if Config().get_config("laboratory").get("search_multi_language"):
+                # 简体中文和繁体中文是否相同
+                if search_zhtw_name != search_cn_name:
+                    search_name_list.append(search_zhtw_name)
+                if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
+                    search_name_list.append(media_info.original_title)
+                max_workers = len(search_name_list)
+            # 去除空元素
+            search_name_list = list(filter(None, search_name_list))
 
         # 开始搜索
         log.info("【Searcher】开始搜索 %s ..." % search_name_list)
         # 多线程
-        executor = ThreadPoolExecutor(max_workers=len(search_name_list))
+        executor = ThreadPoolExecutor(max_workers=max_workers)
         all_task = []
         for search_name in search_name_list:
             task = executor.submit(self.search_medias,
@@ -159,6 +163,7 @@ class Searcher:
                                     in_from
                                 )
             all_task.append(task)
+            sleep(0.5)
         media_list = []
         for future in as_completed(all_task):
             result = future.result()
