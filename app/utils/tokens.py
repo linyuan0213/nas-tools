@@ -14,9 +14,11 @@ class Tokens:
         self.load_text(text)
 
     def load_text(self, text):
-        splited_text = re.split(r'%s' % SPLIT_CHARS, text)
+        processed_text = re.sub(r'^\d+\.\d+', lambda x: x.group().replace('.', '@@'), text)
+        splited_text = re.split(r'%s' % SPLIT_CHARS, processed_text)
         for sub_text in splited_text:
             if sub_text:
+                sub_text = sub_text.replace('@@', '.')
                 self._tokens.append(sub_text)
 
     def cur(self):

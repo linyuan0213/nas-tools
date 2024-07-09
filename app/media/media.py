@@ -820,6 +820,13 @@ class Media:
             else:
                 file_media_info = None
         # 赋值TMDB信息并返回
+        if file_media_info:
+            meta_info = MetaInfo(title, subtitle=subtitle, tmdb_id=file_media_info.get('id'))
+            if not meta_info.get_name() or not meta_info.type:
+                log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
+                return None
+            if mtype:
+                meta_info.type = mtype
         meta_info.set_tmdb_info(file_media_info)
         return meta_info
 
@@ -986,10 +993,17 @@ class Media:
                             # 缓存为未识别
                             file_media_info = None
                     # 赋值TMDB信息
+                    if file_media_info:
+                        meta_info = MetaInfo(meta_info.get_name(), tmdb_id=file_media_info.get('id'))
+                        if not meta_info.get_name() or not meta_info.type:
+                            log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
+                            return None
+                        if mtype:
+                            meta_info.type = mtype
                     meta_info.set_tmdb_info(file_media_info)
                 # 自带TMDB信息
                 else:
-                    meta_info = MetaInfo(title=file_name, mtype=media_type)
+                    meta_info = MetaInfo(title=file_name, mtype=media_type, tmdb_id=file_media_info.get('id'))
                     meta_info.set_tmdb_info(tmdb_info)
                     if season and meta_info.type != MediaType.MOVIE:
                         meta_info.begin_season = int(season)

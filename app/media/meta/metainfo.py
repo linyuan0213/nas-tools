@@ -9,7 +9,7 @@ from app.utils.types import MediaType
 from config import RMT_MEDIAEXT
 
 
-def MetaInfo(title, subtitle=None, mtype=None):
+def MetaInfo(title, subtitle=None, mtype=None, tmdb_id=None):
     """
     媒体整理入口，根据名称和副标题，判断是哪种类型的识别，返回对应对象
     :param title: 标题、种子名、文件名
@@ -21,13 +21,23 @@ def MetaInfo(title, subtitle=None, mtype=None):
     # 记录原始名称
     org_title = title
     # 应用自定义识别词，获取识别词处理后名称
-    rev_title, msg, used_info = WordsHelper().process(title)
-    if subtitle:
-        subtitle, _, _ = WordsHelper().process(subtitle)
+    # rev_title, msg, used_info = WordsHelper().process(title)
+    gid = [-1]
 
-    if msg:
-        for msg_item in msg:
-            log.warn("【Meta】%s" % msg_item)
+    if tmdb_id:
+        custom_words_group = WordsHelper().get_custom_word_groups(tmdbid=tmdb_id)
+        if len(custom_words_group) != 0:
+            gid.append(custom_words_group[0].ID)
+    rev_title = title
+    for i in gid:
+        wordshelper = WordsHelper(gid=i)
+        rev_title, msg, used_info = wordshelper.process(rev_title)
+        if msg:
+            for msg_item in msg:
+                log.warn("【Meta】%s" % msg_item)
+        if subtitle:
+            subtitle, _, _ = wordshelper.process(subtitle)
+
 
     # 判断是否处理文件
     if org_title and os.path.splitext(org_title)[-1] in RMT_MEDIAEXT:
