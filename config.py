@@ -80,6 +80,12 @@ XVFB_PATH = [
     "/usr/local/bin/Xvfb"
 ]
 
+# Chrome 路径
+if os.environ.get('FLASK_DEBUG') == "1":
+    CHROME_PATH = "/snap/bin/chromium"
+else:
+    CHROME_PATH = "/usr/lib/chromium/chromium"
+
 # redis 配置
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = "6379"

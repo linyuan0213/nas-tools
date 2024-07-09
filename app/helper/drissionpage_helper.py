@@ -2,11 +2,14 @@ from DrissionPage import ChromiumPage, ChromiumOptions
 from typing import Callable, Tuple
 from loguru import logger
 
+from config import CHROME_PATH
+
 
 class DrissionPageHelper:
 
     def __init__(self):
         self.co = ChromiumOptions()
+        self.co.set_browser_path(CHROME_PATH)
         self.co.auto_port()
         self.co.headless(False)
         self.co.set_timeouts(base=2, script=3)
