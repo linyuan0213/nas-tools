@@ -177,8 +177,6 @@ security:
   api_key:
   # 【是否验证apikey】：开启时需要在回调地址中传递api密钥进行验证，以增强安全性
   check_apikey: false
-  # 【显示更多PT站点】：开启后会展示更多预设的公告站点
-  show_more_sites: false
 
 # 【实验室】
 laboratory:
