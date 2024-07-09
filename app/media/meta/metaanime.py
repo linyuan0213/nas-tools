@@ -24,6 +24,8 @@ class MetaAnime(MetaBase):
         # 调用第三方模块识别动漫
         try:
             original_title = title
+            # 预处理
+            title = re.sub(r'(\d+\.\d+)\s+', r'\1', title)
             # 字幕组信息会被预处理掉
             anitopy_info_origin = anitopy.parse(title)
             title = self.__prepare_title(title)
