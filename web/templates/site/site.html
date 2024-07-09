@@ -49,7 +49,7 @@
             <a href="javascript:edit_site('{{ Site.id }}')" class="btn-action ms-1" title="编辑站点">
               {{ SVG.edit() }}
             </a>
-            <a href="javascript:show_site_test('{{ Site.id }}', '{{ Site.name }}')" class="btn-action ms-1" title="站点测试">
+            <a href="javascript:show_site_test('{{ Site.id }}', '{{ Site.name }}')" class="disable-show-sitetest btn-action ms-1" title="站点测试">
               {{ SVG.activity_heartbeat() }}
             </a>
             <a href="javascript:remove_site('{{ Site.name }}', '{{ Site.id }}')" class="btn-action ms-1" title="删除站点">
@@ -681,12 +681,31 @@
   function show_site_test(siteid, sitename){
     $("#sitetest_siteid").val(siteid);
     $("#sitetest_modal_title").text("站点测试 - " + sitename);
-    $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1">是</span>');
-    $(`#single_sitetest_item_time`).html(`<span class="text-green">0 毫秒</span>`);
+    $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1"></span>');
+    $(`#single_sitetest_item_time`).html(`<span class="text-green"></span>`);
     $(`#single_sitetest_item_msg`).html('');
+    $("#single_sitetest_btn").text("测试中").attr("disabled", true);
 
-    $("#single_sitetest_btn").text("测试").attr("disabled", false);
-    $("#modal-site-test").modal("show");
+
+    $('.disable-show-sitetest').each(function(){
+            $(this).data('original-href', $(this).attr('href'));
+            $(this).removeAttr('href');
+            $(this).attr('title', '测试中')
+        });
+    single_site_test(siteid, ret=>{
+      if (ret) {
+        $("#single_sitetest_btn").text("重新测试").attr("disabled", false);
+
+        $('.disable-show-sitetest').each(function(){
+            let originalHref = $(this).data('original-href')
+            if (originalHref){
+              $(this).attr('href', originalHref)
+            }
+            $(this).attr('title', '站点测试')
+        });
+        $("#modal-site-test").modal("show");
+      }
+    })
   }
 
   // 站点测试按钮
