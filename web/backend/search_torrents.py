@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os.path
 import re
+from time import sleep
 import zhconv
 
 import log
@@ -47,6 +48,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
     # 识别媒体
     media_info = None
     search_name_list = []
+    max_workers = 1
     if ident_flag:
 
         # 有TMDBID或豆瓣ID
@@ -99,16 +101,16 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
             # 多语言搜索
             search_name_list.append(search_cn_name)
             search_name_list.append(search_en_name)
-            # 简体中文和繁体中文是否相同
-            if search_zhtw_name != search_cn_name:
-                search_name_list.append(search_zhtw_name)
-            if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
-                search_name_list.append(media_info.original_title)
-
+            # 开启多语言搜索
+            if Config().get_config("laboratory").get("search_multi_language"):
+                # 简体中文和繁体中文是否相同
+                if search_zhtw_name != search_cn_name:
+                    search_name_list.append(search_zhtw_name)
+                if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
+                    search_name_list.append(media_info.original_title)
+                max_workers = len(search_name_list)
             # 去除空元素
             search_name_list = list(filter(None, search_name_list))
-            if Config().get_config("laboratory").get("search_en_title"):
-                pass
 
             filter_args = {"season": search_season,
                            "episode": search_episode,
@@ -140,7 +142,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
     log.info("【Web】开始通过 %s 搜索 ..." % search_name_list)
 
     # 多线程
-    executor = ThreadPoolExecutor(max_workers=len(search_name_list))
+    executor = ThreadPoolExecutor(max_workers=max_workers)
     all_task = []
     for search_name in search_name_list:
         task = executor.submit(_searcher.search_medias,
@@ -150,6 +152,7 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
                                 SearchType.WEB
                             )
         all_task.append(task)
+        sleep(0.5)
     media_list = []
     for future in as_completed(all_task):
         result = future.result()

@@ -181,7 +181,7 @@ class Subscribe:
                                                        cache=False)
             # 检查TMDB信息
             if not media_info or not media_info.tmdb_info:
-                return 1, "无法TMDB查询到媒体信息", None
+                return 1, "TMDB无法查询到媒体信息", None
             # 添加订阅
             if media_info.type != MediaType.MOVIE:
                 # 电视剧
