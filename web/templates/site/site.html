@@ -681,8 +681,8 @@
   function show_site_test(siteid, sitename){
     $("#sitetest_siteid").val(siteid);
     $("#sitetest_modal_title").text("站点测试 - " + sitename);
-    $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1">是</span>');
-    $(`#single_sitetest_item_time`).html(`<span class="text-green">0 毫秒</span>`);
+    $(`#single_sitetest_item`).html('<span class="badge bg-yellow me-1 mb-1">待测试</span>'); 
+    $(`#single_sitetest_item_time`).html(`<span class="text-muted">等待测试中...</span>`); 
     $(`#single_sitetest_item_msg`).html('');
 
     $("#single_sitetest_btn").text("测试").attr("disabled", false);
