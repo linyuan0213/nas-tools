@@ -189,7 +189,7 @@ class MTBigPack(_IPluginModule):
         search_url = f"{base_url}/api/torrent/search"
         collection_url = f"{base_url}/api/torrent/collection"
         rss_url = f"{base_url}/api/rss/genlink"
-        rss_download_url = self._redis_store.hget('bigpack:rss', 'rss').decode('utf-8')
+        rss_download_url = (self._redis_store.hget('bigpack:rss', 'rss') or b'').decode('utf-8')
         if not rss_download_url:
             rss_download_url = self._get_rss(rss_url)
             self._redis_store.hset('bigpack:rss', 'rss', rss_download_url)
