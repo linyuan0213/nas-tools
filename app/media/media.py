@@ -998,8 +998,8 @@ class Media:
                         if not meta_info.get_name() or not meta_info.type:
                             log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
                             return None
-                        if mtype:
-                            meta_info.type = mtype
+                        if media_type:
+                            meta_info.type = media_type
                     meta_info.set_tmdb_info(file_media_info)
                 # 自带TMDB信息
                 else:
