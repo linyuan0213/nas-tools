@@ -4,6 +4,7 @@ import sys
 import re
 import threading
 import time
+import inspect
 from collections import deque
 from html import escape
 from loguru import logger
@@ -116,22 +117,38 @@ def __append_log_queue(level, text):
 
 
 def debug(text, module=None):
-    return Logger.get_instance(module).logger.opt(depth=2).debug(text)
+    frame, depth = inspect.currentframe(), 0
+    while frame and (depth == 0 or frame.f_code.co_filename == __file__):
+        frame = frame.f_back
+        depth += 1
+    return Logger.get_instance(module).logger.opt(depth=depth).debug(text)
 
 
 def info(text, module=None):
+    frame, depth = inspect.currentframe(), 0
+    while frame and (depth == 0 or frame.f_code.co_filename == __file__):
+        frame = frame.f_back
+        depth += 1
     __append_log_queue("INFO", text)
-    return Logger.get_instance(module).logger.opt(depth=2).info(text)
+    return Logger.get_instance(module).logger.opt(depth=depth).info(text)
 
 
 def error(text, module=None):
+    frame, depth = inspect.currentframe(), 0
+    while frame and (depth == 0 or frame.f_code.co_filename == __file__):
+        frame = frame.f_back
+        depth += 1
     __append_log_queue("ERROR", text)
-    return Logger.get_instance(module).logger.opt(depth=2).error(text)
+    return Logger.get_instance(module).logger.opt(depth=depth).error(text)
 
 
 def warn(text, module=None):
+    frame, depth = inspect.currentframe(), 0
+    while frame and (depth == 0 or frame.f_code.co_filename == __file__):
+        frame = frame.f_back
+        depth += 1
     __append_log_queue("WARN", text)
-    return Logger.get_instance(module).logger.opt(depth=2).warning(text)
+    return Logger.get_instance(module).logger.opt(depth=depth).warning(text)
 
 
 def console(text):
