@@ -339,7 +339,8 @@ def update_config():
     if overwrite_cofig:
         Config().save_config(_config)
 
-
+    # 清空索引器统计
+    _dbhelper.delete_all_indexer_statistics()
 class ConfigMonitor(FileSystemEventHandler):
     """
     配置文件变化响应

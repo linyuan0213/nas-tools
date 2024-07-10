@@ -2625,6 +2625,13 @@ class DbHelper:
             DATE=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         ))
 
+    @DbPersist(_db)
+    def delete_all_indexer_statistics(self):
+        """
+        删除所有搜索的记录
+        """
+        self._db.query(INDEXERSTATISTICS).delete()
+
     def get_indexer_statistics(self, client_id):
         """
         查询索引器统计
