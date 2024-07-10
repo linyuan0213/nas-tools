@@ -1003,7 +1003,7 @@ class Media:
                     meta_info.set_tmdb_info(file_media_info)
                 # 自带TMDB信息
                 else:
-                    meta_info = MetaInfo(title=file_name, mtype=media_type, tmdb_id=file_media_info.get('id'))
+                    meta_info = MetaInfo(title=file_name, mtype=media_type, tmdb_id=tmdb_info.get('id'))
                     meta_info.set_tmdb_info(tmdb_info)
                     if season and meta_info.type != MediaType.MOVIE:
                         meta_info.begin_season = int(season)

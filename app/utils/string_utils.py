@@ -578,3 +578,7 @@ class StringUtils:
         for old, new in replacements.items():
             text = text.replace(old, new)
         return text
+    
+    @staticmethod
+    def is_numeric(s):
+        return bool(re.match(r'^[-+]?[0-9]+(\.[0-9]+)?$', s))

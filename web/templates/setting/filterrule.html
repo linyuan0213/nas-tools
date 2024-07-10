@@ -466,7 +466,7 @@
     }
     const rule_sizelimit = $("#rule_sizelimit").val();
     if (rule_sizelimit) {
-      const reg = /^[0-9,]*$/;
+      const reg = /^[0-9,\.]*$/;
       if (!reg.test(rule_sizelimit)) {
         $("#rule_sizelimit").addClass("is-invalid");
         return;

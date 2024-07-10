@@ -159,18 +159,18 @@ class Filter:
                     meta_info.size = StringUtils.num_filesize(meta_info.size)
                     if sizes.find(',') != -1:
                         sizes = sizes.split(',')
-                        if sizes[0].isdigit():
-                            begin_size = int(sizes[0].strip())
+                        if StringUtils.is_numeric(sizes[0]):
+                            begin_size = float(sizes[0].strip())
                         else:
                             begin_size = 0
-                        if sizes[1].isdigit():
-                            end_size = int(sizes[1].strip())
+                        if StringUtils.is_numeric(sizes[1]):
+                            end_size = float(sizes[1].strip())
                         else:
                             end_size = 0
                     else:
                         begin_size = 0
-                        if sizes.isdigit():
-                            end_size = int(sizes.strip())
+                        if StringUtils.is_numeric(sizes):
+                            end_size = float(sizes.strip())
                         else:
                             end_size = 0
                     if meta_info.type == MediaType.MOVIE:
