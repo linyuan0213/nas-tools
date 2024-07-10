@@ -1,4 +1,5 @@
 import datetime
+from threading import Lock
 import xml.dom.minidom
 from abc import ABCMeta, abstractmethod
 
@@ -23,6 +24,7 @@ class _IIndexClient(metaclass=ABCMeta):
     progress = None
     filter = None
     dbhelper = None
+    lock = Lock()
 
     def __init__(self):
         self.media = Media()
@@ -95,31 +97,33 @@ class _IIndexClient(metaclass=ABCMeta):
         # 索引花费时间
         seconds = (datetime.datetime.now() - start_time).seconds
         if len(result_array) == 0:
-            log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 未搜索到数据")
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
+            with self.lock:
+                log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 未搜索到数据")
+                self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
 
-            self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
-                                        itype=self.client_id,
-                                        seconds=seconds,
-                                        result='N'
-                                        )
-            return []
+                self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
+                                            itype=self.client_id,
+                                            seconds=seconds,
+                                            result='N'
+                                            )
+                return []
         else:
-            log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 返回数据：{len(result_array)}")
-            # 更新进度
-            self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 返回 {len(result_array)} 条数据")
-            # 索引统计
-            self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
-                                                    itype=self.client_id,
-                                                    seconds=seconds,
-                                                    result='Y'
-                                                    )
-            return self.filter_search_results(result_array=result_array,
-                                              order_seq=order_seq,
-                                              indexer=indexer,
-                                              filter_args=filter_args,
-                                              match_media=match_media,
-                                              start_time=start_time)
+            with self.lock:
+                log.warn(f"【{self.index_type}】{indexer.name} 关键词 {key_word} 返回数据：{len(result_array)}")
+                # 更新进度
+                self.progress.update(ptype=ProgressKey.Search, text=f"{indexer.name} 关键词 {key_word} 返回 {len(result_array)} 条数据")
+                # 索引统计
+                self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
+                                                        itype=self.client_id,
+                                                        seconds=seconds,
+                                                        result='Y'
+                                                        )
+                return self.filter_search_results(result_array=result_array,
+                                                order_seq=order_seq,
+                                                indexer=indexer,
+                                                filter_args=filter_args,
+                                                match_media=match_media,
+                                                start_time=start_time)
 
     @staticmethod
     def __parse_torznabxml(url):

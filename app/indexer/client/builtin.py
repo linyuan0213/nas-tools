@@ -1,5 +1,6 @@
 import copy
 import datetime
+from threading import Lock
 import time
 
 from app.helper.drissionpage_helper import DrissionPageHelper
@@ -35,6 +36,7 @@ class BuiltinIndexer(_IIndexClient):
     progress = None
     sites = None
     dbhelper = None
+    lock = Lock()
 
     def __init__(self, config=None):
         super().__init__()
@@ -182,11 +184,12 @@ class BuiltinIndexer(_IIndexClient):
         # 索引花费的时间
         seconds = round((datetime.datetime.now() - start_time).seconds, 1)
         # 索引统计
-        self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
-                                                itype=self.client_id,
-                                                seconds=seconds,
-                                                result='N' if error_flag else 'Y')
-        # 返回结果
+        with self.lock:
+            self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
+                                                    itype=self.client_id,
+                                                    seconds=seconds,
+                                                    result='N' if error_flag else 'Y')
+            # 返回结果
         if len(result_array) == 0:
             log.warn(f"【{self.client_name}】{indexer.name} 关键词 {key_word} 未搜索到数据")
             # 更新进度
@@ -240,10 +243,11 @@ class BuiltinIndexer(_IIndexClient):
         seconds = round((datetime.datetime.now() - start_time).seconds, 1)
 
         # 索引统计
-        self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
-                                                itype=self.client_id,
-                                                seconds=seconds,
-                                                result='N' if error_flag else 'Y')
+        with self.lock:
+            self.dbhelper.insert_indexer_statistics(indexer=indexer.name,
+                                                    itype=self.client_id,
+                                                    seconds=seconds,
+                                                    result='N' if error_flag else 'Y')
         return result_array
 
     @staticmethod
