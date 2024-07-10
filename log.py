@@ -27,8 +27,8 @@ class InterceptHandler(logging.Handler):
             level = record.levelno
 
         # Find caller from where originated the logged message
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
+        frame, depth = logging.currentframe(), 1
+        while frame.f_code.co_filename == logging.__file__ or frame.f_code.co_filename == __file__:
             frame = frame.f_back
             depth += 1
 
@@ -58,7 +58,7 @@ class Logger:
 
                 handler = {
                         "sink": f"tcp://{logip}:{logport}",
-                        "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |{level:8}| {name} : {module}:{line:4} | - {message}",
+                        "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |{level:8}| {file} : {module}.{function}:{line:4} | - {message}",
                         "colorize": False
                     }
                 handlers.append(handler)
@@ -73,14 +73,14 @@ class Logger:
                 handler = {
                         "sink": os.path.join(logpath, module + ".log"),
                         "rotation": "5 MB",
-                        "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |{level:8}| {name} : {module}:{line:4} | - {message}",
+                        "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |{level:8}| {file} : {module}.{function}:{line:4} | - {message}",
                         "colorize": False
                     }
                 handlers.append(handler)
         # 记录日志到终端
         handler = {
             "sink": sys.stderr,
-            "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |<lvl>{level:8}</>| {name} : {module}:{line:4} | - <lvl>{message}</>",
+            "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |<lvl>{level:8}</>| {file} : {module}.{function}:{line:4} | - <lvl>{message}</>",
             "colorize": True
         }
         handlers.append(handler)
@@ -116,22 +116,22 @@ def __append_log_queue(level, text):
 
 
 def debug(text, module=None):
-    return Logger.get_instance(module).logger.debug(text)
+    return Logger.get_instance(module).logger.opt(depth=2).debug(text)
 
 
 def info(text, module=None):
     __append_log_queue("INFO", text)
-    return Logger.get_instance(module).logger.info(text)
+    return Logger.get_instance(module).logger.opt(depth=2).info(text)
 
 
 def error(text, module=None):
     __append_log_queue("ERROR", text)
-    return Logger.get_instance(module).logger.error(text)
+    return Logger.get_instance(module).logger.opt(depth=2).error(text)
 
 
 def warn(text, module=None):
     __append_log_queue("WARN", text)
-    return Logger.get_instance(module).logger.warning(text)
+    return Logger.get_instance(module).logger.opt(depth=2).warning(text)
 
 
 def console(text):
