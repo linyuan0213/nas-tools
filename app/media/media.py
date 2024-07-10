@@ -994,7 +994,16 @@ class Media:
                             file_media_info = None
                     # 赋值TMDB信息
                     if file_media_info:
-                        meta_info = MetaInfo(meta_info.get_name(), tmdb_id=file_media_info.get('id'))
+                        org_begin_episode = meta_info.begin_episode
+                        org_begin_season = meta_info.begin_season
+                        org_string = meta_info.org_string
+                        tmp_string = org_string
+                        if len(org_string) < 10:
+                            org_string = parent_name
+                        meta_info = MetaInfo(org_string, tmdb_id=file_media_info.get('id'))
+                        if len(tmp_string) < 10:
+                            meta_info.begin_episode = org_begin_episode
+                            meta_info.begin_season = org_begin_season
                         if not meta_info.get_name() or not meta_info.type:
                             log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
                             return None

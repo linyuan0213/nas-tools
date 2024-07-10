@@ -1599,7 +1599,7 @@ def subscribe():
     # 添加订阅
     code = 0
     msg = "ok"
-    meta_info = MetaInfo(title=subject, mtype=media_type)
+    meta_info = MetaInfo(title=subject, mtype=media_type, tmdb_id=tmdbId)
     user_name = req_json.get("request", {}).get("requestedBy_username")
     if media_type == MediaType.MOVIE:
         code, msg, _ = Subscribe().add_rss_subscribe(mtype=media_type,
