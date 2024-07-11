@@ -1,0 +1,125 @@
+{
+    "id": "iptorrents",
+    "name": "IPT",
+    "domain": "https://iptorrents.com/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "t?q={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table[id=\"torrents\"] tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"/t/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a[href*=\"/t/\"]",
+                "contents": 0
+            },
+            "category": {
+                "selector": "a[href*=\"?\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "replace",
+                        "args": [
+                            "?",
+                            ""
+                        ]
+                    }
+                ]
+            },
+            "details": {
+                "selector": "a[href*=\"/t/\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"/download.php/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "lstrip",
+                        "args": [
+                            "/"
+                        ]
+                    }
+                ]
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(2) > div",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(2) > div",
+                "optional": true
+            },
+            "date": {
+                "selector": "td:nth-child(2) > div",
+                "filters": [
+                    {
+                        "name": "split",
+                        "args": [
+                            "|",
+                            1
+                        ]
+                    },
+                    {
+                        "name": "date_en_elapsed_parse"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-child(6)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(8)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(9)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(7)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "span.free": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f"
+            },
+            "minimumratio": {
+                "text": 1
+            },
+            "minimumseedtime": {
+                "text": 1209600
+            }
+        }
+    },
+    "conf": {}
+}

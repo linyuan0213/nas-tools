@@ -1,0 +1,8 @@
+{
+    "id": "torrentleech",
+    "name": "TorrentLeech",
+    "domain": "https://www.torrentleech.org/",
+    "encoding": "UTF-8",
+    "public": false,
+    "conf": {}
+}
