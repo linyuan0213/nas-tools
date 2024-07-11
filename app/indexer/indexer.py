@@ -169,11 +169,11 @@ class Indexer(object):
                 ret_array = ret_array + result
         # 计算耗时
         end_time = datetime.datetime.now()
-        log.info(f"【{self._client_type.value}】所有站点搜索完成，有效资源数：%s，总耗时 %s 秒"
+        log.info(f"【{self._client_type.value}】搜索关键词 {key_word} 所有站点搜索完成，有效资源数：%s，总耗时 %s 秒"
                  % (len(ret_array), (end_time - start_time).seconds))
         self.progress.update(ptype=ProgressKey.Search,
-                             text="所有站点搜索完成，有效资源数：%s，总耗时 %s 秒"
-                                  % (len(ret_array), (end_time - start_time).seconds),
+                             text="搜索关键词 %s 所有站点搜索完成，有效资源数：%s，总耗时 %s 秒"
+                                  % (key_word, len(ret_array), (end_time - start_time).seconds),
                              value=100)
         return ret_array
 

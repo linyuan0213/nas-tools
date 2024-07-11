@@ -267,7 +267,7 @@ class _IIndexClient(metaclass=ABCMeta):
                 index_rule_fail += 1
                 continue
             # 识别种子名称
-            meta_info = MetaInfo(title=torrent_name, subtitle=f"{labels} {description}", tmdb_id=match_media.tmdb_id)
+            meta_info = MetaInfo(title=torrent_name, subtitle=f"{labels} {description}", tmdb_id=match_media.tmdb_id if match_media else None)
             if not meta_info.get_name():
                 log.info(f"【{self.client_name}】{torrent_name} 无法识别到名称")
                 index_match_fail += 1
