@@ -3,7 +3,7 @@
     "name": "Nyaa",
     "domain": "https://nyaa.si/",
     "encoding": "UTF-8",
-    "public": ture,
+    "public": true,
     "search": {
         "paths": [
             {
