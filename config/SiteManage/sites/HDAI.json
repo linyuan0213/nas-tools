@@ -1,0 +1,93 @@
+{
+    "id": "hd",
+    "name": "HDAI",
+    "domain": "https://www.hd.ai/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "Torrents.index",
+                "method": "chrome",
+                "params": {
+                    "keyword": "//input[@name=\"keyword\"]",
+                    "submit": "//div[@id=\"search-container\"]//button[@type=\"submit\"]",
+                    "script": "document.querySelectorAll('#search-container')[0].className += \" layui-show\""
+                }
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "div.layui-table-body.layui-table-main > table tr"
+        },
+        "fields": {
+            "title": {
+                "selector": "a[href*=\"details.php?id=\"] > b"
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?hash=\"]",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td[data-field=\"added\"]",
+                "attribute": "data-content",
+                "optional": true
+            },
+            "date_elapsed": {
+                "selector": "td[data-field=\"added\"] > div",
+                "optional": true
+            },
+            "size": {
+                "selector": "td[data-field=\"size\"] > div"
+            },
+            "seeders": {
+                "selector": "td[data-field=\"seeders\"] > div"
+            },
+            "leechers": {
+                "selector": "td[data-field=\"leechers\"] > div"
+            },
+            "grabs": {
+                "selector": "td[data-field=\"times_completed\"] > div"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img.pro_free": 0,
+                    "img.pro_free2up": 0,
+                    "img.pro_50pctdown": 0.5,
+                    "img.pro_50pctdown2up": 0.5,
+                    "img.pro_30pctdown": 0.3,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "img.pro_50pctdown2up": 2,
+                    "img.pro_free2up": 2,
+                    "img.pro_2up": 2,
+                    "*": 1
+                }
+            },
+            "description": {
+                "selector": "td[data-field=\"name\"] > div",
+                "remove": "a,section,img,span",
+                "contents": -1
+            },
+            "labels": {
+                "selector": "td[data-field=\"name\"] > div > span"
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//img[@class='pro_free']"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": []
+    }
+}
