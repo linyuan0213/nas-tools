@@ -1,8 +1,9 @@
 {
     "id": "zhuque",
-    "name": "\u6731\u96c0",
+    "name": "朱雀",
     "domain": "https://zhuque.in/",
     "encoding": "UTF-8",
+    "parser": "TNodeSpider",
     "public": false,
     "search": {
         "paths": [
@@ -26,7 +27,7 @@
         ],
         "HR": [],
         "PEER_COUNT": [
-            "//div[@class='ant-form-item-control-input-content']/span[contains(text(),'\u6b63\u5728\u505a\u79cd: )]"
+            "//div[@class='ant-form-item-control-input-content']/span[contains(text(),'正在做种: )]"
         ]
     }
 }

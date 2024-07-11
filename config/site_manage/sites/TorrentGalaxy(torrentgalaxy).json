@@ -3,7 +3,9 @@
     "name": "TorrentGalaxy",
     "domain": "https://torrentgalaxy.to/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
+    "proxy": true,
+    "language": "en",
     "search": {
         "paths": [
             {
@@ -14,6 +16,9 @@
         "params": {
             "search": "{keyword}"
         }
+    },
+    "browser": {
+        "path": "torrents.php?sort=id&order=desc&page={page}"
     },
     "torrents": {
         "list": {

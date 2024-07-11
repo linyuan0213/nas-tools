@@ -3,6 +3,7 @@
     "name": "TorrentLeech",
     "domain": "https://www.torrentleech.org/",
     "encoding": "UTF-8",
+    "parser": "TorrentLeech",
     "public": false,
     "conf": {}
 }

@@ -1,6 +1,6 @@
 {
     "id": "pttime",
-    "name": "PT\u65f6\u95f4",
+    "name": "PT时间",
     "domain": "https://www.pttime.org/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,7 +24,7 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies(\u7535\u5f71)",
+                "desc": "Movies(电影)",
                 "default": true
             }
         ],
@@ -32,31 +32,31 @@
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series(\u7535\u89c6\u5267)",
+                "desc": "TV Series(电视剧)",
                 "default": true
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "TV Shows(\u7efc\u827a)",
+                "desc": "TV Shows(综艺)",
                 "default": true
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries(\u7eaa\u5f55\u7247)",
+                "desc": "Documentaries(纪录片)",
                 "default": true
             },
             {
                 "id": 430,
                 "cat": "TV/Anime",
-                "desc": "Animate(3D\u52a8\u753b\u30012.5\u6b21\u5143)",
+                "desc": "Animate(3D动画、2.5次元)",
                 "default": true
             },
             {
                 "id": 431,
                 "cat": "TV/Anime",
-                "desc": "ACGN(\u4e8c\u6b21\u5143)",
+                "desc": "ACGN(二次元)",
                 "default": true
             }
         ]

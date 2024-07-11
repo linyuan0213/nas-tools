@@ -1,9 +1,10 @@
 {
     "id": "skyeysnow",
-    "name": "\u5929\u96ea",
+    "name": "天雪",
     "domain": "https://skyeysnow.com/",
     "encoding": "UTF-8",
     "public": false,
+    "proxy": false,
     "search": {
         "paths": [
             {
@@ -11,6 +12,9 @@
                 "method": "get"
             }
         ]
+    },
+    "browse": {
+        "path": "forum.php?mod=torrents&page={page}"
     },
     "torrents": {
         "list": {

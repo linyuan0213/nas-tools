@@ -3,7 +3,9 @@
     "name": "EZTV",
     "domain": "https://eztvx.to/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
+    "proxy": true,
+    "language": "en",
     "search": {
         "paths": [
             {
@@ -18,6 +20,9 @@
             "q_filter_x265": "on",
             "layout": "def_wlinks"
         }
+    },
+    "browse": {
+        "path": "page_{page}"
     },
     "torrents": {
         "list": {

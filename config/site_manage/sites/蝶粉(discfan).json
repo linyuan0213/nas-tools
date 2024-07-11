@@ -1,6 +1,6 @@
 {
     "id": "discfan",
-    "name": "\u8776\u7c89",
+    "name": "蝶粉",
     "domain": "https://discfan.net/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,59 +24,59 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "\u4e2d\u56fd\u5927\u9646(CHN)"
+                "desc": "中国大陆(CHN)"
             },
             {
                 "id": 404,
                 "cat": "Movies",
-                "desc": "\u4e2d\u56fd\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a(HKG)"
+                "desc": "中国香港特别行政区(HKG)"
             },
             {
                 "id": 405,
                 "cat": "Movies",
-                "desc": "\u4e2d\u56fd\u53f0\u6e7e\u7701(TWN)"
+                "desc": "中国台湾省(TWN)"
             },
             {
                 "id": 402,
                 "cat": "Movies",
-                "desc": "\u6cf0\u56fd(THA)"
+                "desc": "泰国(THA)"
             },
             {
                 "id": 403,
                 "cat": "Movies",
-                "desc": "\u65e5\u672c(JPN)"
+                "desc": "日本(JPN)"
             },
             {
                 "id": 406,
                 "cat": "Movies",
-                "desc": "\u97e9\u56fd(KOR)"
+                "desc": "韩国(KOR)"
             },
             {
                 "id": 410,
                 "cat": "Movies",
-                "desc": "\u4e16\u754c(World)"
+                "desc": "世界(World)"
             }
         ],
         "tv": [
             {
                 "id": 411,
                 "cat": "TV",
-                "desc": "\u5267\u96c6(Series)"
+                "desc": "剧集(Series)"
             },
             {
                 "id": 413,
                 "cat": "TV/Documentary",
-                "desc": "\u8bb0\u5f55(Documentary)"
+                "desc": "记录(Documentary)"
             },
             {
                 "id": 416,
                 "cat": "TV",
-                "desc": "\u7efc\u827a(Variety Show)"
+                "desc": "综艺(Variety Show)"
             },
             {
                 "id": 419,
                 "cat": "TV/Anime",
-                "desc": "\u52a8\u6f2b(Animation)"
+                "desc": "动漫(Animation)"
             }
         ]
     },

@@ -1,9 +1,10 @@
 {
     "id": "monikadesign",
-    "name": "\u83ab\u59ae\u5361",
+    "name": "莫妮卡",
     "domain": "https://monikadesign.uk/",
     "encoding": "UTF-8",
     "public": false,
+    "proxy": false,
     "search": {
         "paths": [
             {
@@ -11,6 +12,10 @@
                 "method": "get"
             }
         ]
+    },
+    "browse": {
+        "path": "torrents?perPage=100&page={page}",
+        "start": 1
     },
     "torrents": {
         "list": {
@@ -88,7 +93,7 @@
         "2XFREE": [],
         "HR": [],
         "PEER_COUNT": [
-            "//a[@class='badge-extra text-green'][contains(@title,'\u505a\u79cd')]"
+            "//a[@class='badge-extra text-green'][contains(@title,'做种')]"
         ]
     }
 }

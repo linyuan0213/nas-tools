@@ -1,6 +1,6 @@
 {
     "id": "U2",
-    "name": "\u5e7c\u513f\u56ed",
+    "name": "幼儿园",
     "domain": "https://u2.dmhy.org/",
     "encoding": "UTF-8",
     "public": false,
@@ -69,7 +69,7 @@
             {
                 "id": 412,
                 "cat": "Movies/BluRay",
-                "desc": "\u52a0\u6d41\u91cd\u704c (Modded Blu-rays)"
+                "desc": "加流重灌 (Modded Blu-rays)"
             }
         ],
         "tv": [
@@ -121,12 +121,12 @@
             {
                 "id": 410,
                 "cat": "TV/Anime",
-                "desc": "\u5916\u6302\u7ed3\u6784 (TV Series)"
+                "desc": "外挂结构 (TV Series)"
             },
             {
                 "id": 412,
                 "cat": "TV/Anime",
-                "desc": "\u52a0\u6d41\u91cd\u704c (Modded Blu-rays)"
+                "desc": "加流重灌 (Modded Blu-rays)"
             }
         ]
     },

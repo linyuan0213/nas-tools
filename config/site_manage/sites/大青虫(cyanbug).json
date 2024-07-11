@@ -1,6 +1,6 @@
 {
     "id": "cyanbug",
-    "name": "\u5927\u9752\u866b",
+    "name": "大青虫",
     "domain": "https://cyanbug.net/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,7 +24,7 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies(\u7535\u5f71)",
+                "desc": "Movies(电影)",
                 "default": true
             }
         ],
@@ -32,25 +32,25 @@
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series(\u7535\u89c6\u5267)",
+                "desc": "TV Series(电视剧)",
                 "default": true
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "TV Shows(\u7efc\u827a)",
+                "desc": "TV Shows(综艺)",
                 "default": true
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries(\u7eaa\u5f55\u7247)",
+                "desc": "Documentaries(纪录片)",
                 "default": true
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations(\u52a8\u753b)",
+                "desc": "Animations(动画)",
                 "default": true
             }
         ]

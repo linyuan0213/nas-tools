@@ -4,6 +4,7 @@
     "domain": "https://www.yemapt.org/",
     "encoding": "UTF-8",
     "public": false,
+    "parser": "YemaPTSpider",
     "search": {
         "paths": [
             {

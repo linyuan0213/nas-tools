@@ -1,6 +1,6 @@
 {
     "id": "HDTime",
-    "name": "\u9ad8\u6e05\u65f6\u95f4",
+    "name": "高清时间",
     "domain": "https://hdtime.org/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,34 +24,34 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies/\u7535\u5f71"
+                "desc": "Movies/电影"
             },
             {
                 "id": 424,
                 "cat": "Movies/BluRay",
-                "desc": "Blu-Ray\u539f\u76d8"
+                "desc": "Blu-Ray原盘"
             }
         ],
         "tv": [
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series/\u5267\u96c6"
+                "desc": "TV Series/剧集"
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "TV Shows/\u7efc\u827a"
+                "desc": "TV Shows/综艺"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations/\u52a8\u6f2b"
+                "desc": "Animations/动漫"
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries/\u7eaa\u5f55\u7247"
+                "desc": "Documentaries/纪录片"
             }
         ]
     },

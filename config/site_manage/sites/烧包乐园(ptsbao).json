@@ -1,6 +1,6 @@
 {
     "id": "ptsbao",
-    "name": "\u70e7\u5305\u4e50\u56ed",
+    "name": "烧包乐园",
     "domain": "https://ptsbao.club/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,29 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies(\u7535\u5f71)"
+                "desc": "Movies(电影)"
             }
         ],
         "tv": [
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series(\u7535\u89c6\u5267)"
+                "desc": "TV Series(电视剧)"
             },
             {
                 "id": 403,
                 "cat": "TV/Other",
-                "desc": "TV Shows(\u7535\u89c6\u8282\u76ee)"
+                "desc": "TV Shows(电视节目)"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations(\u52a8\u6f2b)"
+                "desc": "Animations(动漫)"
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries(\u8bb0\u5f55\u7247)"
+                "desc": "Documentaries(记录片)"
             }
         ]
     },

@@ -1,6 +1,6 @@
 {
     "id": "ttg",
-    "name": "\u542c\u542c\u6b4c",
+    "name": "听听歌",
     "domain": "https://totheglory.im/",
     "encoding": "UTF-8",
     "public": false,
@@ -21,104 +21,104 @@
     },
     "category": {
         "field": "search_field",
-        "delimiter": " \u5206\u7c7b:",
+        "delimiter": " 分类:",
         "movie": [
             {
-                "id": "\u7535\u5f71DVDRip",
+                "id": "电影DVDRip",
                 "cat": "Movies/SD"
             },
             {
-                "id": "\u7535\u5f71720p",
+                "id": "电影720p",
                 "cat": "Movies/HD"
             },
             {
-                "id": "\u7535\u5f711080i/p",
+                "id": "电影1080i/p",
                 "cat": "Movies/HD"
             },
             {
-                "id": "BluRay\u539f\u76d8",
+                "id": "BluRay原盘",
                 "cat": "Movies/BluRay"
             },
             {
-                "id": "\u5f71\u89c62160p",
+                "id": "影视2160p",
                 "cat": "Movies/UHD"
             },
             {
-                "id": "UHD\u539f\u76d8",
+                "id": "UHD原盘",
                 "cat": "Movies/UHD"
             }
         ],
         "tv": [
             {
-                "id": "\u7eaa\u5f55\u7247720p",
+                "id": "纪录片720p",
                 "cat": "Movies/HD"
             },
             {
-                "id": "\u7eaa\u5f55\u72471080i/p",
+                "id": "纪录片1080i/p",
                 "cat": "Movies/HD"
             },
             {
-                "id": "\u7eaa\u5f55\u7247BluRay\u539f\u76d8",
+                "id": "纪录片BluRay原盘",
                 "cat": "Movies/BluRay"
             },
             {
-                "id": "\u6b27\u7f8e\u5267720p",
+                "id": "欧美剧720p",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u6b27\u7f8e\u52671080i/p",
+                "id": "欧美剧1080i/p",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u9ad8\u6e05\u65e5\u5267",
+                "id": "高清日剧",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u5927\u9646\u6e2f\u53f0\u52671080i/p",
+                "id": "大陆港台剧1080i/p",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u5927\u9646\u6e2f\u53f0\u5267720p",
+                "id": "大陆港台剧720p",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u9ad8\u6e05\u97e9\u5267",
+                "id": "高清韩剧",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u6b27\u7f8e\u5267\u5305",
+                "id": "欧美剧包",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u65e5\u5267\u5305",
+                "id": "日剧包",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u97e9\u5267\u5305",
+                "id": "韩剧包",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u534e\u8bed\u5267\u5305",
+                "id": "华语剧包",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u9ad8\u6e05\u52a8\u6f2b",
+                "id": "高清动漫",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u97e9\u56fd\u7efc\u827a",
+                "id": "韩国综艺",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u65e5\u672c\u7efc\u827a",
+                "id": "日本综艺",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u9ad8\u6e05\u7efc\u827a",
+                "id": "高清综艺",
                 "cat": "TV/HD"
             },
             {
-                "id": "\u52a8\u6f2b\u539f\u76d8",
+                "id": "动漫原盘",
                 "cat": "TV/BluRay"
             }
         ]
@@ -239,13 +239,13 @@
                     {
                         "name": "re_search",
                         "args": [
-                            "\\d+\u5e74\\d+\u6708\\d+\u65e5\\d+\u70b9\\d+\u5206",
+                            "\\d+年\\d+月\\d+日\\d+点\\d+分",
                             0
                         ]
                     },
                     {
                         "name": "dateparse",
-                        "args": "%Y\u5e74%m\u6708%d\u65e5%H\u70b9%M\u5206"
+                        "args": "%Y年%m月%d日%H点%M分"
                     }
                 ]
             },

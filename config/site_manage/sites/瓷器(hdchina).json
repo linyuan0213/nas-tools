@@ -1,8 +1,9 @@
 {
     "id": "hdchina",
-    "name": "\u74f7\u5668",
+    "name": "瓷器",
     "domain": "https://www.hdchina.org/",
     "encoding": "UTF-8",
+    "render": true,
     "public": false,
     "search": {
         "paths": [

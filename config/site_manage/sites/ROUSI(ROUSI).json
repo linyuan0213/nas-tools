@@ -24,29 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies(\u7535\u5f71)"
+                "desc": "Movies(电影)"
             }
         ],
         "tv": [
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series(\u7535\u89c6\u5267)"
+                "desc": "TV Series(电视剧)"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations(3D\u52a8\u753b\u30012.5\u6b21\u5143)"
+                "desc": "Animations(3D动画、2.5次元)"
             },
             {
                 "id": 415,
                 "cat": "TV/Anime",
-                "desc": "ACGN(\u4e8c\u6b21\u5143\u3001\u6f2b\u753b\u3001\u52a8\u6f2b)"
+                "desc": "ACGN(二次元、漫画、动漫)"
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries(\u7eaa\u5f55\u7247)"
+                "desc": "Documentaries(纪录片)"
             }
         ]
     },

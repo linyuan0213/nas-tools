@@ -12,6 +12,10 @@
             }
         ]
     },
+    "browse": {
+        "path": "torrents/filter?page={page}",
+        "start": 1
+    },
     "torrents": {
         "list": {
             "selector": "div.table-responsive > table > tbody > tr"

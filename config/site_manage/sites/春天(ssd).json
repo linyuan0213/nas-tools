@@ -1,6 +1,6 @@
 {
     "id": "ssd",
-    "name": "\u6625\u5929",
+    "name": "春天",
     "domain": "https://springsunday.net/",
     "encoding": "UTF-8",
     "public": false,
@@ -20,29 +20,29 @@
             {
                 "id": 501,
                 "cat": "Movies",
-                "desc": "Movies(\u7535\u5f71)"
+                "desc": "Movies(电影)"
             }
         ],
         "tv": [
             {
                 "id": 502,
                 "cat": "TV",
-                "desc": "TV Series(\u5267\u96c6)"
+                "desc": "TV Series(剧集)"
             },
             {
                 "id": 503,
                 "cat": "TV/Documentary",
-                "desc": "Docs(\u7eaa\u5f55)"
+                "desc": "Docs(纪录)"
             },
             {
                 "id": 504,
                 "cat": "TV/Anime",
-                "desc": "Animations(\u52a8\u753b)"
+                "desc": "Animations(动画)"
             },
             {
                 "id": 505,
                 "cat": "TV",
-                "desc": "TV Shows(\u7efc\u827a)"
+                "desc": "TV Shows(综艺)"
             }
         ]
     },

@@ -1,9 +1,10 @@
 {
     "id": "mteam",
-    "name": "\u9992\u5934",
+    "name": "馒头",
     "domain": "https://kp.m-team.cc/",
     "encoding": "UTF-8",
     "public": false,
+    "parser": "MteamSpider",
     "search": {
         "paths": [
             {
@@ -25,31 +26,31 @@
             {
                 "id": 401,
                 "cat": "Movies/SD",
-                "desc": "Movie(\u96fb\u5f71)/SD",
+                "desc": "Movie(電影)/SD",
                 "default": true
             },
             {
                 "id": 419,
                 "cat": "Movies/HD",
-                "desc": "Movie(\u96fb\u5f71)/HD",
+                "desc": "Movie(電影)/HD",
                 "default": true
             },
             {
                 "id": 420,
                 "cat": "Movies/DVD",
-                "desc": "Movie(\u96fb\u5f71)/DVDiSo",
+                "desc": "Movie(電影)/DVDiSo",
                 "default": true
             },
             {
                 "id": 421,
                 "cat": "Movies/BluRay",
-                "desc": "Movie(\u96fb\u5f71)/Blu-Ray",
+                "desc": "Movie(電影)/Blu-Ray",
                 "default": true
             },
             {
                 "id": 439,
                 "cat": "Movies/Other",
-                "desc": "Movie(\u96fb\u5f71)/Remux",
+                "desc": "Movie(電影)/Remux",
                 "default": true
             }
         ],
@@ -57,37 +58,37 @@
             {
                 "id": 403,
                 "cat": "TV/SD",
-                "desc": "TV Series(\u5f71\u5287/\u7d9c\u85dd)/SD",
+                "desc": "TV Series(影劇/綜藝)/SD",
                 "default": true
             },
             {
                 "id": 402,
                 "cat": "TV/HD",
-                "desc": "TV Series(\u5f71\u5287/\u7d9c\u85dd)/HD",
+                "desc": "TV Series(影劇/綜藝)/HD",
                 "default": true
             },
             {
                 "id": 435,
                 "cat": "TV/SD",
-                "desc": "TV Series(\u5f71\u5287/\u7d9c\u85dd)/DVDiSo",
+                "desc": "TV Series(影劇/綜藝)/DVDiSo",
                 "default": true
             },
             {
                 "id": 438,
                 "cat": "TV/HD",
-                "desc": "TV Series(\u5f71\u5287/\u7d9c\u85dd)/BD",
+                "desc": "TV Series(影劇/綜藝)/BD",
                 "default": true
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "\u7d00\u9304\u6559\u80b2",
+                "desc": "紀錄教育",
                 "default": true
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Anime(\u52d5\u756b)",
+                "desc": "Anime(動畫)",
                 "default": true
             }
         ]
@@ -221,7 +222,7 @@
                     {
                         "name": "re_search",
                         "args": [
-                            "(?:\u9650\u6642\uff1a\\s*)((?:\\d+\u65e5)?(?:\\d+\u6642)?(?:\\d+\u5206)?)",
+                            "(?:限時：\\s*)((?:\\d+日)?(?:\\d+時)?(?:\\d+分)?)",
                             1
                         ]
                     },

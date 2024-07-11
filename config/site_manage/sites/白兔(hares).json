@@ -1,6 +1,6 @@
 {
     "id": "hares",
-    "name": "\u767d\u5154",
+    "name": "白兔",
     "domain": "https://club.hares.top/",
     "encoding": "UTF-8",
     "public": false,
@@ -150,10 +150,10 @@
     },
     "conf": {
         "FREE": [
-            "//b[@class='free'][text()='\u514d\u8d39']"
+            "//b[@class='free'][text()='免费']"
         ],
         "2XFREE": [
-            "//b[@class='twoupfree'][text()='2X\u514d\u8d39']"
+            "//b[@class='twoupfree'][text()='2X免费']"
         ],
         "HR": [],
         "PEER_COUNT": []

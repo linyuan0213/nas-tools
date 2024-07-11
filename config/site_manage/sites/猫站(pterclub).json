@@ -1,6 +1,6 @@
 {
     "id": "pterclub",
-    "name": "\u732b\u7ad9",
+    "name": "猫站",
     "domain": "https://pterclub.com/",
     "encoding": "UTF-8",
     "public": false,
@@ -24,29 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "\u7535\u5f71 (Movie)"
+                "desc": "电影 (Movie)"
             }
         ],
         "tv": [
             {
                 "id": 404,
                 "cat": "TV",
-                "desc": "\u7535\u89c6\u5267 (TV Play)"
+                "desc": "电视剧 (TV Play)"
             },
             {
                 "id": 403,
                 "cat": "TV/Anime",
-                "desc": "\u52a8\u6f2b (Anime)"
+                "desc": "动漫 (Anime)"
             },
             {
                 "id": 405,
                 "cat": "TV",
-                "desc": "\u7efc\u827a (TV Show)"
+                "desc": "综艺 (TV Show)"
             },
             {
                 "id": 402,
                 "cat": "TV/Documentary",
-                "desc": "\u7eaa\u5f55\u7247 (Documentary)"
+                "desc": "纪录片 (Documentary)"
             }
         ]
     },

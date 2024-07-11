@@ -1,9 +1,10 @@
 {
     "id": "fsm",
-    "name": "\u98de\u5929\u62c9\u9762\u795e\u6559",
+    "name": "飞天拉面神教",
     "domain": "https://fsm.name/",
     "encoding": "UTF-8",
     "public": false,
+    "parser": "FSMSpider",
     "search": {
         "paths": [
             {

@@ -3,7 +3,8 @@
     "name": "MiKan",
     "domain": "https://mikanani.me/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
+    "proxy": true,
     "search": {
         "paths": [
             {
@@ -11,6 +12,10 @@
                 "method": "get"
             }
         ]
+    },
+    "browse": {
+        "path": "Home/Classic/{page}",
+        "start": 1
     },
     "torrents": {
         "list": {
