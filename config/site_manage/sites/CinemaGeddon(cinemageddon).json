@@ -1,0 +1,87 @@
+{
+    "id": "cinemageddon",
+    "name": "CinemaGeddon",
+    "domain": "https://cinemageddon.net/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "browse.php?search={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "form > table.torrenttable > tbody > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "title"
+            },
+            "category": {
+                "selector": "a[href*=\"browse.php?cat=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?id=\"]",
+                "attribute": "href"
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(4) > nobr"
+            },
+            "size": {
+                "selector": "td:nth-child(5) > nobr",
+                "remove": "span"
+            },
+            "seeders": {
+                "selector": "td:nth-child(7) > b > a > font"
+            },
+            "leechers": {
+                "selector": "td:nth-child(8) > b > a"
+            },
+            "grabs": {
+                "selector": "td:nth-child(6) > a"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}
