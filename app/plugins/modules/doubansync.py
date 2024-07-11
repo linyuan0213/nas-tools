@@ -136,7 +136,7 @@ class DoubanSync(_IPluginModule):
                         "args": [],
                         "job_id": "DoubanSync.sync_2",
                         "trigger": "interval",
-                        "hours": self._rss_interval,
+                        "seconds": self._rss_interval,
                         "jobstore": self._jobstore
                     })
 
