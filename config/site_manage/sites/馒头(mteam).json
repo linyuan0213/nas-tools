@@ -4,6 +4,7 @@
     "domain": "https://kp.m-team.cc/",
     "encoding": "UTF-8",
     "public": false,
+    "parser": "MteamSpider",
     "search": {
         "paths": [
             {
