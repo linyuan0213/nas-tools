@@ -1,0 +1,215 @@
+{
+    "id": "putao",
+    "name": "葡萄",
+    "domain": "https://pt.sjtu.edu.cn/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents.php",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search": "{keyword}"
+        },
+        "batch": {
+            "delimiter": " ",
+            "space_replace": "_"
+        }
+    },
+    "category": {
+        "movie": [
+            {
+                "id": 401,
+                "cat": "Movies",
+                "desc": "Movies CHN 华语电影"
+            },
+            {
+                "id": 402,
+                "cat": "Movies",
+                "desc": "Movies Eng 欧美电影"
+            },
+            {
+                "id": 403,
+                "cat": "Movies",
+                "desc": "Movies Asian 亚洲电影"
+            }
+        ],
+        "tv": [
+            {
+                "id": 406,
+                "cat": "TV/Documentary",
+                "desc": "Documentary 纪录片"
+            },
+            {
+                "id": 407,
+                "cat": "TV",
+                "desc": "TV Series HKTW 港台电视剧"
+            },
+            {
+                "id": 408,
+                "cat": "TV",
+                "desc": "TV Series Asian 亚洲电视剧"
+            },
+            {
+                "id": 409,
+                "cat": "TV",
+                "desc": "TV Series CHN 大陆电视剧"
+            },
+            {
+                "id": 410,
+                "cat": "TV",
+                "desc": "TV Series Eng 欧美电视剧"
+            },
+            {
+                "id": 411,
+                "cat": "TV",
+                "desc": "TV CHN 大陆综艺节目"
+            },
+            {
+                "id": 412,
+                "cat": "TV",
+                "desc": "TV HKTW 港台综艺节目"
+            },
+            {
+                "id": 413,
+                "cat": "TV",
+                "desc": "TV Eng 欧美综艺节目"
+            },
+            {
+                "id": 414,
+                "cat": "TV",
+                "desc": "TV JPKR 日韩综艺节目"
+            },
+            {
+                "id": 431,
+                "cat": "TV/Anime",
+                "desc": "Anime 动漫"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrents > tr:has(\"table.torrentname\")"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "category": {
+                "selector": "a[href*=\"?cat=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "querystring",
+                        "args": "cat"
+                    }
+                ]
+            },
+            "title_default": {
+                "selector": "a[href*=\"details.php?id=\"]"
+            },
+            "title_optional": {
+                "optional": true,
+                "selector": "a[title][href*=\"details.php?id=\"]",
+                "attribute": "title"
+            },
+            "title": {
+                "text": "{% if fields['title_optional'] %}{{ fields['title_optional'] }}{% else %}{{ fields['title_default'] }}{% endif %}"
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?id=\"]",
+                "attribute": "href"
+            },
+            "size": {
+                "selector": "td:nth-child(5)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(6)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(7)"
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(4) > span",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(4) > span",
+                "attribute": "title",
+                "optional": true
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "tr.free_bg": 0,
+                    "tr.twoup_bg": 0,
+                    "tr.d30down_bg": 0.3,
+                    "tr.halfdown_bg": 0.5,
+                    "tr.d70down_bg": 0.7,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "tr.twoup_bg": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
+                "selector": "font[style][title]",
+                "attribute": "title",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "description": {
+                "selector": "table.torrentname > tr > td.embedded",
+                "contents": -1
+            },
+            "labels": {
+                "selector": "table.torrentname > tr > td.embedded > span"
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//h1[@id='top']/b/font[@class='free']"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": []
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "id": "zhuque",
+    "name": "朱雀",
+    "domain": "https://zhuque.in/",
+    "encoding": "UTF-8",
+    "parser": "TNodeSpider",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrent/search",
+                "method": "chrome",
+                "params": {
+                    "keyword": "//input[@id=\"form_item_keyword\"]",
+                    "submit": "//form//button[@type=\"submit\"]"
+                }
+            }
+        ]
+    },
+    "conf": {
+        "RENDER": true,
+        "FREE": [
+            "//span[@class='text-download'][contains(text(),'0x')]"
+        ],
+        "2XFREE": [
+            ""
+        ],
+        "HR": [],
+        "PEER_COUNT": [
+            "//div[@class='ant-form-item-control-input-content']/span[contains(text(),'正在做种: )]"
+        ]
+    }
+}

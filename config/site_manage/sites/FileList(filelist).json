@@ -1,0 +1,127 @@
+{
+    "id": "filelist",
+    "name": "FileList",
+    "domain": "https://filelist.io/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "browse.php",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search_field": "{keyword}",
+            "c": "M"
+        }
+    },
+    "torrents": {
+        "list": {
+            "selector": "div.visitedlinks > div.torrentrow"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "title"
+            },
+            "poster": {
+                "selector": "span[data-toggle=\"tooltip\"]",
+                "attribute": "title",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "<img src='([^']+)'>",
+                            1
+                        ]
+                    }
+                ]
+            },
+            "category": {
+                "selector": "a[href*=\"browse.php?cat=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "querystring",
+                        "args": "cat"
+                    }
+                ]
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?id=\"]",
+                "attribute": "href"
+            },
+            "date_elapsed": {
+                "selector": "div:nth-child(6)",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "div:nth-child(6)",
+                "optional": true
+            },
+            "date": {
+                "selector": "div:nth-child(6)",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%H:%M:%S%d/%m/%Y"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "div:nth-child(7)"
+            },
+            "seeders": {
+                "selector": "div:nth-child(9)"
+            },
+            "leechers": {
+                "selector": "div:nth-child(10)"
+            },
+            "grabs": {
+                "selector": "div:nth-child(8) > span > font",
+                "contents": 0
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img[alt=\"FreeLeech\"]": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "img[alt=\"DoubleUp\"]": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f"
+            },
+            "minimumratio": {
+                "text": 1
+            },
+            "minimumseedtime": {
+                "text": 172800
+            }
+        }
+    },
+    "conf": {}
+}

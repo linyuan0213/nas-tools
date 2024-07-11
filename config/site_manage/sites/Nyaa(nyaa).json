@@ -1,0 +1,77 @@
+{
+    "id": "nyaa",
+    "name": "Nyaa",
+    "domain": "https://nyaa.si/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "search": {
+        "paths": [
+            {
+                "path": "?f=0&c=0_0&q={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "?p={page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrent-list > tbody > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"/view/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "td:nth-child(2) > a"
+            },
+            "details": {
+                "selector": "td:nth-child(2) > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td:nth-child(3) > a[href*=\"/download/\"]",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td:nth-child(5)"
+            },
+            "size": {
+                "selector": "td:nth-child(4)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(6)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(7)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

@@ -1,0 +1,99 @@
+{
+    "id": "monikadesign",
+    "name": "莫妮卡",
+    "domain": "https://monikadesign.uk/",
+    "encoding": "UTF-8",
+    "public": false,
+    "proxy": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents?perPage=100&name={keyword}&categories[0]=6&categories[1]=7&categories[2]=5&categories[3]=1&categories[4]=8&categories[5]=2",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "torrents?perPage=100&page={page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "table#torrent-list-table > tbody > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a.view-torrent.torrent-listings-name",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a.view-torrent.torrent-listings-name"
+            },
+            "description": {
+                "selector": "span.view-torrent.torrent-listings-subhead > b"
+            },
+            "details": {
+                "selector": "a.view-torrent.torrent-listings-name",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"/torrents/download/\"]",
+                "attribute": "href"
+            },
+            "date_elapsed": {
+                "selector": "td.torrent-listings-age > span.badge-extra"
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td.torrent-listings-size > span"
+            },
+            "seeders": {
+                "selector": "td.torrent-listings-seeders > a > span"
+            },
+            "leechers": {
+                "selector": "td.torrent-listings-leechers > a > span"
+            },
+            "grabs": {
+                "selector": "td.torrent-listings-completed > a > span"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "span.torrent-listings-global-freeleech": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//span[contains(@class, 'torrent-listings-global-freeleech')]/i[contains(text(), 'Free')]"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "//a[@class='badge-extra text-green'][contains(@title,'做种')]"
+        ]
+    }
+}

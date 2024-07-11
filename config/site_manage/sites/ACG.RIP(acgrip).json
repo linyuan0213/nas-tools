@@ -1,0 +1,78 @@
+{
+    "id": "acgrip",
+    "name": "ACG.RIP",
+    "domain": "https://acg.rip/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "search": {
+        "paths": [
+            {
+                "path": "?term={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "page/{page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.table-hover > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"/t/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "span.title > a"
+            },
+            "details": {
+                "selector": "span.title > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td.action > a",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td.date > time",
+                "attribute": "datetime"
+            },
+            "size": {
+                "selector": "td.size"
+            },
+            "seeders": {
+                "selector": "td.peers > div.seed > span"
+            },
+            "leechers": {
+                "selector": "td.peers > div.leech > span"
+            },
+            "grabs": {
+                "selector": "td.peers > div.done > span"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

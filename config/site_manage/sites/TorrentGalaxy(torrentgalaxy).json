@@ -1,0 +1,77 @@
+{
+    "id": "torrentgalaxy",
+    "name": "TorrentGalaxy",
+    "domain": "https://torrentgalaxy.to/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "language": "en",
+    "search": {
+        "paths": [
+            {
+                "path": "torrents.php",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search": "{keyword}"
+        }
+    },
+    "browser": {
+        "path": "torrents.php?sort=id&order=desc&page={page}"
+    },
+    "torrents": {
+        "list": {
+            "selector": "div.tgxtable > div.tgxtablerow.txlight"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href~=\"/torrent/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a.txlight > span > b"
+            },
+            "details": {
+                "selector": "a.txlight",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "div.txlight > a[href*=\"magnet:\"]",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "div:nth-child(12)"
+            },
+            "size": {
+                "selector": "div.txlight > span.badge.badge-secondary.txlight"
+            },
+            "seeders": {
+                "selector": "span[title=\"Seeders/Leechers\"] > font[color=\"green\"] > b"
+            },
+            "leechers": {
+                "selector": "span[title=\"Seeders/Leechers\"] > font[color=\"#ff0000\"] > b"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

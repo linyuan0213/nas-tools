@@ -1,0 +1,95 @@
+{
+    "id": "jptv",
+    "name": "JPTV",
+    "domain": "https://jptv.club/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents/filter?search={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "torrents/filter?page={page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "div.table-responsive > table > tbody > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a.view-torrent",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "a.view-torrent"
+            },
+            "details": {
+                "selector": "a.view-torrent",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"torrents/download/\"]",
+                "attribute": "href"
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(7) > time"
+            },
+            "size": {
+                "selector": "td:nth-child(8) > span",
+                "remove": "span"
+            },
+            "seeders": {
+                "selector": "td:nth-child(9) > a > span"
+            },
+            "leechers": {
+                "selector": "td:nth-child(10) > a > span"
+            },
+            "grabs": {
+                "selector": "td:nth-child(11) > a > span",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//span/i[@class='fas fa-star text-gold']"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "//span[@class='badge-extra text-green']"
+        ]
+    }
+}

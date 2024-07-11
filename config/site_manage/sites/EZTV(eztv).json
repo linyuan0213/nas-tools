@@ -1,0 +1,80 @@
+{
+    "id": "eztv",
+    "name": "EZTV",
+    "domain": "https://eztvx.to/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "language": "en",
+    "search": {
+        "paths": [
+            {
+                "path": "search/{keyword}",
+                "method": "post"
+            }
+        ],
+        "params": {
+            "q_filter": "all",
+            "q_filter_web": "on",
+            "q_filter_reality": "on",
+            "q_filter_x265": "on",
+            "layout": "def_wlinks"
+        }
+    },
+    "browse": {
+        "path": "page_{page}"
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.forum_header_border > tr[name]"
+        },
+        "fields": {
+            "id": {
+                "selector": "td:nth-child(2) > a[href*=\"/ep/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "td:nth-child(2) > a",
+                "attribute": "title"
+            },
+            "details": {
+                "selector": "td:nth-child(2) > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td:nth-child(3) > a[href*=\".torrent\"]",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td:nth-child(5)",
+                "optional": true
+            },
+            "size": {
+                "selector": "td:nth-child(4)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(6) > font"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

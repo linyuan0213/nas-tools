@@ -1,0 +1,95 @@
+{
+    "id": "mikanani",
+    "name": "MiKan",
+    "domain": "https://mikanani.me/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "search": {
+        "paths": [
+            {
+                "path": "Home/Search?searchstr={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "Home/Classic/{page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "div.central-container > table > tbody > tr.js-search-results-row"
+        },
+        "fields": {
+            "id": {
+                "selector": "tr.js-search-results-row",
+                "attribute": "data-itemindex"
+            },
+            "title": {
+                "selector": "td:nth-child(1) > a.magnet-link-wrap"
+            },
+            "details": {
+                "selector": "td:nth-child(1) > a.magnet-link-wrap",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td:nth-child(1) > a.js-magnet.magnet-link",
+                "attribute": "data-clipboard-text"
+            },
+            "date_added": {
+                "selector": "td:nth-child(3)"
+            },
+            "size": {
+                "selector": "td:nth-child(2)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        },
+        "browse_list": {
+            "selector": "div#sk-body > table > tbody > tr"
+        },
+        "browse_fields": {
+            "id": {
+                "selector": "a[href*=\"/Home/Episode/\"]",
+                "attribute": "href"
+            },
+            "title": {
+                "selector": "td:nth-child(3) > a.magnet-link-wrap"
+            },
+            "details": {
+                "selector": "td:nth-child(3) > a.magnet-link-wrap",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td:nth-child(3) > a.js-magnet.magnet-link",
+                "attribute": "data-clipboard-text"
+            },
+            "date_added": {
+                "selector": "td:nth-child(1)"
+            },
+            "size": {
+                "selector": "td:nth-child(4)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

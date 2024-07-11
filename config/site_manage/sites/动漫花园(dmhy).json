@@ -1,0 +1,87 @@
+{
+    "id": "dmhy",
+    "name": "动漫花园",
+    "domain": "https://dmhy.org/",
+    "encoding": "UTF-8",
+    "public": true,
+    "proxy": true,
+    "search": {
+        "paths": [
+            {
+                "path": "topics/list?keyword={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "topics/list/page/{page}",
+        "start": 1
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.tablesorter > tbody > tr"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"/topics/list/sort_id/\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "td.title > a"
+            },
+            "details": {
+                "selector": "td.title > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a.download-arrow.arrow-magnet",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td:nth-child(1) > span",
+                "optional": true
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-child(5)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(6)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(7)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "*": 0
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

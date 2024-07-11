@@ -1,0 +1,226 @@
+{
+    "id": "pttime",
+    "name": "PT时间",
+    "domain": "https://www.pttime.org/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents.php",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search": "{keyword}"
+        },
+        "batch": {
+            "delimiter": " ",
+            "space_replace": "_"
+        }
+    },
+    "category": {
+        "movie": [
+            {
+                "id": 401,
+                "cat": "Movies",
+                "desc": "Movies(电影)",
+                "default": true
+            }
+        ],
+        "tv": [
+            {
+                "id": 402,
+                "cat": "TV",
+                "desc": "TV Series(电视剧)",
+                "default": true
+            },
+            {
+                "id": 403,
+                "cat": "TV",
+                "desc": "TV Shows(综艺)",
+                "default": true
+            },
+            {
+                "id": 404,
+                "cat": "TV/Documentary",
+                "desc": "Documentaries(纪录片)",
+                "default": true
+            },
+            {
+                "id": 430,
+                "cat": "TV/Anime",
+                "desc": "Animate(3D动画、2.5次元)",
+                "default": true
+            },
+            {
+                "id": 431,
+                "cat": "TV/Anime",
+                "desc": "ACGN(二次元)",
+                "default": true
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrents > tr:has(\"table.torrentname\")"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title_default": {
+                "selector": "a[href*=\"details.php?id=\"]"
+            },
+            "title_optional": {
+                "optional": true,
+                "selector": "a[title][href*=\"details.php?id=\"]",
+                "attribute": "title"
+            },
+            "title": {
+                "text": "{% if fields['title_optional'] %}{{ fields['title_optional'] }}{% else %}{{ fields['title_default'] }}{% endif %}"
+            },
+            "category": {
+                "selector": "a[href*=\"?cat=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "replace",
+                        "args": [
+                            "?",
+                            ""
+                        ]
+                    },
+                    {
+                        "name": "querystring",
+                        "args": "cat"
+                    }
+                ]
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?id=\"]",
+                "attribute": "href"
+            },
+            "poster": {
+                "default_value": "",
+                "selector": "img.pr5",
+                "attribute": "src"
+            },
+            "imdbid": {
+                "selector": "div.imdb_100 > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "tt\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(5) > span",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(5) > span",
+                "attribute": "title",
+                "optional": true
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-child(6)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(7)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(8)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(9)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "font.promotion.free": 0,
+                    "font.promotion.twoupfree": 0,
+                    "font.promotion.twouphalfdown": 0.5,
+                    "font.promotion.halfdown": 0.5,
+                    "font.promotion.thirtypercent": 0.3,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "font.promotion.twoup": 2,
+                    "font.promotion.twouphalfdown": 2,
+                    "font.promotion.twoupfree": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
+                "selector": "td:nth-child(2) > table > tr > td.embedded > span[title]",
+                "attribute": "title",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
+                            0
+                        ]
+                    },
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "description": {
+                "selector": "td:nth-child(2) > table.torrentname > tr > td.embedded > font",
+                "remove": "span,a,img,font,b",
+                "contents": -1
+            },
+            "labels": {
+                "selector": "td:nth-child(2) > table > tr > td.embedded > a > span.tags"
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//h1[@id='top']/b/font[@class='free']",
+            "//h1[@id='top']/b/font[@class='zeroupzerodown']"
+        ],
+        "2XFREE": [
+            "//h1[@id='top']/b/font[@class='twoupfree']"
+        ],
+        "HR": [],
+        "PEER_COUNT": [
+            "//div[@id='peercount']/b[1]"
+        ]
+    }
+}

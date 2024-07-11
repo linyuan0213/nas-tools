@@ -1,0 +1,278 @@
+{
+    "id": "ttg",
+    "name": "听听歌",
+    "domain": "https://totheglory.im/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "browse.php"
+            }
+        ],
+        "params": {
+            "search_field": "{keyword}",
+            "c": "M"
+        },
+        "batch": {
+            "delimiter": "+",
+            "space_replace": "+"
+        }
+    },
+    "category": {
+        "field": "search_field",
+        "delimiter": " 分类:",
+        "movie": [
+            {
+                "id": "电影DVDRip",
+                "cat": "Movies/SD"
+            },
+            {
+                "id": "电影720p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "电影1080i/p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "BluRay原盘",
+                "cat": "Movies/BluRay"
+            },
+            {
+                "id": "影视2160p",
+                "cat": "Movies/UHD"
+            },
+            {
+                "id": "UHD原盘",
+                "cat": "Movies/UHD"
+            }
+        ],
+        "tv": [
+            {
+                "id": "纪录片720p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "纪录片1080i/p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "纪录片BluRay原盘",
+                "cat": "Movies/BluRay"
+            },
+            {
+                "id": "欧美剧720p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "欧美剧1080i/p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "高清日剧",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "大陆港台剧1080i/p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "大陆港台剧720p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "高清韩剧",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "欧美剧包",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "日剧包",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "韩剧包",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "华语剧包",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "高清动漫",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "韩国综艺",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "日本综艺",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "高清综艺",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "动漫原盘",
+                "cat": "TV/BluRay"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table#torrent_table tr[id]"
+        },
+        "fields": {
+            "id": {
+                "selector": "div.name_left > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "description_free_forever": {
+                "selector": "div.name_left > a > b > font > span"
+            },
+            "description_normal": {
+                "selector": "div.name_left > a > b > span"
+            },
+            "description": {
+                "text": "{% if fields['description_free_forever'] %}{{ fields['description_free_forever'] }}{% else %}{{ fields['description_normal'] }}{% endif %}"
+            },
+            "labels": {
+                "selector": "div.name_left > span > b"
+            },
+            "title": {
+                "selector": "div.name_left > a > b",
+                "remove": "span",
+                "contents": 0
+            },
+            "category": {
+                "selector": "tr[id] td:nth-child(1) > a > img",
+                "attribute": "alt"
+            },
+            "details": {
+                "selector": "div.name_left > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a.dl_a",
+                "attribute": "href"
+            },
+            "files": {
+                "selector": "td:nth-child(3)"
+            },
+            "size": {
+                "selector": "td:nth-child(7)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(9) > b > a >font"
+            },
+            "leechers": {
+                "selector": "td:nth-child(9) > b:nth-child(2) > a"
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)",
+                "contents": 0
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(6)",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(5) > nobr",
+                "optional": true
+            },
+            "date": {
+                "selector": "td:nth-child(5)",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d%H:%M:%S"
+                    }
+                ]
+            },
+            "imdbid": {
+                "selector": "span.imdb_rate > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "tt\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img[alt=\"free\"]": 0,
+                    "img[alt=\"50%\"]": 0.5,
+                    "img[alt=\"30%\"]": 0.3,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "img[alt=\"200%\"]": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
+                "selector": "span[onclick]",
+                "attribute": "onclick",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+年\\d+月\\d+日\\d+点\\d+分",
+                            0
+                        ]
+                    },
+                    {
+                        "name": "dateparse",
+                        "args": "%Y年%m月%d日%H点%M分"
+                    }
+                ]
+            },
+            "minimumratio": {
+                "case": {
+                    "img[title=\"Hit and Run\"]": 1,
+                    "*": 0
+                }
+            },
+            "minimumseedtime": {
+                "case": {
+                    "img[title=\"Hit and Run\"]": 216000,
+                    "*": 0
+                }
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//img[@class='topic'][contains(@src,'ico_free.gif')]"
+        ],
+        "2XFREE": [],
+        "HR": [
+            "//img[@src='/pic/hit_run.gif']"
+        ],
+        "PEER_COUNT": [
+            "//span[@id='dlstatus']"
+        ]
+    }
+}

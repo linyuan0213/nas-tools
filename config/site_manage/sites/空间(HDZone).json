@@ -1,0 +1,393 @@
+{
+    "id": "HDZone",
+    "name": "空间",
+    "domain": "https://hdzone.me/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents.php",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search": "{keyword}"
+        },
+        "batch": {
+            "delimiter": " ",
+            "space_replace": "_"
+        }
+    },
+    "category": {
+        "movie": [
+            {
+                "id": 411,
+                "cat": "Movies/SD",
+                "desc": "Movies SD"
+            },
+            {
+                "id": 412,
+                "cat": "Movies",
+                "desc": "Movies IPad"
+            },
+            {
+                "id": 413,
+                "cat": "Movies/HD",
+                "desc": "Movies 720p"
+            },
+            {
+                "id": 414,
+                "cat": "Movies/HD",
+                "desc": "Movies 1080p"
+            },
+            {
+                "id": 415,
+                "cat": "Movies",
+                "desc": "Movies REMUX"
+            },
+            {
+                "id": 450,
+                "cat": "Movies/BluRay",
+                "desc": "Movies Bluray"
+            },
+            {
+                "id": 499,
+                "cat": "Movies/UHD",
+                "desc": "Movies UHD Blu-ray"
+            },
+            {
+                "id": 416,
+                "cat": "Movies/UHD",
+                "desc": "Movies 2160p"
+            }
+        ],
+        "tv": [
+            {
+                "id": 417,
+                "cat": "TV/Documentary",
+                "desc": "Doc SD"
+            },
+            {
+                "id": 418,
+                "cat": "TV/Documentary",
+                "desc": "Doc IPad"
+            },
+            {
+                "id": 419,
+                "cat": "TV/Documentary",
+                "desc": "Doc 720p"
+            },
+            {
+                "id": 420,
+                "cat": "TV/Documentary",
+                "desc": "Doc 1080p"
+            },
+            {
+                "id": 421,
+                "cat": "TV/Documentary",
+                "desc": "Doc REMUX"
+            },
+            {
+                "id": 451,
+                "cat": "TV/Documentary",
+                "desc": "Doc Bluray"
+            },
+            {
+                "id": 500,
+                "cat": "TV/Documentary",
+                "desc": "Doc UHD Blu-ray"
+            },
+            {
+                "id": 422,
+                "cat": "TV/Documentary",
+                "desc": "Doc 2160p"
+            },
+            {
+                "id": 425,
+                "cat": "TV/SD",
+                "desc": "TVShow SD"
+            },
+            {
+                "id": 426,
+                "cat": "TV",
+                "desc": "TVShow IPad"
+            },
+            {
+                "id": 471,
+                "cat": "TV",
+                "desc": "TVShow IPad"
+            },
+            {
+                "id": 427,
+                "cat": "TV/HD",
+                "desc": "TVShow 720p"
+            },
+            {
+                "id": 472,
+                "cat": "TV/HD",
+                "desc": "TVShow 720p"
+            },
+            {
+                "id": 428,
+                "cat": "TV/HD",
+                "desc": "TVShow 1080i"
+            },
+            {
+                "id": 429,
+                "cat": "TV/HD",
+                "desc": "TVShow 1080p"
+            },
+            {
+                "id": 430,
+                "cat": "TV",
+                "desc": "TVShow REMUX"
+            },
+            {
+                "id": 452,
+                "cat": "TV/HD",
+                "desc": "TVShow Bluray"
+            },
+            {
+                "id": 431,
+                "cat": "TV/UHD",
+                "desc": "TVShow 2160p"
+            },
+            {
+                "id": 432,
+                "cat": "TV/SD",
+                "desc": "TVSeries SD"
+            },
+            {
+                "id": 433,
+                "cat": "TV",
+                "desc": "TVSeries IPad"
+            },
+            {
+                "id": 434,
+                "cat": "TV/HD",
+                "desc": "TVSeries 720p"
+            },
+            {
+                "id": 435,
+                "cat": "TV/HD",
+                "desc": "TVSeries 1080i"
+            },
+            {
+                "id": 436,
+                "cat": "TV/HD",
+                "desc": "TVSeries 1080p"
+            },
+            {
+                "id": 437,
+                "cat": "TV",
+                "desc": "TVSeries REMUX"
+            },
+            {
+                "id": 453,
+                "cat": "TV/HD",
+                "desc": "TVSeries Bluray"
+            },
+            {
+                "id": 438,
+                "cat": "TV/UHD",
+                "desc": "TVSeries 2160p"
+            },
+            {
+                "id": 444,
+                "cat": "TV/Anime",
+                "desc": "Anime SD"
+            },
+            {
+                "id": 445,
+                "cat": "TV/Anime",
+                "desc": "Anime IPad"
+            },
+            {
+                "id": 446,
+                "cat": "TV/Anime",
+                "desc": "Anime 720p"
+            },
+            {
+                "id": 447,
+                "cat": "TV/Anime",
+                "desc": "Anime 1080p"
+            },
+            {
+                "id": 448,
+                "cat": "TV/Anime",
+                "desc": "Anime REMUX"
+            },
+            {
+                "id": 454,
+                "cat": "TV/Anime",
+                "desc": "Anime Bluray"
+            },
+            {
+                "id": 449,
+                "cat": "TV/Anime",
+                "desc": "Anime 2160p"
+            },
+            {
+                "id": 501,
+                "cat": "TV/Anime",
+                "desc": "Anime UHD Blu-ray"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrents > tr:has(\"table.torrentname\")"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title_default": {
+                "selector": "a[href*=\"details.php?id=\"]"
+            },
+            "title_optional": {
+                "optional": true,
+                "selector": "a[title][href*=\"details.php?id=\"]",
+                "attribute": "title"
+            },
+            "title": {
+                "text": "{% if fields['title_optional'] %}{{ fields['title_optional'] }}{% else %}{{ fields['title_default'] }}{% endif %}"
+            },
+            "category": {
+                "selector": "a[href*=\"?cat=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "replace",
+                        "args": [
+                            "?",
+                            ""
+                        ]
+                    },
+                    {
+                        "name": "querystring",
+                        "args": "cat"
+                    }
+                ]
+            },
+            "details": {
+                "selector": "a[href*=\"details.php?id=\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?id=\"]",
+                "attribute": "href"
+            },
+            "imdbid": {
+                "selector": "div.imdb_100 > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "tt\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(4) > span",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(4) > span",
+                "attribute": "title",
+                "optional": true
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-child(5)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(6)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(7)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img.pro_free": 0,
+                    "img.pro_free2up": 0,
+                    "img.pro_50pctdown": 0.5,
+                    "img.pro_50pctdown2up": 0.5,
+                    "img.pro_30pctdown": 0.3,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "img.pro_50pctdown2up": 2,
+                    "img.pro_free2up": 2,
+                    "img.pro_2up": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
+                "selector": "img.pro_free,img.pro_free2up",
+                "attribute": "onmouseover",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
+                            0
+                        ]
+                    },
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "description": {
+                "selector": "td:nth-child(2) > table > tr > td.embedded",
+                "contents": -1
+            },
+            "labels": {
+                "selector": "td:nth-child(2) > table > tr > td.embedded > span"
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//h1[@id='top']/b/font[@class='free']"
+        ],
+        "2XFREE": [
+            "//h1[@id='top']/b/font[@class='twoupfree']"
+        ],
+        "HR": [],
+        "PEER_COUNT": [
+            "//div[@id='peercount']/b[1]"
+        ]
+    }
+}

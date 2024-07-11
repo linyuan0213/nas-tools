@@ -1,0 +1,26 @@
+{
+    "id": "yemapt",
+    "name": "YemaPT",
+    "domain": "https://www.yemapt.org/",
+    "encoding": "UTF-8",
+    "public": false,
+    "parser": "YemaPTSpider",
+    "search": {
+        "paths": [
+            {
+                "path": "/api/torrent/fetchCategoryOpenTorrentList",
+                "method": "post"
+            }
+        ]
+    },
+    "conf": {
+        "FREE": [
+            "data.downloadPromotion=free"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "data.seedNum"
+        ]
+    }
+}

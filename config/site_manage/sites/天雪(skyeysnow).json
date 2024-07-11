@@ -1,0 +1,94 @@
+{
+    "id": "skyeysnow",
+    "name": "天雪",
+    "domain": "https://skyeysnow.com/",
+    "encoding": "UTF-8",
+    "public": false,
+    "proxy": false,
+    "search": {
+        "paths": [
+            {
+                "path": "forum.php?mod=torrents&cat=1&search={keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "browse": {
+        "path": "forum.php?mod=torrents&page={page}"
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrents > tbody > tr:has(\"td.rowfollow\")"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"/download.php?id=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "title": {
+                "selector": "table.torrentname > tbody > tr > td > a[title]",
+                "attribute": "title"
+            },
+            "details": {
+                "selector": "table.torrentname > tbody > tr > td > a[title]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"/download.php?id=\"]",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td:nth-child(3)"
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-child(4)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(7)"
+            },
+            "leechers": {
+                "selector": "td:nth-child(6)"
+            },
+            "grabs": {
+                "selector": "td:nth-child(5)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img.sp_4": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//div[@class='pi']/b[contains(text(),'FREE')]"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": []
+    }
+}

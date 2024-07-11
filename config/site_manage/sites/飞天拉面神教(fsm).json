@@ -1,0 +1,26 @@
+{
+    "id": "fsm",
+    "name": "飞天拉面神教",
+    "domain": "https://fsm.name/",
+    "encoding": "UTF-8",
+    "public": false,
+    "parser": "FSMSpider",
+    "search": {
+        "paths": [
+            {
+                "path": "/api/Torrents/listTorrents?&keyword=",
+                "method": "get"
+            }
+        ]
+    },
+    "conf": {
+        "FREE": [
+            "data.torrent.status.name=Free"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "data.torrent.peers.upload"
+        ]
+    }
+}
