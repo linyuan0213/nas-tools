@@ -1,6 +1,6 @@
 # 站点维护（给开发人员使用）
 
-先维护单个站点的json，再运行GenerateDat.py生产
+先维护单个站点的json，再运行generate_dat.py生成dat文件
 
 ```
 cd nas-tools/config/site_manage
