@@ -1,0 +1,169 @@
+{
+    "id": "lemonhd",
+    "name": "\u67e0\u6aac",
+    "domain": "https://lemonhd.org/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents.php",
+                "type": "all",
+                "method": "get"
+            },
+            {
+                "path": "torrents_movie.php",
+                "type": "movie",
+                "method": "get"
+            },
+            {
+                "path": "torrents_tv.php",
+                "type": "tv",
+                "method": "get"
+            },
+            {
+                "path": "torrents_animate.php",
+                "type": "anime",
+                "method": "get"
+            }
+        ],
+        "params": {
+            "search": "{keyword}",
+            "stype": "s"
+        }
+    },
+    "torrents": {
+        "list": {
+            "selector": "table.torrents > tr:has(\"a[href]\")"
+        },
+        "fields": {
+            "id": {
+                "selector": "a[href*=\"details_\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "free_deadline": {
+                "selector": "div[style*=\"padding-left\"] > span",
+                "attribute": "title",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "category": {
+                "selector": "img[class*=\"cat_\"]",
+                "attribute": "class",
+                "filters": [
+                    {
+                        "name": "replace",
+                        "args": [
+                            "cat_",
+                            ""
+                        ]
+                    }
+                ]
+            },
+            "title_default": {
+                "selector": "a[href*=\"details_\"] > b"
+            },
+            "title_optional": {
+                "optional": true,
+                "selector": "a[title][href*=\"details_\"]",
+                "attribute": "title"
+            },
+            "title": {
+                "text": "{% if fields['title_optional'] %}{{ fields['title_optional'] }}{% else %}{{ fields['title_default'] }}{% endif %}"
+            },
+            "details": {
+                "selector": "a[href*=\"details_\"]",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a[href*=\"download.php?\"]",
+                "attribute": "href"
+            },
+            "imdbid": {
+                "selector": "a[href*=\"imdb.com/title/tt\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "tt\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "date_elapsed": {
+                "selector": "td:nth-last-child(7) > span",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-last-child(7) > span",
+                "attribute": "title",
+                "optional": true
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "size": {
+                "selector": "td:nth-last-child(6)"
+            },
+            "seeders": {
+                "selector": "td:nth-last-child(5)"
+            },
+            "leechers": {
+                "selector": "td:nth-last-child(4)"
+            },
+            "grabs": {
+                "selector": "td:nth-last-child(3)"
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "div[style*=\"padding-left\"] > span": 0,
+                    "div[style*=\"padding-left\"]": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            },
+            "description": {
+                "selector": "td:nth-child(3) > div",
+                "index": 1
+            },
+            "labels": {
+                "selector": "td:nth-child(3) > span"
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//h1[@id='top']/b/font[@class='free']"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "//div[@id='peercount']/b[1]"
+        ]
+    }
+}

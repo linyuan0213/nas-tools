@@ -1,0 +1,79 @@
+{
+    "id": "torrentleech",
+    "name": "TorrentLeech",
+    "domain": "https://www.torrentleech.org/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "torrents/browse/index/query/{keyword}",
+                "method": "get"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "tr.torrent"
+        },
+        "fields": {
+            "id": {
+                "selector": "tr",
+                "attribute": "data-tid"
+            },
+            "title": {
+                "selector": "td.td-name > div.name > a:nth-child(1)",
+                "remove": "span"
+            },
+            "details": {
+                "selector": "td.td-name > div.name > a:nth-child(1)",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "td.td-quick-download > a.download",
+                "attribute": "href"
+            },
+            "date_added": {
+                "selector": "td.td-uploaded-time > div",
+                "optional": true
+            },
+            "date_elapsed": {
+                "selector": "td.td-uploaded-time > div",
+                "optional": true
+            },
+            "size": {
+                "selector": "td.td-size > div"
+            },
+            "seeders": {
+                "selector": "td.td-seeders > div"
+            },
+            "leechers": {
+                "selector": "td.td-leechers > div"
+            },
+            "grabs": {
+                "selector": "td.td-snatched > div"
+            },
+            "date": {
+                "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d %H:%M:%S"
+                    }
+                ]
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "span.labelfreeleech": 0,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "*": 1
+                }
+            }
+        }
+    },
+    "conf": {}
+}

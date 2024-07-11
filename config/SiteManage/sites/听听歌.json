@@ -1,0 +1,311 @@
+{
+    "id": "ttg",
+    "name": "\u542c\u542c\u6b4c",
+    "domain": "https://totheglory.im/",
+    "encoding": "UTF-8",
+    "public": false,
+    "search": {
+        "paths": [
+            {
+                "path": "browse.php"
+            }
+        ],
+        "params": {
+            "search_field": "{keyword}",
+            "c": "M"
+        },
+        "batch": {
+            "delimiter": "+",
+            "space_replace": "+"
+        }
+    },
+    "category": {
+        "field": "search_field",
+        "delimiter": " \u5206\u7c7b:",
+        "movie": [
+            {
+                "id": "\u7535\u5f71DVDRip",
+                "cat": "Movies/SD"
+            },
+            {
+                "id": "\u7535\u5f71720p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "\u7535\u5f711080i/p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "BluRay\u539f\u76d8",
+                "cat": "Movies/BluRay"
+            },
+            {
+                "id": "\u5f71\u89c62160p",
+                "cat": "Movies/UHD"
+            },
+            {
+                "id": "UHD\u539f\u76d8",
+                "cat": "Movies/UHD"
+            }
+        ],
+        "tv": [
+            {
+                "id": "\u7eaa\u5f55\u7247720p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "\u7eaa\u5f55\u72471080i/p",
+                "cat": "Movies/HD"
+            },
+            {
+                "id": "\u7eaa\u5f55\u7247BluRay\u539f\u76d8",
+                "cat": "Movies/BluRay"
+            },
+            {
+                "id": "\u6b27\u7f8e\u5267720p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u6b27\u7f8e\u52671080i/p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u9ad8\u6e05\u65e5\u5267",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u5927\u9646\u6e2f\u53f0\u52671080i/p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u5927\u9646\u6e2f\u53f0\u5267720p",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u9ad8\u6e05\u97e9\u5267",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u6b27\u7f8e\u5267\u5305",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u65e5\u5267\u5305",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u97e9\u5267\u5305",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u534e\u8bed\u5267\u5305",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u9ad8\u6e05\u52a8\u6f2b",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u97e9\u56fd\u7efc\u827a",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u65e5\u672c\u7efc\u827a",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u9ad8\u6e05\u7efc\u827a",
+                "cat": "TV/HD"
+            },
+            {
+                "id": "\u52a8\u6f2b\u539f\u76d8",
+                "cat": "TV/BluRay"
+            }
+        ]
+    },
+    "torrents": {
+        "list": {
+            "selector": "table#torrent_table tr[id]"
+        },
+        "fields": {
+            "id": {
+                "selector": "div.name_left > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "description_free_forever": {
+                "selector": "div.name_left > a > b > font > span"
+            },
+            "description_normal": {
+                "selector": "div.name_left > a > b > span"
+            },
+            "description": {
+                "text": "{% if fields['description_free_forever'] %}{{ fields['description_free_forever'] }}{% else %}{{ fields['description_normal'] }}{% endif %}"
+            },
+            "labels": {
+                "selector": "div.name_left > span > b"
+            },
+            "title": {
+                "selector": "div.name_left > a > b",
+                "remove": "span",
+                "contents": 0
+            },
+            "category": {
+                "selector": "tr[id] td:nth-child(1) > a > img",
+                "attribute": "alt"
+            },
+            "details": {
+                "selector": "div.name_left > a",
+                "attribute": "href"
+            },
+            "download": {
+                "selector": "a.dl_a",
+                "attribute": "href"
+            },
+            "files": {
+                "selector": "td:nth-child(3)"
+            },
+            "size": {
+                "selector": "td:nth-child(7)"
+            },
+            "seeders": {
+                "selector": "td:nth-child(9)",
+                "filters": [
+                    {
+                        "name": "split",
+                        "args": [
+                            "/",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "leechers": {
+                "selector": "td:nth-child(9)",
+                "filters": [
+                    {
+                        "name": "split",
+                        "args": [
+                            "/",
+                            1
+                        ]
+                    },
+                    {
+                        "name": "replace",
+                        "args": [
+                            "\n",
+                            ""
+                        ]
+                    }
+                ]
+            },
+            "grabs": {
+                "selector": "td:nth-child(8)",
+                "filters": [
+                    {
+                        "name": "replace",
+                        "args": [
+                            "\u6b21",
+                            ""
+                        ]
+                    }
+                ]
+            },
+            "date_elapsed": {
+                "selector": "td:nth-child(6)",
+                "optional": true
+            },
+            "date_added": {
+                "selector": "td:nth-child(5) > nobr",
+                "optional": true
+            },
+            "date": {
+                "selector": "td:nth-child(5)",
+                "filters": [
+                    {
+                        "name": "dateparse",
+                        "args": "%Y-%m-%d%H:%M:%S"
+                    }
+                ]
+            },
+            "imdbid": {
+                "selector": "span.imdb_rate > a",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "tt\\d+",
+                            0
+                        ]
+                    }
+                ]
+            },
+            "downloadvolumefactor": {
+                "case": {
+                    "img[alt=\"free\"]": 0,
+                    "img[alt=\"50%\"]": 0.5,
+                    "img[alt=\"30%\"]": 0.3,
+                    "*": 1
+                }
+            },
+            "uploadvolumefactor": {
+                "case": {
+                    "img[alt=\"200%\"]": 2,
+                    "*": 1
+                }
+            },
+            "free_deadline": {
+                "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
+                "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
+                "selector": "span[onclick]",
+                "attribute": "onclick",
+                "filters": [
+                    {
+                        "name": "re_search",
+                        "args": [
+                            "\\d+\u5e74\\d+\u6708\\d+\u65e5\\d+\u70b9\\d+\u5206",
+                            0
+                        ]
+                    },
+                    {
+                        "name": "dateparse",
+                        "args": "%Y\u5e74%m\u6708%d\u65e5%H\u70b9%M\u5206"
+                    }
+                ]
+            },
+            "minimumratio": {
+                "case": {
+                    "img[title=\"Hit and Run\"]": 1,
+                    "*": 0
+                }
+            },
+            "minimumseedtime": {
+                "case": {
+                    "img[title=\"Hit and Run\"]": 216000,
+                    "*": 0
+                }
+            }
+        }
+    },
+    "conf": {
+        "FREE": [
+            "//img[@class='topic'][contains(@src,'ico_free.gif')]"
+        ],
+        "2XFREE": [],
+        "HR": [
+            "//img[@src='/pic/hit_run.gif']"
+        ],
+        "PEER_COUNT": [
+            "//span[@id='dlstatus']"
+        ]
+    }
+}
