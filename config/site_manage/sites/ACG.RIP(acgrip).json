@@ -3,7 +3,7 @@
     "name": "ACG.RIP",
     "domain": "https://acg.rip/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
     "search": {
         "paths": [
             {
