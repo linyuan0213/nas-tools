@@ -3,7 +3,7 @@
     "name": "EZTV",
     "domain": "https://eztvx.to/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
     "search": {
         "paths": [
             {

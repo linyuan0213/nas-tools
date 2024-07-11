@@ -3,7 +3,7 @@
     "name": "MiKan",
     "domain": "https://mikanani.me/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
     "search": {
         "paths": [
             {
