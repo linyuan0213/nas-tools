@@ -2,9 +2,11 @@ from DrissionPage import ChromiumPage, ChromiumOptions
 from typing import Callable, Tuple
 from loguru import logger
 
+from app.utils.commons import singleton
 from config import CHROME_PATH
 
 
+@singleton
 class DrissionPageHelper:
 
     def __init__(self):
@@ -69,7 +71,7 @@ class DrissionPageHelper:
             self.co.set_user_agent(user_agent=ua)
         page = ChromiumPage(self.co)
         page.set.load_mode.none()
-        page.get(url)
+        page.get(url, retry=3)
         if cookies:
             if isinstance(cookies, str):
                 cookies = cookies.strip()
@@ -79,7 +81,7 @@ class DrissionPageHelper:
         content = ''
         if success:
             page.set.load_mode.eager()
-            page.get(url)
+            page.get(url, retry=3)
             if callback:
                 try:
                     callback(page)

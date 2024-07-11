@@ -160,6 +160,13 @@ class _ISiteUserInfo(metaclass=ABCMeta):
 
     def _parse_seeding_pages(self):
         if self._torrent_seeding_page:
+            html_text = self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
+                                       self._torrent_seeding_params,
+                                       self._torrent_seeding_headers)
+            html = etree.HTML(html_text)
+            if html:
+                seeding_url_text = html.xpath('//a[(contains(@href,"getusertorrentlist.php") or contains(@href,"usertorrentlist.php")) and contains(@href,"seeding")]/@href')
+                self._torrent_seeding_page = seeding_url_text[0].strip() if seeding_url_text else self._torrent_seeding_page
             # 第一页
             next_page = self._parse_user_torrent_seeding_info(
                 self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
@@ -224,7 +231,8 @@ class _ISiteUserInfo(metaclass=ABCMeta):
             if isinstance(self._ua, str):
                 req_headers.update({
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": f"{self._ua}"
+                    "User-Agent": f"{self._ua}",
+                    "referer": urljoin(self._base_url, self._user_detail_page)
                 })
             else:
                 req_headers.update(self._ua)

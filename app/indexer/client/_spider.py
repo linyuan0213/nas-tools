@@ -1,6 +1,7 @@
 import copy
 import datetime
 import re
+from time import sleep
 from urllib.parse import quote
 
 from jinja2 import Template
@@ -19,7 +20,6 @@ from feapder.utils.tools import urlencode
 
 
 class TorrentSpider(feapder.AirSpider):
-    _webdriver_path = SystemUtils.get_webdriver_path()
     _redis_valid = RedisHelper.is_valid()
     __custom_setting__ = dict(
         SPIDER_THREAD_COUNT=1,
@@ -33,19 +33,7 @@ class TorrentSpider(feapder.AirSpider):
         REDISDB_DB=0,
         RESPONSE_CACHED_ENABLE=_redis_valid,
         RESPONSE_CACHED_EXPIRE_TIME=300,
-        RESPONSE_CACHED_USED=_redis_valid,
-        WEBDRIVER=dict(
-            pool_size=1,
-            load_images=False,
-            proxy=None,
-            headless=True,
-            driver_type="CHROME",
-            timeout=20,
-            window_size=(1024, 800),
-            executable_path=_webdriver_path,
-            render_time=10,
-            custom_argument=["--ignore-certificate-errors"],
-        )
+        RESPONSE_CACHED_USED=_redis_valid
     )
     # 是否搜索完成标志
     is_complete = False
@@ -262,12 +250,10 @@ class TorrentSpider(feapder.AirSpider):
         if params:
             yield feapder.Request(url=searchurl,
                                 use_session=True,
-                                data=params,
-                                render=self.render)
+                                data=params)
         else:
             yield feapder.Request(url=searchurl,
-                                use_session=True,
-                                render=self.render)
+                                use_session=True)
 
     def download_midware(self, request):
         response = None
@@ -280,10 +266,17 @@ class TorrentSpider(feapder.AirSpider):
                 request.proxies = self.proxies
         else:
             chrome = DrissionPageHelper()
+            tries = 3
             if chrome.get_status():
-                html_text = chrome.get_page_html(url=request.url, cookies=self.cookie, ua=self.ua, proxies=self.proxies)
-                if html_text:
-                    response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
+                while tries > 0:
+                    try:
+                        html_text = chrome.get_page_html(url=request.url, cookies=self.cookie, ua=self.ua, proxies=self.proxies)
+                        if html_text:
+                            response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
+                            break
+                    except Exception as e:
+                        log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+                    tries -= 1
         return request, response
 
     def Gettitle_default(self, torrent):
