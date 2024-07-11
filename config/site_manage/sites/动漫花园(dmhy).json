@@ -3,7 +3,7 @@
     "name": "\u52a8\u6f2b\u82b1\u56ed",
     "domain": "https://dmhy.org/",
     "encoding": "UTF-8",
-    "public": false,
+    "public": true,
     "search": {
         "paths": [
             {
