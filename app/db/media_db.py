@@ -4,7 +4,7 @@ import threading
 import time
 
 from cachetools import cached, TTLCache
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import QueuePool
 
@@ -20,8 +20,14 @@ _Engine = create_engine(
     pool_pre_ping=True,
     pool_size=100,
     pool_recycle=60 * 10,
-    max_overflow=0
+    max_overflow=0,
+    connect_args={'timeout': 30}
 )
+
+# 启用 WAL 模式
+with _Engine.connect() as conn:
+    conn.execute(text("PRAGMA journal_mode=WAL;"))
+
 _Session = scoped_session(sessionmaker(bind=_Engine,
                                        autoflush=True,
                                        autocommit=False))
