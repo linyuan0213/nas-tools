@@ -1,6 +1,7 @@
 import os
 import shutil
 from functools import lru_cache
+from time import sleep
 from urllib.parse import quote
 
 from pyquery import PyQuery
@@ -213,7 +214,17 @@ class OpenSubtitles(_IPluginModule):
         if not chrome.visit(url):
             return []
         # 源码
-        html_text = chrome.get_page_html(url=url)
+        tries = 3
+        while tries > 0:
+            try:
+                html_text = chrome.get_page_html(url=url)
+                if html_text:
+                    break
+            except Exception as e:
+                self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+            finally:
+                tries -= 1
+                sleep(2)
         # 解析列表
         ret_subtitles = []
         html_doc = PyQuery(html_text)

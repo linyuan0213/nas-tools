@@ -1,3 +1,4 @@
+from time import sleep
 from app.helper.drissionpage_helper import DrissionPageHelper
 from app.plugins.modules._autosignin._base import _ISiteSigninHandler
 from app.utils import StringUtils, RequestUtils
@@ -100,7 +101,17 @@ class BTSchool(_ISiteSigninHandler):
                 return True, f'【{site}】签到成功'
 
     def __chrome_visit(self, chrome, url, ua, site_cookie, proxy, site):
-        html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)
+        tries = 3
+        while tries > 0:
+            try:
+                html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)
+                if html_text:
+                    break
+            except Exception as e:
+                self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+            finally:
+                tries -= 1
+                sleep(2)        
 
         if not html_text:
             self.warn("%s 获取站点源码失败" % site)

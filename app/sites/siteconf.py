@@ -16,6 +16,7 @@ from app.sites import Sites
 from app.utils import ExceptionUtils, StringUtils, RequestUtils, JsonUtils
 from app.utils.commons import singleton
 from config import MT_URL, Config
+import log
 
 
 @singleton
@@ -263,9 +264,17 @@ class SiteConf:
         chrome = DrissionPageHelper()
         if render and chrome.get_status():
             # 开渲染
-            html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=proxy)
-            if html_text:
-                return html_text
+            tries = 3
+            while tries > 0:
+                try:
+                    html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=proxy)
+                    if html_text:
+                        return html_text
+                except Exception as e:
+                    log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+                finally:
+                    tries -= 1
+                    time.sleep(2)
         elif 'm-team' in url:
             param = {'id': param}
             headers.update({

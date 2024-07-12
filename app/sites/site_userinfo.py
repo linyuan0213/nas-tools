@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from multiprocessing.dummy import Pool as ThreadPool
 from threading import Lock
+from time import sleep
 
 import requests
 
@@ -69,7 +70,17 @@ class SiteUserInfo(object):
         # 检测环境，有浏览器内核的优先使用仿真签到
         chrome = DrissionPageHelper()
         if emulate:
-            html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if proxy else None)
+            tries = 3
+            while tries > 0:
+                try:
+                    html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if proxy else None)
+                    if html_text:
+                        break
+                except Exception as e:
+                    self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+                finally:
+                    tries -= 1
+                    sleep(2)
             # 循环检测是否过cf
             if not html_text:
                 log.error("【Sites】%s 跳转站点失败" % site_name)

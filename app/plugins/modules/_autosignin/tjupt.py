@@ -191,7 +191,17 @@ class Tjupt(_ISiteSigninHandler):
         # 豆瓣未获取到答案，使用google识图
         image_search_url = f"https://lens.google.com/uploadbyurl?url={img_url}"
         chrome = DrissionPageHelper()
-        html_text = chrome.get_page_html(url=image_search_url, ua=ua, proxies=Config().get_proxies() if proxy else None)
+        tries = 3
+        while tries > 0:
+            try:
+                html_text = chrome.get_page_html(url=image_search_url, ua=ua, proxies=Config().get_proxies() if proxy else None)
+                if html_text:
+                    break
+            except Exception as e:
+                self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+            finally:
+                tries -= 1
+                time.sleep(2)
   
         search_results = BeautifulSoup(html_text, "lxml").find_all("div", class_="UAiK1e")
         if not search_results:
