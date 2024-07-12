@@ -3,12 +3,10 @@
 *.c
 /test.py
 /setup.py
-/build_sites.py
-/web/backend/user*.so
-/web/backend/user*.pyd
 /build/**
 /venv/**
 /cloudflarespeedtest/**
 .python-version
 .vscode/
-Dockerfile-dev
+./config/site_manage/*.json
+./config/site_manage/*.dat
