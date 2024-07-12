@@ -2,6 +2,7 @@
 import json
 import base64
 
+from time import sleep
 from urllib.parse import urljoin
 
 from app.sites.siteuserinfo._base import _ISiteUserInfo, SITE_BASE_ORDER
@@ -186,6 +187,7 @@ class MteamUserInfo(_ISiteUserInfo):
 
             # 其他页处理
             while next_page:
+                sleep(2)
                 next_page = self._parse_user_torrent_seeding_info(
                     self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
                                            self._torrent_seeding_params,
