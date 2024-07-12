@@ -30,7 +30,7 @@ def save_data_to_json(data, json_path):
     version = datetime.now().strftime("%Y%m%d%H%M")    
     result = {"version": version, "indexer": data[0], "conf": data[1]}    
     with open(json_path, "w", encoding="utf-8") as f:    
-        json.dump(result, f, ensure_ascii=True, indent=4)    
+        json.dump(result, f, ensure_ascii=False, indent=4)    
     
 # 将JSON文件转换为DAT文件（使用pickle进行序列化）  
 def json_to_dat():    
