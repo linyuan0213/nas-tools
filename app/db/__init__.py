@@ -41,4 +41,4 @@ def update_db():
         alembic_upgrade(alembic_cfg, 'head')
         log.console('数据库更新完成')
     except Exception as e:
-        log.console(f'数据库更新失败：{e}')
+        pass
