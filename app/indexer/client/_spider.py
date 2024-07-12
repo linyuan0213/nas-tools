@@ -276,7 +276,9 @@ class TorrentSpider(feapder.AirSpider):
                             break
                     except Exception as e:
                         log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-                    tries -= 1
+                    finally:
+                        tries -= 1
+                        sleep(2)
         return request, response
 
     def Gettitle_default(self, torrent):
