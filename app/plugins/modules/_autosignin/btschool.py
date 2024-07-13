@@ -102,6 +102,7 @@ class BTSchool(_ISiteSigninHandler):
 
     def __chrome_visit(self, chrome, url, ua, site_cookie, proxy, site):
         tries = 3
+        html_text = ''
         while tries > 0:
             try:
                 html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)

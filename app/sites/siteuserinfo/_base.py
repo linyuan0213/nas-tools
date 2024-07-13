@@ -260,6 +260,7 @@ class _ISiteUserInfo(metaclass=ABCMeta):
                 chrome = DrissionPageHelper()
                 if self._emulate and chrome.get_status():
                     tries = 3
+                    html_text = ''
                     while tries > 0:
                         try:
                             html_text = chrome.get_page_html(url=url, ua=self._ua, cookies=self._site_cookie, proxies=proxies)

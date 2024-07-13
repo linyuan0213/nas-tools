@@ -71,13 +71,14 @@ class SiteUserInfo(object):
         chrome = DrissionPageHelper()
         if emulate:
             tries = 3
+            html_text = ''
             while tries > 0:
                 try:
                     html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if proxy else None)
                     if html_text:
                         break
                 except Exception as e:
-                    self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+                    log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
                 finally:
                     tries -= 1
                     sleep(2)

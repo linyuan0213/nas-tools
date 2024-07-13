@@ -307,6 +307,7 @@ class Sites:
             chrome = DrissionPageHelper()
             start_time = datetime.now()
             tries = 3
+            html_text = ''
             while tries > 0:
                 try:
                     html_text = chrome.get_page_html(url=site_url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if site_info.get("proxy") else None)

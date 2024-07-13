@@ -192,6 +192,7 @@ class Tjupt(_ISiteSigninHandler):
         image_search_url = f"https://lens.google.com/uploadbyurl?url={img_url}"
         chrome = DrissionPageHelper()
         tries = 3
+        html_text = ''
         while tries > 0:
             try:
                 html_text = chrome.get_page_html(url=image_search_url, ua=ua, proxies=Config().get_proxies() if proxy else None)

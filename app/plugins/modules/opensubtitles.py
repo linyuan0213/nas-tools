@@ -215,6 +215,7 @@ class OpenSubtitles(_IPluginModule):
             return []
         # 源码
         tries = 3
+        html_text = ''
         while tries > 0:
             try:
                 html_text = chrome.get_page_html(url=url)

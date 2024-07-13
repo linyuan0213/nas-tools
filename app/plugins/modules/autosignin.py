@@ -466,6 +466,7 @@ class AutoSignIn(_IPluginModule):
                 if "1ptba" in home_url:
                     home_url = f"{home_url}/index.php"
                 tries = 3
+                html_text = ''
                 while tries > 0:
                     try:
                         html_text = chrome.get_page_html(url=home_url, ua=ua, cookies=site_cookie, proxies=site_info.get("proxy"))
@@ -500,6 +501,7 @@ class AutoSignIn(_IPluginModule):
                 # 开始仿真
                 try:
                     tries = 3
+                    html_text = ''
                     while tries > 0:
                         try:
                             html_text = chrome.get_page_html(url=home_url,

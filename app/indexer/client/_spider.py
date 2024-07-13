@@ -267,6 +267,7 @@ class TorrentSpider(feapder.AirSpider):
         else:
             chrome = DrissionPageHelper()
             tries = 3
+            html_text = ''
             if chrome.get_status():
                 while tries > 0:
                     try:

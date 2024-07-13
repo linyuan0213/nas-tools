@@ -174,7 +174,7 @@ class Searcher:
         unique_media_list = []
         media_seen = set()
         for d in media_list:
-            org_string = StringUtils.md5_hash(d.org_string + d.site + d.description)
+            org_string = StringUtils.md5_hash(f'{d.org_string}{d.site}{d.description or ""}')
             if org_string not in media_seen:
                 unique_media_list.append(d)
                 media_seen.add(org_string)

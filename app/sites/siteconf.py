@@ -265,6 +265,7 @@ class SiteConf:
         if render and chrome.get_status():
             # 开渲染
             tries = 3
+            html_text = ''
             while tries > 0:
                 try:
                     html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=proxy)
