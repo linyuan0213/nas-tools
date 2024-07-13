@@ -866,8 +866,8 @@ class Downloader:
                                     url=item.enclosure,
                                     page_url=item.page_url,
                                     tmdb_id=item.tmdb_id)
-                                if torrent_episodes \
-                                        and len(torrent_episodes) <= __get_season_episodes(need_tmdbid, item_season[0]):
+                                if not torrent_episodes \
+                                        and len(torrent_episodes) >= __get_season_episodes(need_tmdbid, item_season[0]):
                                     _, download_id = __download(download_item=item, torrent_file=torrent_path)
                                 else:
                                     log.info(
