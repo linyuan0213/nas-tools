@@ -202,6 +202,7 @@ class TorrentSpider(feapder.AirSpider):
                         cats = self.category.get("tv") or []
                     else:
                         cats = (self.category.get("movie") or []) + (self.category.get("tv") or [])
+                    param_list = []
                     for cat in cats:
                         if self.category.get("field"):
                             value = params.get(self.category.get("field"), "")
@@ -210,14 +211,12 @@ class TorrentSpider(feapder.AirSpider):
                                                                                              ' ') + cat.get("id")
                             })
                         elif self.category.get("param"):
-                            params.update({
-                                self.category.get("param"): cat.get("id")
-                            })
+                                param_list.append(f'{self.category.get("param")}={cat.get("id")}')
                         else:
                             params.update({
                                 f'cat{cat.get("id")}': 1
                             })
-                searchurl = self.domain + torrentspath + "?" + urlencode(params)
+                searchurl = self.domain + torrentspath + "?" + urlencode(params) + (f'&{"&".join(param_list)}' if param_list else '')
             else:
                 # 变量字典
                 inputs_dict = {
