@@ -804,7 +804,7 @@ class BrushTask(object):
 
             # 检查包含规则
             if rss_rule.get("include"):
-                if not re.search(r"%s" % rss_rule.get("include"), title):
+                if not re.search(r"%s" % rss_rule.get("include"), title, re.IGNORECASE):
                     return False
 
             # 检查排除规则
