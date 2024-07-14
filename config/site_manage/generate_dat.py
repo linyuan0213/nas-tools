@@ -48,7 +48,7 @@ def format_json_file(file_path):
         print(f"Error decoding JSON in {file_path}: {e}")    
         return    
     with open(file_path, "w") as f:    
-        json.dump(data, f, indent=4)    
+        json.dump(data, f, ensure_ascii=False, indent=4)    
     
 # 格式化指定文件夹中的所有JSON文件  
 def format_json_files_in_folder(folder_path):    
