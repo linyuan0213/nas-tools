@@ -186,7 +186,7 @@ class Media:
         if search_type == MediaType.MOVIE:
             year_range = [first_media_year]
             if first_media_year:
-                year_range.append(str(int(first_media_year) + 1))
+                # year_range.append(str(int(first_media_year) + 1))
                 year_range.append(str(int(first_media_year) - 1))
             for year in year_range:
                 log.debug(
