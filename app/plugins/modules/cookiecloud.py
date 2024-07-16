@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta
 from threading import Event
+from typing import Union
 
 import pytz
 from apscheduler.triggers.cron import CronTrigger
@@ -226,7 +227,7 @@ class CookieCloud(_IPluginModule):
     def get_state(self):
         return self._enabled and self._cron
 
-    def __download_data(self) -> [dict, str, bool]:
+    def __download_data(self) -> Union[dict, str, bool]:
         """
         从CookieCloud下载数据
         """
