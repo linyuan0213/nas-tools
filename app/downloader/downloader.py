@@ -1568,14 +1568,14 @@ class Downloader:
             })
         if 'm-team' in page_url:
             res = RequestUtils(headers=headers,
-                            proxies=proxy,
+                            proxies=Config().get_proxies() if proxy else None,
                             timeout=15).post_res(url=f'{base_url}/api/torrent/genDlToken', data={'id': media_id})
             if res and res.status_code == 200:
                 return res.json().get('data', '')
         if 'yemapt' in page_url:
             res = RequestUtils(headers=headers,
                             cookies=cookie,
-                            proxies=proxy,
+                            proxies=Config().get_proxies() if proxy else None,
                             timeout=15).get_res(url=f'{base_url}/api/torrent/generateDownloadKey?id={media_id}')
             if res and res.status_code == 200:
                token = res.json().get('data', '')
