@@ -69,7 +69,7 @@ class DrissionPageHelper:
         self.co.set_timeouts(base=timeout, script=5)
         if ua:
             self.co.set_user_agent(user_agent=ua)
-        page = ChromiumPage(self.co)
+        page = ChromiumPage(self.co, timeout=180)
         page.set.load_mode.none()
         page.get(url, retry=3)
         if cookies:
@@ -87,6 +87,14 @@ class DrissionPageHelper:
                     callback(page)
                 except Exception as e:
                     logger.error(f"url: {url} 回调函数执行失败: {e}")
+            # 嵌入CF处理
+            if 'TurnstileCallback' in page.html:
+                page.wait(10)
+                success, _ = self.sync_cf_retry(page)
+                if not success:
+                    logger.debug(f"url: {url} Cloudflare 等待超时")
+                    return ""
+
             logger.debug(f"url: {url} 获取网页源码成功")
             content = page.html
         else:

@@ -181,6 +181,21 @@ class AutoSignIn(_IPluginModule):
                     ]
                 ]
             },
+            {
+                'type': 'details',
+                'summary': '仿真站点',
+                'tooltip': '只有选中的站点才会开启仿真',
+                'content': [
+                    # 同一行
+                    [
+                        {
+                            'id': 'emulate_sites',
+                            'type': 'form-selectgroup',
+                            'content': sites
+                        },
+                    ]
+                ]
+            },
         ]
 
     def init_config(self, config=None):
@@ -197,6 +212,7 @@ class AutoSignIn(_IPluginModule):
             self._queue_cnt = config.get("queue_cnt")
             self._onlyonce = config.get("onlyonce")
             self._clean = config.get("clean")
+            self._emulate_sites = config.get("emulate_sites") or []
 
         # 定时服务
         self._scheduler = SchedulerService()
@@ -244,7 +260,8 @@ class AutoSignIn(_IPluginModule):
                     "notify": self._notify,
                     "onlyonce": self._onlyonce,
                     "queue_cnt": self._queue_cnt,
-                    "clean": self._clean
+                    "clean": self._clean,
+                    "emulate_sites": self._emulate_sites
                 })
 
             # 周期运行
@@ -310,11 +327,18 @@ class AutoSignIn(_IPluginModule):
                 return
 
         # 查询签到站点
+        emulate_sites = set(self._emulate_sites).intersection(set(sign_sites))
         sign_sites = Sites().get_sites(siteids=sign_sites)
         if not sign_sites:
             self.info("没有可签到站点，停止运行")
             return
+        new_sign_sites = []
+        for site in sign_sites:
+            if str(site.get("id")) in emulate_sites:
+                site['chrome'] = True
+            new_sign_sites.append(site)
 
+        sign_sites = new_sign_sites
         # 执行签到
         self.info("开始执行签到任务")
         with ThreadPool(min(len(sign_sites), int(self._queue_cnt) if self._queue_cnt else 10)) as p:
@@ -469,7 +493,7 @@ class AutoSignIn(_IPluginModule):
                 html_text = ''
                 while tries > 0:
                     try:
-                        html_text = chrome.get_page_html(url=home_url, ua=ua, cookies=site_cookie, proxies=site_info.get("proxy"))
+                        html_text = chrome.get_page_html(url=home_url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if site_info.get("proxy") else None)
                         if html_text:
                             break
                     except Exception as e:
@@ -488,7 +512,7 @@ class AutoSignIn(_IPluginModule):
                         xpath_str = xpath
                         break
                 if re.search(r'已签|签到已得', html_text, re.IGNORECASE) \
-                        and not xpath_str:
+                        and xpath_str:
                     self.info("%s 今日已签到" % site)
                     return f"【{site}】今日已签到"
                 if not xpath_str:
@@ -507,7 +531,7 @@ class AutoSignIn(_IPluginModule):
                             html_text = chrome.get_page_html(url=home_url,
                                     ua=ua,
                                     cookies=site_cookie,
-                                    proxies=site_info.get("proxy"),
+                                    proxies=Config().get_proxies() if site_info.get("proxy") else None,
                                     callback=lambda page: page(f'x:{xpath_str}').click(by_js=True))
                             if html_text:
                                 break
@@ -522,9 +546,8 @@ class AutoSignIn(_IPluginModule):
 
                     # 判断是否已签到   [签到已得125, 补签卡: 0]
                     if re.search(r'已签|签到已得', html_text, re.IGNORECASE):
-                        return f"【{site}】签到成功"
-                    self.info("%s 仿真签到成功" % site)
-                    return f"【{site}】仿真签到成功"
+                        self.info("%s 仿真签到成功" % site)
+                        return f"【{site}】仿真签到成功"
                 except Exception as e:
                     ExceptionUtils.exception_traceback(e)
                     self.warn("%s 仿真签到失败：%s" % (site, str(e)))

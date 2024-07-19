@@ -268,7 +268,7 @@ class SiteConf:
             html_text = ''
             while tries > 0:
                 try:
-                    html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=proxy)
+                    html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=Config().get_proxies() if proxy else None)
                     if html_text:
                         return html_text
                 except Exception as e:
