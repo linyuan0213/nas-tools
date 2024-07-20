@@ -75,7 +75,8 @@ class Logger:
                         "sink": os.path.join(logpath, module + ".log"),
                         "rotation": "5 MB",
                         "format": "{time:YYYY-MM-DD HH:mm:ss.SSS} |{level:8}| {file} : {module}.{function}:{line:4} | - {message}",
-                        "colorize": False
+                        "colorize": False,
+                        "retention": "5 days"
                     }
                 handlers.append(handler)
         # 记录日志到终端
