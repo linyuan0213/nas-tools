@@ -284,3 +284,4 @@ TG群： [https://t.me/+UxUIoJMmH2YwYWE1](https://t.me/+UxUIoJMmH2YwYWE1)
 |        星空         |  ✅   |    ✅     |
 |       YemaPT        |  ✅   |    ✅     |
 |        DogPT        |  ✅   |    ✅     |
+|        海胆之家        |  ✅   |    ✅     |
