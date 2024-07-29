@@ -1,3 +1,4 @@
+import copy
 import re
 import json
 from datetime import datetime, timedelta
@@ -328,7 +329,7 @@ class AutoSignIn(_IPluginModule):
 
         # 查询签到站点
         emulate_sites = set(self._emulate_sites).intersection(set(sign_sites))
-        sign_sites = Sites().get_sites(siteids=sign_sites)
+        sign_sites = copy.deepcopy(Sites().get_sites(siteids=sign_sites))
         if not sign_sites:
             self.info("没有可签到站点，停止运行")
             return
@@ -512,7 +513,7 @@ class AutoSignIn(_IPluginModule):
                         xpath_str = xpath
                         break
                 if re.search(r'已签|签到已得', html_text, re.IGNORECASE) \
-                        and xpath_str:
+                        and not xpath_str:
                     self.info("%s 今日已签到" % site)
                     return f"【{site}】今日已签到"
                 if not xpath_str:
