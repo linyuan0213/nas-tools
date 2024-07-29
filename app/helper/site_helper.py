@@ -25,6 +25,8 @@ class SiteHelper:
                 return True
             else:
                 return False
+        if "签到成功" in html_text:
+            return True
 
         html = etree.HTML(html_text)
         if not html:
