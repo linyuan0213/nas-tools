@@ -62,7 +62,7 @@ pypushdeer==0.0.3
 pyquery==2.0.0
 pyrsistent==0.18.1
 python-dateutil==2.8.2
-python_hosts==1.0.3
+python-hosts==1.0.7
 pytz==2022.2.1
 pytz-deprecation-shim==0.1.0.post0
 PyVirtualDisplay==3.0
