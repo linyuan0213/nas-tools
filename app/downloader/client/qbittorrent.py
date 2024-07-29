@@ -211,7 +211,7 @@ class Qbittorrent(_IDownloadClient):
         """
         if not self.qbc:
             return None
-        torrents, error = self.get_torrents(status=["completed"], ids=ids, tag=tag)
+        torrents, error = self.get_torrents(status="completed", ids=ids, tag=tag)
         return None if error else torrents or []
 
     def get_downloading_torrents(self, ids=None, tag=None):
@@ -222,7 +222,7 @@ class Qbittorrent(_IDownloadClient):
         if not self.qbc:
             return None
         torrents, error = self.get_torrents(ids=ids,
-                                            status=["downloading"],
+                                            status="downloading",
                                             tag=tag)
         return None if error else torrents or []
 
