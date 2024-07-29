@@ -864,8 +864,7 @@ class Downloader:
                                 # 只有一季的可能是命名错误，需要打开种子鉴别，只有实际集数大于等于总集数才下载
                                 torrent_episodes, torrent_path = self.get_torrent_episodes(
                                     url=item.enclosure,
-                                    page_url=item.page_url,
-                                    tmdb_id=item.tmdb_id)
+                                    page_url=item.page_url)
                                 if not torrent_episodes \
                                         and len(torrent_episodes) >= __get_season_episodes(need_tmdbid, item_season[0]):
                                     _, download_id = __download(download_item=item, torrent_file=torrent_path)
@@ -959,8 +958,7 @@ class Downloader:
                             # 检查种子看是否有需要的集
                             torrent_episodes, torrent_path = self.get_torrent_episodes(
                                 url=item.enclosure,
-                                page_url=item.page_url,
-                                tmdb_id=item.tmdb_id)
+                                page_url=item.page_url)
                             selected_episodes = set(torrent_episodes).intersection(set(need_episodes))
                             if not selected_episodes:
                                 log.info("【Downloader】%s 没有需要的集，跳过..." % item.org_string)
@@ -1304,7 +1302,7 @@ class Downloader:
             if dict_type.name == type_name or dict_type.value == type_name:
                 return dict_type
 
-    def get_torrent_episodes(self, url, page_url=None, tmdb_id=None):
+    def get_torrent_episodes(self, url, page_url=None):
         """
         解析种子文件，获取集数
         :return: 集数列表、种子路径
