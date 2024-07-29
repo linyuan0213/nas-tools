@@ -1,7 +1,7 @@
 {
-    "id": "HDKylin",
-    "name": "麒麟",
-    "domain": "https://www.hdkyl.in/",
+    "id": "PANDA",
+    "name": "PANDA",
+    "domain": "https://pandapt.net/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
@@ -41,7 +41,7 @@
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Record Education/纪录教育"
+                "desc": "Documentaries/纪录片"
             }
         ]
     },
@@ -74,7 +74,7 @@
                 ]
             },
             "title": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > a > b"
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > a > b"
             },
             "details": {
                 "selector": "a[href*=\"details.php?id=\"]",
@@ -139,7 +139,7 @@
                 "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
                 "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
                 "selector": "div > b > span[title]",
-                "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > font > span",
+                "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > font > span",
                 "filters": [
                     {
                         "name": "dateparse",
@@ -148,11 +148,11 @@
                 ]
             },
             "description": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1)",
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2)",
                 "remove": "img,a,b,span,font"
             },
             "labels": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > span"
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > span"
             }
         }
     },
@@ -160,9 +160,7 @@
         "FREE": [
             "//h1[@id='top']/b/font[@class='free']"
         ],
-        "2XFREE": [
-            "//h1[@id='top']/b/font[@class='twoupfree']"
-        ],
+        "2XFREE": [],
         "HR": [
             "//h1[@id='top']/img[@class='hitandrun']"
         ],
