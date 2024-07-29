@@ -403,6 +403,8 @@ class BrushTask(object):
                 for torrent in torrents:
                     torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
                                                            torrent=torrent)
+                    
+                    log.debug(f"【Brush】已完成待删除种子信息: {torrent_info}")
                     # ID
                     torrent_id = torrent_info.get("id")
                     # 总上传量
@@ -488,6 +490,7 @@ class BrushTask(object):
                 for torrent in torrents:
                     torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
                                                            torrent=torrent)
+                    log.debug(f"【Brush】下载中待删除种子信息: {torrent_info}")
                     # ID
                     torrent_id = torrent_info.get("id")
                     # 总上传量

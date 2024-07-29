@@ -1321,7 +1321,7 @@ class Downloader:
         for file in files:
             if os.path.splitext(file)[-1] not in RMT_MEDIAEXT:
                 continue
-            meta = MetaInfo(file, tmdb_id=tmdb_id)
+            meta = MetaInfo(file)
             if not meta.begin_episode:
                 continue
             episodes = list(set(episodes).union(set(meta.get_episode_list())))

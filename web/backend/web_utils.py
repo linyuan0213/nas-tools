@@ -122,7 +122,7 @@ class WebUtils:
                                          append_to_response="all")
             if not info:
                 return None
-            media_info = MetaInfo(title=info.get("title") if mtype == MediaType.MOVIE else info.get("name"), tmdb_id=info.id)
+            media_info = MetaInfo(title=info.get("title") if mtype == MediaType.MOVIE else info.get("name"))
             media_info.set_tmdb_info(info)
 
         return media_info
@@ -159,7 +159,7 @@ class WebUtils:
                                                page=page)
             medias = []
             for tmdbinfo in tmdbinfos:
-                tmp_info = MetaInfo(title=keyword, tmdb_id=tmdbinfo.id)
+                tmp_info = MetaInfo(title=keyword)
                 tmp_info.set_tmdb_info(tmdbinfo)
                 if meta_info.type != MediaType.MOVIE and tmp_info.type == MediaType.MOVIE:
                     continue

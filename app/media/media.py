@@ -820,13 +820,6 @@ class Media:
             else:
                 file_media_info = None
         # 赋值TMDB信息并返回
-        if file_media_info:
-            meta_info = MetaInfo(title, subtitle=subtitle, tmdb_id=file_media_info.get('id'))
-            if not meta_info.get_name() or not meta_info.type:
-                log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
-                return None
-            if mtype:
-                meta_info.type = mtype
         meta_info.set_tmdb_info(file_media_info)
         return meta_info
 
@@ -993,26 +986,10 @@ class Media:
                             # 缓存为未识别
                             file_media_info = None
                     # 赋值TMDB信息
-                    if file_media_info:
-                        org_begin_episode = meta_info.begin_episode
-                        org_begin_season = meta_info.begin_season
-                        org_string = meta_info.org_string
-                        tmp_string = org_string
-                        if len(org_string) < 10:
-                            org_string = parent_name
-                        meta_info = MetaInfo(org_string, tmdb_id=file_media_info.get('id'))
-                        if len(tmp_string) < 10:
-                            meta_info.begin_episode = org_begin_episode
-                            meta_info.begin_season = org_begin_season
-                        if not meta_info.get_name() or not meta_info.type:
-                            log.warn("【Rmt】%s 未识别出有效信息！" % meta_info.org_string)
-                            return None
-                        if media_type:
-                            meta_info.type = media_type
                     meta_info.set_tmdb_info(file_media_info)
                 # 自带TMDB信息
                 else:
-                    meta_info = MetaInfo(title=file_name, mtype=media_type, tmdb_id=tmdb_info.get('id'))
+                    meta_info = MetaInfo(title=file_name, mtype=media_type)
                     meta_info.set_tmdb_info(tmdb_info)
                     if season and meta_info.type != MediaType.MOVIE:
                         meta_info.begin_season = int(season)
