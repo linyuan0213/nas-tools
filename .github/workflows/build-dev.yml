@@ -40,9 +40,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: ${{ matrix.os }}/{{ matrix.arch }}
+          platforms: ${{ matrix.os }}/${{ matrix.arch }}
           load: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:build-${{ matrix.os }}-{{ matrix.arch }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:build-${{ matrix.os }}-${{ matrix.arch }}
 
   manifest:
     runs-on: ubuntu-latest
