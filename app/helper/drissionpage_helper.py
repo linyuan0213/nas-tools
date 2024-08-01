@@ -2,6 +2,7 @@ from DrissionPage import ChromiumPage, ChromiumOptions
 from typing import Callable, Tuple
 from loguru import logger
 
+from app.helper.cloudflare_helper import under_challenge
 from app.utils.commons import singleton
 from config import CHROME_PATH
 
@@ -13,7 +14,6 @@ class DrissionPageHelper:
         self.co = ChromiumOptions()
         self.co.set_browser_path(CHROME_PATH)
         self.co.auto_port()
-        self.co.headless(False)
         self.co.set_timeouts(base=2, script=3)
         self.co.set_retry(times=3, interval=2)
         self.co.incognito(True)
@@ -24,16 +24,26 @@ class DrissionPageHelper:
         return True
 
     @staticmethod
-    def sync_cf_retry(page: ChromiumPage, tries: int = 10) -> Tuple[bool, bool]:
+    def sync_cf_retry(page: ChromiumPage, tries: int = 5) -> Tuple[bool, bool]:
         success = False
         cf = True
         user_tries = tries
         while tries > 0:
-            page.wait(2)
+            # 非CF网站
+            if not under_challenge(page.html):
+                success = True
+                page.stop_loading()
+                break
             try:
                 success = False if page(
                     "x://div[@id='challenge-stage']", timeout=10) else True
                 if success:
+                    if under_challenge(page.html):
+                        tries -= 1
+                        success = False
+                        page.wait(15)
+                        continue
+                    page.wait(1)
                     page.stop_loading()
                     break
                 for target_frame in page.get_frames():
