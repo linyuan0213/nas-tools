@@ -11,6 +11,7 @@ from app.helper import IndexerHelper
 from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
 from app.utils import RequestUtils
+from app.utils.redis_store import RedisStore
 from config import MT_URL, Config
 
 from app.scheduler_service import SchedulerService
@@ -27,7 +28,7 @@ class CookieCloud(_IPluginModule):
     # 主题色
     module_color = "#77B3D4"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
     module_author = "jxxghp"
     # 作者主页
@@ -59,6 +60,8 @@ class CookieCloud(_IPluginModule):
     _event = Event()
     # 需要忽略的Cookie
     _ignore_cookies = ['CookieAutoDeleteBrowsingDataCleanup']
+    # redis
+    _redis_store = None
 
     @staticmethod
     def get_fields():
@@ -156,6 +159,7 @@ class CookieCloud(_IPluginModule):
     def init_config(self, config=None):
         self.sites = Sites()
         self._index_helper = IndexerHelper()
+        self._redis_store = RedisStore()
 
         # 读取配置
         if config:
@@ -313,6 +317,8 @@ class CookieCloud(_IPluginModule):
                  for content in content_list
                  if content.get("name") and content.get("name") not in self._ignore_cookies]
             )
+            # cookie 存储到redis
+            self._redis_store.hset('cookie', domain_url, cookie_str)
             # 查询站点
             site_info = self.sites.get_sites_by_suffix(domain_url)
             if site_info:
@@ -347,6 +353,7 @@ class CookieCloud(_IPluginModule):
                 domain_url = '.'.join(MT_URL.split('.')[-2:])
             site_info = self.sites.get_sites_by_suffix(domain_url)
             if site_info:
+                self.debug(f"获取站点 {domain_url} LocalStorage: {content}")
                 if content.get("auth"):
                     headers = site_info.get("headers")
                     headers = json.loads(headers)
