@@ -98,7 +98,7 @@ class DrissionPageHelper:
                 except Exception as e:
                     logger.error(f"url: {url} 回调函数执行失败: {e}")
             # 嵌入CF处理
-            if 'TurnstileCallback' in page.html:
+            if 'TurnstileCallback' in page.html or under_challenge(page.html):
                 page.wait(10)
                 success, _ = self.sync_cf_retry(page)
                 if not success:
