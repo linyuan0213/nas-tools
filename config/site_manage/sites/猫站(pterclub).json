@@ -171,6 +171,9 @@
         "HR": [],
         "PEER_COUNT": [
             "(//td[@align='left' and @class='rowfollow' and @valign='top']/b[1])[3]"
+        ],
+        "PUBDATE": [
+            "//td[@class='rowfollow' and contains(., '发布于')]/span/@title"
         ]
     }
 }
