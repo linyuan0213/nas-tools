@@ -318,7 +318,7 @@ class Sites:
                 finally:
                     tries -= 1
                     sleep(2)
-            seconds = int((datetime.now() - start_time).microseconds / 1000)
+            seconds = round((datetime.now() - start_time).total_seconds(), 3)
             # 判断是否已签到
             if not html_text:
                 return False, "获取站点源码失败", 0
@@ -342,7 +342,7 @@ class Sites:
                                    headers=headers,
                                    proxies=Config().get_proxies() if site_info.get("proxy") else None
                                    ).get_res(url=site_url)
-            seconds = int((datetime.now() - start_time).microseconds / 1000)
+            seconds = round((datetime.now() - start_time).total_seconds(), 3)
             if res and res.status_code == 200:
                 if not SiteHelper.is_logged_in(res.text):
                     return False, "Cookie失效", seconds

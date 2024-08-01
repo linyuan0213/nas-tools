@@ -397,7 +397,7 @@
             <tbody>
               <tr>
                 <td id="single_sitetest_item"><span class="badge bg-green me-1 mb-1">是</span></td>
-                <td id="single_sitetest_item_time"><span class="text-green">0 毫秒</span></td>
+                <td id="single_sitetest_item_time"><span class="text-green">0 秒</span></td>
                 <td id="single_sitetest_item_msg"></td>
               </tr>
             </tbody>
@@ -647,11 +647,11 @@
     ajax_post("test_site", { id: siteid }, function (ret) {
       if (ret.code === 0) {
         $(`#sitetest_item${siteid}`).html('<span class="badge bg-green me-1 mb-1">是</span>');
-        $(`#sitetest_item${siteid}_time`).html(`<span class="text-green">${ret.time} 毫秒</span>`);
+        $(`#sitetest_item${siteid}_time`).html(`<span class="text-green">${ret.time} 秒</span>`);
         $(`#sitetest_item${siteid}_msg`).html('');
       } else {
         $(`#sitetest_item${siteid}`).html('<span class="badge bg-red me-1 mb-1">否</span>');
-        $(`#sitetest_item${siteid}_time`).html(`<span class="text-red">${ret.time} 毫秒</span>`);
+        $(`#sitetest_item${siteid}_time`).html(`<span class="text-red">${ret.time} 秒</span>`);
         $(`#sitetest_item${siteid}_msg`).html(`<span class="text-muted">${ret.msg}</span>`);
       }
       callBack(true);
@@ -730,11 +730,11 @@
     ajax_post("test_site", { id: siteid }, function (ret) {
       if (ret.code === 0) {
         $(`#single_sitetest_item`).html('<span class="badge bg-green me-1 mb-1">是</span>');
-        $(`#single_sitetest_item_time`).html(`<span class="text-green">${ret.time} 毫秒</span>`);
+        $(`#single_sitetest_item_time`).html(`<span class="text-green">${ret.time} 秒</span>`);
         $(`#single_sitetest_item_msg`).html('');
       } else {
         $(`#single_sitetest_item`).html('<span class="badge bg-red me-1 mb-1">否</span>');
-        $(`#single_sitetest_item_time`).html(`<span class="text-red">${ret.time} 毫秒</span>`);
+        $(`#single_sitetest_item_time`).html(`<span class="text-red">${ret.time} 秒</span>`);
         $(`#single_sitetest_item_msg`).html(`<span class="text-muted">${ret.msg}</span>`);
       }
       callBack(true);
