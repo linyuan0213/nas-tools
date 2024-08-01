@@ -1,19 +1,13 @@
 name: NAStool Docker Dev
-
 on:
   workflow_dispatch:
   push:
     branches:
       - dev
-
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build Docker Image
-    strategy:
-      matrix:
-        os: [linux]
-        arch: [amd64, arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@master
@@ -29,29 +23,18 @@ jobs:
       - name: Set Up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Image
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: ${{ matrix.os }}/${{ matrix.arch }}
-          load: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:build-${{ matrix.os }}-${{ matrix.arch }}
-
-  manifest:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Login DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create and Push Manifest
+      - name: Build Image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          platforms: |
+            linux/amd64
+            linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:latest-beta
-          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nas-tools:latest-beta
