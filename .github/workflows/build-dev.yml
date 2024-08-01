@@ -12,7 +12,8 @@ jobs:
     name: Build Docker Image
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        os: [linux]
+        arch: [amd64, arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@master
@@ -39,9 +40,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ matrix.os }}/{{ matrix.arch }}
           load: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:build-${{ matrix.platform }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/nas-tools:build-${{ matrix.os }}-{{ matrix.arch }}
 
   manifest:
     runs-on: ubuntu-latest
