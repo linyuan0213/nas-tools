@@ -31,6 +31,9 @@ class RedisStore:
     def rpop(self, name):
         return self.client.rpop(name)
 
+    def rpush(self, name, *values):
+        self.client.rpush(name, *values)
+
     def lpop(self, name):
         return self.client.lpop(name)
 

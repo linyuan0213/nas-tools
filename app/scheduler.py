@@ -208,8 +208,7 @@ class Scheduler:
         ThreadHelper().start_thread(self.add_task, ())
 
     def add_task(self):
-        while self.scheduler.SCHEDULER:
-
+        while True:
             data = scheduler_queue.get()
             if not data:
                 time.sleep(5)

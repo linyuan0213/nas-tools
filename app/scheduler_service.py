@@ -1,3 +1,4 @@
+import fcntl
 import os
 
 import log
@@ -18,7 +19,6 @@ class SchedulerService:
     SCHEDULER = None
     INSTANCE = ""
     redis_store = None
-    app_instance = ""
     _jobstores = {
         'default': MemoryJobStore(),
         'brushtask': MemoryJobStore(),
@@ -147,22 +147,15 @@ class SchedulerService:
         启动服务
         """
         try:
-            self.app_instance = 'app__{}'.format(self.INSTANCE)
-            if not self.redis_store.get(self.app_instance):
-                # 清空任务队列
-                scheduler_queue.clear()
-                self.SCHEDULER = BackgroundScheduler(timezone=Config().get_timezone(),
-                                                     jobstores=self._jobstores,
-                                                     executors={
-                                                         'default': ThreadPoolExecutor(50)},
-                                                     job_defaults={
-                                                         'coalesce': True, 'max_instances': 100, 'misfire_grace_time': None}
-                                                     )
-
-                self.SCHEDULER.start()
-                self.redis_store.set(self.app_instance, '1')
-            else:
-                log.debug(f"调度 {self.app_instance} 已经在运行")
+            scheduler_queue.clear()
+            self.SCHEDULER = BackgroundScheduler(timezone=Config().get_timezone(),
+                                                 jobstores=self._jobstores,
+                                                 executors={
+                                                     'default': ThreadPoolExecutor(50)},
+                                                 job_defaults={
+                                                     'coalesce': True, 'max_instances': 100, 'misfire_grace_time': None}
+                                                 )
+            self.SCHEDULER.start()
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
 
@@ -175,7 +168,5 @@ class SchedulerService:
                 self.SCHEDULER.remove_all_jobs()
                 self.SCHEDULER.shutdown()
                 self.SCHEDULER = None
-                self.redis_store.delete(self.app_instance)
-
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
