@@ -222,7 +222,7 @@ class OpenSubtitles(_IPluginModule):
                 if html_text:
                     break
             except Exception as e:
-                self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
+                cls.debug(f'获取网页HTML失败： {str(e)} 重试中...')
             finally:
                 tries -= 1
                 sleep(2)

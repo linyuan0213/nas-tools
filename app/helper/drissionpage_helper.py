@@ -6,6 +6,55 @@ from app.helper.cloudflare_helper import under_challenge
 from app.utils.commons import singleton
 from config import CHROME_PATH
 
+JS_SCRIPT = """
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function modifyClickEvent(event) {
+    if (!event._isModified) {
+        // Save original values only if not already saved
+        event._screenX = event.screenX;
+        event._screenY = event.screenY;
+
+        // Define properties only once
+        Object.defineProperty(event, 'screenX', {
+            get: function() {
+                return this._screenX + getRandomInt(0, 200);
+            }
+        });
+        Object.defineProperty(event, 'screenY', {
+            get: function() {
+                return this._screenY + getRandomInt(0, 200);
+            }
+        });
+
+        // Mark event as modified
+        event._isModified = true;
+    }
+}
+
+// Store the original addEventListener method
+const originalAddEventListener = EventTarget.prototype.addEventListener;
+
+// Override the addEventListener method
+EventTarget.prototype.addEventListener = function(type, listener, options) {
+    if (type === 'click') {
+        const wrappedListener = function(event) {
+            // Modify the click event properties
+            modifyClickEvent(event);
+
+            // Call the original listener with the modified event
+            listener.call(this, event);
+        };
+        // Call the original addEventListener with the wrapped listener
+        originalAddEventListener.call(this, type, wrappedListener, options);
+    } else {
+        // Call the original addEventListener for other event types
+        originalAddEventListener.call(this, type, listener, options);
+    }
+};
+"""
 
 @singleton
 class DrissionPageHelper:
@@ -16,9 +65,11 @@ class DrissionPageHelper:
         self.co.auto_port()
         self.co.set_timeouts(base=2, script=3)
         self.co.set_retry(times=3, interval=2)
-        self.co.incognito(True)
+        self.co.incognito(False)
         self.co.set_argument('--headless', 'new')
         self.co.set_argument('--no-sandbox')
+        self.co.set_argument('--disable-webgl')
+        # self.co.set_argument('--display=:99')
 
     def get_status(self):
         return True
@@ -30,32 +81,27 @@ class DrissionPageHelper:
         user_tries = tries
         while tries > 0:
             # 非CF网站
+            page.wait(5)
             if not under_challenge(page.html):
                 success = True
                 page.stop_loading()
                 break
             try:
-                success = False if page(
-                    "x://div[@id='challenge-stage']", timeout=10) else True
-                if success:
-                    if under_challenge(page.html):
-                        tries -= 1
-                        success = False
-                        page.wait(15)
-                        continue
+                page.wait(5)
+                cf_wrapper = page.ele('.spacer', timeout=3).ele('tag:div').ele('tag:div')
+                cf_iframe = cf_wrapper.shadow_root.ele("tag=iframe",timeout=3)
+                try:
+                    box = cf_iframe.ele('tag:body').shadow_root.ele('.cb-i')
+                    box.click()
+                except Exception as e:
+                    logger.debug(f"DrissionPage Click Error: {e}")
+            except Exception as e:
+                if not under_challenge(page.html):
+                    success = True
                     page.wait(1)
                     page.stop_loading()
                     break
-                for target_frame in page.get_frames():
-                    if "challenge" in target_frame.url and "turnstile" in target_frame.url:
-                        try:
-                            click = target_frame(
-                                "x://input[@type='checkbox']", timeout=15)
-                            if click:
-                                click.click()
-                        except Exception as e:
-                            logger.debug(f"DrissionPage Click Error: {e}")
-            except Exception as e:
+                page.wait(3)
                 logger.debug(f"DrissionPage Error: {e}")
                 success = False
             tries -= 1
@@ -80,6 +126,8 @@ class DrissionPageHelper:
         if ua:
             self.co.set_user_agent(user_agent=ua)
         page = ChromiumPage(self.co, timeout=180)
+        page.add_init_js(JS_SCRIPT)
+        page.set.window.max()
         page.set.load_mode.none()
         page.get(url, retry=3)
         if cookies:
@@ -100,11 +148,6 @@ class DrissionPageHelper:
             # 嵌入CF处理
             if 'TurnstileCallback' in page.html or under_challenge(page.html):
                 page.wait(10)
-                success, _ = self.sync_cf_retry(page)
-                if not success:
-                    logger.debug(f"url: {url} Cloudflare 等待超时")
-                    return ""
-
             logger.debug(f"url: {url} 获取网页源码成功")
             content = page.html
         else:
