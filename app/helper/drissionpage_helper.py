@@ -126,6 +126,8 @@ class DrissionPageHelper:
         if ua:
             self.co.set_user_agent(user_agent=ua)
         page = ChromiumPage(self.co, timeout=180)
+        # 等待 page 加载完成
+        page.wait(1)
         page.add_init_js(JS_SCRIPT)
         page.set.window.max()
         page.set.load_mode.none()
@@ -134,8 +136,11 @@ class DrissionPageHelper:
             if isinstance(cookies, str):
                 cookies = cookies.strip()
             page.set.cookies(cookies)
-        success, _ = self.sync_cf_retry(page)
-
+        try:
+            success, _ = self.sync_cf_retry(page)
+        except Exception:
+            logger.debug(f"DrissionPage Error: {e}")
+            success, _ = self.sync_cf_retry(page)
         content = ''
         if success:
             page.set.load_mode.eager()
@@ -147,7 +152,7 @@ class DrissionPageHelper:
                     logger.error(f"url: {url} 回调函数执行失败: {e}")
             # 嵌入CF处理
             if 'TurnstileCallback' in page.html or under_challenge(page.html):
-                page.wait(10)
+                page.wait(15)
             logger.debug(f"url: {url} 获取网页源码成功")
             content = page.html
         else:
