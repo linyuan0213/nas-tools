@@ -231,7 +231,7 @@ class CloudflareSpeedTest(_IPluginModule):
                         "func_str": "CloudflareSpeedTest.cloudflareSpeedTest",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "CloudflareSpeedTest.cloudflareSpeedTest_2",
+                        "job_id": "CloudflareSpeedTest.cloudflareSpeedTest_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

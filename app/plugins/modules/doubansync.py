@@ -146,7 +146,7 @@ class DoubanSync(_IPluginModule):
                         "func_str": "DoubanSync.sync",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "DoubanSync.sync_3",
+                        "job_id": "DoubanSync.sync_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

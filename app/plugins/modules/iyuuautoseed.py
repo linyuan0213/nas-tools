@@ -256,7 +256,7 @@ class IYUUAutoSeed(_IPluginModule):
                         "func_str": "IYUUAutoSeed.auto_seed",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "IYUUAutoSeed.auto_seed_2",
+                        "job_id": "IYUUAutoSeed.auto_seed_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

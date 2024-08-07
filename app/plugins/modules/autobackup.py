@@ -167,7 +167,7 @@ class AutoBackup(_IPluginModule):
                         "func_str": "AutoBackup.backup",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "AutoBackup.backup_1",
+                        "job_id": "AutoBackup.backup_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

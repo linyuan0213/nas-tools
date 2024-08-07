@@ -161,7 +161,7 @@ class LibraryRefresh(_IPluginModule):
                         "func_str": "LibraryRefresh.refresh_library",
                         "type": 'plugin',
                         "args": [event.event_data],
-                        "job_id": "LibraryRefresh.refresh_library",
+                        "job_id": "LibraryRefresh.refresh_library_once",
                         "trigger": "date",
                         "run_date": run_date,
                         "jobstore": self._jobstore

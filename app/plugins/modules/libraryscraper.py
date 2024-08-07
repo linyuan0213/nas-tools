@@ -179,7 +179,7 @@ class LibraryScraper(_IPluginModule):
                         "func_str": "LibraryScraper.libraryscraper",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "LibraryScraper.libraryscraper_2",
+                        "job_id": "LibraryScraper.libraryscraper_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

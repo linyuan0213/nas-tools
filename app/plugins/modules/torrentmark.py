@@ -151,7 +151,7 @@ class TorrentMark(_IPluginModule):
                         "func_str": "TorrentMark.auto_mark",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "TorrentMark.auto_mark_2",
+                        "job_id": "TorrentMark.auto_mark_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())),
                         "jobstore": self._jobstore

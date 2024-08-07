@@ -298,7 +298,7 @@ class MovieRandom(_IPluginModule):
                         "func_str": "MovieRandom.random_movie",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "MovieRandom.random_movie_2",
+                        "job_id": "MovieRandom.random_movie_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),

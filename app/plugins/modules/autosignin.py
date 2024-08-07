@@ -241,7 +241,7 @@ class AutoSignIn(_IPluginModule):
                     "func_str": "AutoSignIn.sign_in",
                     "type": 'plugin',
                     "args": [],
-                    "job_id": "AutoSignIn.sign_in_1",
+                    "job_id": "AutoSignIn.sign_in_once",
                     "trigger": "date",
                     "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                             seconds=3),

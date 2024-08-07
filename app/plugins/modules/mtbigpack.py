@@ -144,7 +144,7 @@ class MTBigPack(_IPluginModule):
                     "func_str": "MTBigPack.auto_push",
                     "type": 'plugin',
                     "args": [],
-                    "job_id": "MTBigPack.auto_push_1",
+                    "job_id": "MTBigPack.auto_push_once",
                     "trigger": "date",
                     "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                             seconds=3),

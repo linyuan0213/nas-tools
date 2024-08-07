@@ -330,7 +330,7 @@ class TorrentTransfer(_IPluginModule):
                         "func_str": "TorrentTransfer.transfer",
                         "type": 'plugin',
                         "args": [],
-                        "job_id": "TorrentTransfer.transfer_2",
+                        "job_id": "TorrentTransfer.transfer_once",
                         "trigger": "date",
                         "run_date": datetime.now(tz=pytz.timezone(Config().get_timezone())) + timedelta(
                                                                 seconds=3),
