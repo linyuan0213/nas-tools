@@ -1216,39 +1216,8 @@ class WebAction:
         """
         更新
         """
-        # 升级
-        if SystemUtils.is_synology():
-            if SystemUtils.execute('/bin/ps -w -x | grep -v grep | grep -w "nastool update" | wc -l') == '0':
-                # 调用群晖套件内置命令升级
-                os.system('nastool update')
-                # 重启
-                self.restart_server()
-        else:
-            # 清除git代理
-            os.system("sudo git config --global --unset http.proxy")
-            os.system("sudo git config --global --unset https.proxy")
-            # 设置git代理
-            proxy = Config().get_proxies() or {}
-            http_proxy = proxy.get("http")
-            https_proxy = proxy.get("https")
-            if http_proxy or https_proxy:
-                os.system(
-                    f"sudo git config --global http.proxy {http_proxy or https_proxy}")
-                os.system(
-                    f"sudo git config --global https.proxy {https_proxy or http_proxy}")
-            # 清理
-            os.system("sudo git clean -dffx")
-            # 升级
-            branch = os.getenv("NASTOOL_VERSION", "master")
-            os.system(f"sudo git fetch --depth 1 origin {branch}")
-            os.system(f"sudo git reset --hard origin/{branch}")
-            os.system("sudo git submodule update --init --recursive")
-            # 安装依赖
-            os.system('sudo pip install -r /nas-tools/requirements.txt')
-            # 修复权限
-            os.system('sudo chown -R nt:nt /nas-tools')
-            # 重启
-            self.restart_server()
+        # 重启
+        self.restart_server()
         return {"code": 0}
 
     @staticmethod
