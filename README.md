@@ -70,6 +70,20 @@
 
 ### 版本更新
 
+#### v3.5.6
+
+##### 功能优化
+- 新增企业微信可信IP更新插件
+- 新增熊猫、海胆之家站点
+- Qbittorrent api 支持 4.6.5
+
+##### 问题修复
+- Cloudflare 验证失败
+- OpenCD刷流
+- 部分站点rss和网页发布时间不统一
+- 移除自定义识别词TMDB分组
+- 调度重启不自动执行
+
 #### v3.5.5
 
 ##### 问题修复
@@ -285,3 +299,4 @@ TG群： [https://t.me/+UxUIoJMmH2YwYWE1](https://t.me/+UxUIoJMmH2YwYWE1)
 |       YemaPT        |  ✅   |    ✅     |
 |        DogPT        |  ✅   |    ✅     |
 |        海胆之家        |  ✅   |    ✅     |
+|        熊猫/PANDA        |  ✅   |    ✅     |
