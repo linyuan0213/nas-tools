@@ -236,6 +236,7 @@ class WeworkIPChange(_IPluginModule):
         """
         self.info(f"当前时间 {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))} 开始更新IP")
 
+        ip_exist = False
         cookie = self._cookie
         if self._use_cookiecloud:
             cookie = CookiecloudHelper().get_cookie('qq.com')
@@ -247,16 +248,29 @@ class WeworkIPChange(_IPluginModule):
 
         iplist = []
         # 获取可信ip
+        ips = self.get_current_iplist(cookie=cookie)
+        if dynamic_ip in ips:
+            ip_exist = True
         if not self._overwrite:
-            iplist = self.get_current_iplist(cookie=cookie)
+            iplist = ips
             if not iplist:
                 iplist = []
         iplist.append(dynamic_ip)
-        update_status = self.set_iplist(cookie=cookie, iplist=iplist)
-        if update_status:
-            self.info(f"更新可信IP成功，当前IP: {dynamic_ip}") 
+        update_status = False
+        if not ip_exist:
+            update_status = self.set_iplist(cookie=cookie, iplist=iplist)
+            if update_status:
+                self.info(f"更新可信IP成功，当前IP: {dynamic_ip}") 
+            else:
+                self.error("更新可信IP失败，请更新cookie")
+        msg = ""
+        if ip_exist:
+            msg = f"IP {dynamic_ip} 已存在\n"
         else:
-            self.error("更新可信IP失败，请更新cookie")
+            if update_status:
+                msg = "更新可信IP成功，当前IP{dynamic_ip}\n"
+            else:
+                msg = "更新可信IP失败，请更新cookie\n"
         # 发送通知
         if self._notify:
             if self._scheduler and self._scheduler.SCHEDULER:
@@ -264,7 +278,7 @@ class WeworkIPChange(_IPluginModule):
                     if 'change_ip' in job.name:
                         next_run_time = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')
                         self.send_message(title="【自动更新企业微信可信IP任务完成】",
-                                        text=f"当前IP{dynamic_ip}\n" if update_status else "更新可信IP失败，请更新cookie"
+                                        text=msg + ""
                                             f"下次更新时间: {next_run_time}")
 
     def get_current_dynamic_ip(self):
@@ -334,9 +348,6 @@ class WeworkIPChange(_IPluginModule):
         response: Response = RequestUtils(headers=headers).post_res(url=url, params=params, data=data)
         if response.status_code == 200:
             json_data = response.json()
-            if json_data.get('result').get('errCode'):
-                self.debug('cookie失效请重新同步cookie')
-                return False
             try:
                 if json_data.get('data'):
                     self.debug("更新可信IP成功")
