@@ -1,5 +1,5 @@
 {
-    "version": "202408011021",
+    "version": "202408091429",
     "indexer": [
         {
             "id": "qingwapt",
@@ -6642,11 +6642,12 @@
                         ]
                     },
                     "description": {
-                        "selector": "td:nth-child(2) > table > tr > td.embedded",
+                        "selector": "table.torrentname > tr > td:nth-child(1)",
+                        "remove": "a,img,span",
                         "contents": -1
                     },
                     "labels": {
-                        "selector": "td:nth-child(2) > table > tr > td.embedded > span"
+                        "selector": "table.torrentname > tr > td:nth-child(1) > span"
                     },
                     "minimumratio": {
                         "case": {
@@ -16760,7 +16761,18 @@
                 "//div[@id='peercount']/b[1]"
             ]
         },
-        "ultrahd.net": {},
+        "ultrahd.net": {
+            "FREE": [
+                "//h1[@id='top']/b/font[@class='free']"
+            ],
+            "2XFREE": [],
+            "HR": [
+                "//h1[@id='top']/img[@class='hitandrun']"
+            ],
+            "PEER_COUNT": [
+                "//div[@id='peercount']/b[1]"
+            ]
+        },
         "nyaa.si": {},
         "piggo.me": {
             "FREE": [
