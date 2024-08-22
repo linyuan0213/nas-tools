@@ -16,7 +16,7 @@ cryptography==42.0.4
 DBUtils==3.0.2
 dateparser==1.1.4
 decorator==5.1.1
-DrissionPage==4.0.5.6
+DrissionPage==4.1.0.0b12
 executing==1.1.0
 fast-bencode==1.1.6
 feapder==1.9.0
