@@ -150,6 +150,8 @@ class EventType(Enum):
     RefreshMediaServer = "refresh.mediaserver"
     # 站点签到
     SiteSignin = "site.signin"
+    # Cookie同步
+    CookieSync = "cookie.sync"
 
 
 # 系统配置Key字典

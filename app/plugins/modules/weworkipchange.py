@@ -13,8 +13,10 @@ from threading import Event
 
 from requests import Response
 from app.helper.cookiecloud_helper import CookiecloudHelper
+from app.plugins.event_manager import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.utils.http_utils import RequestUtils
+from app.utils.types import EventType
 from config import Config
 
 from app.scheduler_service import SchedulerService
@@ -31,7 +33,7 @@ class WeworkIPChange(_IPluginModule):
     # 主题色
     module_color = "#BFBFBF"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
     module_author = "linyuan213"
     # 作者主页
@@ -239,6 +241,9 @@ class WeworkIPChange(_IPluginModule):
         ip_exist = False
         cookie = self._cookie
         if self._use_cookiecloud:
+            # 发送刷新Cookie事件
+            EventHandler.send_event(EventType.CookieSync)
+            time.sleep(10)
             cookie = CookiecloudHelper().get_cookie('qq.com')
             
         
@@ -268,7 +273,7 @@ class WeworkIPChange(_IPluginModule):
             msg = f"IP {dynamic_ip} 已存在\n"
         else:
             if update_status:
-                msg = "更新可信IP成功，当前IP{dynamic_ip}\n"
+                msg = f"更新可信IP成功，当前IP: {dynamic_ip}\n"
             else:
                 msg = "更新可信IP失败，请更新cookie\n"
         # 发送通知
@@ -315,14 +320,13 @@ class WeworkIPChange(_IPluginModule):
             app_json = response.json()
 
             try:
-                ip_list = app_json.get('data').get('white_ip_list').get('ip')
+                ip_list = app_json.get('data').get('white_ip_list').get('ip') or []
             except Exception:
                 if app_json.get('result').get('errCode'):
-                    self.info('cookie失效请重新同步cookie')
-                return None
+                    self.debug('获取当前可信任IP失败')
+                return []
             self.debug(f"当前可信IP: {ip_list}")
-            if ip_list:
-                return ip_list
+            return ip_list
 
     def set_iplist(self, cookie: str, iplist: list):
         headers = {
@@ -354,7 +358,7 @@ class WeworkIPChange(_IPluginModule):
                     return True
             except Exception:
                 if json_data.get('result').get('errCode'):
-                    self.debug('cookie失效请重新同步cookie')
+                    self.debug('更新可信IP失败')
                     return False
         return False
 

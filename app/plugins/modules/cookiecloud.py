@@ -1,17 +1,18 @@
 import json
 from collections import defaultdict
 from datetime import datetime, timedelta
-from threading import Event
 from typing import Union
 
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 
 from app.helper import IndexerHelper
+from app.plugins.event_manager import Event, EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
 from app.utils import RequestUtils
 from app.utils.redis_store import RedisStore
+from app.utils.types import EventType
 from config import MT_URL, Config
 
 from app.scheduler_service import SchedulerService
@@ -28,7 +29,7 @@ class CookieCloud(_IPluginModule):
     # 主题色
     module_color = "#77B3D4"
     # 插件版本
-    module_version = "1.1"
+    module_version = "1.2"
     # 插件作者
     module_author = "jxxghp"
     # 作者主页
@@ -381,6 +382,57 @@ class CookieCloud(_IPluginModule):
         # 发送消息
         if self._notify:
             self.__send_message(msg)
+
+    @EventHandler.register(EventType.CookieSync)
+    def cookie_save(self, event):
+        """
+        同步站点Cookie
+        """
+        # 同步数据
+        self.info(f"开始同步Cookie ...")
+        contents, msg, flag = self.__download_data()
+        if not flag:
+            self.error(msg)
+            self.__send_message(msg)
+            return
+        if not contents:
+            self.info(f"未从CookieCloud获取到数据")
+            self.__send_message(msg)
+            return
+        # 整理数据,使用domain域名的最后两级作为分组依据
+        domain_cookie_groups = defaultdict(list)
+        cookie_content = contents.get("cookie_data")
+        for site, cookies in cookie_content.items():
+            for cookie in cookies:
+                domain_parts = cookie["domain"].split(".")[-2:]
+                domain_key = tuple(domain_parts)
+                domain_cookie_groups[domain_key].append(cookie)
+
+        # 索引器
+        for domain, content_list in domain_cookie_groups.items():
+            if not content_list:
+                continue
+            # 域名
+            domain_url = ".".join(domain)
+            if 'm-team' in domain_url:
+                domain_url = '.'.join(MT_URL.split('.')[-2:])
+            # 只有cf的cookie过滤掉
+            cloudflare_cookie = True
+            for content in content_list:
+                if content["name"] != "cf_clearance":
+                    cloudflare_cookie = False
+                    break
+            if cloudflare_cookie:
+                continue
+            # Cookie
+            cookie_str = ";".join(
+                [f"{content.get('name')}={content.get('value')}"
+                 for content in content_list
+                 if content.get("name") and content.get("name") not in self._ignore_cookies]
+            )
+            # cookie 存储到redis
+            self._redis_store.hset('cookie', domain_url, cookie_str)
+        self.info("Cookie同步Redis 成功")
 
     def __send_message(self, msg):
         """
