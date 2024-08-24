@@ -151,10 +151,15 @@ class DrissionPageHelper:
                 except Exception as e:
                     logger.error(f"url: {url} 回调函数执行失败: {e}")
             # 嵌入CF处理
-            if 'TurnstileCallback' in page.html or under_challenge(page.html):
-                page.wait(15)
-            logger.debug(f"url: {url} 获取网页源码成功")
-            content = page.html
+            try:
+                content = page.html
+                if 'TurnstileCallback' in content or under_challenge(content):
+                    page.wait(15)
+                    content = page.html
+                logger.debug(f"url: {url} 获取网页源码成功")
+            except Exception as e:
+                logger.error(f"url: {url} 获取网页源码失败")
+                page.quit()
         else:
             logger.error(f"url: {url} 获取网页源码失败")
         page.quit()
