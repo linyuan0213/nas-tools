@@ -2,12 +2,13 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Union
+from threading import Event
 
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 
 from app.helper import IndexerHelper
-from app.plugins.event_manager import Event, EventHandler
+from app.plugins.event_manager import EventHandler
 from app.plugins.modules._base import _IPluginModule
 from app.sites import Sites
 from app.utils import RequestUtils
