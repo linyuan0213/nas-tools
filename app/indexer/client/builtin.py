@@ -251,7 +251,7 @@ class BuiltinIndexer(_IIndexClient):
         return result_array
 
     @staticmethod
-    def __spider_search(indexer, keyword=None, page=None, mtype=None, timeout=60):
+    def __spider_search(indexer, keyword=None, page=None, mtype=None, timeout=90):
         """
         根据关键字搜索单个站点
         :param: indexer: 站点配置
@@ -273,6 +273,7 @@ class BuiltinIndexer(_IIndexClient):
             sleep_count += 1
             time.sleep(1)
             if sleep_count > timeout:
+                spider.stop_spider()
                 break
         # 是否发生错误
         result_flag = spider.is_error

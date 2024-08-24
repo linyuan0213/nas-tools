@@ -128,10 +128,15 @@ class DrissionPageHelper:
         page = ChromiumPage(self.co, timeout=180)
         # 等待 page 加载完成
         page.wait(1)
-        page.add_init_js(JS_SCRIPT)
-        page.set.window.max()
-        page.set.load_mode.none()
-        page.get(url, retry=3)
+        try:
+            page.add_init_js(JS_SCRIPT)
+            page.set.window.max()
+            page.set.load_mode.none()
+            page.get(url, retry=3)
+        except Exception as e:
+            logger.debug(f"DrissionPage Error: {e}")
+            page.quit()
+            return ''
         if cookies:
             if isinstance(cookies, str):
                 cookies = cookies.strip()
