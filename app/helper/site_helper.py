@@ -21,10 +21,13 @@ class SiteHelper:
         """
         if JsonUtils.is_valid_json(html_text):
             json_data = json.loads(html_text)
-            if json_data.get('message') == 'SUCCESS' or json_data.get('success'):
+            message = json_data.get('message')
+            success = json_data.get('success')
+            error_message = json_data.get('errorMessage')
+
+            if message == 'SUCCESS' or success or (error_message and '已签' in error_message):
                 return True
-            else:
-                return False
+            return False
         if "签到成功" in html_text:
             return True
 
