@@ -201,7 +201,7 @@
                 ]
             },
             "description": {
-                "selector": "td:nth-child(2) > table.torrentname > tr > td.embedded > font",
+                "selector": "td:nth-child(2) > table.torrentname > tr > td.embedded > font:not([class])",
                 "remove": "span,a,img,font,b",
                 "contents": -1
             },
