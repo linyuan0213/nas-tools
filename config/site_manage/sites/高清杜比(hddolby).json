@@ -212,7 +212,9 @@
         "2XFREE": [
             "//h1[@id='top']/b/font[@class='twoupfree']"
         ],
-        "HR": [],
+        "HR": [
+            "//h1[@id='top']/img[@class='hitandrun']"
+        ],
         "PEER_COUNT": [
             "//div[@id='peercount']/b[1]"
         ]

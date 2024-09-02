@@ -74,7 +74,7 @@
                 ]
             },
             "title": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > a > b"
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > a > b"
             },
             "details": {
                 "selector": "a[href*=\"details.php?id=\"]",
@@ -89,23 +89,23 @@
                 "attribute": "href"
             },
             "size": {
-                "selector": "td.rowfollow:nth-child(5)"
+                "selector": "td.rowfollow:nth-child(4)"
             },
             "grabs": {
-                "selector": "td.rowfollow:nth-child(8)"
-            },
-            "seeders": {
-                "selector": "td.rowfollow:nth-child(6)"
-            },
-            "leechers": {
                 "selector": "td.rowfollow:nth-child(7)"
             },
+            "seeders": {
+                "selector": "td.rowfollow:nth-child(5)"
+            },
+            "leechers": {
+                "selector": "td.rowfollow:nth-child(6)"
+            },
             "date_elapsed": {
-                "selector": "td.rowfollow:nth-child(4) > span",
+                "selector": "td.rowfollow:nth-child(3) > span",
                 "optional": true
             },
             "date_added": {
-                "selector": "td.rowfollow:nth-child(4) > span",
+                "selector": "td.rowfollow:nth-child(3) > span",
                 "attribute": "title",
                 "optional": true
             },
@@ -140,7 +140,7 @@
                 "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
                 "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
                 "selector": "div > b > span[title]",
-                "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > font > span",
+                "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > font > span",
                 "filters": [
                     {
                         "name": "dateparse",
@@ -149,11 +149,11 @@
                 ]
             },
             "description": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2)",
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1)",
                 "remove": "img,a,b,span,font"
             },
             "labels": {
-                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > span"
+                "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(1) > span"
             }
         }
     },
