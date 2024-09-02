@@ -269,7 +269,8 @@ class Torrent:
         media_list = sorted(media_list, key=lambda x: get_sort_str(x), reverse=True)
         # 控重
         can_download_list_item = []
-        can_download_list = []
+        seen_media_names = set()
+        
         # 排序后重新加入数组，按真实名称控重，即只取每个名称的第一个
         for t_item in media_list:
             # 控重的主链是名称、年份、季、集
@@ -278,7 +279,10 @@ class Torrent:
                                        t_item.get_season_episode_string())
             else:
                 media_name = t_item.get_title_string()
-            if media_name not in can_download_list:
-                can_download_list.append(media_name)
+        
+            # 如果名称未被处理过，将其加入结果列表
+            if media_name not in seen_media_names:
+                seen_media_names.add(media_name)
                 can_download_list_item.append(t_item)
+        
         return can_download_list_item
