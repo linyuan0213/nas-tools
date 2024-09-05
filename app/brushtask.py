@@ -687,10 +687,7 @@ class BrushTask(object):
         download_dir = taskinfo.get("savepath")
 
         
-        if 'star-space' in page_url:
-            res = re.findall(r'tid=(\d+)', page_url)
-        else:
-            res = re.findall(r'\d+', page_url)
+        res = re.findall(r'tid=(\d+)' if 'star-space' in page_url else r'\d+', page_url)
         if res:
             torrent_id = res[0]
             torrent_attr = json.loads(self.redis_store.hget('torrent_attr', f'{site_info.get("id")}_{torrent_id}').decode('utf-8') or '{}')

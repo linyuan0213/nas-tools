@@ -83,6 +83,12 @@ class SiteConf:
     # 促销/HR的匹配XPATH
     _RSS_SITE_GRAP_CONF = {}
 
+    # 种子详情
+    _URL_DETAIL_TEMPLATES = {
+        'fsm': "/api/Torrents/details?tid={tid}&page=1",
+        'yemapt': "/api/torrent/fetchTorrentDetail?id={tid}&firstView=false",
+        'star-space': "/p_torrent/video_detail.php?tid={tid}"
+    }
     def __init__(self):
         self.init_config()
 
@@ -111,6 +117,20 @@ class SiteConf:
             if StringUtils.url_equal(k, url):
                 return v
         return {}
+
+    def get_tid_and_url(self, torrent_url):
+        for key in self._URL_DETAIL_TEMPLATES:
+            if key in torrent_url:
+                if key == 'star-space':
+                    tid = re.findall(r'tid=(\d+)', torrent_url)[0] or ""
+                else:
+                    tid = re.findall(r'\d+', torrent_url)[0] or ""
+                    
+                split_url = urlsplit(torrent_url)
+                base_url = f"{split_url.scheme}://{split_url.netloc}"
+                return f"{base_url}{self._URL_DETAIL_TEMPLATES[key].format(tid=tid)}"
+        
+        return torrent_url  # 如果不匹配任何 key，返回原始 URL
 
     def check_torrent_attr(self, torrent_url, cookie, ua=None, headers=None, proxy=False):
         """
@@ -163,24 +183,8 @@ class SiteConf:
                 xpath_strs = self.get_grap_conf(torrent_url)
                 if not xpath_strs:
                     return ret_attr
-
-                if 'fsm' in torrent_url:
-                    tid = re.findall(r'\d+', torrent_url)[0] or ""
-                    split_url = urlsplit(torrent_url)
-                    base_url = f"{split_url.scheme}://{split_url.netloc}"
-                    torrent_url = f"{base_url}/api/Torrents/details?tid={tid}&page=1"
-
-                if 'yemapt' in torrent_url:
-                    tid = re.findall(r'\d+', torrent_url)[0] or ""
-                    split_url = urlsplit(torrent_url)
-                    base_url = f"{split_url.scheme}://{split_url.netloc}"
-                    torrent_url = f"{base_url}/api/torrent/fetchTorrentDetail?id={tid}&firstView=false"
-
-                if 'star-space' in torrent_url:
-                    tid = re.findall(r'tid=(\d+)', torrent_url)[0] or ""
-                    split_url = urlsplit(torrent_url)
-                    base_url = f"{split_url.scheme}://{split_url.netloc}"
-                    torrent_url = f"{base_url}/p_torrent/video_detail.php?tid={tid}"
+                # 获取真实的种子详情url
+                torrent_url = self.get_tid_and_url(torrent_url)
 
                 site_info = Sites().get_sites(siteurl=torrent_url)
                 html_text = self.__get_site_page_html(url=torrent_url,
