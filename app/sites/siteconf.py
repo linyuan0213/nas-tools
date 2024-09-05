@@ -176,6 +176,12 @@ class SiteConf:
                     base_url = f"{split_url.scheme}://{split_url.netloc}"
                     torrent_url = f"{base_url}/api/torrent/fetchTorrentDetail?id={tid}&firstView=false"
 
+                if 'star-space' in torrent_url:
+                    tid = re.findall(r'tid=(\d+)', torrent_url)[0] or ""
+                    split_url = urlsplit(torrent_url)
+                    base_url = f"{split_url.scheme}://{split_url.netloc}"
+                    torrent_url = f"{base_url}/p_torrent/video_detail.php?tid={tid}"
+
                 site_info = Sites().get_sites(siteurl=torrent_url)
                 html_text = self.__get_site_page_html(url=torrent_url,
                                                       cookie=cookie,
@@ -251,7 +257,7 @@ class SiteConf:
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
         # 随机休眼后再返回
-        time.sleep(round(random.uniform(1, 5), 1))
+        time.sleep(round(random.uniform(2, 8), 1))
         return ret_attr
 
     @staticmethod

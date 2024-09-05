@@ -686,7 +686,11 @@ class BrushTask(object):
         upload_limit = rss_rule.get("upspeed")
         download_dir = taskinfo.get("savepath")
 
-        res = re.findall(r'\d+', page_url)
+        
+        if 'star-space' in page_url:
+            res = re.findall(r'tid=(\d+)', page_url)
+        else:
+            res = re.findall(r'\d+', page_url)
         if res:
             torrent_id = res[0]
             torrent_attr = json.loads(self.redis_store.hget('torrent_attr', f'{site_info.get("id")}_{torrent_id}').decode('utf-8') or '{}')
@@ -826,8 +830,10 @@ class BrushTask(object):
                                                             proxy=proxy)
             torrent_peer_count = torrent_attr.get("peer_count")
             log.debug("【Brush】%s 解析详情, %s" % (title, torrent_attr))
-
-            res = re.findall(r'\d+', torrent_url)
+            if 'star-space' in torrent_url:
+                res = re.findall(r'tid=(\d+)', torrent_url)
+            else:
+                res = re.findall(r'\d+', torrent_url)
             if res:
                 torrent_id = res[0]
                 self.redis_store.hset('torrent_attr', f'{siteid}_{torrent_id}', json.dumps(torrent_attr))

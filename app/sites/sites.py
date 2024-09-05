@@ -302,6 +302,9 @@ class Sites:
         if 'yemapt' in site_url:
             site_url = site_url + '/api/user/profile'
 
+        if 'star-space' in site_url:
+            site_url = site_url + '/p_index/index.php'
+
         if site_info.get("chrome"):
             # 计时
             chrome = DrissionPageHelper()

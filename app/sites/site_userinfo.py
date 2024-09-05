@@ -92,6 +92,8 @@ class SiteUserInfo(object):
                 req_url = url + '/api/Users/infos'
             elif 'yemapt' in url:
                 req_url = url + '/api/user/profile'
+            elif 'star-space' in url:
+                req_url = url + '/p_index/index.php'
             else:
                 req_url = url
             if 'm-team' in url:

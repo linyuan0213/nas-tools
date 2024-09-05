@@ -106,6 +106,7 @@ class SiteSchema(Enum):
     HHCLUB = "HHCLUB"
     FSM = "FSM"
     YemaPT = "YemaPT"
+    FireFly = "FireFly"
 
 
 # 可监听事件

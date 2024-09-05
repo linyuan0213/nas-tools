@@ -1,0 +1,18 @@
+{
+    "id": "star-space",
+    "name": "星空",
+    "domain": "https://star-space.net/",
+    "encoding": "UTF-8",
+    "public": false,
+    "parser": "FireFlySpider",
+    "conf": {
+        "FREE": [
+            "//span[@id='free']"
+        ],
+        "2XFREE": [],
+        "HR": [],
+        "PEER_COUNT": [
+            "//span[@id='user_info' and img[contains(@title, '做种数')]]"
+        ]
+    }
+}
