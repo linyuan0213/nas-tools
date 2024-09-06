@@ -1,7 +1,9 @@
 import requests
 import urllib3
+import time
 from urllib3.exceptions import InsecureRequestWarning
 from config import Config
+import log
 
 urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -55,102 +57,162 @@ class RequestUtils:
         if timeout:
             self._timeout = timeout
 
-    def post(self, url, data=None, json=None):
+    def post(self, url, data=None, json=None, retries=3):
         if json is None:
             json = {}
-        try:
-            if self._session:
-                return self._session.post(url,
-                                          data=data,
-                                          verify=False,
-                                          headers=self._headers,
-                                          proxies=self._proxies,
-                                          timeout=self._timeout,
-                                          json=json)
-            else:
-                return requests.post(url,
-                                     data=data,
-                                     verify=False,
-                                     headers=self._headers,
-                                     proxies=self._proxies,
-                                     timeout=self._timeout,
-                                     json=json)
-        except requests.exceptions.RequestException:
-            return None
-
-    def get(self, url, params=None):
-        try:
-            if self._session:
-                r = self._session.get(url,
-                                      verify=False,
-                                      headers=self._headers,
-                                      proxies=self._proxies,
-                                      timeout=self._timeout,
-                                      params=params)
-            else:
-                r = requests.get(url,
-                                 verify=False,
-                                 headers=self._headers,
-                                 proxies=self._proxies,
-                                 timeout=self._timeout,
-                                 params=params)
-            return str(r.content, 'utf-8')
-        except requests.exceptions.RequestException:
-            return None
-
-    def get_res(self, url, params=None, allow_redirects=True, raise_exception=False):
-        try:
-            if self._session:
-                return self._session.get(url,
-                                         params=params,
+        for attempt in range(retries):
+            try:
+                if self._session:
+                    response = self._session.post(url,
+                                              data=data,
+                                              verify=False,
+                                              headers=self._headers,
+                                              proxies=self._proxies,
+                                              timeout=self._timeout,
+                                              json=json)
+                else:
+                    response = requests.post(url,
+                                         data=data,
                                          verify=False,
                                          headers=self._headers,
                                          proxies=self._proxies,
-                                         cookies=self._cookies,
                                          timeout=self._timeout,
-                                         allow_redirects=allow_redirects)
-            else:
-                return requests.get(url,
-                                    params=params,
-                                    verify=False,
-                                    headers=self._headers,
-                                    proxies=self._proxies,
-                                    cookies=self._cookies,
-                                    timeout=self._timeout,
-                                    allow_redirects=allow_redirects)
-        except requests.exceptions.RequestException:
-            if raise_exception:
-                raise requests.exceptions.RequestException
-            return None
+                                         json=json)
 
-    def post_res(self, url, data=None, params=None, allow_redirects=True, files=None, json=None):
-        try:
-            if self._session:
-                return self._session.post(url,
-                                          data=data,
-                                          params=params,
+                # 检查返回的内容是否为空字符串
+                if response.text.strip() == "" and response.status_code not in [301, 302]:
+                    log.debug(f"Attempt {attempt + 1} returned an empty string.")
+                    if attempt + 1 < retries:
+                        time.sleep(2)  # 重试前等待2秒
+                        continue  # 重试
+                    else:
+                        return response
+                return response  # 请求成功且非空字符串时返回响应
+
+            except requests.exceptions.RequestException as e:
+                log.debug(f"Attempt {attempt + 1} failed: {e}")
+                if attempt + 1 < retries:
+                    time.sleep(2)  # 重试前等待2秒
+                else:
+                    return None  # 达到重试次数上限时，返回None
+
+    def get(self, url, params=None, retries=3):
+        for attempt in range(retries):
+            try:
+                if self._session:
+                    r = self._session.get(url,
                                           verify=False,
                                           headers=self._headers,
                                           proxies=self._proxies,
-                                          cookies=self._cookies,
                                           timeout=self._timeout,
-                                          allow_redirects=allow_redirects,
-                                          files=files,
-                                          json=json)
-            else:
-                return requests.post(url,
-                                     data=data,
-                                     params=params,
+                                          params=params)
+                else:
+                    r = requests.get(url,
                                      verify=False,
                                      headers=self._headers,
                                      proxies=self._proxies,
-                                     cookies=self._cookies,
                                      timeout=self._timeout,
-                                     allow_redirects=allow_redirects,
-                                     files=files,
-                                     json=json)
-        except requests.exceptions.RequestException:
-            return None
+                                     params=params)
+                # 检查返回的内容是否为空字符串
+                if r.text.strip() == "" and r.status_code not in [301, 302]:
+                    log.debug(f"Attempt {attempt + 1} returned an empty string.")
+                    if attempt + 1 < retries:
+                        time.sleep(2)  # 重试前等待2秒
+                        continue  # 重试
+                    else:
+                        return ""  # 达到重试次数上限，返回空字符串
+                return r.text  # 请求成功且非空字符串时返回响应
+
+            except requests.exceptions.RequestException as e:
+                log.debug(f"Attempt {attempt + 1} failed: {e}")
+                if attempt + 1 < retries:
+                    time.sleep(2)  # 重试前等待2秒
+                else:
+                    return None  # 达到重试次数上限时，返回None
+
+    def get_res(self, url, params=None, allow_redirects=True, raise_exception=False, retries=3):
+        for attempt in range(retries):
+            try:
+                if self._session:
+                    response = self._session.get(url,
+                                            params=params,
+                                            verify=False,
+                                            headers=self._headers,
+                                            proxies=self._proxies,
+                                            cookies=self._cookies,
+                                            timeout=self._timeout,
+                                            allow_redirects=allow_redirects)
+                else:
+                    response = requests.get(url,
+                                        params=params,
+                                        verify=False,
+                                        headers=self._headers,
+                                        proxies=self._proxies,
+                                        cookies=self._cookies,
+                                        timeout=self._timeout,
+                                        allow_redirects=allow_redirects)
+                    
+                # 检查返回的内容是否为空字符串
+                if response.text.strip() == "" and response.status_code not in [301, 302]:
+                    log.debug(f"Attempt {attempt + 1} returned an empty string.")
+                    if attempt + 1 < retries:
+                        time.sleep(2)  # 重试前等待2秒
+                        continue  # 重试
+                    else:
+                        return response
+                return response  # 请求成功且非空字符串时返回响应
+
+            except requests.exceptions.RequestException as e:
+                log.debug(f"Attempt {attempt + 1} failed: {e}")
+                if attempt + 1 < retries:
+                    time.sleep(2)  # 重试前等待2秒
+                else:
+                    return None  # 达到重试次数上限时，返回None
+
+    def post_res(self, url, data=None, params=None, allow_redirects=True, files=None, json=None, retries=3):
+        for attempt in range(retries):
+            try:
+                if self._session:
+                    response = self._session.post(url,
+                                                data=data,
+                                                params=params,
+                                                verify=False,
+                                                headers=self._headers,
+                                                proxies=self._proxies,
+                                                cookies=self._cookies,
+                                                timeout=self._timeout,
+                                                allow_redirects=allow_redirects,
+                                                files=files,
+                                                json=json)
+                else:
+                    response = requests.post(url,
+                                            data=data,
+                                            params=params,
+                                            verify=False,
+                                            headers=self._headers,
+                                            proxies=self._proxies,
+                                            cookies=self._cookies,
+                                            timeout=self._timeout,
+                                            allow_redirects=allow_redirects,
+                                            files=files,
+                                            json=json)
+
+                # 检查返回的内容是否为空字符串
+                if response.text.strip() == "" and response.status_code not in [301, 302]:
+                    log.debug(f"Attempt {attempt + 1} returned an empty string.")
+                    if attempt + 1 < retries:
+                        time.sleep(2)  # 重试前等待2秒
+                        continue  # 重试
+                    else:
+                        return ""  # 达到重试次数上限，返回空字符串
+                return response  # 请求成功且非空字符串时返回响应
+
+            except requests.exceptions.RequestException as e:
+                log.debug(f"Attempt {attempt + 1} failed: {e}")
+                if attempt + 1 < retries:
+                    time.sleep(2)  # 重试前等待2秒
+                else:
+                    return None  # 达到重试次数上限时，返回None    
 
     @staticmethod
     def cookie_parse(cookies_str, array=False):
