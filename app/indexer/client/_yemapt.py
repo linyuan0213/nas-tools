@@ -94,7 +94,7 @@ class YemaPTSpider(object):
                     else:
                         downloadvolumefactor = 1.0
 
-                    org_date = result.get('gmtCreate')
+                    org_date = result.get('listingTime')
                     dt_utc = datetime.datetime.fromisoformat(org_date.replace('Z', '+00:00'))
 
                     local_tz = pytz.timezone(Config().get_timezone())
@@ -111,7 +111,7 @@ class YemaPTSpider(object):
                         'size': result.get('fileSize'),
                         'seeders': result.get('seedNum'),
                         'peers': result.get('leechNum'),
-                        'grabs': result.get('completedNum'),
+                        'grabs': result.get('completedNum') if result.get('completedNum') else '',
                         'downloadvolumefactor': downloadvolumefactor,
                         'uploadvolumefactor': 1.0,
                         'page_url': self._pageurl % (self._domain, tid),
