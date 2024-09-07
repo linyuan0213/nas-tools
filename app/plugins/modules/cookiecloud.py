@@ -285,6 +285,7 @@ class CookieCloud(_IPluginModule):
     def check_domain(self, domain):
         # 检查黑名单
         if self._blacklist and CookieCloud.is_domain_in_list(domain, self._blacklist.splitlines()):
+            self.debug(f"{domain} 在黑名单中，已排除")
             return False
         
         # 如果白名单为空，默认放行
@@ -293,6 +294,7 @@ class CookieCloud(_IPluginModule):
         
         # 检查白名单
         if CookieCloud.is_domain_in_list(domain, self._whitelist.splitlines()):
+            self.debug(f"{domain} 在白名单中")
             return True
         
         # 如果既不在黑名单也不在白名单，阻止
@@ -475,6 +477,8 @@ class CookieCloud(_IPluginModule):
         cookie_content = contents.get("cookie_data")
         for site, cookies in cookie_content.items():
             for cookie in cookies:
+                if not self.check_domain(cookie["domain"]):
+                    continue
                 domain_parts = cookie["domain"].split(".")[-2:]
                 domain_key = tuple(domain_parts)
                 domain_cookie_groups[domain_key].append(cookie)
