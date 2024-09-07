@@ -1,4 +1,5 @@
 import json
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Union
@@ -30,11 +31,11 @@ class CookieCloud(_IPluginModule):
     # 主题色
     module_color = "#77B3D4"
     # 插件版本
-    module_version = "1.2"
+    module_version = "1.3"
     # 插件作者
-    module_author = "jxxghp"
+    module_author = "linyuan0213"
     # 作者主页
-    author_url = "https://github.com/jxxghp"
+    author_url = "https://github.com/linyuan0213"
     # 插件配置项ID前缀
     module_config_prefix = "cookiecloud_"
     # 加载顺序
@@ -64,6 +65,9 @@ class CookieCloud(_IPluginModule):
     _ignore_cookies = ['CookieAutoDeleteBrowsingDataCleanup']
     # redis
     _redis_store = None
+    #黑白名单
+    _whitelist = ""
+    _blacklist = ""
 
     @staticmethod
     def get_fields():
@@ -155,6 +159,38 @@ class CookieCloud(_IPluginModule):
                         }
                     ]
                 ]
+            },
+                        {
+                'type': 'div',
+                'content': [
+                    # 同一行
+                    [
+                        {
+                            'title': '白名单',
+                            'required': '',
+                            'tooltip': '每行一个关键词，支持正则',
+                            'type': 'textarea',
+                            'content':
+                                {
+                                    'id': 'whitelist',
+                                    'placeholder': '',
+                                    'rows': 5
+                                }
+                        },
+                        {
+                            'title': '黑名单',
+                            'required': '',
+                            'tooltip': '每行一个关键词，支持正则',
+                            'type': 'textarea',
+                            'content':
+                                {
+                                    'id': 'blacklist',
+                                    'placeholder': '',
+                                    'rows': 5
+                                }
+                        },
+                    ]
+                ]
             }
         ]
 
@@ -177,7 +213,8 @@ class CookieCloud(_IPluginModule):
                     self._server = "http://%s" % self._server
                 if self._server.endswith("/"):
                     self._server = self._server[:-1]
-
+            self._blacklist = config.get("blacklist")
+            self._whitelist = config.get("whitelist")
             # 测试
             _, msg, flag = self.__download_data()
             if flag:
@@ -216,6 +253,8 @@ class CookieCloud(_IPluginModule):
                     "password": self._password,
                     "notify": self._notify,
                     "onlyonce": self._onlyonce,
+                    "blacklist": self._blacklist,
+                    "whitelist": self._whitelist
                 })
 
             # 周期运行
@@ -232,6 +271,32 @@ class CookieCloud(_IPluginModule):
 
     def get_state(self):
         return self._enabled and self._cron
+
+    @staticmethod
+    def is_domain_in_list(domain, domain_list):
+        """
+        检查域名是否匹配列表中的任意正则表达式
+        """
+        for pattern in domain_list:
+            if re.match(pattern, domain):
+                return True
+        return False
+    
+    def check_domain(self, domain):
+        # 检查黑名单
+        if self._blacklist and CookieCloud.is_domain_in_list(domain, self._blacklist.splitlines()):
+            return False
+        
+        # 如果白名单为空，默认放行
+        if not self._whitelist:
+            return True
+        
+        # 检查白名单
+        if CookieCloud.is_domain_in_list(domain, self._whitelist.splitlines()):
+            return True
+        
+        # 如果既不在黑名单也不在白名单，阻止
+        return False
 
     def __download_data(self) -> Union[dict, str, bool]:
         """
@@ -280,12 +345,17 @@ class CookieCloud(_IPluginModule):
         local_storage = contents.get("local_storage_data") or {}
         for site, cookies in cookie_content.items():
             for cookie in cookies:
+                if not self.check_domain(cookie["domain"]):
+                    continue
                 domain_parts = cookie["domain"].split(".")[-2:]
                 domain_key = tuple(domain_parts)
                 domain_cookie_groups[domain_key].append(cookie)
 
         for site, storage in local_storage.items():
             if not storage:
+                continue
+
+            if not self.check_domain(site):
                 continue
             domain_parts = site.split(".")[-2:]
             domain_key = tuple(domain_parts)
