@@ -906,6 +906,8 @@ class Downloader:
                                 continue
                             item_episodes = item.get_episode_list()
                             if not item_episodes:
+                                if 'm-team' in item.page_url or 'yemapt' in item.page_url:
+                                    item.enclosure = Downloader().get_download_url(item.page_url)
                                 if item.enclosure.startswith('magnet'):
                                     continue
                                 # 有时，就算标题副标题没有集数，种子内文件名本身仍然可能是含有集数的。我们打开种子文件来一探究竟。
