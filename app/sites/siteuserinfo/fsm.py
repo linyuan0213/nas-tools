@@ -2,7 +2,10 @@
 import json
 import base64
 
+from datetime import datetime
 from urllib.parse import urljoin
+
+import pytz
 
 from app.sites.siteuserinfo._base import _ISiteUserInfo, SITE_BASE_ORDER
 from app.utils import RequestUtils, JsonUtils
@@ -73,12 +76,22 @@ class FSMUserInfo(_ISiteUserInfo):
         if not JsonUtils.is_valid_json(html_text):
             return
         json_data = json.loads(html_text)
+        if not json_data.get('data'):
+            return
+
+        user_id = json_data.get('data').get('uid')
+        
+        html_text = self._get_page_content(f"{self._base_url}/api/Users/profile?uid={user_id}", params={}, headers=self._site_headers)
+        if not JsonUtils.is_valid_json(html_text):
+            return
+        json_data = json.loads(html_text)
         if json_data.get('data') is not None:
             # 用户等级
             self.user_level = json_data.get('data').get('userRank').get('name')
 
             # 加入日期
-            self.join_at = "1970-01-01 00:00:00"
+            timestamp = float(json_data.get('data').get('createdTs'))
+            self.join_at = datetime.fromtimestamp(timestamp, tz=pytz.timezone("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
 
     def _parse_user_traffic_info(self, html_text):
         json_data = json.loads(html_text)
