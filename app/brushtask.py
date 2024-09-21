@@ -1265,12 +1265,15 @@ class BrushTask(object):
                     torrent_url = f'{site_base_url}/detail/{tid}'
                 elif 'yemapt' in enclosure:
                     tid = StringUtils.get_tid_by_url(enclosure)
-                    torrent_url = f'{site_base_url}/#/torrent/detail/{tid}/'
+                    torrent_url = f'{site_base_url}/#/torrent/detail/{tid}/'                    
                 else:
                     res = re.findall(r'id=(\d+)', enclosure)
                     if res:
                         tid = res[0]
-                        torrent_url = f'{site_base_url}/details.php?id={tid}'
+                        if 'star-space' in torrent_url:
+                            torrent_url = f'{site_base_url}/p_torrent/video_detail.php?tid={tid}'
+                        else:
+                            torrent_url = f'{site_base_url}/details.php?id={tid}'
                     else:
                         continue
 
