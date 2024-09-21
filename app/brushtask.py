@@ -1260,22 +1260,12 @@ class BrushTask(object):
             add_time = torrent_info.get("add_time")
             if torrent_id_maps.get(torrent_id):
                 enclosure = torrent_id_maps.get(torrent_id)
-                if 'm-team' in enclosure:
-                    tid = StringUtils.get_tid_by_url(enclosure)
-                    torrent_url = f'{site_base_url}/detail/{tid}'
-                elif 'yemapt' in enclosure:
-                    tid = StringUtils.get_tid_by_url(enclosure)
-                    torrent_url = f'{site_base_url}/#/torrent/detail/{tid}/'                    
-                else:
-                    res = re.findall(r'id=(\d+)', enclosure)
-                    if res:
-                        tid = res[0]
-                        if 'star-space' in torrent_url:
-                            torrent_url = f'{site_base_url}/p_torrent/video_detail.php?tid={tid}'
-                        else:
-                            torrent_url = f'{site_base_url}/details.php?id={tid}'
-                    else:
-                        continue
+                tid = StringUtils.get_tid_by_url(enclosure)
+                # 提取站点关键字并匹配相应的模板
+                site_key = next((key for key in ['m-team', 'yemapt', 'star-space'] if key in enclosure), 'default')
+
+                # 构建 torrent_url
+                torrent_url = f"{site_base_url}{SiteConf().URL_DETAIL_TEMPLATES[site_key].format(tid=tid)}"
 
                 torrent_attr = self.siteconf.check_torrent_attr(torrent_url=torrent_url,
                                                                 cookie=site_cookie,

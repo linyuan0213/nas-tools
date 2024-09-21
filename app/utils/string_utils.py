@@ -569,6 +569,10 @@ class StringUtils:
             decode_str = base64.b64decode(token).decode(encoding='utf-8')
             tid = decode_str.split('\t')[-1]
             return tid
+        
+        tid = re.findall(r'id=(\d+)', url)
+        if isinstance(tid, list):
+            return tid[0] if tid else None
 
     @staticmethod
     def replace_strings(text, replacements):
