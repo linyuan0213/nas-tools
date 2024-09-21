@@ -1224,8 +1224,7 @@ class BrushTask(object):
         split_url = urlsplit(rss_url)
         site_base_url = f"{split_url.scheme}://{split_url.netloc}"
 
-        log.info("【Brush】开始非免费种子暂停任务：%s..." %
-                    (site_name, task_name))
+        log.info("【Brush】开始非免费种子暂停任务：%s..." % (task_name))
         # 当前任务种子详情
         task_torrents = self.get_brushtask_torrents(taskid)
         torrent_id_maps = {
