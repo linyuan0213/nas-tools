@@ -195,3 +195,10 @@ class _IDownloadClient(metaclass=ABCMeta):
         下载控制：重新校验
         """
         pass
+    
+    @abstractmethod
+    def get_free_space(self, path: str):
+        """
+        获取剩余空间
+        """
+        pass

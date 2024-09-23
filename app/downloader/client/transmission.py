@@ -579,3 +579,12 @@ class Transmission(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return False
+
+    def get_free_space(self, path: str):
+        if not self.trc:
+            return
+        try:
+            return self.trc.free_space(path)
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+            return

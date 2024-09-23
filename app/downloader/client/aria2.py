@@ -209,3 +209,6 @@ class Aria2(_IDownloadClient):
 
     def set_torrents_tag(self, ids, tags):
         pass
+
+    def get_free_space(self, path: str):
+        pass
