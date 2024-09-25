@@ -9,6 +9,7 @@ import dateutil
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 
+from app.entities.torrentstatus import TorrentStatus
 import log
 from app.downloader import Downloader
 from app.filter import Filter
@@ -19,7 +20,6 @@ from app.sites import Sites, SiteConf
 from app.utils import StringUtils, ExceptionUtils, JsonUtils
 from app.utils.commons import singleton
 from app.utils.types import BrushDeleteType, BrushStopType
-from config import BRUSH_REMOVE_TORRENTS_INTERVAL, Config, BRUSH_STOP_TORRENTS_INTERVAL
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -414,50 +414,39 @@ class BrushTask(object):
             # 被手动从下载器删除的种子列表
             remove_torrent_ids = list(
                 set(torrent_ids).difference(
-                    set([(torrent.get("hash")
-                            if downloader_type == 'qbittorrent'
-                            else str(torrent.hashString)) for torrent in torrents])))
+                    set([torrent.id for torrent in torrents])))
             # 完成的种子
             for torrent in torrents:
-                torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
-                                                        torrent=torrent)
-                
-                log.debug(f"【Brush】已完成待删除种子信息: {torrent_info}")
                 # ID
-                torrent_id = torrent_info.get("id")
+                torrent_id = torrent.id
                 # 总上传量
-                total_uploaded += torrent_info.get("uploaded")
+                total_uploaded += torrent.uploaded
                 # 总下载量
-                total_downloaded += torrent_info.get("downloaded")
+                total_downloaded += torrent.downloaded
                 # 种子名称
-                torrent_name = torrent.get('name')
+                torrent_name = torrent.name
                 # 下载器名称
                 downlaod_name = downloader_cfg.get("name")
                 # 种子大小
-                torrent_size = StringUtils.str_filesize(
-                    torrent_info.get("total_size"))
+                torrent_size = StringUtils.str_filesize(torrent.size)
                 # 已下载
-                download_size = StringUtils.str_filesize(
-                    torrent_info.get("downloaded"))
+                download_size = StringUtils.str_filesize(torrent.downloaded)
                 # 已上传
-                upload_size = StringUtils.str_filesize(
-                    torrent_info.get("uploaded"))
+                upload_size = StringUtils.str_filesize(torrent.uploaded)
                 # 分享率
-                torrent_ratio = round(torrent_info.get("ratio") or 0, 2)
+                torrent_ratio = round(torrent.ratio or 0, 2)
                 # 种子添加时间
-                add_time = torrent_info.get("add_time")
+                add_time = torrent.add_time
                 # 做种时间
-                seeding_time = torrent_info.get("seeding_time")
+                seeding_time = torrent.seeding_time
                 # 上传量
-                uploaded = torrent_info.get("uploaded")
+                uploaded = torrent.uploaded
                 # 下载量
-                downloaded = torrent_info.get("downloaded")
+                downloaded = torrent.downloaded
                 # 平均上传速度
-                last_uploaded = self.redis_store.hget('torrent', torrent_id) if self.redis_store.hget('torrent', torrent_id) else 0
-                avg_upspeed = (torrent_info.get("uploaded") - int(last_uploaded)) / (BRUSH_REMOVE_TORRENTS_INTERVAL * 60)
-                self.redis_store.hset('torrent', torrent_id, uploaded)
+                avg_upspeed = torrent.avg_upload_speed
                 # 未活跃时间
-                iatime = torrent_info.get("iatime")
+                iatime = torrent.iatime
                 # 获取种子hr属性
                 page_torrent_id = (self.redis_store.hget('torrent_url', f'{downloader_id}_{torrent_id}') or b'').decode("utf-8")
                 torrent_attr = json.loads((self.redis_store.hget('torrent_attr', f'{site_id}_{page_torrent_id}') or b'').decode('utf-8') or '{}')
@@ -472,7 +461,6 @@ class BrushTask(object):
                 if need_delete:
                     log.info(
                         "【Brush】%s 做种达到删种条件：%s，删除任务..." % (torrent_name, delete_type.value))
-                    self.redis_store.hdel('torrent', torrent_id)
                     self.redis_store.hdel('torrent_url', f'{downloader_id}_{torrent_id}')
                     self.redis_store.hdel('torrent_attr', f'{site_id}_{page_torrent_id}')
                     if sendmessage:
@@ -501,56 +489,45 @@ class BrushTask(object):
             # 更新手动从下载器删除的种子列表
             remove_torrent_ids = list(
                 set(remove_torrent_ids).difference(
-                    set([(torrent.get("hash")
-                            if downloader_type == 'qbittorrent'
-                            else str(torrent.hashString)) for torrent in torrents])))
+                    set([torrent.id for torrent in torrents])))
             # 下载中的种子
             for torrent in torrents:
-                torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
-                                                        torrent=torrent)
-                log.debug(f"【Brush】下载中待删除种子信息: {torrent_info}")
                 # ID
-                torrent_id = torrent_info.get("id")
+                torrent_id = torrent.id
                 # 总上传量
-                total_uploaded += torrent_info.get("uploaded")
+                total_uploaded += torrent.uploaded
                 # 总下载量
-                total_downloaded += torrent_info.get("downloaded")
-                # 分享率 上传量 / 种子大小
-                ratio = float(torrent_info.get("uploaded")) / \
-                    float(torrent_info.get("total_size"))
+                total_downloaded += torrent.downloaded
+                # 分享率
+                ratio = torrent.ratio
                 # 种子名称
-                torrent_name = torrent.get('name')
+                torrent_name = torrent.name
                 # 下载器名称
                 downlaod_name = downloader_cfg.get("name")
                 # 种子大小
-                torrent_size = StringUtils.str_filesize(
-                    torrent_info.get("total_size"))
+                torrent_size = StringUtils.str_filesize(torrent.size)
                 # 已下载
-                download_size = StringUtils.str_filesize(
-                    torrent_info.get("downloaded"))
+                download_size = StringUtils.str_filesize(torrent.downloaded)
                 # 已上传
-                upload_size = StringUtils.str_filesize(
-                    torrent_info.get("uploaded"))
+                upload_size = StringUtils.str_filesize(torrent.uploaded)
                 # 分享率
-                torrent_ratio = round(torrent_info.get("ratio") or 0, 2)
+                torrent_ratio = round(torrent.ratio or 0, 2)
                 # 种子添加时间
-                add_time = torrent_info.get("add_time")
+                add_time = torrent.add_time
                 # 下载耗时
-                dltime = torrent_info.get("dltime")
+                dltime = torrent.download_time
                 # 平均上传速度
-                last_uploaded = self.redis_store.hget('torrent', torrent_id) if self.redis_store.hget('torrent', torrent_id) else 0
-                avg_upspeed = (torrent_info.get("uploaded") - int(last_uploaded)) / (BRUSH_REMOVE_TORRENTS_INTERVAL * 60)
+                avg_upspeed = torrent.avg_upload_speed
                 # 未活跃时间
-                iatime = torrent_info.get("iatime")
+                iatime = torrent.iatime
                 # 上传量
-                uploaded = torrent_info.get("uploaded")
-                self.redis_store.hset('torrent', torrent_id, uploaded)
+                uploaded = torrent.uploaded
                 # 下载量
-                downloaded = torrent_info.get("downloaded")
+                downloaded = torrent.downloaded
                 # 等待时间
-                status = torrent_info.get("status")
+                status = torrent.status
                 pending_time = None
-                if status == "download_pending" or status == "stalledDL":
+                if status == TorrentStatus.Pending:
                     pending_time = iatime
                 # 判断是否符合删除条件
                 need_delete, delete_type = self.__check_remove_rule(remove_rule=remove_rule,
@@ -603,10 +580,8 @@ class BrushTask(object):
                     update_torrents = []
                 else:
                     for torrent in torrents:
-                        torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
-                                                                torrent=torrent)
                         # ID
-                        torrent_id = torrent_info.get("id")
+                        torrent_id = torrent.id
                         # 依然存在下载器的种子移出删除列表
                         if torrent_id in delete_ids:
                             delete_ids.remove(torrent_id)
@@ -1039,95 +1014,6 @@ class BrushTask(object):
 
         return False, BrushStopType.NOTSTOP
 
-    @staticmethod
-    def __get_torrent_dict(downloader_type, torrent):
-
-        # 当前时间戳
-        date_now = int(time.time())
-
-        if downloader_type == "qbittorrent":
-            # ID
-            torrent_id = torrent.get("hash")
-            # 下载时间
-            dltime = date_now - \
-                torrent.get("added_on") if torrent.get("added_on") else 0
-            # 做种时间
-            seeding_time = date_now - \
-                torrent.get("completion_on") if torrent.get(
-                    "completion_on") else 0
-            # 分享率
-            ratio = torrent.get("ratio") or 0
-            # 上传量
-            uploaded = torrent.get("uploaded") or 0
-            # 平均上传速度 Byte/s
-            if dltime:
-                avg_upspeed = int(uploaded / dltime)
-            else:
-                avg_upspeed = uploaded
-            # 已未活动 秒
-            iatime = date_now - \
-                torrent.get("last_activity") if torrent.get(
-                    "last_activity") else 0
-            # 下载量
-            downloaded = torrent.get("downloaded")
-            # 种子大小
-            total_size = torrent.get("total_size")
-            # 添加时间
-            add_time = time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime(torrent.get("added_on") or 0))
-            # 状态
-            status = torrent.get('state')
-        else:
-            # ID
-            torrent_id = torrent.hashString
-            # 做种时间
-            if not torrent.done_date or torrent.done_date.timestamp() < 1:
-                seeding_time = 0
-            else:
-                seeding_time = date_now - int(torrent.done_date.timestamp())
-            # 下载耗时
-            if not torrent.added_date or torrent.added_date.timestamp() < 1:
-                dltime = 0
-            else:
-                dltime = date_now - int(torrent.added_date.timestamp())
-            # 下载量
-            downloaded = int(torrent.total_size * torrent.progress / 100)
-            # 分享率
-            ratio = torrent.ratio or 0
-            # 上传量
-            uploaded = int(downloaded * torrent.ratio)
-            # 平均上传速度
-            if dltime:
-                avg_upspeed = int(uploaded / dltime)
-            else:
-                avg_upspeed = uploaded
-            # 未活动时间
-            if not torrent.activity_date or torrent.activity_date.timestamp() < 1:
-                iatime = 0
-            else:
-                iatime = date_now - int(torrent.activity_date.timestamp())
-            # 种子大小
-            total_size = torrent.total_size
-            # 添加时间
-            add_time = time.strftime('%Y-%m-%d %H:%M:%S',
-                                     time.localtime(torrent.added_date.timestamp() if torrent.added_date else 0))
-            # 状态
-            status = torrent.status.value
-
-        return {
-            "id": torrent_id,
-            "seeding_time": seeding_time,
-            "ratio": ratio,
-            "uploaded": uploaded,
-            "downloaded": downloaded,
-            "avg_upspeed": avg_upspeed,
-            "iatime": iatime,
-            "dltime": dltime,
-            "total_size": total_size,
-            "add_time": add_time,
-            "status": status
-        }
-
     def stop_service(self):
         """
         停止服务
@@ -1238,8 +1124,6 @@ class BrushTask(object):
         if not downloader_cfg:
             log.warn("【Brush】任务 %s 下载器不存在" % task_name)
             return
-        # 下载器的类型
-        downloader_type = downloader_cfg.get("type")
         # 下载器名称
         downlaod_name = downloader_cfg.get("name")
         # 查询下载器中正在下载的所有种子
@@ -1250,14 +1134,11 @@ class BrushTask(object):
             log.warn("【Brush】任务 %s 获取正在下载种子失败" % task_name)
             return
         for torrent in torrents:
-            torrent_info = self.__get_torrent_dict(downloader_type=downloader_type,
-                                                    torrent=torrent)
-
-            torrent_id = torrent_info.get('id')
+            torrent_id = torrent.id
             # 种子名称
-            torrent_name = torrent.get('name')
+            torrent_name = torrent.name
             # 种子添加时间
-            add_time = torrent_info.get("add_time")
+            add_time = torrent.add_time
             if torrent_id_maps.get(torrent_id):
                 enclosure = torrent_id_maps.get(torrent_id)
                 tid = StringUtils.get_tid_by_url(enclosure)

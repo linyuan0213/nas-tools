@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import urlsplit
 
+from app.entities import torrent
 import log
 from app.conf import ModuleConf
 from app.conf import SystemConfig
@@ -607,7 +608,7 @@ class Downloader:
                                                         tags=task.get("tags"))
                 log.info(f"【Downloader】下载器 {name} 下载文件转移结束")
 
-    def get_torrents(self, downloader_id=None, ids=None, tag=None):
+    def get_torrents(self, downloader_id=None, ids=None, tag=None) -> list[torrent.Torrent]:
         """
         获取种子信息
         :param downloader_id: 下载器ID
@@ -648,7 +649,7 @@ class Downloader:
         torrents.sort(key=lambda x: x.get("name"))
         return torrents
 
-    def get_downloading_torrents(self, downloader_id=None, ids=None, tag=None):
+    def get_downloading_torrents(self, downloader_id=None, ids=None, tag=None) -> list[torrent.Torrent]:
         """
         查询正在下载中的种子信息
         :return: 下载器名称，发生错误时返回None
@@ -681,7 +682,7 @@ class Downloader:
             tag = None
         return _client.get_downloading_progress(tag=tag, ids=ids)
 
-    def get_completed_torrents(self, downloader_id=None, ids=None, tag=None):
+    def get_completed_torrents(self, downloader_id=None, ids=None, tag=None) -> list[torrent.Torrent]:
         """
         查询下载完成的种子列表
         :param downloader_id: 下载器ID

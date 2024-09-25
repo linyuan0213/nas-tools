@@ -2,9 +2,12 @@ import os.path
 import re
 import time
 from datetime import datetime
+from typing import Tuple
 
 import transmission_rpc
 
+from app.entities.torrentstatus import TorrentStatus
+from app.entities.torrent import Torrent
 import log
 from app.utils import ExceptionUtils, StringUtils
 from app.utils.types import DownloaderType
@@ -23,7 +26,7 @@ class Transmission(_IDownloadClient):
     _trarg = ["id", "name", "status", "labels", "hashString", "totalSize", "percentDone", "addedDate", "trackerStats",
               "leftUntilDone", "rateDownload", "rateUpload", "recheckProgress", "rateDownload", "rateUpload",
               "peersGettingFromUs", "peersSendingToUs", "uploadRatio", "uploadedEver", "downloadedEver", "downloadDir",
-              "error", "errorString", "doneDate", "queuePosition", "activityDate", "trackers"]
+              "error", "errorString", "doneDate", "queuePosition", "activityDate", "trackers", "secondsSeeding", "eta"]
 
     # 私有属性
     _client_config = {}
@@ -95,7 +98,7 @@ class Transmission(_IDownloadClient):
             ids = int(ids)
         return ids
 
-    def get_torrents(self, ids=None, status=None, tag=None):
+    def get_torrents(self, ids=None, status=None, tag=None) -> Tuple[list[Torrent], bool]:
         """
         获取种子列表
         返回结果 种子列表, 是否有错误
@@ -105,6 +108,9 @@ class Transmission(_IDownloadClient):
         ids = self.__parse_ids(ids)
         try:
             torrents = self.trc.get_torrents(ids=ids, arguments=self._trarg)
+            torrent_list: list[Torrent] = []
+            for torrent in torrents:
+                torrent_list.append(self.torrent_properties(torrent=torrent))
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return [], True
@@ -113,7 +119,7 @@ class Transmission(_IDownloadClient):
         if tag and not isinstance(tag, list):
             tag = [tag]
         ret_torrents = []
-        for torrent in torrents:
+        for torrent in torrent_list:
             if status and torrent.status not in status:
                 continue
             labels = torrent.labels if hasattr(torrent, "labels") else []
@@ -127,7 +133,7 @@ class Transmission(_IDownloadClient):
                 ret_torrents.append(torrent)
         return ret_torrents, False
 
-    def get_completed_torrents(self, ids=None, tag=None):
+    def get_completed_torrents(self, ids=None, tag=None) -> list[Torrent]:
         """
         获取已完成的种子列表
         return 种子列表, 发生错误时返回None
@@ -135,13 +141,13 @@ class Transmission(_IDownloadClient):
         if not self.trc:
             return None
         try:
-            torrents, error = self.get_torrents(status=["seeding", "seed_pending"], ids=ids, tag=tag)
+            torrents, error = self.get_torrents(status=[TorrentStatus.Uploading], ids=ids, tag=tag)
             return None if error else torrents or []
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return None
 
-    def get_downloading_torrents(self, ids=None, tag=None):
+    def get_downloading_torrents(self, ids=None, tag=None) -> list[Torrent]:
         """
         获取正在下载的种子列表
         return 种子列表, 发生错误时返回None
@@ -150,7 +156,7 @@ class Transmission(_IDownloadClient):
             return None
         try:
             torrents, error = self.get_torrents(ids=ids,
-                                                status=["downloading", "download_pending"],
+                                                status=[TorrentStatus.Downloading],
                                                 tag=tag)
             return None if error else torrents or []
         except Exception as err:
@@ -279,10 +285,6 @@ class Transmission(_IDownloadClient):
         torrents = self.get_completed_torrents() or []
         trans_tasks = []
         for torrent in torrents:
-            # 3.0版本以下的Transmission没有labels
-            if not hasattr(torrent, "labels"):
-                log.error(f"【{self.client_name}】{self.name} 版本可能过低，无labels属性，请安装3.0以上版本！")
-                break
             torrent_tags = torrent.labels or ""
             # 含"已整理"tag的不处理
             if "已整理" in torrent_tags:
@@ -291,7 +293,7 @@ class Transmission(_IDownloadClient):
             if tag and tag not in torrent_tags:
                 log.debug(f"【{self.client_name}】{self.name} 开启标签隔离， {torrent.name} 未包含指定标签：{tag}")
                 continue
-            path = torrent.download_dir
+            path = torrent.save_path
             # 无法获取下载路径的不处理
             if not path:
                 log.debug(f"【{self.client_name}】{self.name} 未获取到 {torrent.name} 下载保存路径")
@@ -303,7 +305,7 @@ class Transmission(_IDownloadClient):
                 continue
             trans_tasks.append({
                 'path': os.path.join(true_path, torrent.name).replace("\\", "/"),
-                'id': torrent.hashString,
+                'id': torrent.id,
                 'tags': torrent.labels
             })
         return trans_tasks
@@ -331,22 +333,18 @@ class Transmission(_IDownloadClient):
         upload_avs = config.get("upload_avs")
         savepath_key = config.get("savepath_key")
         tracker_key = config.get("tracker_key")
-        tr_error_key = config.get("tr_error_key")
         for torrent in torrents:
-            date_done = torrent.done_date or torrent.added_date
-            date_now = int(time.mktime(datetime.now().timetuple()))
-            torrent_seeding_time = date_now - int(time.mktime(date_done.timetuple())) if date_done else 0
-            torrent_uploaded = torrent.ratio * torrent.total_size
-            torrent_upload_avs = torrent_uploaded / torrent_seeding_time if torrent_seeding_time else 0
+            torrent_seeding_time = torrent.seeding_time
+            torrent_upload_avs = torrent.avg_upload_speed
             if ratio and torrent.ratio <= ratio:
                 continue
             if seeding_time and torrent_seeding_time <= seeding_time * 3600:
                 continue
-            if size and (torrent.total_size >= maxsize or torrent.total_size <= minsize):
+            if size and (torrent.size >= maxsize or torrent.size <= minsize):
                 continue
             if upload_avs and torrent_upload_avs >= upload_avs * 1024:
                 continue
-            if savepath_key and not re.findall(savepath_key, torrent.download_dir, re.I):
+            if savepath_key and not re.findall(savepath_key, torrent.save_path, re.I):
                 continue
             if tracker_key:
                 if not torrent.trackers:
@@ -354,32 +352,30 @@ class Transmission(_IDownloadClient):
                 else:
                     tacker_key_flag = False
                     for tracker in torrent.trackers:
-                        if re.findall(tracker_key, tracker.get("announce", ""), re.I):
+                        if re.findall(tracker_key, tracker, re.I):
                             tacker_key_flag = True
                             break
                     if not tacker_key_flag:
                         continue
-            if tr_error_key and not re.findall(tr_error_key, torrent.error_string, re.I):
-                continue
             remove_torrents.append({
-                "id": torrent.hashString,
+                "id": torrent.id,
                 "name": torrent.name,
-                "site": torrent.trackers[0].get("sitename") if torrent.trackers else "",
-                "size": torrent.total_size
+                "site": StringUtils.get_url_sld(torrent.trackers[0]) if torrent.trackers else "",
+                "size": torrent.size
             })
-            remove_torrents_ids.append(torrent.hashString)
+            remove_torrents_ids.append(torrent.id)
         if config.get("samedata") and remove_torrents:
             remove_torrents_plus = []
             for remove_torrent in remove_torrents:
                 name = remove_torrent.get("name")
                 size = remove_torrent.get("size")
                 for torrent in torrents:
-                    if torrent.name == name and torrent.total_size == size and torrent.hashString not in remove_torrents_ids:
+                    if torrent.name == name and torrent.size == size and torrent.id not in remove_torrents_ids:
                         remove_torrents_plus.append({
-                            "id": torrent.hashString,
+                            "id": torrent.id,
                             "name": torrent.name,
-                            "site": torrent.trackers[0].get("sitename") if torrent.trackers else "",
-                            "size": torrent.total_size
+                            "site": StringUtils.get_url_sld(torrent.trackers[0]) if torrent.trackers else "",
+                            "size": torrent.size
                         })
             remove_torrents_plus += remove_torrents
             return remove_torrents_plus
@@ -516,24 +512,19 @@ class Transmission(_IDownloadClient):
         Torrents = self.get_downloading_torrents(tag=tag, ids=ids) or []
         DispTorrents = []
         for torrent in Torrents:
-            if torrent.status in ['stopped']:
+            if torrent.status in [TorrentStatus.Stopped]:
                 state = "Stoped"
                 speed = "已暂停"
             else:
                 state = "Downloading"
-                if hasattr(torrent, "rate_download"):
-                    _dlspeed = StringUtils.str_filesize(torrent.rate_download)
-                else:
-                    _dlspeed = StringUtils.str_filesize(torrent.rateDownload)
-                if hasattr(torrent, "rate_upload"):
-                    _upspeed = StringUtils.str_filesize(torrent.rate_upload)
-                else:
-                    _upspeed = StringUtils.str_filesize(torrent.rateUpload)
+
+                _dlspeed = StringUtils.str_filesize(torrent.download_speed)
+                _upspeed = StringUtils.str_filesize(torrent.upload_speed)
                 speed = "%s%sB/s %s%sB/s" % (chr(8595), _dlspeed, chr(8593), _upspeed)
             # 进度
-            progress = round(torrent.progress)
+            progress = round(torrent.progress) * 100
             DispTorrents.append({
-                'id': torrent.hashString,
+                'id': torrent.id,
                 'name': torrent.name,
                 'speed': speed,
                 'state': state,
@@ -588,3 +579,77 @@ class Transmission(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return
+
+    def torrent_properties(self, torrent):
+        # 当前时间戳
+        date_now = int(time.time())
+
+        torrent_obj = Torrent()
+        torrent_obj.id = torrent.hashString
+        torrent_obj.name = torrent.name
+        # 做种时间
+        if not torrent.done_date or torrent.done_date.timestamp() < 1:
+            torrent_obj.seeding_time = 0
+        else:
+            torrent_obj.seeding_time = date_now - int(torrent.done_date.timestamp())
+        # 下载耗时
+        if not torrent.added_date or torrent.added_date.timestamp() < 1:
+            torrent_obj.download_time = 0
+        else:
+            torrent_obj.download_time = date_now - int(torrent.added_date.timestamp())
+        # 下载量
+        torrent_obj.downloaded = int(torrent.total_size * torrent.progress / 100)
+
+        # 分享率
+        torrent_obj.ratio = torrent.ratio or 0
+        
+        # 上传量
+        torrent_obj.uploaded = int(torrent_obj.downloaded * torrent.ratio)
+
+        # 平均上传速度
+        torrent_obj.avg_upload_speed = torrent.uploaded_ever / torrent.seconds_seeding if torrent.seconds_seeding != 0 else 0
+        
+        # 未活动时间
+        if not torrent.activity_date or torrent.activity_date.timestamp() < 1:
+            torrent_obj.iatime = 0
+        else:
+            torrent_obj.iatime = date_now - int(torrent.activity_date.timestamp())
+
+        # 种子大小
+        torrent_obj.size = torrent.total_size
+
+        # 状态
+        torrent_obj.status = Transmission._judge_status(torrent.status.name, torrent.error)
+        # 标签
+        torrent_obj.labels = torrent.labels if hasattr(torrent, "labels") else []
+        # tracker
+        torrent_obj.trackers = [tracker.announce for tracker in torrent.trackers]
+        # 下载速度
+        torrent_obj.download_speed = torrent.rate_download
+        # 上传速度
+        torrent_obj.upload_speed = torrent.rate_upload
+        # eta
+        torrent_obj.eta = torrent.eta
+        # 下载进度
+        torrent_obj.progress = torrent.percent_done
+        # 保存路径
+        torrent_obj.save_path = torrent.download_dir
+        
+        return torrent_obj
+
+    @staticmethod
+    def _judge_status(state, errno):
+        if errno != 0:
+            return TorrentStatus.Error
+        else:
+            state_mapping = {
+                "STOPPED": TorrentStatus.Stopped,
+                "CHECK_PENDING": TorrentStatus.Queued,
+                "CHECKING": TorrentStatus.Checking,
+                "DOWNLOAD_PENDING": TorrentStatus.Pending,
+                "DOWNLOADING": TorrentStatus.Downloading,
+                "SEED_PENDING": TorrentStatus.Queued,
+                "SEEDING": TorrentStatus.Uploading,
+                "UNKNOWN": TorrentStatus.Unknown
+            }
+            return state_mapping.get(state, TorrentStatus.Unknown)

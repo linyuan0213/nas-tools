@@ -10,6 +10,8 @@ from jinja2 import Template
 from lxml import etree
 
 from app.downloader import Downloader
+from app.entities.torrent import Torrent
+from app.entities.torrentstatus import TorrentStatus
 from app.media.meta import MetaInfo
 from app.plugins.modules._base import _IPluginModule
 from app.plugins.modules.iyuu.iyuu_helper import IyuuHelper
@@ -32,11 +34,11 @@ class IYUUAutoSeed(_IPluginModule):
     # 主题色
     module_color = "#F3B70B"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
-    module_author = "jxxghp"
+    module_author = "linyuan0213"
     # 作者主页
-    author_url = "https://github.com/jxxghp"
+    author_url = "https://github.com/linyuan0213"
     # 插件配置项ID前缀
     module_config_prefix = "iyuuautoseed_"
     # 加载顺序
@@ -417,7 +419,7 @@ class IYUUAutoSeed(_IPluginModule):
             # 下载器类型
             downloader_type = self.downloader.get_downloader_type(downloader_id=downloader)
             # 获取下载器中已完成的种子
-            torrents = self.downloader.get_completed_torrents(downloader_id=downloader)
+            torrents: list[Torrent] = self.downloader.get_completed_torrents(downloader_id=downloader)
             if torrents:
                 self.info(f"下载器 {downloader} 已完成种子数：{len(torrents)}")
             else:
@@ -429,13 +431,13 @@ class IYUUAutoSeed(_IPluginModule):
                     self.info(f"辅种服务停止")
                     return
                 # 获取种子hash
-                hash_str = self.__get_hash(torrent, downloader_type)
+                hash_str = torrent.id
                 if hash_str in self._error_caches or hash_str in self._permanent_error_caches:
                     self.info(f"种子 {hash_str} 辅种失败且已缓存，跳过 ...")
                     continue
-                save_path = self.__get_save_path(torrent, downloader_type)
+                save_path = torrent.save_path
                 # 获取种子标签
-                torrent_labels = self.__get_label(torrent, downloader_type)
+                torrent_labels = torrent.labels
                 if torrent_labels and self._nolabels:
                     is_skip = False
                     for label in self._nolabels.split(','):
@@ -494,17 +496,15 @@ class IYUUAutoSeed(_IPluginModule):
             if not recheck_torrents:
                 continue
             self.info(f"开始检查下载器 {downloader} 的校验任务 ...")
-            # 下载器类型
-            downloader_type = self.downloader.get_downloader_type(downloader_id=downloader)
             # 获取下载器中的种子
-            torrents = self.downloader.get_torrents(downloader_id=downloader,
+            torrents: list[Torrent] = self.downloader.get_torrents(downloader_id=downloader,
                                                     ids=recheck_torrents)
             if torrents:
                 can_seeding_torrents = []
                 for torrent in torrents:
                     # 获取种子hash
-                    hash_str = self.__get_hash(torrent, downloader_type)
-                    if self.__can_seeding(torrent, downloader_type):
+                    hash_str = torrent.id
+                    if self.__can_seeding(torrent):
                         can_seeding_torrents.append(hash_str)
                 if can_seeding_torrents:
                     self.info(f"共 {len(can_seeding_torrents)} 个任务校验完成，开始辅种 ...")
@@ -734,49 +734,11 @@ class IYUUAutoSeed(_IPluginModule):
             return True
 
     @staticmethod
-    def __get_hash(torrent, dl_type):
-        """
-        获取种子hash
-        """
-        try:
-            return torrent.get("hash") if dl_type == DownloaderType.QB else torrent.hashString
-        except Exception as e:
-            print(str(e))
-            return ""
-
-    @staticmethod
-    def __get_label(torrent, dl_type):
-        """
-        获取种子标签
-        """
-        try:
-            return torrent.get("tags") or [] if dl_type == DownloaderType.QB else torrent.labels or []
-        except Exception as e:
-            print(str(e))
-            return []
-
-    @staticmethod
-    def __can_seeding(torrent, dl_type):
+    def __can_seeding(torrent: Torrent):
         """
         判断种子是否可以做种并处于暂停状态
         """
-        try:
-            return torrent.get("state") == "pausedUP" if dl_type == DownloaderType.QB \
-                else (torrent.status.stopped and torrent.percent_done == 1)
-        except Exception as e:
-            print(str(e))
-            return False
-
-    @staticmethod
-    def __get_save_path(torrent, dl_type):
-        """
-        获取种子保存路径
-        """
-        try:
-            return torrent.get("save_path") if dl_type == DownloaderType.QB else torrent.download_dir
-        except Exception as e:
-            print(str(e))
-            return ""
+        return torrent.status in [TorrentStatus.Paused, TorrentStatus.Stopped] and torrent.progress >= 1
 
     def __get_download_url(self, seed, site, base_url):
         """

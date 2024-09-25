@@ -11,7 +11,7 @@ class Torrent:
     downloaded: int = 0                                 # 下载量
     uploaded: int = 0                                   # 上传量
     ratio: float = 0                                    # 分享率
-    add_time: str = None                                  # 种子添加时间
+    add_time: str = None                                # 种子添加时间
     seeding_time: int = 0                               # 做种时间
     download_time: int = 0                              # 下载时间
     avg_upload_speed: float = 0                         # 平均上传速度
@@ -20,7 +20,7 @@ class Torrent:
     status: TorrentStatus = None                        # 种子状态
     save_path: str = None                               # 保存路径
     content_path: str = None                            # 文件完整路径
-    tracker: str = None                                 # 种子tracker
+    trackers: List[str] = field(default_factory=list)   # 种子tracker
     category: List[str] = field(default_factory=list)   # 种子分类
     progress: float = 0                                 # 种子进度
     download_speed: int = 0                             # 下载速度

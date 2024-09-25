@@ -1,1 +1,1 @@
-APP_VERSION = 'v3.5.7'
+APP_VERSION = 'beta-brush'

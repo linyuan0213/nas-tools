@@ -5,9 +5,9 @@ import pytz
 from apscheduler.triggers.cron import CronTrigger
 
 from app.downloader import Downloader
+from app.entities.torrent import Torrent
 from app.message import Message
 from app.plugins.modules._base import _IPluginModule
-from app.utils.types import DownloaderType
 from config import Config
 
 from app.scheduler_service import SchedulerService
@@ -24,7 +24,7 @@ class TorrentMark(_IPluginModule):
     # 主题色
     module_color = "#4876b6"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
     module_author = "linyuan0213"
     # 作者主页
@@ -193,9 +193,9 @@ class TorrentMark(_IPluginModule):
                     self.info(f"标记服务停止")
                     return
                 # 获取种子hash
-                hash_str = self.__get_hash(torrent, downloader_type)
+                hash_str = torrent.id
                 # 获取种子标签
-                torrent_tags = set(self.__get_tag(torrent, downloader_type))
+                torrent_tags = set(torrent.labels)
                 pt_flag = self.__isPt(torrent, downloader_type)
                 torrent_tags.discard("")
                 if pt_flag is True:
@@ -209,50 +209,16 @@ class TorrentMark(_IPluginModule):
         self.info("标记任务执行完成")
 
     @staticmethod
-    def __get_hash(torrent, dl_type):
-        """
-        获取种子hash
-        """
-        try:
-            return torrent.get("hash") if dl_type == DownloaderType.QB else torrent.hashString
-        except Exception as e:
-            print(str(e))
-            return ""
-
-    @staticmethod
-    def __get_tag(torrent, dl_type):
+    def __isPt(torrent: Torrent):
         """
         获取种子标签
         """
-        try:
-            return list(map(lambda s: s.strip(), (torrent.get("tags") or "").split(","))) if dl_type == DownloaderType.QB else torrent.labels or []
-        except Exception as e:
-            print(str(e))
-            return []
-
-    @staticmethod
-    def __isPt(torrent, dl_type):
-        """
-        获取种子标签
-        """
-        try:
-            tracker_list = list()
-            if dl_type == DownloaderType.QB and torrent.trackers_count == 1:
-                for tracker in torrent.trackers.data:
-                    if tracker['url'].find('http') != -1:
-                        tracker_list.append(tracker['url'])
-            elif dl_type == DownloaderType.TR:
-                tracker_list = list(map(lambda s: s['announce'], torrent.trackers or []))
-            if len(tracker_list) == 1:
-                if tracker_list[0].find("secure=") != -1 \
-                    or tracker_list[0].find("passkey=") != -1 \
-                        or tracker_list[0].find("totheglory") != -1:
-                    return True
-            else:
-                return False
-        except Exception as e:
-            print(str(e))
-            return False
+        tracker_list = torrent.trackers
+        if len(tracker_list) <= 5:
+            keywords = ["secure=", "passkey=", "totheglory", "credential=", "tracker.zhuque.in", "announce?uid="]
+            if any(keyword in tracker_list[0] for keyword in keywords):
+                return True
+        return False
 
     def stop_service(self):
         """

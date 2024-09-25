@@ -205,7 +205,7 @@ class Qbittorrent(_IDownloadClient):
                     if include_flag:
                         results.append(torrent)
                 return results or [], False
-            return torrents or [], False
+            return torrent_list or [], False
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return [], True
@@ -268,7 +268,7 @@ class Qbittorrent(_IDownloadClient):
             if error_flag:
                 return None
             for torrent in torrents:
-                old_tags = list(map(lambda s: s.strip(), (torrent.get("tags") or "").split(",")))
+                old_tags = torrent.labels
                 self.qbc.torrents_remove_tags(old_tags, torrent_hashes=ids)
                 self.qbc.torrents_add_tags(tags, torrent_hashes=ids)
         except Exception as err:
@@ -359,8 +359,17 @@ class Qbittorrent(_IDownloadClient):
                 continue
             if savepath_key and not re.findall(savepath_key, torrent.save_path, re.I):
                 continue
-            if tracker_key and not re.findall(tracker_key, torrent.tracker, re.I):
-                continue
+            if tracker_key:
+                if not torrent.trackers:
+                    continue
+                else:
+                    tacker_key_flag = False
+                    for tracker in torrent.trackers:
+                        if re.findall(tracker_key, tracker, re.I):
+                            tacker_key_flag = True
+                            break
+                    if not tacker_key_flag:
+                        continue
             #TODO
             if qb_state and torrent.status.name not in qb_state:
                 continue
@@ -369,10 +378,10 @@ class Qbittorrent(_IDownloadClient):
             remove_torrents.append({
                 "id": torrent.id,
                 "name": torrent.name,
-                "site": StringUtils.get_url_sld(torrent.tracker),
+                "site": StringUtils.get_url_sld(torrent.trackers[0]) if torrent.trackers else "",
                 "size": torrent.size
             })
-            remove_torrents_ids.append(torrent.hash)
+            remove_torrents_ids.append(torrent.id)
         if config.get("samedata") and remove_torrents:
             remove_torrents_plus = []
             for remove_torrent in remove_torrents:
@@ -401,7 +410,7 @@ class Qbittorrent(_IDownloadClient):
             ExceptionUtils.exception_traceback(err)
             return None
         if torrents:
-            return torrents[0].get("hash")
+            return torrents[0].id
         else:
             return None
 
@@ -630,7 +639,7 @@ class Qbittorrent(_IDownloadClient):
         for torrent in Torrents:
             # 进度
             progress = round(torrent.progress * 100, 1)
-            if torrent.status.name in ['Paused']:
+            if torrent.status in [TorrentStatus.Paused]:
                 state = "Stoped"
                 speed = "已暂停"
             else:
@@ -692,13 +701,42 @@ class Qbittorrent(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return
+        
+    def _get_torrent_trackers(self, torrent_hash):
+        """
+        获取种子tracker列表
+        """
+        if not self.qbc:
+            return
+        try:
+            tracker_list = self.qbc.torrents_trackers(torrent_hash=torrent_hash)
+            return tracker_list
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+            return
     
+    def _get_torrent_generic_properties(self, torrent_hash):
+        """
+        获取种子常用信息
+        """
+        if not self.qbc:
+            return
+        try:
+            properties = self.qbc.torrents_properties(torrent_hash=torrent_hash)
+            return properties
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+            return
+      
     def torrent_properties(self, torrent):
         # 当前时间戳
         date_now = int(time.time())
 
         torrent_obj = Torrent()
+        properties = self._get_torrent_generic_properties(torrent.get("hash"))
+        
         torrent_obj.id = torrent.get("hash")
+        torrent_obj.name = torrent.get("name")
         # 下载时间
         torrent_obj.download_time = date_now - \
             torrent.get("added_on") if torrent.get("added_on") else 0
@@ -710,12 +748,8 @@ class Qbittorrent(_IDownloadClient):
         torrent_obj.ratio = torrent.get("ratio") or 0
             # 上传量
         torrent_obj.uploaded = torrent.get("uploaded") or 0
-        #TODO 平均上传速度
         # 平均上传速度 Byte/s
-        # if dltime:
-        #     avg_upspeed = int(uploaded / dltime)
-        # else:
-        #     avg_upspeed = uploaded
+        torrent_obj.avg_upload_speed = properties.get("up_speed_avg")
         # 已未活动 秒
         torrent_obj.iatime = date_now - \
                 torrent.get("last_activity") if torrent.get(
@@ -723,7 +757,7 @@ class Qbittorrent(_IDownloadClient):
         # 下载量
         torrent_obj.downloaded = torrent.get("downloaded")
         # 种子大小
-        torrent_obj.total_size = torrent.get("total_size")
+        torrent_obj.size = torrent.get("total_size")
         # 添加时间
         torrent_obj.add_time = time.strftime(
                 '%Y-%m-%d %H:%M:%S', time.localtime(torrent.get("added_on") or 0))
@@ -736,18 +770,26 @@ class Qbittorrent(_IDownloadClient):
         # 分类
         torrent_obj.category = list(map(lambda s: s.strip(), (torrent.get("category") or "").split(",")))
         # tracker
-        torrent_obj.tracker = torrent.get("tracker")
+        torrent_obj.trackers = [tracker.get('url') for tracker in self._get_torrent_trackers(torrent_hash=torrent.get("hash")) if not any(keyword in tracker.get('url', '') for keyword in ['DHT', 'PeX', 'LSD'])]
         # 下载速度
         torrent_obj.download_speed = torrent.get('dlspeed')
         # 上传速度
         torrent_obj.upload_speed = torrent.get('upspeed')
         # eta
         torrent_obj.eta = torrent.get('eta')
+        # 下载进度
+        torrent_obj.progress = torrent.get('progress')
+        # 保存路径
+        torrent_obj.save_path = torrent.get('save_path')
+
+        return torrent_obj
 
     @staticmethod
     def _judge_status(state):
-        if state == 'downloading' or state == 'stalledDL':
+        if state == 'downloading':
             status = TorrentStatus.Downloading
+        elif state == 'stalledDL':
+            status = TorrentStatus.Pending
         elif state == 'queuedDL' or state == 'queuedUP':
             status = TorrentStatus.Queued
         elif state == 'uploading' or state == 'stalledUP':

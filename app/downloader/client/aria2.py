@@ -1,6 +1,8 @@
 import os
 import re
 
+from app.entities.torrent import Torrent
+from app.entities.torrentstatus import TorrentStatus
 import log
 from app.utils import RequestUtils, ExceptionUtils, StringUtils
 from app.utils.types import DownloaderType
@@ -56,10 +58,11 @@ class Aria2(_IDownloadClient):
         ver = self._client.getVersion()
         return True if ver else False
 
-    def get_torrents(self, ids=None, status=None, **kwargs):
+    def get_torrents(self, ids=None, status=None, **kwargs) -> list[Torrent]:
         if not self._client:
             return []
         ret_torrents = []
+        torrent_list: list[Torrent] = []
         if ids:
             if isinstance(ids, list):
                 for gid in ids:
@@ -71,7 +74,9 @@ class Aria2(_IDownloadClient):
                 ret_torrents = self._client.tellActive() or [] + self._client.tellWaiting(offset=-1, num=100) or []
             else:
                 ret_torrents = self._client.tellStopped(offset=-1, num=1000)
-        return ret_torrents
+        for torrent in ret_torrents:
+            torrent_list.append(self.torrent_properties(torrent=torrent))
+        return torrent_list
 
     def get_downloading_torrents(self, **kwargs):
         return self.get_torrents(status="downloading")
@@ -88,18 +93,18 @@ class Aria2(_IDownloadClient):
         torrents = self.get_completed_torrents()
         trans_tasks = []
         for torrent in torrents:
-            name = torrent.get('bittorrent', {}).get('info', {}).get("name")
+            name = torrent.name
             if not name:
                 continue
-            path = torrent.get("dir")
+            path = torrent.save_path
             if not path:
                 continue
             true_path, replace_flag = self.get_replace_path(path, self.download_dir)
             # 开启目录隔离，未进行目录替换的不处理
             if match_path and not replace_flag:
-                log.debug(f"【{self.client_name}】{self.name} 开启目录隔离，但 {torrent['bittorrent']['info']['name']} 未匹配下载目录范围")
+                log.debug(f"【{self.client_name}】{self.name} 开启目录隔离，但 {torrent.name} 未匹配下载目录范围")
                 continue
-            trans_tasks.append({'path': os.path.join(true_path, name).replace("\\", "/"), 'id': torrent.get("gid")})
+            trans_tasks.append({'path': os.path.join(true_path, name).replace("\\", "/"), 'id': torrent.id})
         return trans_tasks
 
     def get_remove_torrents(self, **kwargs):
@@ -151,21 +156,21 @@ class Aria2(_IDownloadClient):
         for torrent in Torrents:
             # 进度
             try:
-                progress = round(int(torrent.get('completedLength')) / int(torrent.get("totalLength")), 1) * 100
+                progress = torrent.progress * 100
             except ZeroDivisionError:
                 progress = 0.0
-            if torrent.get('status') in ['paused']:
+            if torrent.status in [TorrentStatus.Stopped]:
                 state = "Stoped"
                 speed = "已暂停"
             else:
                 state = "Downloading"
-                _dlspeed = StringUtils.str_filesize(torrent.get('downloadSpeed'))
-                _upspeed = StringUtils.str_filesize(torrent.get('uploadSpeed'))
+                _dlspeed = StringUtils.str_filesize(torrent.download_speed)
+                _upspeed = StringUtils.str_filesize(torrent.upload_speed)
                 speed = "%s%sB/s %s%sB/s" % (chr(8595), _dlspeed, chr(8593), _upspeed)
 
             DispTorrents.append({
-                'id': torrent.get('gid'),
-                'name': torrent.get('bittorrent', {}).get('info', {}).get("name"),
+                'id': torrent.id,
+                'name': torrent.name,
                 'speed': speed,
                 'state': state,
                 'progress': progress
@@ -212,3 +217,35 @@ class Aria2(_IDownloadClient):
 
     def get_free_space(self, path: str):
         pass
+
+    def torrent_properties(self, torrent):
+
+        torrent_obj = Torrent()
+        torrent_obj.id = torrent.get('gid')
+        torrent_obj.name = torrent.get('bittorrent', {}).get('info', {}).get("name")
+        # 种子大小
+        torrent_obj.size = int(torrent.get("totalLength"))
+        # 下载量
+        torrent_obj.downloaded = int(torrent.get('completedLength'))
+        # 状态
+        torrent_obj.status = Aria2._judge_status(torrent.get('status'))
+        # 下载速度
+        torrent_obj.download_speed = torrent.get('downloadSpeed')
+        # 上传速度
+        torrent_obj.upload_speed = torrent.get('uploadSpeed')
+        # 下载进度
+        torrent_obj.progress = round(int(torrent.get('completedLength')) / int(torrent.get("totalLength")), 1)
+        # 保存路径
+        torrent_obj.save_path = torrent.get("dir")
+        
+        return torrent_obj
+
+    @staticmethod
+    def _judge_status(state):
+        state_mapping = {
+            "paused": TorrentStatus.Stopped,
+            "downloading": TorrentStatus.Downloading,
+            "completed": TorrentStatus.Uploading,
+            "UNKNOWN": TorrentStatus.Unknown
+        }
+        return state_mapping.get(state, TorrentStatus.Unknown)
