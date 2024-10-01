@@ -377,6 +377,15 @@
         <div class="row">
           <div class="col-lg-4">
             <div class="mb-3">
+              <label class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="brushtask_exclude_subscribe">
+                <span class="form-check-label">排除订阅 <span class="form-help" title="开启后任务不会下载在订阅中的剧集"
+                                                              data-bs-toggle="tooltip">?</span></span>
+              </label>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
               <label class="form-label">促销 <span class="form-help"
                                                    title="选全部即不过滤会下载到非促销的种子，免费包括2X免费"
                                                    data-bs-toggle="tooltip">?</span></label>
@@ -870,6 +879,13 @@
           let peercount_strs = peercount_str.split('#');
           filter_item_change(peercount_strs[0], 'brushtask_peercount', $('#brushtask_peercount_do_' + peercount_strs[0]), peercount_strs[1])
         }
+
+        // 排除订阅
+        if (ret.task.rss_rule.exclude_subscribe === "Y") {
+          $("#brushtask_exclude_subscribe").prop("checked", true);
+        } else {
+          $("#brushtask_exclude_subscribe").prop("checked", false);
+        }
         //做种时间
         if (ret.task.remove_rule.time) {
           let seedtime_str = ret.task.remove_rule.time.split('#');
@@ -1250,6 +1266,9 @@
       }
       $("#brushtask_freespace").removeClass("is-invalid");
     }
+
+    // 排除订阅
+    let brushtask_exclude_subscribe = $("#brushtask_exclude_subscribe").prop('checked');
     // 参数
     const params = {
       brushtask_id: brushtask_id,
@@ -1285,6 +1304,7 @@
       brushtask_pending_time: brushtask_pending_time_do + "#" + brushtask_pending_time,
       brushtask_stopfree: brushtask_stopfree,
       brushtask_freespace: brushtask_freespace_do + "#" + brushtask_freespace,
+      brushtask_exclude_subscribe: brushtask_exclude_subscribe
     };
 
     ajax_post("add_brushtask", params, function (ret) {

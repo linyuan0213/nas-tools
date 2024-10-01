@@ -1958,6 +1958,7 @@ class WebAction:
         brushtask_stopfree = 'Y' if data.get("brushtask_stopfree") else 'N'
         brushtask_freespace = data.get("brushtask_freespace")
         brushtask_mode = data.get("brushtask_mode")
+        brushtask_exclude_subscribe = 'Y' if data.get("brushtask_exclude_subscribe") else 'N'
         # 选种规则
         rss_rule = {
             "free": brushtask_free,
@@ -1969,7 +1970,8 @@ class WebAction:
             "peercount": brushtask_peercount,
             "pubdate": brushtask_pubdate,
             "upspeed": brushtask_upspeed,
-            "downspeed": brushtask_downspeed
+            "downspeed": brushtask_downspeed,
+            "exclude_subscribe": brushtask_exclude_subscribe
         }
         # 删除规则
         remove_rule = {

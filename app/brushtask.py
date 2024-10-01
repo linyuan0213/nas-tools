@@ -11,6 +11,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.entities.torrent import Torrent
 from app.entities.torrentstatus import TorrentStatus
+from app.media.media import Media
+from app.subscribe import Subscribe
 from config import Config
 import log
 from app.downloader import Downloader
@@ -21,7 +23,7 @@ from app.message import Message
 from app.sites import Sites, SiteConf
 from app.utils import StringUtils, ExceptionUtils, JsonUtils
 from app.utils.commons import singleton
-from app.utils.types import BrushDeleteType, BrushStopType
+from app.utils.types import BrushDeleteType, BrushStopType, MediaType
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -658,7 +660,8 @@ class BrushTask(object):
                 "free": lambda rule_value: BrushTask._check_free_status(rule_value, torrent_attr),
                 "hr": lambda rule_value: not torrent_attr.get("hr"),
                 "peercount": lambda rule_value: BrushTask._check_peer_count(rule_value, torrent_attr.get("peer_count")),
-                "pubdate": lambda rule_value: BrushTask._check_pubdate(rule_value, pubdate, torrent_attr)
+                "pubdate": lambda rule_value: BrushTask._check_pubdate(rule_value, pubdate, torrent_attr),
+                "exclude_subscribe": lambda rule_value: not BrushTask._check_subscribe_status(rule_value, title)
             }
 
             # 遍历规则并进行检查
@@ -672,6 +675,139 @@ class BrushTask(object):
 
         return True
 
+
+    @staticmethod
+    def _check_subscribe_status(rule_value, title):
+        """
+        排除已订阅的媒体
+        """
+        if rule_value == "N":
+            return False
+        media = Media()
+        subscribe = Subscribe()
+        log.info("【Brush】开始排除已订阅媒体...")
+        # 读取电影订阅
+        rss_movies = subscribe.get_subscribe_movies(state='R')
+        if not rss_movies:
+            log.warn("【Brush】没有正在订阅的电影")
+        else:
+            log.info("【Brush】电影订阅清单：%s"
+                        % " ".join('%s' % info.get("name") for _, info in rss_movies.items()))
+        # 读取电视剧订阅
+        rss_tvs = subscribe.get_subscribe_tvs(state='R')
+        if not rss_tvs:
+            log.warn("【Brush】没有正在订阅的电视剧")
+        else:
+            log.info("【Brush】电视剧订阅清单：%s"
+                        % " ".join('%s' % info.get("name") for _, info in rss_tvs.items()))
+        # 没有订阅退出
+        if not rss_movies and not rss_tvs:
+            return False
+        
+        # 识别种子名称，开始搜索TMDB
+        media_info = MetaInfo(title=title)
+        cache_info = media.get_cache_info(media_info)
+        if cache_info.get("id"):
+            # 使用缓存信息
+            media_info.tmdb_id = cache_info.get("id")
+            media_info.type = cache_info.get("type")
+            media_info.title = cache_info.get("title")
+            media_info.year = cache_info.get("year")
+        else:
+            # 重新查询TMDB
+            media_info = media.get_media_info(title=title)
+            if not media_info:
+                log.warn(f"【Brush】{title} 无法识别出媒体信息！")
+                return
+            elif not media_info.tmdb_info:
+                log.info(f"【Brush】{title} 识别为 {media_info.get_name()} 未匹配到TMDB媒体信息")
+        
+        match_flag = False
+        match_rss_info = {}
+        # 匹配电影
+        if media_info.type == MediaType.MOVIE and rss_movies:
+            for rid, rss_info in rss_movies.items():
+                # tmdbid或名称年份匹配
+                name = rss_info.get('name')
+                year = rss_info.get('year')
+                tmdbid = rss_info.get('tmdbid')
+                fuzzy_match = rss_info.get('fuzzy_match')
+                # 非模糊匹配
+                if not fuzzy_match:
+                    # 有tmdbid时使用tmdbid匹配
+                    if tmdbid and not tmdbid.startswith("DB:"):
+                        if str(media_info.tmdb_id) != str(tmdbid):
+                            continue
+                    else:
+                        # 豆瓣年份与tmdb取向不同
+                        if year and str(media_info.year) not in [str(year),
+                                                                 str(int(year) + 1),
+                                                                 str(int(year) - 1)]:
+                            continue
+                        if name != media_info.title:
+                            continue
+                # 模糊匹配
+                else:
+                    # 匹配年份
+                    if year and str(year) != str(media_info.year):
+                        continue
+                    # 匹配关键字或正则表达式
+                    search_title = f"{media_info.rev_string} {media_info.title} {media_info.year}"
+                    if not re.search(name, search_title, re.I) and name not in search_title:
+                        continue
+                # 媒体匹配成功
+                match_flag = True
+                match_rss_info = rss_info
+
+                break
+        # 匹配电视剧
+        elif rss_tvs:
+            # 匹配种子标题
+            for rid, rss_info in rss_tvs.items():
+                rss_sites = rss_info.get('rss_sites')
+                # 过滤订阅站点
+                if rss_sites and media_info.site not in rss_sites:
+                    continue
+                # 有tmdbid时精确匹配
+                name = rss_info.get('name')
+                year = rss_info.get('year')
+                season = rss_info.get('season')
+                tmdbid = rss_info.get('tmdbid')
+                fuzzy_match = rss_info.get('fuzzy_match')
+                # 非模糊匹配
+                if not fuzzy_match:
+                    if tmdbid and not tmdbid.startswith("DB:"):
+                        if str(media_info.tmdb_id) != str(tmdbid):
+                            continue
+                    else:
+                        # 匹配年份，年份可以为空
+                        if year and str(year) != str(media_info.year):
+                            continue
+                        # 匹配名称
+                        if name != media_info.title:
+                            continue
+                    # 匹配季，季可以为空
+                    if season and season != media_info.get_season_string():
+                        continue
+                # 模糊匹配
+                else:
+                    # 匹配季，季可以为空
+                    if season and season != "S00" and season != media_info.get_season_string():
+                        continue
+                    # 匹配年份
+                    if year and str(year) != str(media_info.year):
+                        continue
+                    # 匹配关键字或正则表达式
+                    search_title = f"{media_info.rev_string} {media_info.title} {media_info.year}"
+                    if not re.search(name, search_title, re.I) and name not in search_title:
+                        continue
+                # 媒体匹配成功
+                match_flag = True
+                match_rss_info = rss_info
+                break
+        log.info(f"【Brush】匹配到媒体: {match_rss_info}")
+        return match_flag, match_rss_info      
+    
     @staticmethod
     def _check_free_status(rule_value, torrent_attr):
         """
