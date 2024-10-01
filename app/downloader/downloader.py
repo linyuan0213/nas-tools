@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import urlsplit
 
+from app.downloader.client._base import _IDownloadClient
 from app.entities import torrent
 import log
 from app.conf import ModuleConf
@@ -245,7 +246,7 @@ class Downloader:
         # self._scheduler.print_jobs(jobstore=self._jobstore)
         log.info("下载文件转移服务启动，目的目录：媒体库")
 
-    def __get_client(self, did=None):
+    def __get_client(self, did=None) -> _IDownloadClient:
         if not did:
             return None
         downloader_conf = self.get_downloader_conf(did)
@@ -1592,3 +1593,14 @@ class Downloader:
                if token:
                    return f'{base_url}/api/torrent/download1?token={token}'
                return ''
+
+    def get_free_space(self, downloader_id,  path: str):
+        """
+        获取磁盘剩余空间
+        """
+        if not downloader_id:
+            downloader_id = self.default_downloader_id
+        _client = self.__get_client(downloader_id)
+        if not _client:
+            return None
+        return _client.get_free_space(path)

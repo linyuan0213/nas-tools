@@ -574,6 +574,9 @@ class Transmission(_IDownloadClient):
     def get_free_space(self, path: str):
         if not self.trc:
             return
+        if not path:
+            log.error(f"【{self.client_name}】{self.name} 未设置保存路径，获取磁盘剩余空间失败")
+            return
         try:
             return self.trc.free_space(path)
         except Exception as err:

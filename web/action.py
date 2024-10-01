@@ -1956,6 +1956,8 @@ class WebAction:
         brushtask_downspeed = data.get("brushtask_downspeed")
         brushtask_pending_time = data.get("brushtask_pending_time")
         brushtask_stopfree = 'Y' if data.get("brushtask_stopfree") else 'N'
+        brushtask_freespace = data.get("brushtask_freespace")
+        brushtask_mode = data.get("brushtask_mode")
         # 选种规则
         rss_rule = {
             "free": brushtask_free,
@@ -1971,6 +1973,7 @@ class WebAction:
         }
         # 删除规则
         remove_rule = {
+            "mode": brushtask_mode,
             "time": brushtask_seedtime,
             "hr_time": brushtask_hr_seedtime,
             "ratio": brushtask_seedratio,
@@ -1978,7 +1981,8 @@ class WebAction:
             "dltime": brushtask_dltime,
             "avg_upspeed": brushtask_avg_upspeed,
             "iatime": brushtask_iatime,
-            "pending_time": brushtask_pending_time
+            "pending_time": brushtask_pending_time,
+            "freespace": brushtask_freespace
         }
         # 停种规则
         stop_rule = {

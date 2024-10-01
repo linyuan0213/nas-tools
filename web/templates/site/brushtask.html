@@ -538,6 +538,19 @@
         <div class="row">
           <div class="col-lg-4">
             <div class="mb-3">
+              <label class="form-label">删种模式 <span class="form-help"
+                                                   title="或模式 满足其中一个删除 与模式全部满足删除"
+                                                   data-bs-toggle="tooltip">?</span></label>
+              <select class="form-select" id="brushtask_mode">
+                <option value="or" selected>或</option>
+                <option value="and">与</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-4">
+            <div class="mb-3">
               <label class="form-label">做种时间(小时) <span class="form-help" title="做种超过设定时间时会删除下载任务"
                                                              data-bs-toggle="tooltip">?</span></label>
               <div class="input-group">
@@ -730,6 +743,31 @@
               </div>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">磁盘剩余空间(GB)<span class="form-help"
+                                                                 title="检查周期内磁盘剩余空间低于设定值时删除下载任务"
+                                                                 data-bs-toggle="tooltip">?</span></label>
+              <div class="input-group">
+                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false" id="brushtask_freespace_btn">
+                  忽略
+                </button>
+                <input type="hidden" id="brushtask_freespace_do">
+                <div class="dropdown-menu" style="">
+                  <a class="dropdown-item" id="brushtask_freespace_do_" href="javascript:void(0)"
+                     onclick="filter_item_change('', 'brushtask_freespace',$(this))">
+                    忽略
+                  </a>
+                  <a class="dropdown-item" id="brushtask_freespace_do_lt" href="javascript:void(0)"
+                     onclick="filter_item_change('lt', 'brushtask_freespace',$(this))">
+                    小于
+                  </a>
+                </div>
+                <input type="text" class="form-control" id="brushtask_freespace" readonly>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="hr-text hr-text-center hr-text-spaceless mt-1 mb-3">停种规则（或）</div>
         <div class="row">
@@ -888,6 +926,17 @@
         } else {
           $("#brushtask_stopfree").prop("checked", false);
         }
+
+        //磁盘剩余空间
+        if (ret.task.remove_rule.freespace) {
+          let freespace_str = ret.task.remove_rule.freespace.split('#');
+          filter_item_change(freespace_str[0], 'brushtask_freespace', $('#brushtask_freespace_do_' + freespace_str[0]), freespace_str[1])
+        }
+        
+        // 删种模式
+        if (ret.task.remove_rule.mode) {
+          $("#brushtask_mode").val(ret.task.remove_rule.mode);
+        }
         //弹窗
         $("#modal-brushtask").modal('show');
       }
@@ -1001,6 +1050,7 @@
     let brushtask_transfer = $("#brushtask_transfer").prop('checked');
     let brushtask_sendmessage = $("#brushtask_sendmessage").prop('checked');
     let brushtask_free = $("#brushtask_free").val();
+    let brushtask_mode = $("#brushtask_mode").val();
     let brushtask_hr = $("#brushtask_hr").val();
     //种子大小
     let brushtask_torrent_size_do = $("#brushtask_torrent_size_do").val();
@@ -1187,6 +1237,19 @@
     // 暂停种子
     let brushtask_stopfree = $("#brushtask_stopfree").prop('checked');
 
+    //磁盘剩余空间
+    let brushtask_freespace_do = $("#brushtask_freespace_do").val();
+    let brushtask_freespace = $("#brushtask_freespace").val();
+    if (brushtask_freespace_do && !brushtask_freespace) {
+      $("#brushtask_freespace").addClass("is-invalid");
+      return;
+    } else {
+      if (brushtask_freespace && isNaN(brushtask_freespace)) {
+        $("#brushtask_freespace").addClass("is-invalid");
+        return;
+      }
+      $("#brushtask_freespace").removeClass("is-invalid");
+    }
     // 参数
     const params = {
       brushtask_id: brushtask_id,
@@ -1202,6 +1265,7 @@
       brushtask_transfer: brushtask_transfer,
       brushtask_sendmessage: brushtask_sendmessage,
       brushtask_free: brushtask_free,
+      brushtask_mode: brushtask_mode,
       brushtask_hr: brushtask_hr,
       brushtask_torrent_size: brushtask_torrent_size_do + "#" + brushtask_torrent_size,
       brushtask_include: brushtask_include,
@@ -1219,7 +1283,8 @@
       brushtask_downspeed: brushtask_downspeed,
       brushtask_pubdate: brushtask_pubdate_do + "#" + brushtask_pubdate,
       brushtask_pending_time: brushtask_pending_time_do + "#" + brushtask_pending_time,
-      brushtask_stopfree: brushtask_stopfree
+      brushtask_stopfree: brushtask_stopfree,
+      brushtask_freespace: brushtask_freespace_do + "#" + brushtask_freespace,
     };
 
     ajax_post("add_brushtask", params, function (ret) {

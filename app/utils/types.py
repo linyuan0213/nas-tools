@@ -82,6 +82,7 @@ class BrushDeleteType(Enum):
     IATIME = "未活动时间"
     PENDINGTIME = "等待时间"
     HRSEEDTIME = "H&R 做种时间"
+    FREESPACE = "磁盘剩余空间"
 
 
 class BrushStopType(Enum):

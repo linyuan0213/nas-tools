@@ -689,7 +689,7 @@ class Qbittorrent(_IDownloadClient):
             ExceptionUtils.exception_traceback(err)
             return False
 
-    def get_free_space(self, path):
+    def get_free_space(self, path: str):
         """
         获取剩余空间，Qbittorrent 不支持根据目录检查剩余空间
         """
