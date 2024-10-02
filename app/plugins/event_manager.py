@@ -1,12 +1,11 @@
 from queue import Queue, Empty
 
 import log
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import EventType
 
 
-@singleton
-class EventManager:
+class EventManager(metaclass=SingletonMeta):
     """
     事件管理器
     """

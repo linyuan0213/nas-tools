@@ -5,7 +5,7 @@ import log
 from app.helper import DbHelper
 from app.indexer import Indexer
 from app.plugins import EventManager
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 from app.message import Message
 from app.downloader import Downloader
@@ -14,8 +14,7 @@ from app.helper import ProgressHelper
 from app.utils.types import SearchType, EventType, ProgressKey
 
 
-@singleton
-class Searcher:
+class Searcher(metaclass=SingletonMeta):
     downloader = None
     media = None
     message = None

@@ -15,15 +15,14 @@ from app.plugins import EventManager
 from app.searcher import Searcher
 from app.sites import Sites
 from app.utils import Torrent
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType, SearchType, EventType, SystemConfigKey, RssType
 from web.backend.web_utils import WebUtils
 
 lock = Lock()
 
 
-@singleton
-class Subscribe:
+class Subscribe(metaclass=SingletonMeta):
     dbhelper = None
     metahelper = None
     searcher = None

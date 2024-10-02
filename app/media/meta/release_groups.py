@@ -1,9 +1,8 @@
 import regex as re
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class ReleaseGroupsMatcher(object):
+class ReleaseGroupsMatcher(metaclass=SingletonMeta):
     """
     识别制作组、字幕组
     """

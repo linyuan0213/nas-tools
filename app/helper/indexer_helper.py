@@ -2,12 +2,11 @@ import os.path
 import pickle
 
 from app.utils import StringUtils, ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 
 
-@singleton
-class IndexerHelper:
+class IndexerHelper(metaclass=SingletonMeta):
     _indexers = []
 
     def __init__(self):

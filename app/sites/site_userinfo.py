@@ -11,14 +11,13 @@ from app.helper import SubmoduleHelper, DbHelper, DrissionPageHelper
 from app.message import Message
 from app.sites.sites import Sites
 from app.utils import RequestUtils, ExceptionUtils, StringUtils, JsonUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 
 lock = Lock()
 
 
-@singleton
-class SiteUserInfo(object):
+class SiteUserInfo(metaclass=SingletonMeta):
     sites = None
     dbhelper = None
     message = None

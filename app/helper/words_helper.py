@@ -2,12 +2,11 @@ import regex as re
 import cn2an
 
 from app.helper.db_helper import DbHelper
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.exception_utils import ExceptionUtils
 
 
-@singleton
-class WordsHelper:
+class WordsHelper(metaclass=SingletonMeta):
     dbhelper = None
     # 识别词
     words_info = []

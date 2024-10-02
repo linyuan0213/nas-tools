@@ -5,13 +5,12 @@ import log
 from app.helper import ProgressHelper, SubmoduleHelper, DbHelper
 from app.indexer.client import BuiltinIndexer
 from app.utils import ExceptionUtils, StringUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import SearchType, IndexerType, ProgressKey
 from config import Config
 
 
-@singleton
-class Indexer(object):
+class Indexer(metaclass=SingletonMeta):
     _indexer_schemas = []
     _client = None
     _client_type = None

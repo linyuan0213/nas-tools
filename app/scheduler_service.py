@@ -1,4 +1,3 @@
-import fcntl
 import os
 
 import log
@@ -8,14 +7,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.util import undefined
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 from app.utils import ExceptionUtils, RedisStore
 from app.queue import scheduler_queue
 
 
-@singleton
-class SchedulerService:
+class SchedulerService(metaclass=SingletonMeta):
     SCHEDULER = None
     INSTANCE = ""
     redis_store = None

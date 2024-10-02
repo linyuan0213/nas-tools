@@ -1,11 +1,10 @@
 from enum import Enum
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import ProgressKey
 
 
-@singleton
-class ProgressHelper(object):
+class ProgressHelper(metaclass=SingletonMeta):
     _process_detail = {}
 
     def __init__(self):

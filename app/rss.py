@@ -11,14 +11,13 @@ from app.media.meta import MetaInfo
 from app.sites import Sites, SiteConf
 from app.subscribe import Subscribe
 from app.utils import ExceptionUtils, Torrent, JsonUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType, SearchType
 
 lock = Lock()
 
 
-@singleton
-class Rss:
+class Rss(metaclass=SingletonMeta):
     filter = None
     media = None
     sites = None

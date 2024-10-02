@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
 import threading
 import time
-from collections import OrderedDict
 
-# 线程锁
-lock = threading.RLock()
+class SingletonMeta(type):
+    """
+    定义一个元类，用来实现单例模式
+    """
+    _instances = {}
+    _lock = threading.RLock()
 
-# 全局实例
-INSTANCES = OrderedDict()
-
-
-# 单例模式注解
-def singleton(cls):
-    # 创建字典用来保存类的实例对象
-    global INSTANCES
-
-    def _singleton(*args, **kwargs):
-        # 先判断这个类有没有对象
-        if cls not in INSTANCES:
-            with lock:
-                if cls not in INSTANCES:
-                    INSTANCES[cls] = cls(*args, **kwargs)
-                    pass
-        # 将实例对象返回
-        return INSTANCES[cls]
-
-    return _singleton
+    def __call__(cls, *args, **kwargs):
+        # 实现单例，检查是否已经有实例存在
+        if cls not in cls._instances:
+            with cls._lock:
+                if cls not in cls._instances:
+                    # 使用父类的 __call__ 创建类的实例
+                    cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 # 重试装饰器

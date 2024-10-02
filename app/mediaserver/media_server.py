@@ -8,7 +8,7 @@ from app.helper import ProgressHelper, SubmoduleHelper
 from app.media import Media
 from app.message import Message
 from app.utils import ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaServerType, MovieTypes, SystemConfigKey, ProgressKey
 from config import Config
 
@@ -16,8 +16,7 @@ lock = threading.Lock()
 server_lock = threading.Lock()
 
 
-@singleton
-class MediaServer:
+class MediaServer(metaclass=SingletonMeta):
     _mediaserver_schemas = []
 
     _server_type = None

@@ -5,11 +5,10 @@ from lxml import etree
 import datetime
 
 from app.utils import RequestUtils, ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class DoubanWeb(object):
+class DoubanWeb(metaclass=SingletonMeta):
 
     _session = requests.Session()
 

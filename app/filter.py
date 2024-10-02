@@ -5,12 +5,12 @@ from app.conf import ModuleConf
 from app.helper import DbHelper
 from app.media.meta import ReleaseGroupsMatcher
 from app.utils import StringUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType
 
 
-@singleton
-class Filter:
+
+class Filter(metaclass=SingletonMeta):
     rg_matcher = None
     dbhelper = None
     _groups = []

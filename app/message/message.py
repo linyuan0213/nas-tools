@@ -8,14 +8,13 @@ from app.conf import ModuleConf
 from app.helper import DbHelper, SubmoduleHelper
 from app.message.message_center import MessageCenter
 from app.utils import StringUtils, ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import SearchType, MediaType
 from config import Config
 from web.backend.web_utils import WebUtils
 
 
-@singleton
-class Message(object):
+class Message(metaclass=SingletonMeta):
     dbhelper = None
     messagecenter = None
     _message_schemas = []

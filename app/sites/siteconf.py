@@ -14,13 +14,12 @@ from urllib.parse import urlsplit
 from app.helper.drissionpage_helper import DrissionPageHelper
 from app.sites import Sites
 from app.utils import ExceptionUtils, StringUtils, RequestUtils, JsonUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import MT_URL, Config
 import log
 
 
-@singleton
-class SiteConf:
+class SiteConf(metaclass=SingletonMeta):
     # 站点签到支持的识别XPATH
     _SITE_CHECKIN_XPATH = [
         '//a[@id="signed"]',

@@ -1,10 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class ThreadHelper:
+class ThreadHelper(metaclass=SingletonMeta):
     _thread_num = 100
     executor = None
 

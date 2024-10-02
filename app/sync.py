@@ -11,7 +11,7 @@ from app.conf import ModuleConf
 from app.filetransfer import FileTransfer
 from app.helper import DbHelper
 from app.utils import PathUtils, ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import SyncType
 from config import RMT_MEDIAEXT
 
@@ -40,8 +40,7 @@ class FileMonitorHandler(FileSystemEventHandler):
     """
 
 
-@singleton
-class Sync(object):
+class Sync(metaclass=SingletonMeta):
     filetransfer = None
     dbhelper = None
 

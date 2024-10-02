@@ -18,7 +18,7 @@ from app.rsschecker import RssChecker
 from app.torrentremover import TorrentRemover
 from app.utils import SchedulerUtils, StringUtils
 from app.utils.reflect_utils import ReflectUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import METAINFO_SAVE_INTERVAL, \
     SYNC_TRANSFER_INTERVAL, RSS_CHECK_INTERVAL, \
     RSS_REFRESH_TMDB_INTERVAL, META_DELETE_UNKNOWN_INTERVAL, REFRESH_WALLPAPER_INTERVAL, Config
@@ -28,8 +28,7 @@ from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
 
 
-@singleton
-class Scheduler:
+class Scheduler(metaclass=SingletonMeta):
     scheduler = None
     _pt = None
     _douban = None

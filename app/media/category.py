@@ -6,11 +6,10 @@ import ruamel.yaml
 import log
 from app.utils import ExceptionUtils
 from config import Config
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class Category:
+class Category(metaclass=SingletonMeta):
     _category_path = None
     _categorys = None
     _tv_categorys = None

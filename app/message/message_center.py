@@ -2,11 +2,10 @@ import datetime
 import time
 from collections import deque
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class MessageCenter:
+class MessageCenter(metaclass=SingletonMeta):
     _message_queue = deque(maxlen=50)
     _message_index = 0
 

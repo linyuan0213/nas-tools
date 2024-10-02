@@ -1,12 +1,11 @@
 import json
 
 from app.helper import DictHelper
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import SystemConfigKey
 
 
-@singleton
-class SystemConfig:
+class SystemConfig(metaclass=SingletonMeta):
     # 系统设置
     systemconfig = {}
 

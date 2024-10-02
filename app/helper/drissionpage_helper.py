@@ -3,7 +3,7 @@ from typing import Callable, Tuple
 from loguru import logger
 
 from app.helper.cloudflare_helper import under_challenge
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import CHROME_PATH
 
 JS_SCRIPT = """
@@ -56,8 +56,7 @@ EventTarget.prototype.addEventListener = function(type, listener, options) {
 };
 """
 
-@singleton
-class DrissionPageHelper:
+class DrissionPageHelper(metaclass=SingletonMeta):
 
     def __init__(self):
         self.co = ChromiumOptions()

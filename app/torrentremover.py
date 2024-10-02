@@ -7,15 +7,14 @@ from app.downloader import Downloader
 from app.helper import DbHelper
 from app.message import Message
 from app.utils import ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
 
 lock = Lock()
 
 
-@singleton
-class TorrentRemover(object):
+class TorrentRemover(metaclass=SingletonMeta):
     message = None
     downloader = None
     dbhelper = None

@@ -10,11 +10,10 @@ from urllib import parse
 import requests
 
 from app.utils import RequestUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class DoubanApi(object):
+class DoubanApi(metaclass=SingletonMeta):
     _urls = {
         # 搜索类
         # sort=U:近期热门 T:标记最多 S:评分最高 R:最新上映

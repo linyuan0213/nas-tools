@@ -9,14 +9,13 @@ from app.media.doubanapi import DoubanApi, DoubanWeb
 from app.media.meta import MetaInfo
 from app.utils import ExceptionUtils, StringUtils
 from app.utils import RequestUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType
 
 lock = Lock()
 
 
-@singleton
-class DouBan:
+class DouBan(metaclass=SingletonMeta):
     cookie = None
     doubanapi = None
     doubanweb = None

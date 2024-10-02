@@ -6,7 +6,7 @@ from enum import Enum
 from threading import RLock
 
 from app.utils import ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 
 lock = RLock()
@@ -15,8 +15,7 @@ CACHE_EXPIRE_TIMESTAMP_STR = "cache_expire_timestamp"
 EXPIRE_TIMESTAMP = 7 * 24 * 3600
 
 
-@singleton
-class MetaHelper(object):
+class MetaHelper(metaclass=SingletonMeta):
     """
     {
         "id": '',

@@ -7,12 +7,11 @@ from app.helper import SiteHelper, DbHelper, DrissionPageHelper
 from app.message import Message
 from app.sites.site_limiter import SiteRateLimiter
 from app.utils import RequestUtils, StringUtils, JsonUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import MT_URL, Config
 
 
-@singleton
-class Sites:
+class Sites(metaclass=SingletonMeta):
     message = None
     dbhelper = None
 

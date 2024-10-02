@@ -16,15 +16,14 @@ from app.message import Message
 from app.searcher import Searcher
 from app.subscribe import Subscribe
 from app.utils import RequestUtils, StringUtils, ExceptionUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType, SearchType, RssType
 from config import Config
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
 
 
-@singleton
-class RssChecker(object):
+class RssChecker(metaclass=SingletonMeta):
     message = None
     searcher = None
     filter = None

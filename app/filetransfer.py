@@ -17,7 +17,7 @@ from app.media.meta import MetaInfo
 from app.message import Message
 from app.plugins import EventManager
 from app.utils import EpisodeFormat, PathUtils, StringUtils, SystemUtils, ExceptionUtils, NumberUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType, SyncType, RmtMode, EventType, ProgressKey, MovieTypes
 from config import RMT_AUDIO_TRACK_EXT, RMT_SUBEXT, RMT_MEDIAEXT, RMT_FAVTYPE, RMT_MIN_FILESIZE, DEFAULT_MOVIE_FORMAT, \
     DEFAULT_TV_FORMAT, Config
@@ -25,8 +25,7 @@ from config import RMT_AUDIO_TRACK_EXT, RMT_SUBEXT, RMT_MEDIAEXT, RMT_FAVTYPE, R
 lock = Lock()
 
 
-@singleton
-class FileTransfer:
+class FileTransfer(metaclass=SingletonMeta):
     media = None
     message = None
     category = None

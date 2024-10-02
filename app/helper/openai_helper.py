@@ -3,12 +3,11 @@ import json
 import openai
 
 from app.utils import OpenAISessionCache
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from config import Config
 
 
-@singleton
-class OpenAiHelper:
+class OpenAiHelper(metaclass=SingletonMeta):
     _api_key = None
     _api_url = None
 

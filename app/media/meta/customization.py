@@ -1,9 +1,8 @@
 import regex as re
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class CustomizationMatcher(object):
+class CustomizationMatcher(metaclass=SingletonMeta):
     """
     识别自定义占位符
     """

@@ -3,11 +3,10 @@ import json
 import time
 
 from app.utils import RequestUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class IyuuHelper(object):
+class IyuuHelper(metaclass=SingletonMeta):
     _version = "2.0.0"
     _api_base = "http://dev.iyuu.cn%s"
     _sites = {}

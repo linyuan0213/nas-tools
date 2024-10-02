@@ -7,13 +7,12 @@ from app.conf import SystemConfig
 from app.helper import SubmoduleHelper
 from app.plugins.event_manager import EventManager
 from app.utils import SystemUtils, PathUtils, ImageUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import SystemConfigKey
 from config import Config
 
 
-@singleton
-class PluginManager:
+class PluginManager(metaclass=SingletonMeta):
     """
     插件管理器
     """

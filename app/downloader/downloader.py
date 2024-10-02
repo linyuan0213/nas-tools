@@ -19,7 +19,7 @@ from app.message import Message
 from app.plugins import EventManager
 from app.sites import Sites, SiteSubtitle, SiteConf
 from app.utils import Torrent, StringUtils, SystemUtils, ExceptionUtils, NumberUtils, RequestUtils, JsonUtils
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.types import MediaType, DownloaderType, SearchType, RmtMode, EventType, SystemConfigKey
 from config import MT_URL, Config, PT_TAG, RMT_MEDIAEXT, PT_TRANSFER_INTERVAL
 
@@ -30,8 +30,7 @@ lock = Lock()
 client_lock = Lock()
 
 
-@singleton
-class Downloader:
+class Downloader(metaclass=SingletonMeta):
     # 客户端实例
     clients = {}
 

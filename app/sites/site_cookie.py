@@ -1,19 +1,13 @@
 import base64
-import time
 
-from lxml import etree
-
-import log
-from app.helper import ProgressHelper, OcrHelper, SiteHelper
+from app.helper import ProgressHelper, OcrHelper
 from app.sites.siteconf import SiteConf
 from app.sites.sites import Sites
-from app.utils import StringUtils, RequestUtils, ExceptionUtils
-from app.utils.commons import singleton
-from app.utils.types import ProgressKey
+from app.utils import StringUtils, RequestUtils
+from app.utils.commons import SingletonMeta
 
 
-@singleton
-class SiteCookie(object):
+class SiteCookie(metaclass=SingletonMeta):
     progress = None
     sites = None
     siteconf = None

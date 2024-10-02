@@ -1,9 +1,8 @@
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils.redis_store import RedisStore
 
-@singleton
-class CookiecloudHelper:
+class CookiecloudHelper(metaclass=SingletonMeta):
     def __init__(self):
       self.redis_store = RedisStore()
     

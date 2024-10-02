@@ -2,13 +2,12 @@ import os
 
 from pyvirtualdisplay import Display
 
-from app.utils.commons import singleton
+from app.utils.commons import SingletonMeta
 from app.utils import ExceptionUtils
 from config import XVFB_PATH
 
 
-@singleton
-class DisplayHelper(object):
+class DisplayHelper(metaclass=SingletonMeta):
     _display = None
 
     def __init__(self):

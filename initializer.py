@@ -12,7 +12,6 @@ from app.helper import DbHelper, PluginHelper
 from app.plugins import PluginManager
 from app.media import Category
 from app.utils import ConfigLoadCache, CategoryLoadCache, ExceptionUtils, StringUtils
-from app.utils.commons import INSTANCES
 from app.utils.types import SystemConfigKey
 from config import Config
 from web.action import WebAction
@@ -365,10 +364,6 @@ class ConfigMonitor(FileSystemEventHandler):
             time.sleep(1)
             # 重新加载配置
             Config().init_config()
-            # 重载singleton服务
-            for instance in INSTANCES.values():
-                if hasattr(instance, "init_config"):
-                    instance.init_config()
         # 正在使用的二级分类策略文件3秒内只能加载一次，配置文件加载时，二级分类策略文件不加载
         elif file_name == os.path.basename(Config().category_path) \
                 and not CategoryLoadCache.get(src_path) \
