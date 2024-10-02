@@ -13,6 +13,7 @@ from app.entities.torrent import Torrent
 from app.entities.torrentstatus import TorrentStatus
 from app.media.media import Media
 from app.subscribe import Subscribe
+from app.utils.commons import SingletonMeta
 from config import Config
 import log
 from app.downloader import Downloader
@@ -22,7 +23,6 @@ from app.media.meta import MetaInfo
 from app.message import Message
 from app.sites import Sites, SiteConf
 from app.utils import StringUtils, ExceptionUtils, JsonUtils
-from app.utils.commons import singleton
 from app.utils.types import BrushDeleteType, BrushStopType, MediaType
 
 from app.scheduler_service import SchedulerService
@@ -30,8 +30,7 @@ from app.queue import scheduler_queue
 from app.utils import RedisStore
 
 
-@singleton
-class BrushTask(object):
+class BrushTask(metaclass=SingletonMeta):
     message = None
     sites = None
     siteconf = None
@@ -314,9 +313,9 @@ class BrushTask(object):
                 # 检查种子是否符合选种规则
                 if not self.__check_rss_rule(rss_rule=rss_rule,
                                              title=torrent_name,
-                                             torrent_url=page_url,
                                              torrent_size=size,
-                                             pubdate=pubdate):
+                                             pubdate=pubdate,
+                                             torrent_attr=torrent_attr):
                     continue
                 # 检查能否添加当前种子，判断是否超过保种体积大小
                 if not self.__is_allow_new_torrent(taskinfo=taskinfo,
@@ -372,7 +371,7 @@ class BrushTask(object):
                 f"分享比率：{_ratio}\n"
                 f"添加时间：{_add_time}\n"
                 f"删除时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}\n"
-                f"删除规则：{_delete_type.value}"
+                f"删除规则：{_delete_type}"
             )
             self.message.send_brushtask_remove_message(title=_msg_title, text=_msg_text)
 
@@ -394,6 +393,7 @@ class BrushTask(object):
                 log.debug("【Brush】%s 解析详情 %s" %
                             (torrent_url, torrent_attr))
                 torrent_params = {
+                    "seeding_time": torrent.seeding_time,
                     "ratio": round(torrent.ratio or 0, 2),
                     "uploaded": torrent.uploaded,
                     "iatime": torrent.iatime,
@@ -407,7 +407,11 @@ class BrushTask(object):
 
                 need_delete, delete_type = self.__check_remove_rule(remove_rule, torrent_params)
                 if need_delete:
-                    log.info(f"【Brush】{torrent.name} 达到删种条件：{delete_type.value}，删除任务...")
+                    if isinstance(delete_type, list):
+                        delete_type = ",".join([d.value for d in delete_type])
+                    else:
+                        delete_type = delete_type.value
+                    log.info(f"【Brush】{torrent.name} 达到删种条件：{delete_type}，删除任务...")
                     self.redis_store.hdel('torrent', torrent_id)
                     if sendmessage:
                         __send_message(task_name, delete_type, torrent.name, downloader_cfg.get("name"),
@@ -569,7 +573,7 @@ class BrushTask(object):
         download_dir = taskinfo.get("savepath")
 
         
-        torrent_attr = self.get_torrent_attr(site_info, enclosure)
+        _, torrent_attr = self.get_torrent_attr(site_info, enclosure)
         hr_tag = []
         if torrent_attr.get("hr"):
             hr_tag = ['HR']
@@ -654,20 +658,22 @@ class BrushTask(object):
         try:
             # 规则检查字典
             rule_checks = {
-                "size": lambda rule_value: BrushTask.check_range_rule(rule_value, torrent_size, 1024 ** 3),
+                "size": lambda rule_value: BrushTask.check_range_rule(torrent_size, rule_value, 1024 ** 3),
                 "include": lambda rule_value: re.search(rule_value, title, re.IGNORECASE),
                 "exclude": lambda rule_value: not re.search(rule_value, title, re.IGNORECASE),
-                "free": lambda rule_value: BrushTask._check_free_status(rule_value, torrent_attr),
+                "free": lambda rule_value: BrushTask._check_free_status(torrent_attr, rule_value),
                 "hr": lambda rule_value: not torrent_attr.get("hr"),
-                "peercount": lambda rule_value: BrushTask._check_peer_count(rule_value, torrent_attr.get("peer_count")),
-                "pubdate": lambda rule_value: BrushTask._check_pubdate(rule_value, pubdate, torrent_attr),
-                "exclude_subscribe": lambda rule_value: not BrushTask._check_subscribe_status(rule_value, title)
+                "peercount": lambda rule_value: BrushTask._check_peer_count(torrent_attr.get("peer_count"), rule_value),
+                "pubdate": lambda rule_value: BrushTask._check_pubdate(pubdate, torrent_attr, rule_value),
+                "exclude_subscribe": lambda rule_value: not BrushTask._check_subscribe_status(title, rule_value)
             }
 
             # 遍历规则并进行检查
             for rule, check_func in rule_checks.items():
                 rule_value = rss_rule.get(rule)
+                log.debug(f"检查字段: {rule}, 规则值: {rule_value}")
                 if rule_value and not check_func(rule_value):
+                    log.debug(f"字段: {rule} 不符合规则")
                     return False
 
         except Exception as err:
@@ -677,7 +683,7 @@ class BrushTask(object):
 
 
     @staticmethod
-    def _check_subscribe_status(rule_value, title):
+    def _check_subscribe_status(title, rule_value):
         """
         排除已订阅的媒体
         """
@@ -806,10 +812,10 @@ class BrushTask(object):
                 match_rss_info = rss_info
                 break
         log.info(f"【Brush】匹配到媒体: {match_rss_info}")
-        return match_flag, match_rss_info      
+        return match_flag   
     
     @staticmethod
-    def _check_free_status(rule_value, torrent_attr):
+    def _check_free_status(torrent_attr, rule_value):
         """
         检查免费状态
         :param rule_value: 规则中的 free 值
@@ -823,21 +829,22 @@ class BrushTask(object):
         return True
 
     @staticmethod
-    def _check_peer_count(rule_value, torrent_peer_count):
+    def _check_peer_count(torrent_peer_count, rule_value):
         """
         检查做种人数
-        :param rule_value: 规则中的 peercount 值
         :param torrent_peer_count: 种子的做种人数
+        :param rule_value: 规则中的 peercount 值
         :return: 是否符合条件
         """
-        return BrushTask.check_range_rule(rule_value, torrent_peer_count)
+        return BrushTask.check_range_rule(torrent_peer_count, rule_value)
 
-    def _check_pubdate(rule_value, pubdate, torrent_attr):
+    @staticmethod
+    def _check_pubdate(pubdate, torrent_attr, rule_value):
         """
         检查发布时间
-        :param rule_value: 规则中的 pubdate 值
         :param pubdate: 种子发布时间
         :param torrent_attr: 种子属性字典
+        :param rule_value: 规则中的 pubdate 值
         :return: 是否符合条件
         """
         if torrent_attr.get("pubdate"):
@@ -845,8 +852,8 @@ class BrushTask(object):
             pubdate = dateutil.parser.parse(local_time_str).replace(tzinfo=timezone(timedelta(hours=8)))
 
         if pubdate:
-            pubdate_hours = (datetime.now() - pubdate).total_seconds() / 3600
-            return BrushTask.check_range_rule(rule_value, pubdate_hours, unit=1)
+            pubdate_hours = (datetime.now(pytz.utc) - pubdate).total_seconds() / 3600
+            return BrushTask.check_range_rule(pubdate_hours, rule_value, multiplier=1)
         return True
 
     @staticmethod
@@ -877,8 +884,8 @@ class BrushTask(object):
 
         # 配置规则字段和检查函数
         rule_checks = {
-            "time": (BrushDeleteType.SEEDTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600) if not hr else False),
-            "hr_time": (BrushDeleteType.HRSEEDTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600) if hr else False),
+            "time": (BrushDeleteType.SEEDTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600)),
+            "hr_time": (BrushDeleteType.HRSEEDTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600)),
             "ratio": (BrushDeleteType.RATIO, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value)),
             "uploadsize": (BrushDeleteType.UPLOADSIZE, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 1024 ** 3)),
             "dltime": (BrushDeleteType.DLTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600)),
@@ -898,7 +905,20 @@ class BrushTask(object):
                 value = values.get(field)
 
                 log.debug(f"检查字段: {field}, 规则值: {rule_value}, 实际值: {value}")
-                if rule_value and value:
+                if rule_value and value is not None:
+                    
+                    # 忽略规则为 "#"
+                    if rule_value == "#":
+                        log.debug(f"【Brush】规则 {field} 被设置为忽略 (#)，跳过检查")
+                        continue
+
+                    # hr 为 True 时只检查 hr_time，反之检查 time
+                    if field == "time" and hr:
+                        log.debug(f"【Brush】跳过检查 'time'，因为 hr 为 True")
+                        continue
+                    if field == "hr_time" and not hr:
+                        log.debug(f"【Brush】跳过检查 'hr_time'，因为 hr 为 False")
+                        continue
                     # 调用通用检查函数
                     if check_func(value, rule_value):
                         log.debug(f"字段: {field} 符合规则, 删除类型: {delete_type}")
@@ -927,7 +947,7 @@ class BrushTask(object):
         """
         rule_parts = rule_value.split("#")
         if len(rule_parts) < 2 or not rule_parts[1]:
-            return False
+            return True
 
         operator = rule_parts[0]
         range_values = rule_parts[1].split(",")
@@ -939,7 +959,7 @@ class BrushTask(object):
             return False
         if operator == "lt" and value > min_value:
             return False
-        if operator == "bw" and (value <= min_value or (max_value and value >= max_value)):
+        if operator == "bw" and (value < min_value or (max_value and value >= max_value)):
             return False
         return True
 
