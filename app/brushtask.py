@@ -672,6 +672,10 @@ class BrushTask(metaclass=SingletonMeta):
             for rule, check_func in rule_checks.items():
                 rule_value = rss_rule.get(rule)
                 log.debug(f"检查字段: {rule}, 规则值: {rule_value}")
+                # 忽略规则为 "#"
+                if rule_value == "#":
+                    log.debug(f"规则 {rule} 被设置为忽略 (#)，跳过检查")
+                    continue
                 if rule_value and not check_func(rule_value):
                     log.debug(f"字段: {rule} 不符合规则")
                     return False
@@ -909,15 +913,15 @@ class BrushTask(metaclass=SingletonMeta):
                     
                     # 忽略规则为 "#"
                     if rule_value == "#":
-                        log.debug(f"【Brush】规则 {field} 被设置为忽略 (#)，跳过检查")
+                        log.debug(f"规则 {field} 被设置为忽略 (#)，跳过检查")
                         continue
 
                     # hr 为 True 时只检查 hr_time，反之检查 time
                     if field == "time" and hr:
-                        log.debug(f"【Brush】跳过检查 'time'，因为 hr 为 True")
+                        log.debug("跳过检查 'time'，因为 hr 为 True")
                         continue
                     if field == "hr_time" and not hr:
-                        log.debug(f"【Brush】跳过检查 'hr_time'，因为 hr 为 False")
+                        log.debug("跳过检查 'hr_time'，因为 hr 为 False")
                         continue
                     # 调用通用检查函数
                     if check_func(value, rule_value):
