@@ -75,14 +75,16 @@ class SynologyChat(_IMessageClient):
             if image:
                 payload_data['file_url'] = quote(image)
             if user_id:
-                payload_data['user_ids'] = [int(user_id)]
+                user_ids = [int(user_id)]
             else:
-                userids = self.__get_bot_users()
-                if not userids:
+                user_ids = self.__get_bot_users()
+                if not user_ids:
                     return False, "机器人没有对任何用户可见"
-                payload_data['user_ids'] = userids
-            return self.__send_request(payload_data)
-
+            for user_id in user_ids:
+                payload_data['user_ids'] = [user_id]
+                error_flag, error_msg = self.__send_request(payload_data)
+                if not error_flag:
+                    return error_flag, error_msg
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
@@ -121,12 +123,15 @@ class SynologyChat(_IMessageClient):
                 user_ids = [int(user_id)]
             else:
                 user_ids = self.__get_bot_users()
-            payload_data = {
-                "text": quote(caption),
-                "file_url": quote(image),
-                "user_ids": user_ids
-            }
-            return self.__send_request(payload_data)
+            for user_id in user_ids:
+                payload_data = {
+                    "text": quote(caption),
+                    "file_url": quote(image),
+                    "user_ids": [user_id]
+                }
+                error_flag, error_msg = self.__send_request(payload_data)
+                if not error_flag:
+                    return error_flag, error_msg
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
