@@ -127,7 +127,7 @@ class Subscribe(metaclass=SingletonMeta):
         download_setting = int(download_setting) if str(download_setting).replace("-", "").isdigit() else ""
         fuzzy_match = True if fuzzy_match else False
         if channel == RssType.Auto:
-            default_rss_setting = self.default_rss_setting_tv if mtype == MediaType.TV else self.default_rss_setting_mov
+            default_rss_setting = self.default_rss_setting_tv if mtype in [MediaType.TV, MediaType.ANIME] else self.default_rss_setting_mov
             if default_rss_setting:
                 default_restype = default_rss_setting.get('restype')
                 default_pix = default_rss_setting.get('pix')
