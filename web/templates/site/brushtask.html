@@ -777,6 +777,15 @@
               </div>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="brushtask_freestatus">
+                <span class="form-check-label">Free 到期删除 <span class="form-help" title="开启后Free到期后会自动删除种子"
+                                                              data-bs-toggle="tooltip">?</span></span>
+              </label>
+            </div>
+          </div>
         </div>
         <div class="hr-text hr-text-center hr-text-spaceless mt-1 mb-3">停种规则（或）</div>
         <div class="row">
@@ -952,6 +961,13 @@
         // 删种模式
         if (ret.task.remove_rule.mode) {
           $("#brushtask_mode").val(ret.task.remove_rule.mode);
+        }
+
+        // 暂停种子
+        if (ret.task.remove_rule.freestatus === "Y") {
+          $("#brushtask_freestatus").prop("checked", true);
+        } else {
+          $("#brushtask_freestatus").prop("checked", false);
         }
         //弹窗
         $("#modal-brushtask").modal('show');
@@ -1269,6 +1285,9 @@
 
     // 排除订阅
     let brushtask_exclude_subscribe = $("#brushtask_exclude_subscribe").prop('checked');
+
+    // Free到期删种
+    let brushtask_freestatus = $("#brushtask_freestatus").prop('checked');
     // 参数
     const params = {
       brushtask_id: brushtask_id,
@@ -1304,7 +1323,8 @@
       brushtask_pending_time: brushtask_pending_time_do + "#" + brushtask_pending_time,
       brushtask_stopfree: brushtask_stopfree,
       brushtask_freespace: brushtask_freespace_do + "#" + brushtask_freespace,
-      brushtask_exclude_subscribe: brushtask_exclude_subscribe
+      brushtask_exclude_subscribe: brushtask_exclude_subscribe,
+      brushtask_freestatus: brushtask_freestatus,
     };
 
     ajax_post("add_brushtask", params, function (ret) {

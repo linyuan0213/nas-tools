@@ -673,7 +673,7 @@ class BrushTask(metaclass=SingletonMeta):
                 rule_value = rss_rule.get(rule)
                 log.debug(f"检查字段: {rule}, 规则值: {rule_value}")
                 # 忽略规则为 "#"
-                if rule_value == "#":
+                if rule_value == "#" or rule_value == "N":
                     log.debug(f"规则 {rule} 被设置为忽略 (#)，跳过检查")
                     continue
                 if rule_value and not check_func(rule_value):
@@ -884,6 +884,7 @@ class BrushTask(metaclass=SingletonMeta):
             "iatime": params.get("iatime"),
             "pending_time": params.get("pending_time"),
             "freespace": params.get("freespace"),
+            "freestatus": params.get('torrent_attr', {}).get("free", False)
         }
 
         # 配置规则字段和检查函数
@@ -897,6 +898,7 @@ class BrushTask(metaclass=SingletonMeta):
             "iatime": (BrushDeleteType.IATIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600)),
             "pending_time": (BrushDeleteType.PENDINGTIME, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 3600)),
             "freespace": (BrushDeleteType.FREESPACE, lambda value, rule_value: BrushTask.check_range_rule(value, rule_value, 1024 ** 3)),
+            "freestatus": (BrushDeleteType.FREEEND, lambda value, rule_value: not value),
         }
 
         mode = remove_rule.get('mode', 'or')  # 默认为 OR 模式
@@ -912,7 +914,7 @@ class BrushTask(metaclass=SingletonMeta):
                 if rule_value and value is not None:
                     
                     # 忽略规则为 "#"
-                    if rule_value == "#":
+                    if rule_value == "#" or rule_value == "N":
                         log.debug(f"规则 {field} 被设置为忽略 (#)，跳过检查")
                         continue
 
