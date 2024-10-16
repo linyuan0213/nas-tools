@@ -1,8 +1,11 @@
+import io
 import os
 import shutil
 import sys
 from threading import Lock
+from filelock import FileLock
 import ruamel.yaml
+import tempfile
 
 # 种子名/文件名要素分隔字符
 SPLIT_CHARS = r"\.|\s+|\(|\)|\[|]|-|\+|【|】|/|～|;|&|\||#|_|「|」|~"
@@ -178,9 +181,24 @@ class Config(object):
 
     def save_config(self, new_cfg):
         self._config = new_cfg
-        with open(self._config_path, mode='w', encoding='utf-8') as sf:
-            yaml = ruamel.yaml.YAML()
-            return yaml.dump(new_cfg, sf)
+        yaml = ruamel.yaml.YAML()
+
+        # 检查数据是否可以正确序列化
+        try:
+            yaml.dump(new_cfg, io.StringIO())
+        except Exception as e:
+            raise ValueError(f"Invalid YAML data: {e}")
+
+        # 文件锁防止并发写入
+        lock_path = self._config_path + '.lock'
+        with FileLock(lock_path):
+            # 创建临时文件进行事务性写入
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False) as temp_file:
+                yaml.dump(new_cfg, temp_file)
+                temp_file_path = temp_file.name
+            
+            # 写入成功后用临时文件替换目标文件
+            os.replace(temp_file_path, self._config_path)
 
     def get_config_path(self):
         return os.path.dirname(self._config_path)
