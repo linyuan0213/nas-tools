@@ -412,7 +412,6 @@ class BrushTask(metaclass=SingletonMeta):
                     else:
                         delete_type = delete_type.value
                     log.info(f"【Brush】{torrent.name} 达到删种条件：{delete_type}，删除任务...")
-                    self.redis_store.hdel('torrent', torrent_id)
                     if sendmessage:
                         __send_message(task_name, delete_type, torrent.name, downloader_cfg.get("name"),
                                     StringUtils.str_filesize(torrent.size), StringUtils.str_filesize(torrent.downloaded),

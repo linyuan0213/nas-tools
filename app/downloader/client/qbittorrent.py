@@ -743,7 +743,7 @@ class Qbittorrent(_IDownloadClient):
         # 做种时间
         torrent_obj.seeding_time = (date_now - \
                 torrent.get("completion_on")) if torrent.get(
-                    "completion_on") else 0
+                    "completion_on") > 0 else 0
         # 分享率
         torrent_obj.ratio = torrent.get("ratio") or 0
             # 上传量
