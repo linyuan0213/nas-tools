@@ -196,7 +196,7 @@ class TorrentMark(_IPluginModule):
                 hash_str = torrent.id
                 # 获取种子标签
                 torrent_tags = set(torrent.labels)
-                pt_flag = self.__isPt(torrent, downloader_type)
+                pt_flag = self.__isPt(torrent)
                 torrent_tags.discard("")
                 if pt_flag is True:
                     torrent_tags.discard("BT")
