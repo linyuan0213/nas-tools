@@ -738,11 +738,11 @@ class Qbittorrent(_IDownloadClient):
         torrent_obj.id = torrent.get("hash")
         torrent_obj.name = torrent.get("name")
         # 下载时间
-        torrent_obj.download_time = date_now - \
-            torrent.get("added_on") if torrent.get("added_on") else 0
+        torrent_obj.download_time = (date_now - \
+            torrent.get("added_on")) if torrent.get("added_on") else 0
         # 做种时间
-        torrent_obj.seeding_time = date_now - \
-                torrent.get("completion_on") if torrent.get(
+        torrent_obj.seeding_time = (date_now - \
+                torrent.get("completion_on")) if torrent.get(
                     "completion_on") else 0
         # 分享率
         torrent_obj.ratio = torrent.get("ratio") or 0

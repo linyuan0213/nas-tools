@@ -20,10 +20,13 @@ if not os.path.exists(config):
 ssl_cert = ''
 ssl_key = ''
 with open(config, 'r') as f:
-    yaml = ruamel.yaml.YAML()
-    cf = yaml.load(f)
-    ssl_cert = cf.get('app').get('ssl_cert')
-    ssl_key = cf.get('app').get('ssl_key')
+    try:
+        yaml = ruamel.yaml.YAML()
+        cf = yaml.load(f)
+        ssl_cert = cf.get('app').get('ssl_cert')
+        ssl_key = cf.get('app').get('ssl_key')
+    except Exception as e:
+        print("【Config】config.yaml 异常请删除重新配置...")
 
 ROOT_PATH = os.path.dirname(os.path.abspath(config))
 LOG_PATH = os.path.join(ROOT_PATH, 'logs')
