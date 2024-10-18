@@ -1930,6 +1930,7 @@ class WebAction:
         brushtask_interval = data.get("brushtask_interval")
         brushtask_downloader = data.get("brushtask_downloader")
         brushtask_totalsize = data.get("brushtask_totalsize")
+        brushtask_time_range = data.get("brushtask_time_range")
         brushtask_state = data.get("brushtask_state")
         brushtask_rssurl = data.get("brushtask_rssurl")
         brushtask_label = data.get("brushtask_label")
@@ -2001,6 +2002,7 @@ class WebAction:
             "interval": brushtask_interval,
             "downloader": brushtask_downloader,
             "seed_size": brushtask_totalsize,
+            "time_range": brushtask_time_range,
             "label": brushtask_label,
             "savepath": brushtask_savepath,
             "transfer": brushtask_transfer,
@@ -2445,6 +2447,14 @@ class WebAction:
             return ""
         rule_filter_string = {"gt": ">", "lt": "<", "bw": ""}
         rule_htmls = []
+
+        if rules.get("exclude_subscribe"):
+            exclude_subscribe = rules.get("exclude_subscribe")
+            if exclude_subscribe == "Y":
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="排除订阅">排除订阅: 开</span>')
+            else:
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="排除订阅">排除订阅: 关</span>')
+
         if rules.get("size"):
             sizes = rules.get("size").split("#")
             if sizes[0]:
@@ -2500,6 +2510,11 @@ class WebAction:
                 rule_htmls.append(
                     '<span class="badge badge-outline text-blue me-1 mb-1" title="当前做种人数限制">做种人数: %s %s</span>'
                     % (rule_filter_string.get(peer_counts[0]), peer_counts[1]))
+
+        if rules.get("mode"):
+            rule_htmls.append(
+                '<span class="badge badge-outline text-red me-1 mb-1 text-wrap text-start" title="删种模式">删种模式: %s</span>'
+                % ("与" if rules.get("mode") == "and" else "或"))
         if rules.get("time"):
             times = rules.get("time").split("#")
             if times[0]:
@@ -2536,14 +2551,26 @@ class WebAction:
                 rule_htmls.append(
                     '<span class="badge badge-outline text-orange me-1 mb-1" title="未活动时间">未活动时间: %s %s小时</span>'
                     % (rule_filter_string.get(iatimes[0]), iatimes[1]))
+        if rules.get("freestatus"):
+            freestatus = rules.get("freestatus")
+            if freestatus == "Y":
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期">Free 到期: 开</span>')
+            else:
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期">Free 到期: 关</span>')
 
         if rules.get("stopfree"):
             stopfree = rules.get("stopfree")
             if stopfree == "Y":
-                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期暂停">Free 到期暂停: 开</span>')
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期">Free 到期: 开</span>')
             else:
-                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期暂停">Free 到期暂停: 关</span>')
+                rule_htmls.append('<span class="badge badge-outline text-green me-1 mb-1" title="Free 到期">Free 到期: 关</span>')
 
+        if rules.get("freespace"):
+            freespace = rules.get("freespace").split("#")
+            if freespace[0]:
+                rule_htmls.append(
+                    '<span class="badge badge-outline text-blue me-1 mb-1" title="磁盘剩余空间">磁盘剩余空间: %s %sGB</span>'
+                    % (rule_filter_string.get(sizes[0]), sizes[1]))
         return "<br>".join(rule_htmls)
 
     @staticmethod

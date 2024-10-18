@@ -371,6 +371,7 @@ class SITEBRUSHTASK(Base):
     REMOVE_RULE = Column(Text)
     STOP_RULE = Column(Text, nullable=False, default="")
     SEED_SIZE = Column(Text)
+    TIME_RANGE = Column(Text, nullable=False, default="")
     INTEVAL = Column(Text)
     LABEL = Column(Text)
     SAVEPATH = Column(Text)

@@ -1,4 +1,4 @@
-alembic==1.9.4
+alembic==1.13.3
 aniso8601==9.0.1
 APScheduler==3.10.0
 asttokens==2.0.8

@@ -3,6 +3,7 @@ import sys
 import time
 import json
 from datetime import datetime, timezone, timedelta
+from datetime import time as dtime
 from urllib.parse import urlsplit
 
 import dateutil
@@ -103,7 +104,6 @@ class BrushTask(metaclass=SingletonMeta):
                                 "seconds": int(cron) * 60,
                                 "jobstore": self._jobstore
                                 })
-                        running_task = running_task + 2
                     elif cron.count(" ") == 4:
                         if task.get("state") == 'Y':
                             try:
@@ -135,7 +135,6 @@ class BrushTask(metaclass=SingletonMeta):
                                     "trigger": CronTrigger.from_crontab(cron),
                                     "jobstore": self._jobstore
                                     })
-                            running_task = running_task + 2
                         except Exception as err:
                             log.error(
                                 f"任务 {task.get('name')} 运行周期格式不正确：{str(err)}")
@@ -181,6 +180,7 @@ class BrushTask(metaclass=SingletonMeta):
                 "remove_rule": eval(task.REMOVE_RULE),
                 "stop_rule": eval(task.STOP_RULE if task.STOP_RULE else "{'stopfree': 'Y'}"),
                 "seed_size": task.SEED_SIZE,
+                "time_range": task.TIME_RANGE,
                 "total_size": total_size,
                 "rss_url": task.RSSURL if task.RSSURL else site_info.get("rssurl"),
                 "rss_url_show": task.RSSURL,
@@ -503,6 +503,7 @@ class BrushTask(metaclass=SingletonMeta):
             return False
         # 判断大小
         seed_size = taskinfo.get("seed_size") or None
+        time_range = taskinfo.get("time_range") or ""
         task_name = taskinfo.get("name")
         downloader_id = taskinfo.get("downloader")
         downloader_name = taskinfo.get("downloader_name")
@@ -529,6 +530,13 @@ class BrushTask(metaclass=SingletonMeta):
                 log.warn("【Brush】下载器 %s 正在下载任务数：%s，超过设定上限，暂不添加下载" % (
                     downloader_name, downloading_count))
                 return False
+            
+        # 检查下载时间段
+        if not BrushTask.is_in_time_range(time_range=time_range):
+            log.warn("【Brush】任务 %s 不在所选时间段 %s 内，暂不添加下载" %
+                          (task_name, time_range))
+            return False
+                
         return True
 
     def __get_downloading_count(self, downloader_id):
@@ -1146,3 +1154,22 @@ class BrushTask(metaclass=SingletonMeta):
                                                                 proxy=site_proxy)
                                                         
         return torrent_url,torrent_attr
+
+    @staticmethod
+    def is_in_time_range(time_range=None):
+        if not time_range:
+            return True  # 如果时间段字符串为空，返回 True，表示不限制
+        try:
+            # 解析时间段
+            start_str, end_str = time_range.split('-')
+            start_hour, start_minute = map(int, start_str.split(':'))
+            end_hour, end_minute = map(int, end_str.split(':'))
+            start_time = dtime(start_hour, start_minute)
+            end_time = dtime(end_hour, end_minute)
+            
+            # 获取当前时间
+            now = datetime.now().time()
+            return start_time <= now <= end_time
+        except ValueError:
+            log.warn("【Brush】时间段格式错误，应为 'HH:MM-HH:MM'")
+            return False  # 格式错误时返回 False，不执行任务

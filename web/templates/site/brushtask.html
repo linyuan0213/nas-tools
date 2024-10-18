@@ -233,6 +233,12 @@
                   </div>
                 </div>
                 <div class="datagrid-item">
+                  <div class="datagrid-title">开启时间段</div>
+                  <div class="datagrid-content">
+                    {{ Task.time_range or ''}}
+                  </div>
+                </div>
+                <div class="datagrid-item">
                   <div class="datagrid-title">状态</div>
                   <div class="datagrid-content">
                     {% if Task.state == 'Y' %}
@@ -333,12 +339,20 @@
               <input type="text" id="brushtask_label" class="form-control" placeholder="多个标签使用,分隔">
             </div>
           </div>
-          <div class="col-lg-8">
+          <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">保存目录 <span class="form-help"
                                                            title="为该刷新任务设置独立的保存目录，将会覆盖下载器中的目录设置，如果下载器为Qbittorrent还需要在NAStool下载器设置中关闭种子自动管理功能"
                                                            data-bs-toggle="tooltip">?</span></label>
               <input type="text" id="brushtask_savepath" class="form-control" placeholder="留空使用下载器设置">
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label">开启时间段 <span class="form-help"
+                                                           title="为该刷新任务设置独立的刷流时间段格式为HH:MM-HH:MM，为空不开启"
+                                                           data-bs-toggle="tooltip">?</span></label>
+              <input type="text" id="brushtask_time_range" class="form-control" placeholder="">
             </div>
           </div>
         </div>
@@ -543,7 +557,7 @@
             </div>
           </div>
         </div>
-        <div class="hr-text hr-text-center hr-text-spaceless mt-1 mb-3">删种规则（或）</div>
+        <div class="hr-text hr-text-center hr-text-spaceless mt-1 mb-3">删种规则</div>
         <div class="row">
           <div class="col-lg-4">
             <div class="mb-3">
@@ -781,7 +795,7 @@
             <div class="mb-3">
               <label class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="brushtask_freestatus">
-                <span class="form-check-label">Free 到期删除 <span class="form-help" title="开启后Free到期后会自动删除种子"
+                <span class="form-check-label">Free 到期 <span class="form-help" title="开启后Free到期后会自动删除种子"
                                                               data-bs-toggle="tooltip">?</span></span>
               </label>
             </div>
@@ -793,7 +807,7 @@
             <div class="mb-3">
               <label class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="brushtask_stopfree">
-                <span class="form-check-label">Free 到期暂停 <span class="form-help" title="开启后free到期后会自动暂停种子"
+                <span class="form-check-label">Free 到期 <span class="form-help" title="开启后free到期后会自动暂停种子"
                                                               data-bs-toggle="tooltip">?</span></span>
               </label>
             </div>
@@ -872,6 +886,7 @@
         $("#brushtask_exclude").val(ret.task.rss_rule.exclude);
         $("#brushtask_label").val(ret.task.label);
         $("#brushtask_savepath").val(ret.task.savepath);
+        $("#brushtask_time_range").val(ret.task.time_range);
         //种子大小
         if (ret.task.rss_rule.size) {
           let size_str = ret.task.rss_rule.size.split('#');
@@ -1078,6 +1093,7 @@
     let brushtask_rssurl = $("#brushtask_rssurl").val();
     let brushtask_label = $("#brushtask_label").val();
     let brushtask_savepath = $("#brushtask_savepath").val();
+    let brushtask_time_range = $("#brushtask_time_range").val();
     let brushtask_state = $("#brushtask_state").val();
     let brushtask_transfer = $("#brushtask_transfer").prop('checked');
     let brushtask_sendmessage = $("#brushtask_sendmessage").prop('checked');
@@ -1299,6 +1315,7 @@
       brushtask_totalsize: brushtask_totalsize,
       brushtask_label: brushtask_label,
       brushtask_savepath: brushtask_savepath,
+      brushtask_time_range: brushtask_time_range,
       brushtask_state: brushtask_state,
       brushtask_transfer: brushtask_transfer,
       brushtask_sendmessage: brushtask_sendmessage,
