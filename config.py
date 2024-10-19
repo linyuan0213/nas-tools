@@ -198,7 +198,7 @@ class Config(object):
                 temp_file_path = temp_file.name
             
             # 写入成功后用临时文件替换目标文件
-            os.replace(temp_file_path, self._config_path)
+            shutil.move(temp_file_path, self._config_path)
 
     def get_config_path(self):
         return os.path.dirname(self._config_path)
