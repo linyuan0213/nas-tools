@@ -140,7 +140,8 @@ class BrushTask(metaclass=SingletonMeta):
                                 f"任务 {task.get('name')} 运行周期格式不正确：{str(err)}")
                     else:
                         log.error(f"任务 {task.get('name')} 运行周期格式不正确")
-            log.info(f"{running_task} 个刷流服务正常启动")
+            if running_task > 0:
+                log.info(f"{running_task} 个刷流服务正常启动")
 
     def load_brushtasks(self):
         """
