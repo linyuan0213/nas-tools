@@ -57,11 +57,21 @@ def __get_bing_wallpaper(today):
     获取Bing每日壁纸
     """
     url = "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&today=%s" % today
+    # Bing每日壁纸1080P高清接口
     try:
         resp = RequestUtils(timeout=5).get_res(url)
     except Exception as err:
-        ExceptionUtils.exception_traceback(err)
-        return ""
+        url = "https://bing.img.run/1920x1080.php"
+        resp = RequestUtils(timeout=5).get_res(url)
+        if resp and resp.status_code == 200:
+            # 由于该 URL 直接返回图片，我们假设没有标题和链接
+            img_url = url  # 使用请求的 URL 作为图片 URL
+            img_title = "Bing Random Wallpaper"  # 默认标题
+            img_link = "https://www.bing.com"  # 默认链接指向 Bing 主页
+            return img_url, img_title, img_link
+        else:
+            return '', '', ''
+
     if resp and resp.status_code == 200:
         if resp.json():
             for image in resp.json().get('images') or []:
