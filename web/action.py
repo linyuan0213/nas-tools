@@ -2570,7 +2570,7 @@ class WebAction:
             if freespace[0]:
                 rule_htmls.append(
                     '<span class="badge badge-outline text-blue me-1 mb-1" title="磁盘剩余空间">磁盘剩余空间: %s %sGB</span>'
-                    % (rule_filter_string.get(sizes[0]), sizes[1]))
+                    % (rule_filter_string.get(freespace[0]), freespace[1]))
         return "<br>".join(rule_htmls)
 
     @staticmethod
