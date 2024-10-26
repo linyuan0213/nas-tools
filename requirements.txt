@@ -86,5 +86,5 @@ tzlocal==4.2
 urllib3==2.2.2
 watchdog==2.1.9
 websockets==10.3
-Werkzeug==3.0.3
+Werkzeug==3.0.6
 zhconv==1.4.3
