@@ -85,6 +85,7 @@ class SynologyChat(_IMessageClient):
                 error_flag, error_msg = self.__send_request(payload_data)
                 if not error_flag:
                     return error_flag, error_msg
+            return error_flag, error_msg
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
@@ -126,12 +127,12 @@ class SynologyChat(_IMessageClient):
             for user_id in user_ids:
                 payload_data = {
                     "text": quote(caption),
-                    "file_url": quote(image),
                     "user_ids": [user_id]
                 }
                 error_flag, error_msg = self.__send_request(payload_data)
                 if not error_flag:
                     return error_flag, error_msg
+            return error_flag, error_msg
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
