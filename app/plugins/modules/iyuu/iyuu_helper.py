@@ -8,7 +8,7 @@ from app.utils.commons import SingletonMeta
 
 class IyuuHelper(metaclass=SingletonMeta):
     _version = "2.0.0"
-    _api_base = "http://dev.iyuu.cn%s"
+    _api_base = "http://2025.iyuu.cn%s"
     _sites = {}
     _token = None
 
