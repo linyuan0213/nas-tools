@@ -1157,23 +1157,31 @@ class BrushTask(metaclass=SingletonMeta):
         return torrent_url,torrent_attr
 
     @staticmethod
-    def is_in_time_range(time_range=None):
-        if not time_range:
+    def is_in_time_range(time_range: str=""):
+        if not time_range.strip():
             return True  # 如果时间段字符串为空，返回 True，表示不限制
         try:
             # 解析时间段
-            start_str, end_str = time_range.split('-')
-            start_hour, start_minute = map(int, start_str.split(':'))
-            end_hour, end_minute = map(int, end_str.split(':'))
-            start_time = dtime(start_hour, start_minute)
-            end_time = dtime(end_hour, end_minute)
-            
-            # 获取当前时间
-            now = datetime.now().time()
-            if start_time < end_time:
-                return start_time <= now <= end_time
-            else:
-                return now >= start_time or now <= end_time
+            periods = time_range.split(",")
+            for period in periods:
+                start_str, end_str = period.split('-')
+                start_hour, start_minute = map(int, start_str.split(':'))
+                end_hour, end_minute = map(int, end_str.split(':'))
+                start_time = dtime(start_hour, start_minute)
+                end_time = dtime(end_hour, end_minute)
+                
+                # 获取当前时间
+                now = datetime.now().time()
+                if start_time < end_time:
+                    # 非跨天
+                    if start_time <= now <= end_time:
+                        return True
+                else:
+                    # 跨天
+                    if now >= start_time or now <= end_time:
+                        return True
+            # 所有时间段都不匹配
+            return False
         except ValueError:
             log.warn("【Brush】时间段格式错误，应为 'HH:MM-HH:MM'")
             return False  # 格式错误时返回 False，不执行任务
