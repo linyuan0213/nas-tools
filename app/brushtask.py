@@ -1170,7 +1170,10 @@ class BrushTask(metaclass=SingletonMeta):
             
             # 获取当前时间
             now = datetime.now().time()
-            return start_time <= now <= end_time
+            if start_time < end_time:
+                return start_time <= now <= end_time
+            else:
+                return now >= start_time or now <= end_time
         except ValueError:
             log.warn("【Brush】时间段格式错误，应为 'HH:MM-HH:MM'")
             return False  # 格式错误时返回 False，不执行任务
