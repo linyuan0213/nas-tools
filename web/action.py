@@ -4986,7 +4986,7 @@ class WebAction:
         user_plugins = SystemConfig().get(SystemConfigKey.UserInstalledPlugins) or []
         if module_id not in user_plugins:
             user_plugins.append(module_id)
-            PluginHelper.install(module_id)
+            # PluginHelper.install(module_id)
         # 保存配置
         SystemConfig().set(SystemConfigKey.UserInstalledPlugins, user_plugins)
         # 重新加载插件

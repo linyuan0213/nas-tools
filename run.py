@@ -5,6 +5,8 @@ import warnings
 import hashlib
 import random
 
+from config_monitor import stop_config_monitor, start_config_monitor
+
 warnings.filterwarnings('ignore')
 
 # 运行环境判断
@@ -30,9 +32,6 @@ from config import Config
 import log
 from web.action import WebAction
 from web.main import App
-from app.db import init_db, update_db, init_data
-from initializer import update_config, check_config,  start_config_monitor, stop_config_monitor
-from version import APP_VERSION
 
 
 def sigal_handler(num, stack):
@@ -84,30 +83,6 @@ def get_run_config(forcev4=False):
 signal.signal(signal.SIGINT, sigal_handler)
 signal.signal(signal.SIGTERM, sigal_handler)
 
-
-# 系统初始化
-@App.before_first_request
-def init_system():
-    # 配置
-    log.console('NAStool 当前版本号：%s' % APP_VERSION)
-    # 数据库初始化
-    init_db()
-    # 数据库更新
-    update_db()
-    # 数据初始化
-    init_data()
-    # 升级配置文件
-    update_config()
-    # 检查配置文件
-    check_config()
-
-
-# 启动服务
-@App.before_first_request
-def start_service():
-    log.console("开始启动服务...")
-    # 启动服务
-    WebAction.start_service()
 # 调试用
 if os.environ.get('FLASK_DEBUG') == "1":
     os.environ['SERVER_INSTANCE'] = hashlib.md5(str(random.random()).encode()).hexdigest()
