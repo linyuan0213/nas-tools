@@ -95,7 +95,7 @@ class Sites(metaclass=SingletonMeta):
                 "brush_enable": brush_enable,
                 "statistic_enable": statistic_enable,
                 "uses": uses,
-                "ua": site_note.get("ua"),
+                "ua": site_note.get("ua") or Config().get_ua(),
                 "headers": site_note.get("headers"),
                 "parse": True if site_note.get("parse") == "Y" else False,
                 "unread_msg_notify": True if site_note.get("message") == "Y" else False,

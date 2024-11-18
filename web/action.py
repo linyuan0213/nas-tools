@@ -4465,6 +4465,11 @@ class WebAction:
         sort_on = data.get("sort_on")
         site_hash = data.get("site_hash")
         statistics = SiteUserInfo().get_site_user_statistics(sites=sites, encoding=encoding)
+        # 修复馒头站点显示
+        for item in statistics:
+            if 'm-team' in item.get('url'):
+                site_info = Sites().get_sites(siteurl=item.get('url'))
+                item['url'] = site_info.get('signurl')
         if sort_by and sort_on in ["asc", "desc"]:
             if sort_on == "asc":
                 statistics.sort(key=lambda x: x[sort_by])

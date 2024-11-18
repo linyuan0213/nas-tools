@@ -224,9 +224,13 @@ class _ISiteUserInfo(metaclass=ABCMeta):
 
             if isinstance(self._ua, str):
                 req_headers.update({
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": f"{self._ua}",
-                    "referer": urljoin(self._base_url, self._user_detail_page)
+                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7",
+                    "user-agent": f"{self._ua}",
+                    "referer": urljoin(self._base_url, self._user_detail_page),
+                    "sec-fetch-dest": "document",
+                    "sec-fetch-mode": "navigate",
+                    "sec-fetch-site": "same-origin"
                 })
             else:
                 req_headers.update(self._ua)
