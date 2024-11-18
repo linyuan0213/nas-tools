@@ -1,11 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor
 import copy
 import re
 import json
 from datetime import datetime, timedelta
-from multiprocessing.dummy import Pool as ThreadPool
 from threading import Event
 from time import sleep
-from urllib.parse import urlsplit
 
 import pytz
 from lxml import etree
@@ -342,7 +341,7 @@ class AutoSignIn(_IPluginModule):
         sign_sites = new_sign_sites
         # 执行签到
         self.info("开始执行签到任务")
-        with ThreadPool(min(len(sign_sites), int(self._queue_cnt) if self._queue_cnt else 10)) as p:
+        with ThreadPoolExecutor(min(len(sign_sites), int(self._queue_cnt) if self._queue_cnt else 10)) as p:
             status = p.map(self.signin_site, sign_sites)
 
         if status:
