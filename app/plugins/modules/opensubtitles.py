@@ -214,18 +214,8 @@ class OpenSubtitles(_IPluginModule):
         if not chrome.visit(url):
             return []
         # 源码
-        tries = 3
-        html_text = ''
-        while tries > 0:
-            try:
-                html_text = chrome.get_page_html(url=url)
-                if html_text:
-                    break
-            except Exception as e:
-                cls.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-            finally:
-                tries -= 1
-                sleep(2)
+        html_text = chrome.get_page_html(url=url)
+
         # 解析列表
         ret_subtitles = []
         html_doc = PyQuery(html_text)

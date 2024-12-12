@@ -101,18 +101,7 @@ class BTSchool(_ISiteSigninHandler):
                 return True, f'【{site}】签到成功'
 
     def __chrome_visit(self, chrome, url, ua, site_cookie, proxy, site):
-        tries = 3
-        html_text = ''
-        while tries > 0:
-            try:
-                html_text = chrome.get_page_html(url=url, ua=ua, cookies=site_cookie, proxies=proxy)
-                if html_text:
-                    break
-            except Exception as e:
-                self.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-            finally:
-                tries -= 1
-                sleep(2)        
+        html_text = chrome.get_page_html(url=url, cookies=site_cookie)
 
         if not html_text:
             self.warn("%s 获取站点源码失败" % site)

@@ -256,18 +256,8 @@ class _ISiteUserInfo(metaclass=ABCMeta):
                 log.debug(f"【Sites】{self.site_name} 检测到Cloudflare，需要浏览器仿真")
                 chrome = DrissionPageHelper()
                 if self._emulate and chrome.get_status():
-                    tries = 3
-                    html_text = ''
-                    while tries > 0:
-                        try:
-                            html_text = chrome.get_page_html(url=url, ua=self._ua, cookies=self._site_cookie, proxies=proxies)
-                            if html_text:
-                                break
-                        except Exception as e:
-                            log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-                        finally:
-                            tries -= 1
-                            sleep(2)
+                    html_text = chrome.get_page_html(url=url, cookies=self._site_cookie)
+  
                     if not html_text:
                         log.error(f"【Sites】{self.site_name} 无法打开网站")
                         return None

@@ -971,9 +971,9 @@ class Subscribe(metaclass=SingletonMeta):
         """
         更新电视剧订阅缺失集数
         """
+        self.dbhelper.update_rss_tv_state(rssid=rssid, state='R')
         if not seasoninfo:
             return
-        self.dbhelper.update_rss_tv_state(rssid=rssid, state='R')
         for info in seasoninfo:
             if str(info.get("season")) == media_info.get_season_seq():
                 if info.get("episodes"):

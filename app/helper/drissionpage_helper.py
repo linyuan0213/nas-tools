@@ -1,171 +1,107 @@
-from DrissionPage import ChromiumPage, ChromiumOptions
-from typing import Callable, Tuple
-from loguru import logger
+import json
+import uuid
+import requests
 
-from app.helper.cloudflare_helper import under_challenge
 from app.utils.commons import SingletonMeta
-from config import CHROME_PATH
+from config import Config
+import log
 
-JS_SCRIPT = """
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+def generate_tab_id() -> str:
+    """Generate a unique tab ID."""
+    return str(uuid.uuid4())
 
-function modifyClickEvent(event) {
-    if (!event._isModified) {
-        // Save original values only if not already saved
-        event._screenX = event.screenX;
-        event._screenY = event.screenY;
-
-        // Define properties only once
-        Object.defineProperty(event, 'screenX', {
-            get: function() {
-                return this._screenX + getRandomInt(0, 200);
-            }
-        });
-        Object.defineProperty(event, 'screenY', {
-            get: function() {
-                return this._screenY + getRandomInt(0, 200);
-            }
-        });
-
-        // Mark event as modified
-        event._isModified = true;
-    }
-}
-
-// Store the original addEventListener method
-const originalAddEventListener = EventTarget.prototype.addEventListener;
-
-// Override the addEventListener method
-EventTarget.prototype.addEventListener = function(type, listener, options) {
-    if (type === 'click') {
-        const wrappedListener = function(event) {
-            // Modify the click event properties
-            modifyClickEvent(event);
-
-            // Call the original listener with the modified event
-            listener.call(this, event);
-        };
-        // Call the original addEventListener with the wrapped listener
-        originalAddEventListener.call(this, type, wrappedListener, options);
-    } else {
-        // Call the original addEventListener for other event types
-        originalAddEventListener.call(this, type, listener, options);
-    }
-};
-"""
 
 class DrissionPageHelper(metaclass=SingletonMeta):
 
     def __init__(self):
-        self.co = ChromiumOptions()
-        self.co.set_browser_path(CHROME_PATH)
-        self.co.auto_port()
-        self.co.set_timeouts(base=2, script=3)
-        self.co.set_retry(times=3, interval=2)
-        self.co.incognito(False)
-        self.co.set_argument('--headless', 'new')
-        self.co.set_argument('--no-sandbox')
-        self.co.set_argument('--disable-webgl')
-        # self.co.set_argument('--display=:99')
-
-    def get_status(self):
-        return True
-
-    @staticmethod
-    def sync_cf_retry(page: ChromiumPage, tries: int = 5) -> Tuple[bool, bool]:
-        success = False
-        cf = True
-        user_tries = tries
-        while tries > 0:
-            # 非CF网站
-            page.wait(5)
-            if not under_challenge(page.html):
-                success = True
-                page.stop_loading()
-                break
-            try:
-                page.wait(5)
-                cf_wrapper = page.ele('.spacer', timeout=3).ele('tag:div').ele('tag:div')
-                cf_iframe = cf_wrapper.shadow_root.ele("tag=iframe",timeout=3)
-                try:
-                    box = cf_iframe.ele('tag:body').shadow_root.ele('.cb-i')
-                    box.click()
-                except Exception as e:
-                    logger.debug(f"DrissionPage Click Error: {e}")
-            except Exception as e:
-                if not under_challenge(page.html):
-                    success = True
-                    page.wait(1)
-                    page.stop_loading()
-                    break
-                page.wait(3)
-                logger.debug(f"DrissionPage Error: {e}")
-                success = False
-            tries -= 1
-        if tries == user_tries:
-            cf = False
-        return success, cf
+        url = Config().get_config("laboratory").get('chrome_server_host')
+        if url:
+            if url.endswith("/"):
+                self.url = url[:-1]
+            self.url = url
+        
+    def get_status(self) -> bool:
+        if self.url:
+            return True
+        return False
 
     def get_page_html(self,
                       url: str,
                       cookies=None,
-                      ua: str = None,
-                      proxies: dict = None,
-                      headless: bool = True,
-                      timeout: int = 20,
-                      callback: Callable = None) -> str:
-
-        if proxies:
-            proxy = proxies.get('https')
-            self.co.set_proxy(proxy=proxy)
-        self.co.headless(headless)
-        self.co.set_timeouts(base=timeout, script=5)
-        if ua:
-            self.co.set_user_agent(user_agent=ua)
-        page = ChromiumPage(self.co, timeout=180)
-        # 等待 page 加载完成
-        page.wait(1)
+                      timeout: int = 60,
+                      click_xpath: str = None) -> str:
+        """获取HTML内容"""
+        headers = {"Content-Type": "application/json"}
+        tab_id = generate_tab_id()
+        # 打开新标签
+        tabs_url = f"{self.url}/tabs"
+        open_tab_data = json.dumps({
+            "url": url,
+            "tab_name": tab_id,
+            "cookie": cookies
+        }, separators=(',', ':'))
         try:
-            page.add_init_js(JS_SCRIPT)
-            page.set.window.max()
-            page.set.load_mode.none()
-            page.get(url, retry=3)
+            response = requests.post(tabs_url, headers=headers, data=open_tab_data, timeout=timeout)
         except Exception as e:
-            logger.debug(f"DrissionPage Error: {e}")
-            page.quit()
-            return ''
-        if cookies:
-            if isinstance(cookies, str):
-                cookies = cookies.strip()
-            page.set.cookies(cookies)
-        try:
-            success, _ = self.sync_cf_retry(page)
-        except Exception:
-            logger.debug(f"DrissionPage Error: {e}")
-            success, _ = self.sync_cf_retry(page)
-        content = ''
-        if success:
-            page.set.load_mode.eager()
-            page.get(url, retry=3)
-            if callback:
-                try:
-                    callback(page)
-                except Exception as e:
-                    logger.error(f"url: {url} 回调函数执行失败: {e}")
-            # 嵌入CF处理
-            try:
-                content = page.html
-                if 'TurnstileCallback' in content or under_challenge(content):
-                    page.wait(15)
-                    content = page.html
-                logger.debug(f"url: {url} 获取网页源码成功")
-            except Exception as e:
-                logger.error(f"url: {url} 获取网页源码失败")
-                page.quit()
-        else:
-            logger.error(f"url: {url} 获取网页源码失败")
-        page.quit()
+            log.error(f"打开新标签页失败: {str(e)}")
+            self._close_tab(tab_id=tab_id)
+            return ""
+        if response.status_code != 200:
+            log.error(f"打开新标签页失败: {response.text}")
+            return ""
 
+        # 获取html内容
+        html_url = f"{self.url}/tabs/{tab_id}/html"
+        try:
+            res_json = self._fetch_html(html_url, timeout)
+        except Exception as e:
+            log.error(f"获取html失败: {str(e)}")
+            self._close_tab(tab_id)
+            return ""
+
+        # 处理点击事件
+        if click_xpath:
+            click_url = f"{self.url}/tabs/click/"
+            click_data = json.dumps({
+                "tab_name": tab_id,
+                "selector": click_xpath
+            }, separators=(',', ':'))
+            
+            try:
+                response = requests.post(click_url, headers=headers, data=click_data, timeout=timeout)
+            except Exception as e:
+                log.error(f"点击标签页失败: {str(e)}")
+                self._close_tab(tab_id=tab_id)
+                return ""
+            if response.status_code != 200:
+                log.debug(f"点击失败: {response.text}")
+                self._close_tab(tab_id)
+                return ""
+            try:
+                res_json = self._fetch_html(html_url, timeout)
+            except Exception as e:
+                log.error(f"点击之后获取html失败: {str(e)}")
+                self._close_tab(tab_id)
+                return ""
+
+        # 关闭标签
+        self._close_tab(tab_id)
+        html_dict = json.loads(res_json)
+        content = html_dict.get("html")
         return content
+
+    def _fetch_html(self, url: str, timeout: int) -> str:
+        """返回html"""
+        response = requests.get(url=url, timeout=timeout)
+        response.raise_for_status()
+        return response.text
+
+    def _close_tab(self, tab_id: str):
+        """关闭标签页"""
+        close_url = f"{self.url}/tabs/{tab_id}"
+        try:
+            response = requests.delete(close_url)
+            if response.status_code != 200:
+                log.warning(f"关闭标签页失败: {response.text}")
+        except Exception as e:
+            log.error(f"关闭标签页异常: {str(e)}")

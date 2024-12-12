@@ -308,18 +308,9 @@ class Sites(metaclass=SingletonMeta):
             # 计时
             chrome = DrissionPageHelper()
             start_time = datetime.now()
-            tries = 3
-            html_text = ''
-            while tries > 0:
-                try:
-                    html_text = chrome.get_page_html(url=site_url, ua=ua, cookies=site_cookie, proxies=Config().get_proxies() if site_info.get("proxy") else None)
-                    if html_text:
-                        break
-                except Exception as e:
-                    log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-                finally:
-                    tries -= 1
-                    sleep(2)
+
+            html_text = chrome.get_page_html(url=site_url, cookies=site_cookie)
+
             seconds = round((datetime.now() - start_time).total_seconds(), 3)
             # 判断是否已签到
             if not html_text:

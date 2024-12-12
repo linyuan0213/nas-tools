@@ -269,20 +269,13 @@ class TorrentSpider(feapder.AirSpider):
                 request.proxies = self.proxies
         else:
             chrome = DrissionPageHelper()
-            tries = 3
-            html_text = ''
+
+            html_text = ""
             if chrome.get_status():
-                while tries > 0:
-                    try:
-                        html_text = chrome.get_page_html(url=request.url, cookies=self.cookie, ua=self.ua, proxies=self.proxies)
-                        if html_text:
-                            response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
-                            break
-                    except Exception as e:
-                        log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-                    finally:
-                        tries -= 1
-                        sleep(2)
+                html_text = chrome.get_page_html(url=request.url, cookies=self.cookie)
+            if html_text:
+                response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
+    
         return request, response
 
     def Gettitle_default(self, torrent):

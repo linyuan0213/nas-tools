@@ -275,18 +275,10 @@ class SiteConf(metaclass=SingletonMeta):
         chrome = DrissionPageHelper()
         if render and chrome.get_status():
             # 开渲染
-            tries = 3
-            html_text = ''
-            while tries > 0:
-                try:
-                    html_text = chrome.get_page_html(url=url, cookies=cookie, ua=ua, proxies=Config().get_proxies() if proxy else None)
-                    if html_text:
-                        return html_text
-                except Exception as e:
-                    log.debug(f'获取网页HTML失败： {str(e)} 重试中...')
-                finally:
-                    tries -= 1
-                    time.sleep(2)
+            html_text = chrome.get_page_html(url=url, cookies=cookie)
+            if html_text:
+                return html_text
+
         elif 'm-team' in url:
             param = {'id': param}
             headers.update({

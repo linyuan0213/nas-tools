@@ -196,3 +196,5 @@ laboratory:
   show_more_sites: true
   # 验证码识别服务器
   ocr_server_host: http://127.0.0.1:9300
+  # 网页自动化服务器
+  chrome_server_host: http://127.0.0.1:9850

@@ -703,13 +703,22 @@
               </div>
           </div>
           <div class="row">
-            <div class="col-lg">
-              <div class="mb-1">
+            <div class="col-12 col-lg">
+              <div class="mb-2">
                 <label class="form-label">验证码识别服务器 <span class="form-help"
                                                            title="识别网站验证码 配置格式示例：http://127.0.0.1:9300"
                                                            data-bs-toggle="tooltip">?</span></label>
                 <input type="text" value="{{ Config.laboratory.ocr_server_host or '' }}" class="form-control" id="laboratory.ocr_server_host"
                        placeholder="http://127.0.0.1:9300" autocomplete="off">
+              </div>
+            </div>
+            <div class="col-12 col-lg">
+              <div class="mb-2">
+                <label class="form-label">网页自动化服务器 <span class="form-help"
+                                                           title="识别网站验证码 配置格式示例：http://127.0.0.1:9850"
+                                                           data-bs-toggle="tooltip">?</span></label>
+                <input type="text" value="{{ Config.laboratory.chrome_server_host or '' }}" class="form-control" id="laboratory.chrome_server_host"
+                       placeholder="http://127.0.0.1:9850" autocomplete="off">
               </div>
             </div>
           </div>
