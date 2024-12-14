@@ -5,7 +5,6 @@ curl
 bash
 fuse3
 inotify-tools
-chromium
 s6-overlay
 ffmpeg
 redis
