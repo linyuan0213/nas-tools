@@ -13,8 +13,9 @@ def generate_tab_id() -> str:
 
 
 class DrissionPageHelper(metaclass=SingletonMeta):
-
+    
     def __init__(self):
+        self.url = ""
         url = Config().get_config("laboratory").get('chrome_server_host')
         if url:
             if url.endswith("/"):
