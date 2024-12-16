@@ -1,5 +1,6 @@
 import json
 import uuid
+import time
 import requests
 
 from app.utils.commons import SingletonMeta
@@ -19,11 +20,25 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             if url.endswith("/"):
                 self.url = url[:-1]
             self.url = url
-        
+
     def get_status(self) -> bool:
         if self.url:
             return True
         return False
+
+    def _request_with_retry(self, method, url, retries=3, delay=2, **kwargs):
+        """通用的网络请求重试逻辑"""
+        for attempt in range(retries):
+            try:
+                response = requests.request(method, url, **kwargs)
+                return response
+            except requests.exceptions.RequestException as e:
+                log.warn(f"请求失败(重试 {attempt + 1}): {e}")
+                if attempt < retries - 1:
+                    time.sleep(delay)
+                else:
+                    log.error(f"所有重试失败，失败请求 {url}")
+                    raise
 
     def get_page_html(self,
                       url: str,
@@ -33,6 +48,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
         """获取HTML内容"""
         headers = {"Content-Type": "application/json"}
         tab_id = generate_tab_id()
+
         # 打开新标签
         tabs_url = f"{self.url}/tabs"
         open_tab_data = json.dumps({
@@ -41,12 +57,18 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             "cookie": cookies
         }, separators=(',', ':'))
         try:
-            response = requests.post(tabs_url, headers=headers, data=open_tab_data, timeout=timeout)
+            response = self._request_with_retry(
+                method="POST",
+                url=tabs_url,
+                headers=headers,
+                data=open_tab_data,
+                timeout=timeout
+            )
         except Exception as e:
-            log.error(f"打开新标签页失败: {str(e)}")
+            log.error(f"url: {url} 打开新标签页失败: {str(e)}")
             self._close_tab(tab_id=tab_id)
             return ""
-        if response.status_code != 200:
+        if response.status_code not in (200, 400): 
             log.error(f"打开新标签页失败: {response.text}")
             return ""
 
@@ -61,21 +83,23 @@ class DrissionPageHelper(metaclass=SingletonMeta):
 
         # 处理点击事件
         if click_xpath:
+            self._fetch_html(html_url, timeout)
             click_url = f"{self.url}/tabs/click/"
             click_data = json.dumps({
                 "tab_name": tab_id,
                 "selector": click_xpath
             }, separators=(',', ':'))
-            
             try:
-                response = requests.post(click_url, headers=headers, data=click_data, timeout=timeout)
+                response = self._request_with_retry(
+                    method="POST",
+                    url=click_url,
+                    headers=headers,
+                    data=click_data,
+                    timeout=timeout
+                )
             except Exception as e:
                 log.error(f"点击标签页失败: {str(e)}")
                 self._close_tab(tab_id=tab_id)
-                return ""
-            if response.status_code != 200:
-                log.debug(f"点击失败: {response.text}")
-                self._close_tab(tab_id)
                 return ""
             try:
                 res_json = self._fetch_html(html_url, timeout)
@@ -92,16 +116,23 @@ class DrissionPageHelper(metaclass=SingletonMeta):
 
     def _fetch_html(self, url: str, timeout: int) -> str:
         """返回html"""
-        response = requests.get(url=url, timeout=timeout)
-        response.raise_for_status()
-        return response.text
+        # 延迟加载，等待网页渲染完成
+        time.sleep(1)
+        try:
+            response = self._request_with_retry(
+                method="GET",
+                url=url,
+                timeout=timeout
+            )
+            return response.text
+        except Exception as e:
+            log.error(f"_fetch_html 失败: {str(e)}")
+            raise
 
     def _close_tab(self, tab_id: str):
         """关闭标签页"""
         close_url = f"{self.url}/tabs/{tab_id}"
         try:
-            response = requests.delete(close_url)
-            if response.status_code != 200:
-                log.warning(f"关闭标签页失败: {response.text}")
+            self._request_with_retry(method="DELETE", url=close_url)
         except Exception as e:
             log.error(f"关闭标签页异常: {str(e)}")
