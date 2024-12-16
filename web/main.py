@@ -1686,7 +1686,7 @@ async def upload():
 
 @App.route('/ical')
 @require_auth(force=False)
-async def ical():
+def ical():
     # 是否设置提醒开关
     remind = request.args.get("remind")
     cal = Calendar()

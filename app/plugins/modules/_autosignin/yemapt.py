@@ -45,16 +45,27 @@ class YemaPT(_ISiteSigninHandler):
                                              cookies=site_cookie
                                              )
             # 签到
-            if "注册新用户" in html_text:
+            if "注册新用户" not in html_text:
+                html_text = chrome.get_page_html(url="https://www.yemapt.org/#/consumer/checkIn",
+                                    cookies=site_cookie,
+                                    click_xpath='xpath://li[contains(@data-menu-id, "/consumer/checkIn")]'
+                                    )
+                if "已签到" in html_text:
+                    self.info("今日已签到")
+                    return True, f'【{site}】今日已签到'
+            
                 html_text = chrome.get_page_html(url="https://www.yemapt.org/#/consumer/checkIn",
                                     cookies=site_cookie,
                                     click_xpath='xpath://span[@class="ant-statistic-content-suffix"]'
                                     )
+                # 签到成功
+                if "已签到" in html_text:
+                    self.info("签到成功")
+                    return True, f'【{site}】签到成功'
+            else:
+                self.error("签到失败，签到接口请求失败")
+                return False, f'【{site}】签到失败，cookie失效'
 
-            # 签到成功
-            if "已签到" in html_text:
-                self.info("签到成功")
-                return True, f'【{site}】签到成功'
         else:
             self.info(f"{site} 开始签到")
             html_res = RequestUtils(cookies=site_cookie,
