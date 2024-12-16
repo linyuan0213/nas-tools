@@ -519,7 +519,7 @@ class Qbittorrent(_IDownloadClient):
                                             torrent_files=torrent_files,
                                             save_path=save_path,
                                             category=category,
-                                            is_paused=is_paused,
+                                            is_stopped=is_paused,
                                             tags=tags,
                                             content_layout=content_layout,
                                             upload_limit=upload_limit,
