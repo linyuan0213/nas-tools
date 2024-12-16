@@ -24,10 +24,19 @@ services:
       start_period: 40s # 容器启动后多久开始检测  (default: 0s)
     depends_on:
       - ocr
+      - chrome
 
   ocr:
     image: linyuan0213/nas-tools-ocr:latest
     container_name: nas-tools-ocr
+    ports:
+      - 9300:9300
+    restart: always
+
+  chrome:
+    image: linyuan0213/nas-tools-chrome:latest
+    container_name: nas-tools-chrome
+    shm-size: 2g # 共享内存大小
     ports:
       - 9300:9300
     restart: always
