@@ -38,5 +38,5 @@ services:
     container_name: nas-tools-chrome
     shm_size: 2g # 共享内存大小
     ports:
-      - 9300:9300
+      - 9850:9850
     restart: always
