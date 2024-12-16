@@ -36,7 +36,7 @@ services:
   chrome:
     image: linyuan0213/nas-tools-chrome:latest
     container_name: nas-tools-chrome
-    shm-size: 2g # 共享内存大小
+    shm_size: 2g # 共享内存大小
     ports:
       - 9300:9300
     restart: always
