@@ -44,8 +44,9 @@ class DrissionPageHelper(metaclass=SingletonMeta):
     def get_page_html(self,
                       url: str,
                       cookies=None,
-                      timeout: int = 60,
-                      click_xpath: str = None) -> str:
+                      timeout: int = 120,
+                      click_xpath: str = None,
+                      delay: int = 2) -> str:
         """获取HTML内容"""
         headers = {"Content-Type": "application/json"}
         tab_id = generate_tab_id()
@@ -73,6 +74,9 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             log.error(f"打开新标签页失败: {response.text}")
             return ""
 
+        # 延时多少秒停止加载网页
+        time.sleep(delay)
+        
         # 获取html内容
         html_url = f"{self.url}/tabs/{tab_id}/html"
         try:
@@ -118,7 +122,6 @@ class DrissionPageHelper(metaclass=SingletonMeta):
     def _fetch_html(self, url: str, timeout: int) -> str:
         """返回html"""
         # 延迟加载，等待网页渲染完成
-        time.sleep(1)
         try:
             response = self._request_with_retry(
                 method="GET",
