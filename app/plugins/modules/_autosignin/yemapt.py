@@ -42,24 +42,27 @@ class YemaPT(_ISiteSigninHandler):
 
             # 访问首页
             html_text = chrome.get_page_html(url="https://www.yemapt.org/#/index",
-                                             cookies=site_cookie
+                                             cookies=site_cookie,
+                                             delay=5
                                              )
             # 签到
             if "注册新用户" not in html_text:
                 html_text = chrome.get_page_html(url="https://www.yemapt.org/#/consumer/checkIn",
                                     cookies=site_cookie,
-                                    click_xpath='xpath://li[contains(@data-menu-id, "/consumer/checkIn")]'
+                                    click_xpath='xpath://li[contains(@data-menu-id, "/consumer/checkIn")]',
+                                    delay=2
                                     )
-                if "已签到" in html_text:
+                if html_text and "已签到" in html_text:
                     self.info("今日已签到")
                     return True, f'【{site}】今日已签到'
             
                 html_text = chrome.get_page_html(url="https://www.yemapt.org/#/consumer/checkIn",
                                     cookies=site_cookie,
-                                    click_xpath='xpath://span[@class="ant-statistic-content-suffix"]'
+                                    click_xpath='xpath://span[@class="ant-statistic-content-suffix"]',
+                                    delay=2
                                     )
                 # 签到成功
-                if "已签到" in html_text:
+                if html_text and "已签到" in html_text:
                     self.info("签到成功")
                     return True, f'【{site}】签到成功'
             else:
