@@ -42,3 +42,6 @@ class RedisStore:
 
     def delete(self, *keys):
         self.client.delete(*keys)
+        
+    def ping(self):
+        return self.client.ping()

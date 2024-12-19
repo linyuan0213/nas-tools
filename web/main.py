@@ -7,6 +7,7 @@ import re
 import time
 import traceback
 import urllib
+import sys
 import xml.dom.minidom
 from functools import wraps
 from math import floor
@@ -53,7 +54,7 @@ from web.backend.web_utils import WebUtils
 from web.security import require_auth
 from web.cache import cache
 from app.db import init_db, update_db, init_data
-from initializer import update_config, check_config
+from initializer import check_redis, update_config, check_config
 from version import APP_VERSION
 
 # 配置文件锁
@@ -113,7 +114,8 @@ with App.app_context():
     update_config()
     # 检查配置文件
     check_config()
-
+    # 检查Redis是否启动
+    check_redis()
     log.console("开始启动服务...")
     # 启动服务
     WebAction.start_service()

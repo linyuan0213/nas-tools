@@ -2,10 +2,12 @@ import json
 import os
 import time
 
+import redis
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from werkzeug.security import generate_password_hash
 
+from app.utils.redis_store import RedisStore
 import log
 from app.conf import SystemConfig
 from app.helper import DbHelper, PluginHelper
@@ -397,3 +399,13 @@ def stop_config_monitor():
             _observer.join()
     except Exception as err:
         print(str(err))
+
+
+def check_redis():
+    try:
+        redis_store = RedisStore()
+        redis_store.ping()
+        log.info("Redis 正在运行...")
+    except redis.exceptions.ConnectionError:
+        log.error("Redis 无法连接，请启动 Redis...")
+        exit(1)
