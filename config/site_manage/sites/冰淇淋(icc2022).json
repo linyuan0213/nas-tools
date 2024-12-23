@@ -190,12 +190,12 @@
                 ]
             },
             "description": {
-                "selector": "table.torrentname > tr > td:nth-child(2)",
+                "selector": "table.torrentname > tr > td:nth-child(1)",
                 "remove": "a,b,img,span",
                 "contents": -1
             },
             "labels": {
-                "selector": "table.torrentname > tr > td:nth-child(2) > span"
+                "selector": "table.torrentname > tr > td:nth-child(1) > span"
             },
             "minimumratio": {
                 "text": 1
