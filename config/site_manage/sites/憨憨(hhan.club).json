@@ -1,7 +1,7 @@
 {
-    "id": "icc2022",
-    "name": "冰淇淋",
-    "domain": "https://www.icc2022.com/",
+    "id": "hhanclub",
+    "name": "憨憨",
+    "domain": "https://hhan.club/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
@@ -20,44 +20,40 @@
         }
     },
     "category": {
+        "param": "cat[]",
         "movie": [
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies/电影",
-                "default": true
+                "desc": "Movies/电影"
             }
         ],
         "tv": [
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries/纪录片",
-                "default": true
+                "desc": "Documentaries/纪录片"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations/动漫",
-                "default": true
+                "desc": "Animations/动漫"
             },
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "TV Series/电视剧",
-                "default": true
+                "desc": "TV Series/连续剧"
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "TV Shows/综艺",
-                "default": true
+                "desc": "TV Shows/综艺"
             }
         ]
     },
     "torrents": {
         "list": {
-            "selector": "table.torrents > tr:has(\"table.torrentname\")"
+            "selector": "div.torrent-table-for-spider > div.torrent-table-sub-info"
         },
         "fields": {
             "id": {
@@ -73,6 +69,16 @@
                     }
                 ]
             },
+            "category": {
+                "selector": "a[href*=\"?cat[]=\"]",
+                "attribute": "href",
+                "filters": [
+                    {
+                        "name": "querystring",
+                        "args": "cat"
+                    }
+                ]
+            },
             "title_default": {
                 "selector": "a[href*=\"details.php?id=\"]"
             },
@@ -84,50 +90,35 @@
             "title": {
                 "text": "{% if fields['title_optional'] %}{{ fields['title_optional'] }}{% else %}{{ fields['title_default'] }}{% endif %}"
             },
-            "category": {
-                "selector": "a[href*=\"?cat=\"]",
-                "attribute": "href",
-                "filters": [
-                    {
-                        "name": "replace",
-                        "args": [
-                            "?",
-                            ""
-                        ]
-                    },
-                    {
-                        "name": "querystring",
-                        "args": "cat"
-                    }
-                ]
-            },
             "details": {
                 "selector": "a[href*=\"details.php?id=\"]",
                 "attribute": "href"
+            },
+            "poster": {
+                "text": ""
             },
             "download": {
                 "selector": "a[href*=\"download.php?id=\"]",
                 "attribute": "href"
             },
-            "imdbid": {
-                "selector": "div.imdb_100 > a",
-                "attribute": "href",
-                "filters": [
-                    {
-                        "name": "re_search",
-                        "args": [
-                            "tt\\d+",
-                            0
-                        ]
-                    }
-                ]
+            "size": {
+                "selector": "div.torrent-info-text-size"
+            },
+            "grabs": {
+                "selector": "div.torrent-info-text-finished"
+            },
+            "seeders": {
+                "selector": "div.torrent-info-text-seeders"
+            },
+            "leechers": {
+                "selector": "div.torrent-info-text-leechers"
             },
             "date_elapsed": {
-                "selector": "td:nth-child(4) > span",
+                "selector": "div.torrent-info-text-added > span",
                 "optional": true
             },
             "date_added": {
-                "selector": "td:nth-child(4) > span",
+                "selector": "div.torrent-info-text-added > span",
                 "attribute": "title",
                 "optional": true
             },
@@ -140,25 +131,11 @@
                     }
                 ]
             },
-            "size": {
-                "selector": "td:nth-child(5)"
-            },
-            "seeders": {
-                "selector": "td:nth-child(6)"
-            },
-            "leechers": {
-                "selector": "td:nth-child(7)"
-            },
-            "grabs": {
-                "selector": "td:nth-child(8)"
-            },
             "downloadvolumefactor": {
                 "case": {
-                    "img.pro_free": 0,
-                    "img.pro_free2up": 0,
-                    "img.pro_50pctdown": 0.5,
-                    "img.pro_50pctdown2up": 0.5,
-                    "img.pro_30pctdown": 0.3,
+                    "span.promotion-tag-free": 0,
+                    "span.promotion-tag-50": 0.5,
+                    "span.promotion-tag-30": 0.3,
                     "*": 1
                 }
             },
@@ -173,50 +150,34 @@
             "free_deadline": {
                 "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
                 "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
-                "selector": "img.pro_free,img.pro_free2up",
-                "attribute": "onmouseover",
+                "selector": "div > span > span[title]",
+                "attribute": "title",
                 "filters": [
-                    {
-                        "name": "re_search",
-                        "args": [
-                            "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
-                            0
-                        ]
-                    },
                     {
                         "name": "dateparse",
                         "args": "%Y-%m-%d %H:%M:%S"
                     }
                 ]
             },
+            "tags": {
+                "selector": "div.items-center > a > span.tag"
+            },
             "description": {
-                "selector": "table.torrentname > tr > td:nth-child(1)",
-                "remove": "a,b,img,span",
-                "contents": -1
+                "selector": "div.torrent-info-text-small_name"
             },
             "labels": {
-                "selector": "table.torrentname > tr > td:nth-child(1) > span"
-            },
-            "minimumratio": {
-                "text": 1
-            },
-            "minimumseedtime": {
-                "text": 90000
+                "selector": "div.items-center > a > span.tag"
             }
         }
     },
     "conf": {
         "FREE": [
-            "//h1[@id='top']/b/font[@class='free']"
+            "//div[@class='whitespace-nowrap']/span[contains(@class, 'promotion-tag-free')]"
         ],
-        "2XFREE": [
-            "//h1[@id='top']/b/font[@class='twoupfree']"
-        ],
-        "HR": [
-            "//h1[@id='top']/img[@class='hitandrun']"
-        ],
+        "2XFREE": [],
+        "HR": [],
         "PEER_COUNT": [
-            "//div[@id='peercount']/b[1]"
+            "//div[@id='seeder-count']"
         ]
     }
 }
