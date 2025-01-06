@@ -65,7 +65,7 @@ class SiteUserInfo(metaclass=SingletonMeta):
         if self.sites.check_ratelimit(site_id):
             return
 
-        site_headers.update({'User-Agent': ua})
+        site_headers.update({'User-Agent': ua, 'referer': url})
         # 检测环境，有浏览器内核的优先使用仿真签到
         chrome = DrissionPageHelper()
         if emulate:

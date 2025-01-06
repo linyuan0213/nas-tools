@@ -109,7 +109,7 @@ class TorrentSpider(feapder.AirSpider):
         self.fields = indexer.torrents.get('fields')
         self.browse_list = indexer.torrents.get('browse_list')
         self.browse_fields = indexer.torrents.get('browse_fields')
-        self.render = indexer.render
+        # self.render = indexer.render
         self.domain = indexer.domain
         self.page = page
         if self.domain and not str(self.domain).endswith("/"):
@@ -262,7 +262,8 @@ class TorrentSpider(feapder.AirSpider):
         response = None
         if not self.site_info.get('chrome'):
             request.headers = {
-                "User-Agent": self.ua
+                "User-Agent": self.ua,
+                "referer": self.domain
             }
             request.cookies = RequestUtils.cookie_parse(self.cookie)
             if self.proxies:
