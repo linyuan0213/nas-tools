@@ -99,7 +99,7 @@ class OpenAiHelper(metaclass=SingletonMeta):
                     }
                 ]
         return openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model= "gpt-3.5-turbo" or Config().get_config("openai").get("api_model"),
             user=user,
             messages=message,
             **kwargs

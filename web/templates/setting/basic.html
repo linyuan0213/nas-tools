@@ -238,22 +238,6 @@
                   </select>
                 </div>
               </div>
-              <div class="col-lg">
-                <div class="mb-3">
-                  <label class="form-label">二级分类策略 <span class="form-help"
-                                                               title="启用二级分类后会在电影/电视剧/动漫媒体库目录下按二级分类名建立子目录；此处配置分类的策略名，保存后会自动生成默认配置；如不需要启动分类，则该项配置为空"
-                                                               data-bs-toggle="tooltip">?</span></label>
-                  <div class="input-group input-group-flat">
-                    <input type="text" value="{{ Config.media.category or '' }}" class="form-control" id="media.category"
-                           placeholder="留空不启用二级分类" autocomplete="off" name="category_name">
-                    <span class="input-group-text">
-                      <a href="javascript:show_category_config_modal()" class="link-secondary" title="编辑二级分类策略" data-bs-toggle="tooltip">
-                        {{ SVG.edit() }}
-                      </a>
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
             <div class="row">
               <div class="col-lg">
@@ -278,6 +262,24 @@
               </div>
               <div class="col-lg">
                 <div class="mb-3">
+                  <label class="form-label">二级分类策略 <span class="form-help"
+                                                               title="启用二级分类后会在电影/电视剧/动漫媒体库目录下按二级分类名建立子目录；此处配置分类的策略名，保存后会自动生成默认配置；如不需要启动分类，则该项配置为空"
+                                                               data-bs-toggle="tooltip">?</span></label>
+                  <div class="input-group input-group-flat">
+                    <input type="text" value="{{ Config.media.category or '' }}" class="form-control" id="media.category"
+                           placeholder="留空不启用二级分类" autocomplete="off" name="category_name">
+                    <span class="input-group-text">
+                      <a href="javascript:show_category_config_modal()" class="link-secondary" title="编辑二级分类策略" data-bs-toggle="tooltip">
+                        {{ SVG.edit() }}
+                      </a>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg">
+                <div class="mb-3">
                   <label class="form-label">OpenAI API Url <span class="form-help"
                                                                         title="自定义openai请求地址（请注意格式，请求地址需带有请求头且最后没有/号），不填默认使用https://api.openai.com"
                                                                         data-bs-toggle="tooltip">?</span></label>
@@ -292,6 +294,15 @@
                                                                         data-bs-toggle="tooltip">?</span></label>
                   <input type="text" value="{% if Config.openai %}{{ Config.openai.api_key or '' }}{% endif %}" class="form-control"
                          id="openai.api_key" placeholder="sk-xxx" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-label">OpenAI Model <span class="form-help"
+                                                                        title="GPT 模型，默认gpt-3.5-turbo"
+                                                                        data-bs-toggle="tooltip">?</span></label>
+                  <input type="text" value="{% if Config.openai %}{{ Config.openai.api_model or '' }}{% endif %}" class="form-control"
+                         id="openai.api_model" placeholder="gpt-3.5-turbo" autocomplete="off">
                 </div>
               </div>
             </div>

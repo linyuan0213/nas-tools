@@ -158,7 +158,8 @@ openai:
   api_key:
   # 【openai api url】：自定义openai请求地址
   api_url:
-
+  # 【openai api model】：自定义openai模型
+  api_model:
 # 【配置安全】
 security:
   # 【媒体服务器webhook允许ip范围】：即只有如下范围的IP才允许调用webhook
