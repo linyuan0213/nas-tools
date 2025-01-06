@@ -78,7 +78,6 @@ soupsieve==2.3.2.post1
 SQLAlchemy==2.0.4
 srt==3.5.2
 transmission-rpc==7.0.11
-typing-extensions==4.10.0
 tzdata==2022.2
 tzlocal==4.2
 urllib3==2.2.2
