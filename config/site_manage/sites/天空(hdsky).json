@@ -219,7 +219,7 @@
                 ]
             },
             "labels": {
-                "selector": "td:nth-child(2) > table > tr > td.embedded > span"
+                "selector": "td:nth-child(2) > table > tr > td.embedded > span.optiontag"
             }
         }
     },
