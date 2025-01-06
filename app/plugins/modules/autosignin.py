@@ -379,7 +379,9 @@ class AutoSignIn(_IPluginModule):
                                 # 命中的站点
                                 retry_msg.append(s)
                                 continue
-
+                
+                if not s:
+                    failed_msg.append("签到失败，未获取到数据")
                 if "登录成功" in s:
                     login_success_msg.append(s)
                 elif "仿真签到成功" in s:
@@ -527,6 +529,10 @@ class AutoSignIn(_IPluginModule):
                     if re.search(r'已签|签到已得', html_text, re.IGNORECASE):
                         self.info("%s 仿真签到成功" % site)
                         return f"【{site}】仿真签到成功"
+
+                    if re.search(r'完成两步验证', html_text, re.IGNORECASE):
+                        self.warn("%s 仿真签到失败，需要两步验证" % site)
+                        return f"【{site}】仿真签到失败，需要两步验证"
                 except Exception as e:
                     ExceptionUtils.exception_traceback(e)
                     self.warn("%s 仿真签到失败：%s" % (site, str(e)))
@@ -572,6 +578,9 @@ class AutoSignIn(_IPluginModule):
                         self.warn(f"{site} {checkin_text}失败，{msg}")
                         return f"【{site}】{checkin_text}失败，{msg}！"
                     else:
+                        if re.search(r'完成两步验证', res.text, re.IGNORECASE):
+                            self.warn("%s 签到失败，需要两步验证" % site)
+                            return f"【{site}】签到失败，需要两步验证"
                         self.info(f"{site} {checkin_text}成功")
                         return f"【{site}】{checkin_text}成功"
                 elif res is not None:
