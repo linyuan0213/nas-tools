@@ -1,5 +1,5 @@
 {
-    "version": "202501060925",
+    "version": "202501061331",
     "indexer": [
         {
             "id": "hares",
@@ -14375,7 +14375,7 @@
                         ]
                     },
                     "labels": {
-                        "selector": "td:nth-child(2) > table > tr > td.embedded > span"
+                        "selector": "td:nth-child(2) > table > tr > td.embedded > span.optiontag"
                     }
                 }
             }
