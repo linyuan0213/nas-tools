@@ -188,7 +188,7 @@ class Subscribe(metaclass=SingletonMeta):
                 if not season and str(mediaid).startswith("DB:"):
                     season = 1
                 if season:
-                    total_episode = self.media.get_tmdb_season_episodes_num(tv_info=media_info.tmdb_info,
+                    total_episode = total_ep if total_ep else self.media.get_tmdb_season_episodes_num(tv_info=media_info.tmdb_info,
                                                                             season=int(season))
                 else:
                     # 查询季及集信息
