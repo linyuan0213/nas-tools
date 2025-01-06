@@ -28,6 +28,7 @@ flask-sock==0.7.0
 flask-session==0.8.0
 flask-caching==2.3.0
 func_timeout==4.3.5
+httpx==0.28.1
 humanize==4.4.0
 icalendar==5.0.4
 influxdb==5.3.1

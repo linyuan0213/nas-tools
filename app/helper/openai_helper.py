@@ -1,33 +1,39 @@
 import json
-
-import openai
-
+import httpx
+from openai import Client
 from app.utils import OpenAISessionCache
 from app.utils.commons import SingletonMeta
 from config import Config
 
 
 class OpenAiHelper(metaclass=SingletonMeta):
-    _api_key = None
-    _api_url = None
-
     def __init__(self):
+        self.client = None
         self.init_config()
 
     def init_config(self):
-        self._api_key = Config().get_config("openai").get("api_key")
-        if self._api_key:
-            openai.api_key = self._api_key
-        self._api_url = Config().get_config("openai").get("api_url")
-        if self._api_url:
-            openai.api_base = self._api_url + "/v1"
-        else:
-            proxy_conf = Config().get_proxies()
-            if proxy_conf and proxy_conf.get("https"):
-                openai.proxy = proxy_conf.get("https")
+        """
+        初始化 OpenAI 客户端配置，包括 API 密钥和代理设置
+        """
+        config = Config().get_config("openai")
+        api_key = config.get("api_key")
+        api_url = config.get("api_url")
+        api_base = None
+        if api_url:
+            api_base = f"{api_url}/v1"
 
+        proxy_conf = Config().get_proxies()
+        proxy = proxy_conf.get("https")
+        self.client = Client(api_key=api_key, 
+                            base_url=api_base,
+                            http_client=httpx.Client(proxy=proxy),
+        )
+        
     def get_state(self):
-        return True if self._api_key else False
+        """
+        检查客户端是否已初始化
+        """
+        return self.client is not None
 
     @staticmethod
     def __save_session(session_id, message):
@@ -52,14 +58,14 @@ class OpenAiHelper(metaclass=SingletonMeta):
         :param session_id: 会话ID
         :return: 会话上下文
         """
-        seasion = OpenAISessionCache.get(session_id)
-        if seasion:
-            seasion.append({
+        session = OpenAISessionCache.get(session_id)
+        if session:
+            session.append({
                 "role": "user",
                 "content": message
             })
         else:
-            seasion = [
+            session = [
                 {
                     "role": "system",
                     "content": "请在接下来的对话中请使用中文回复，并且内容尽可能详细。"
@@ -68,41 +74,26 @@ class OpenAiHelper(metaclass=SingletonMeta):
                     "role": "user",
                     "content": message
                 }]
-            OpenAISessionCache.set(session_id, seasion)
-        return seasion
+            OpenAISessionCache.set(session_id, session)
+        return session
 
-    @staticmethod
-    def __get_model(message,
-                    prompt=None,
-                    user="NAStool",
-                    **kwargs):
+    def __get_model(self, messages, prompt=None, user="NAStool", **kwargs):
         """
-        获取模型
+        调用 OpenAI 模型生成响应
         """
-        if not isinstance(message, list):
+        if not isinstance(messages, list):
             if prompt:
-                message = [
-                    {
-                        "role": "system",
-                        "content": prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": message
-                    }
+                messages = [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": messages},
                 ]
             else:
-                message = [
-                    {
-                        "role": "user",
-                        "content": message
-                    }
-                ]
-        return openai.ChatCompletion.create(
-            model= "gpt-3.5-turbo" or Config().get_config("openai").get("api_model"),
+                messages = [{"role": "user", "content": messages}]
+        return self.client.chat.completions.create(
+            model=Config().get_config("openai").get("api_model") or "gpt-3.5-turbo",
             user=user,
-            messages=message,
-            **kwargs
+            messages=messages,
+            **kwargs,
         )
 
     @staticmethod
@@ -117,94 +108,88 @@ class OpenAiHelper(metaclass=SingletonMeta):
 
     def get_media_name(self, filename):
         """
-        从文件名中提取媒体名称等要素
-        :param filename: 文件名
-        :return: Json
+        从文件名中提取媒体信息
         """
         if not self.get_state():
             return None
         result = ""
         try:
-            _filename_prompt = "I will give you a movie/tvshow file name.You need to return a Json." \
-                               "\nPay attention to the correct identification of the film name." \
-                               "\n{\"title\":string,\"version\":string,\"part\":string,\"year\":string,\"resolution\":string,\"season\":number|null,\"episode\":number|null}"
-            completion = self.__get_model(prompt=_filename_prompt, message=filename)
+            _filename_prompt = (
+                "I will give you a movie/tv show file name. You need to return a JSON."
+                "\nPay attention to correctly identifying the film name."
+                "\n{\"title\":string,\"version\":string,\"part\":string,\"year\":string,\"resolution\":string,\"season\":number|null,\"episode\":number|null}"
+            )
+            completion = self.__get_model(prompt=_filename_prompt, messages=filename)
             result = completion.choices[0].message.content
             return json.loads(result)
         except Exception as e:
-            print(f"{str(e)}：{result}")
+            print(f"Error: {str(e)} | Result: {result}")
             return {}
 
     def get_answer(self, text, userid):
         """
-        获取答案
-        :param text: 输入文本
-        :param userid: 用户ID
-        :return:
+        获取对话答案
         """
         if not self.get_state():
             return ""
         try:
             if not userid:
                 return "用户信息错误"
-            else:
-                userid = str(userid)
+            userid = str(userid)
+
             if text == "#清除":
                 self.__clear_session(userid)
                 return "会话已清除"
-            # 获取历史上下文
+
             messages = self.__get_session(userid, text)
-            completion = self.__get_model(message=messages, user=userid)
+            completion = self.__get_model(messages=messages, user=userid)
             result = completion.choices[0].message.content
+
             if result:
-                self.__save_session(userid, text)
+                self.__save_session(userid, result)
             return result
-        except openai.error.RateLimitError as e:
-            return f"请求被ChatGPT拒绝了，{str(e)}"
-        except openai.error.APIConnectionError as e:
-            return "ChatGPT网络连接失败！"
-        except openai.error.Timeout as e:
-            return "没有接收到ChatGPT的返回消息！"
         except Exception as e:
-            return f"请求ChatGPT出现错误：{str(e)}"
+            return f"请求 OpenAI API 出现错误：{str(e)}"
 
     def translate_to_zh(self, text):
         """
-        翻译为中文
-        :param text: 输入文本
+        翻译文本为中文
         """
         if not self.get_state():
             return False, None
-        system_prompt = "You are a translation engine that can only translate text and cannot interpret it."
+
+        system_prompt = (
+            "You are a translation engine that can only translate text and cannot interpret it."
+        )
         user_prompt = f"translate to zh-CN:\n\n{text}"
-        result = ""
         try:
-            completion = self.__get_model(prompt=system_prompt,
-                                          message=user_prompt,
-                                          temperature=0,
-                                          top_p=1,
-                                          frequency_penalty=0,
-                                          presence_penalty=0)
+            completion = self.__get_model(
+                prompt=system_prompt,
+                messages=user_prompt,
+                temperature=0,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+            )
             result = completion.choices[0].message.content.strip()
             return True, result
         except Exception as e:
-            print(f"{str(e)}：{result}")
             return False, str(e)
 
     def get_question_answer(self, question):
         """
-        从给定问题和选项中获取正确答案
-        :param question: 问题及选项
-        :return: Json
+        从问题及选项中获取答案
         """
         if not self.get_state():
             return None
         result = ""
         try:
-            _question_prompt = "下面我们来玩一个游戏，你是老师，我是学生，你需要回答我的问题，我会给你一个题目和几个选项，你的回复必须是给定选项中正确答案对应的序号，请直接回复数字"
-            completion = self.__get_model(prompt=_question_prompt, message=question)
+            _question_prompt = (
+                "下面我们来玩一个游戏，你是老师，我是学生，你需要回答我的问题。"
+                "我会给你一个题目和几个选项，你的回复必须是给定选项中正确答案对应的序号，请直接回复数字。"
+            )
+            completion = self.__get_model(prompt=_question_prompt, messages=question)
             result = completion.choices[0].message.content
             return result
         except Exception as e:
-            print(f"{str(e)}：{result}")
             return {}
