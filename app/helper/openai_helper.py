@@ -24,10 +24,11 @@ class OpenAiHelper(metaclass=SingletonMeta):
 
         proxy_conf = Config().get_proxies()
         proxy = proxy_conf.get("https")
-        self.client = Client(api_key=api_key, 
-                            base_url=api_base,
-                            http_client=httpx.Client(proxy=proxy),
-        )
+        if api_key:
+            self.client = Client(api_key=api_key, 
+                                base_url=api_base,
+                                http_client=httpx.Client(proxy=proxy),
+            )
         
     def get_state(self):
         """
