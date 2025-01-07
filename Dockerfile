@@ -46,6 +46,7 @@ RUN mkdir -p ${WORKDIR} ${HOME}
 # 复制应用代码到镜像
 ADD ./ ${WORKDIR}/
 
+WORKDIR ${WORKDIR}
 # 添加用户和用户组，并设置系统参数
 RUN apk add --no-cache --virtual .build-deps \
             libffi-dev \
