@@ -58,4 +58,12 @@ dependencies = [
     "gunicorn>=23.0.0",
     "fast-bencode>=1.1.7",
     "pillow>=11.1.0",
+    "iso639>=0.1.4",
+    "func-timeout>=4.3.5",
+    "humanize>=4.11.0",
+    "srt>=3.5.3",
+    "backcall>=0.2.0",
+    "backports-shutil-get-terminal-size>=1.0.0",
+    "pickleshare>=0.7.5",
+    "pytz-deprecation-shim>=0.1.0.post0",
 ]

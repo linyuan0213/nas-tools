@@ -91,6 +91,24 @@ wheels = [
 ]
 
 [[package]]
+name = "backcall"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/40/764a663805d84deee23043e1426a9175567db89c8b3287b5c2ad9f71aa93/backcall-0.2.0.tar.gz", hash = "sha256:5cbdbf27be5e7cfadb448baf0aa95508f91f2bbc6c6437cd9cd06e2a4c215e1e", size = 18041 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4c/1c/ff6546b6c12603d8dd1070aa3c3d273ad4c07f5771689a7b69a550e8c951/backcall-0.2.0-py2.py3-none-any.whl", hash = "sha256:fbbce6a29f263178a1f7915c1940bde0ec2b2a967566fe1c65c1dfb7422bd255", size = 11157 },
+]
+
+[[package]]
+name = "backports-shutil-get-terminal-size"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/9c/368086faa9c016efce5da3e0e13ba392c9db79e3ab740b763fe28620b18b/backports.shutil_get_terminal_size-1.0.0.tar.gz", hash = "sha256:713e7a8228ae80341c70586d1cc0a8caa5207346927e23d09dcbcaf18eadec80", size = 4279 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7d/cd/1750d6c35fe86d35f8562091737907f234b78fdffab42b29c72b1dd861f4/backports.shutil_get_terminal_size-1.0.0-py2.py3-none-any.whl", hash = "sha256:0975ba55054c15e346944b38956a4c9cbee9009391e41b86c68990effb8c1f64", size = 6497 },
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.12.3"
 source = { registry = "https://pypi.org/simple" }
@@ -632,6 +650,12 @@ wheels = [
 ]
 
 [[package]]
+name = "func-timeout"
+version = "4.3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/0d/bf0567477f7281d9a3926c582bfef21bff7498fc0ffd3e9de21811896a0b/func_timeout-4.3.5.tar.gz", hash = "sha256:74cd3c428ec94f4edfba81f9b2f14904846d5ffccc27c92433b8b5939b5575dd", size = 44264 }
+
+[[package]]
 name = "greenlet"
 version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -723,6 +747,15 @@ wheels = [
 ]
 
 [[package]]
+name = "humanize"
+version = "4.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/40/64a912b9330786df25e58127194d4a5a7441f818b400b155e748a270f924/humanize-4.11.0.tar.gz", hash = "sha256:e66f36020a2d5a974c504bd2555cf770621dbdbb6d82f94a6857c0b1ea2608be", size = 80374 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/92/75/4bc3e242ad13f2e6c12e0b0401ab2c5e5c6f0d7da37ec69bc808e24e0ccb/humanize-4.11.0-py3-none-any.whl", hash = "sha256:b53caaec8532bcb2fff70c8826f904c35943f8cecaca29d272d9df38092736c0", size = 128055 },
+]
+
+[[package]]
 name = "icalendar"
 version = "6.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -789,6 +822,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/01/35/6f90fdddff7a08b7b
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/60/d0feb6b6d9fe4ab89fe8fe5b47cbf6cd936bfd9f1e7ffa9d0015425aeed6/ipython-8.31.0-py3-none-any.whl", hash = "sha256:46ec58f8d3d076a61d128fe517a51eb730e3aaf0c184ea8c17d16e366660c6a6", size = 821583 },
 ]
+
+[[package]]
+name = "iso639"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/23/6aecf85ed735ff017af073d1da764b8f24822f8ec17798fc83816d166826/iso639-0.1.4.tar.gz", hash = "sha256:88b70cf6c64ee9c2c2972292818c8beb32db9ea6f4de1f8471a9b081a3d92e98", size = 11042 }
 
 [[package]]
 name = "itsdangerous"
@@ -1133,6 +1172,8 @@ source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "apscheduler" },
+    { name = "backcall" },
+    { name = "backports-shutil-get-terminal-size" },
     { name = "beautifulsoup4" },
     { name = "bs4" },
     { name = "cacheout" },
@@ -1150,15 +1191,19 @@ dependencies = [
     { name = "flask-restx" },
     { name = "flask-session" },
     { name = "flask-sock" },
+    { name = "func-timeout" },
     { name = "gunicorn" },
     { name = "httpx" },
+    { name = "humanize" },
     { name = "icalendar" },
+    { name = "iso639" },
     { name = "jinja2" },
     { name = "jsonpath" },
     { name = "loguru" },
     { name = "lxml" },
     { name = "openai" },
     { name = "parse" },
+    { name = "pickleshare" },
     { name = "pillow" },
     { name = "plexapi" },
     { name = "psutil" },
@@ -1170,6 +1215,7 @@ dependencies = [
     { name = "pyrsistent" },
     { name = "python-dateutil" },
     { name = "python-hosts" },
+    { name = "pytz-deprecation-shim" },
     { name = "qbittorrent-api" },
     { name = "redis" },
     { name = "redis-py-cluster" },
@@ -1178,6 +1224,7 @@ dependencies = [
     { name = "setuptools" },
     { name = "slack-bolt" },
     { name = "sqlalchemy" },
+    { name = "srt" },
     { name = "transmission-rpc" },
     { name = "urllib3" },
     { name = "watchdog" },
@@ -1190,6 +1237,8 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.14.0" },
     { name = "apscheduler", specifier = ">=3.11.0" },
+    { name = "backcall", specifier = ">=0.2.0" },
+    { name = "backports-shutil-get-terminal-size", specifier = ">=1.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "cacheout", specifier = ">=0.16.0" },
@@ -1207,15 +1256,19 @@ requires-dist = [
     { name = "flask-restx", specifier = ">=1.3.0" },
     { name = "flask-session", specifier = ">=0.8.0" },
     { name = "flask-sock", specifier = ">=0.7.0" },
+    { name = "func-timeout", specifier = ">=4.3.5" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "humanize", specifier = ">=4.11.0" },
     { name = "icalendar", specifier = ">=6.1.0" },
+    { name = "iso639", specifier = ">=0.1.4" },
     { name = "jinja2", specifier = ">=3.1.5" },
     { name = "jsonpath", specifier = ">=0.82.2" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "lxml", specifier = ">=5.3.0" },
     { name = "openai", specifier = ">=1.59.3" },
     { name = "parse", specifier = ">=1.20.2" },
+    { name = "pickleshare", specifier = ">=0.7.5" },
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "plexapi", specifier = ">=4.16.0" },
     { name = "psutil", specifier = ">=6.1.1" },
@@ -1227,6 +1280,7 @@ requires-dist = [
     { name = "pyrsistent", specifier = ">=0.20.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-hosts", specifier = ">=1.0.7" },
+    { name = "pytz-deprecation-shim", specifier = ">=0.1.0.post0" },
     { name = "qbittorrent-api", specifier = ">=2024.12.71" },
     { name = "redis", specifier = ">=3.5.3" },
     { name = "redis-py-cluster", specifier = ">=2.1.3" },
@@ -1235,6 +1289,7 @@ requires-dist = [
     { name = "setuptools", specifier = ">=75.7.0" },
     { name = "slack-bolt", specifier = ">=1.22.0" },
     { name = "sqlalchemy", specifier = ">=2.0.36" },
+    { name = "srt", specifier = ">=3.5.3" },
     { name = "transmission-rpc", specifier = ">=7.0.11" },
     { name = "urllib3", specifier = ">=2.3.0" },
     { name = "watchdog", specifier = ">=6.0.0" },
@@ -1315,6 +1370,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/c3/059298687310d527a58bb01f3b1965787ee3b40dce76752eda8b44e9a2c5/pexpect-4.9.0-py2.py3-none-any.whl", hash = "sha256:7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523", size = 63772 },
+]
+
+[[package]]
+name = "pickleshare"
+version = "0.7.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/b6/df3c1c9b616e9c0edbc4fbab6ddd09df9535849c64ba51fcb6531c32d4d8/pickleshare-0.7.5.tar.gz", hash = "sha256:87683d47965c1da65cdacaf31c8441d12b8044cdec9aca500cd78fc2c683afca", size = 6161 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/41/220f49aaea88bc6fa6cba8d05ecf24676326156c23b991e80b3f2fc24c77/pickleshare-0.7.5-py2.py3-none-any.whl", hash = "sha256:9649af414d74d4df115d5d718f82acb59c9d418196b7b4290ed47a12ce62df56", size = 6877 },
 ]
 
 [[package]]
@@ -1644,6 +1708,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3a/31/3c70bf7603cc2dca0f19bdc53b4537a797747a58875b552c8c413d963a3f/pytz-2024.2.tar.gz", hash = "sha256:2aa355083c50a0f93fa581709deac0c9ad65cca8a9e9beac660adcbd493c798a", size = 319692 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/c3/005fcca25ce078d2cc29fd559379817424e94885510568bc1bc53d7d5846/pytz-2024.2-py2.py3-none-any.whl", hash = "sha256:31c7c1817eb7fae7ca4b8c7ee50c72f93aa2dd863de768e1ef4245d426aa0725", size = 508002 },
+]
+
+[[package]]
+name = "pytz-deprecation-shim"
+version = "0.1.0.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/f0/909f94fea74759654390a3e1a9e4e185b6cd9aa810e533e3586f39da3097/pytz_deprecation_shim-0.1.0.post0.tar.gz", hash = "sha256:af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d", size = 60190 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/73/3eaab547ca809754e67e06871cff0fc962bafd4b604e15f31896a0f94431/pytz_deprecation_shim-0.1.0.post0-py2.py3-none-any.whl", hash = "sha256:8314c9692a636c8eb3bda879b9f119e350e93223ae83e70e80c31675a0fdc1a6", size = 15734 },
 ]
 
 [[package]]
@@ -1979,6 +2055,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/ce/5f7428df55660d6879d0522adc73a3364970b5ef33ec17fa125c5dbcac1d/SQLAlchemy-2.0.36-cp313-cp313-win_amd64.whl", hash = "sha256:8c78ac40bde930c60e0f78b3cd184c580f89456dd87fc08f9e3ee3ce8765ce88", size = 2084574 },
     { url = "https://files.pythonhosted.org/packages/b8/49/21633706dd6feb14cd3f7935fc00b60870ea057686035e1a99ae6d9d9d53/SQLAlchemy-2.0.36-py3-none-any.whl", hash = "sha256:fddbe92b4760c6f5d48162aef14824add991aeda8ddadb3c31d56eb15ca69f8e", size = 1883787 },
 ]
+
+[[package]]
+name = "srt"
+version = "3.5.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/b7/4a1bc231e0681ebf339337b0cd05b91dc6a0d701fa852bb812e244b7a030/srt-3.5.3.tar.gz", hash = "sha256:4884315043a4f0740fd1f878ed6caa376ac06d70e135f306a6dc44632eed0cc0", size = 28296 }
 
 [[package]]
 name = "stack-data"
