@@ -4,7 +4,7 @@ FROM python:3.11-alpine3.19 AS builder
 # 减少 COPY 操作的次数
 COPY ./package_list.txt /tmp/
 # Install uv.
-COPY --from=astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # 安装依赖，安装 rclone 和 mc，清理无用文件
 RUN apk add --no-cache $(cat /tmp/package_list.txt) \
