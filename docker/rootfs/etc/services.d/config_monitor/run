@@ -1,6 +1,7 @@
 #!/usr/bin/with-contenv bash
 
 umask ${UMASK}
+source ${WORKDIR}/.venv/bin/activate
 
 exec \
     cd ${WORKDIR} s6-setuidgid nt python config_monitor.py

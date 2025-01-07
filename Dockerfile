@@ -27,6 +27,7 @@ ENV S6_SERVICES_GRACETIME=30000 \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_SYNC_DISKS=1 \
     HOME="/nt" \
+    PATH="${HOME}/.local/bin:${PATH}" \
     TERM="xterm" \
     LANG="C.UTF-8" \
     TZ="Asia/Shanghai" \
