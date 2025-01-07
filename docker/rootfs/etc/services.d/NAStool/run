@@ -2,7 +2,6 @@
 # shellcheck shell=bash
 
 umask ${UMASK}
-. ${WORKDIR}/.venv/bin/activate
 
 exec \
     s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost ${NT_PORT}" \
