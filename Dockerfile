@@ -14,6 +14,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && curl https://dl.min.io/client/mc/release/linux-${ARCH}/mc --create-dirs -o /usr/bin/mc \
     && chmod +x /usr/bin/mc \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && source $HOME/.local/bin/env \
     && uv sync \
     && apk del --purge .build-deps \
     && rm -rf /tmp/* /root/.cache /var/cache/apk/*
