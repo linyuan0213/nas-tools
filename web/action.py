@@ -26,7 +26,7 @@ from app.downloader import Downloader
 from app.filetransfer import FileTransfer
 from app.filter import Filter
 from app.helper import DbHelper, ProgressHelper, ThreadHelper, \
-    MetaHelper, DisplayHelper, WordsHelper, IndexerHelper
+    MetaHelper, WordsHelper, IndexerHelper
 from app.helper import RssHelper, PluginHelper
 from app.indexer import Indexer
 from app.media import Category, Media, Bangumi, DouBan, Scraper

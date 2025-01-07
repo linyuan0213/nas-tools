@@ -13,10 +13,8 @@ RUN apk add --no-cache --virtual .build-deps \
     && if [ "$(uname -m)" = "x86_64" ]; then ARCH=amd64; elif [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; fi \
     && curl https://dl.min.io/client/mc/release/linux-${ARCH}/mc --create-dirs -o /usr/bin/mc \
     && chmod +x /usr/bin/mc \
-    && pip install --upgrade pip setuptools wheel \
-    && pip install cython \
-    && pip install gunicorn \
-    && pip install -r /tmp/requirements.txt \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && uv sync \
     && apk del --purge .build-deps \
     && rm -rf /tmp/* /root/.cache /var/cache/apk/*
 COPY --chmod=755 ./docker/rootfs /
@@ -28,7 +26,6 @@ ENV S6_SERVICES_GRACETIME=30000 \
     S6_SYNC_DISKS=1 \
     HOME="/nt" \
     TERM="xterm" \
-    PATH=${PATH}:/usr/lib/chromium \
     LANG="C.UTF-8" \
     TZ="Asia/Shanghai" \
     NASTOOL_CONFIG="/config/config.yaml" \
