@@ -10,3 +10,4 @@
 .vscode/
 ./config/site_manage/*.json
 ./config/site_manage/*.dat
+/uv.lock
