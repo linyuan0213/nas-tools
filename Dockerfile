@@ -14,8 +14,6 @@ RUN apk add --no-cache --virtual .build-deps \
     && curl https://dl.min.io/client/mc/release/linux-${ARCH}/mc --create-dirs -o /usr/bin/mc \
     && chmod +x /usr/bin/mc \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && source $HOME/.local/bin/env \
-    && uv sync \
     && apk del --purge .build-deps \
     && rm -rf /tmp/* /root/.cache /var/cache/apk/*
 COPY --chmod=755 ./docker/rootfs /
@@ -43,6 +41,8 @@ ADD ./ ${WORKDIR}/
 
 WORKDIR ${WORKDIR}
 RUN mkdir ${HOME} \
+    && source $HOME/.local/bin/env \
+    && uv sync \
     && addgroup -S nt -g 911 \
     && adduser -S nt -G nt -h ${HOME} -s /bin/bash -u 911 \
     && echo 'fs.inotify.max_user_watches=5242880' >> /etc/sysctl.conf \
