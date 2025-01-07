@@ -3,4 +3,4 @@
 umask ${UMASK}
 
 exec \
-    cd ${WORKDIR} s6-setuidgid nt . .venv/bin/activate && python config_monitor.py
+    cd ${WORKDIR} s6-setuidgid nt .venv/bin/python config_monitor.py

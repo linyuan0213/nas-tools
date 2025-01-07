@@ -3,6 +3,8 @@ FROM python:3.11-alpine3.19 AS builder
 
 # 减少 COPY 操作的次数
 COPY ./package_list.txt /tmp/
+# Install uv.
+COPY --from=astral-sh/uv:latest /uv /uvx /bin/
 
 # 安装依赖，安装 rclone 和 mc，清理无用文件
 RUN apk add --no-cache $(cat /tmp/package_list.txt) \
@@ -60,9 +62,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && echo 'fs.inotify.max_user_instances=5242880' >> /etc/sysctl.conf \
     && echo 'vm.overcommit_memory=1' >> /etc/sysctl.conf \
     && echo "nt ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
-    && curl -sSL https://astral.sh/uv/install.sh | sh \
-    && . $HOME/.local/bin/env \
-    && uv sync \
+    && uv sync --frozen --no-cache\
     && apk del --purge .build-deps \
     && rm -rf /tmp/* /root/.cache /var/cache/apk/*
 
