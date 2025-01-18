@@ -4,7 +4,7 @@ import re
 import json
 from datetime import datetime, timedelta
 from threading import Event
-from time import sleep
+from time import time
 
 import pytz
 from lxml import etree
@@ -551,7 +551,8 @@ class AutoSignIn(_IPluginModule):
                     headers.update({
                         "accept": "application/json, text/plain, */*",
                         "content-type": "application/json",
-                        "user-agent": ua
+                        "user-agent": ua,
+                        "ts": str(int(time()))
                     })
                     if headers.get('x-api-key'):
                         headers.pop("x-api-key")
@@ -560,7 +561,7 @@ class AutoSignIn(_IPluginModule):
                         return f"【{site}】{site} 请填写请求头 authorization 参数！"
                     res = RequestUtils(headers=headers,
                                        proxies=Config().get_proxies() if site_info.get("proxy") else None
-                                       ).post_res(url=url, data='')
+                                       ).post_res(url=url)
                 else:
                     headers.update({'User-Agent': ua})
                     res = RequestUtils(cookies=site_cookie,
