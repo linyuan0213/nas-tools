@@ -253,10 +253,12 @@ class TorrentSpider(feapder.AirSpider):
         if params:
             yield feapder.Request(url=searchurl,
                                 use_session=True,
-                                data=params)
+                                data=params,
+                                method="GET")
         else:
             yield feapder.Request(url=searchurl,
-                                use_session=True)
+                                use_session=True,
+                                method="GET")
 
     def download_midware(self, request):
         response = None
