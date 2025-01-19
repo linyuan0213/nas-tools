@@ -204,6 +204,8 @@ class Torrent:
             file_name = unquote(url.split("/")[-1])
         else:
             file_name = str(datetime.datetime.now())
+        
+        file_name = file_name.replace('/', '-')
         return file_name
 
     @staticmethod
