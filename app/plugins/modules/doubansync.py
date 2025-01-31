@@ -607,7 +607,7 @@ class DoubanSync(_IPluginModule):
             if userinfo:
                 user_name = userinfo.get("name")
             else:
-                self.warn(f"【DoubanSync】用户名获取失败，请检查豆瓣ID {user} 是否输入正确")
+                self.warn(f"【DoubanSync】用户名获取失败，请检查豆瓣ID {user} 是否输入正确，或者检查当前网络是否可以访问豆瓣")
                 continue
 
             if self._sync_type != "1":
