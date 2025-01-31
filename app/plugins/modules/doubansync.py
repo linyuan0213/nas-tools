@@ -606,6 +606,9 @@ class DoubanSync(_IPluginModule):
             userinfo = self.douban.get_user_info(userid=user)
             if userinfo:
                 user_name = userinfo.get("name")
+            else:
+                self.warn(f"【DoubanSync】用户名获取失败，请检查豆瓣ID {user} 是否输入正确")
+                continue
 
             if self._sync_type != "1":
                 # 每页条数
