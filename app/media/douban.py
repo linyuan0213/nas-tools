@@ -161,6 +161,7 @@ class DouBan(metaclass=SingletonMeta):
         else:
             web_infos = self.doubanweb.wish(cookie=self.cookie, userid=userid, start=start)
         if not web_infos:
+            log.warn("【Douban】从豆瓣未获取任何数据，可能是当前网络错误，请检查当前设备网络是否可以访问豆瓣")
             return []
         for web_info in web_infos:
             web_info["id"] = web_info.get("url").split("/")[-2]
