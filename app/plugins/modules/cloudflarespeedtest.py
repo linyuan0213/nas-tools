@@ -26,7 +26,7 @@ class CloudflareSpeedTest(_IPluginModule):
     # 主题色
     module_color = "#F6821F"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
     module_author = "thsrite"
     # 作者主页
@@ -245,8 +245,8 @@ class CloudflareSpeedTest(_IPluginModule):
         CloudflareSpeedTest优选
         """
         self._cf_path = self.get_data_path()
-        self._ipv4 = os.path.join(self._cf_path, "ip.txt")
-        self._ipv6 = os.path.join(self._cf_path, "ipv6.txt")
+        self._cf_ipv4 = os.path.join(self._cf_path, "ip.txt")
+        self._cf_ipv6 = os.path.join(self._cf_path, "ipv6.txt")
         self._result_file = os.path.join(self._cf_path, "result_hosts.txt")
 
         # 获取自定义Hosts插件，若无设置则停止
