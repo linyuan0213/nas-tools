@@ -60,7 +60,22 @@ def __get_bing_wallpaper(today):
     # Bing每日壁纸1080P高清接口
     try:
         resp = RequestUtils(timeout=5).get_res(url)
+        if resp and resp.status_code == 200:
+            try:
+                json_data = resp.json()
+                if json_data and json_data.get('images'):
+                    for image in json_data.get('images'):
+                        img_url = f"https://cn.bing.com{image.get('url')}" if 'url' in image else ''
+                        img_title = image.get('title', '')
+                        img_link = image.get('copyrightlink', '')
+                        return img_url, img_title, img_link
+            except Exception as json_err:
+                ExceptionUtils.exception_traceback(json_err)
     except Exception as err:
+        ExceptionUtils.exception_traceback(err)
+
+    # 尝试备用图片源
+    try:
         url = "https://bing.img.run/1920x1080.php"
         resp = RequestUtils(timeout=5).get_res(url)
         if resp and resp.status_code == 200:
@@ -69,14 +84,6 @@ def __get_bing_wallpaper(today):
             img_title = "Bing Random Wallpaper"  # 默认标题
             img_link = "https://www.bing.com"  # 默认链接指向 Bing 主页
             return img_url, img_title, img_link
-        else:
-            return '', '', ''
-
-    if resp and resp.status_code == 200:
-        if resp.json():
-            for image in resp.json().get('images') or []:
-                img_url = f"https://cn.bing.com{image.get('url')}" if 'url' in image else ''
-                img_title = image.get('title', '')
-                img_link = image.get('copyrightlink', '')
-                return img_url, img_title, img_link
+    except Exception as backup_err:
+        ExceptionUtils.exception_traceback(backup_err)
     return '', '', ''
