@@ -365,6 +365,9 @@ class AutoSignIn(_IPluginModule):
             sites = {site.get('name'): site.get("id")
                      for site in Sites().get_site_dict()}
             for s in status:
+                if not s:
+                    failed_msg.append("签到失败，未获取到数据")
+                    continue
                 # 记录本次命中重试关键词的站点
                 if self._retry_keyword:
                     site_names = re.findall(r'【(.*?)】', s)
@@ -379,9 +382,7 @@ class AutoSignIn(_IPluginModule):
                                 # 命中的站点
                                 retry_msg.append(s)
                                 continue
-                
-                if not s:
-                    failed_msg.append("签到失败，未获取到数据")
+
                 if "登录成功" in s:
                     login_success_msg.append(s)
                 elif "仿真签到成功" in s:
