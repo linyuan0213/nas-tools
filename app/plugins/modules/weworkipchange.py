@@ -308,9 +308,9 @@ class WeworkIPChange(_IPluginModule):
             while time.time() - start < 60:
                 time.sleep(5)
                 html_text = self._drissonpage_helper.get_page_html_without_closetab(tab_id=self._tab_id)
-                if html_text and "短信安全验证" in html_text:
+                if html_text and ("短信安全验证" in html_text or "SMS" in html_text):
                     self.info("等待输入验证码...")
-                if html_text and "退出" in html_text:
+                if html_text and ("退出" in html_text or "Quit" in html_text):
                     login_status = True
                     break
             if login_status:
