@@ -181,7 +181,7 @@
                 "remove": "div,a,img,b"
             },
             "description": {
-                "text": "{% if fields['tags']%}{{ fields['subject'].split('\u5269\u4f59\u65f6\u95f4\uff1a')[0].strip() + ' ' + fields['tags'] }}{% else %}{{ fields['subject'].split('\u5269\u4f59\u65f6\u95f4\uff1a')[0].strip() }}{% endif %}"
+                "text": "{% if fields['tags']%}{{ fields['subject'].split('剩余时间：')[0].strip() + ' ' + fields['tags'] }}{% else %}{{ fields['subject'].split('剩余时间：')[0].strip() }}{% endif %}"
             },
             "labels": {
                 "selector": "table.torrentname td.embedded div[style*='inline-block'] a span[class^='tag']"
