@@ -19,6 +19,7 @@ import cn2an
 from flask_login import logout_user, current_user
 from werkzeug.security import generate_password_hash
 
+from app.helper.drissionpage_helper import DrissionPageHelper
 import log
 from app.brushtask import BrushTask
 from app.conf import SystemConfig, ModuleConf
@@ -322,6 +323,8 @@ class WebAction:
         Downloader().stop_service()
         # 关闭插件
         PluginManager().stop_service()
+        # 关闭浏览器标签页
+        DrissionPageHelper().close_all_tabs()
 
     @staticmethod
     def start_service():
@@ -392,10 +395,12 @@ class WebAction:
 
         # 插件命令
         plugin_commands = PluginManager().get_plugin_commands()
+        msg_list = msg.split(" ")
         for command in plugin_commands:
-            if command.get("cmd") == msg:
+            if command.get("cmd") == msg_list[0]:
                 # 发送事件
-                EventManager().send_event(command.get("event"), command.get("data") or {})
+                event_data = command.get("data") or {"msg": msg_list[0] if len(msg_list) == 1 else msg_list[1]}
+                EventManager().send_event(command.get("event"), event_data)
                 # 消息回应
                 Message().send_channel_msg(
                     channel=in_from, title="正在运行 %s ..." % command.get("desc"), user_id=user_id)

@@ -602,7 +602,7 @@ class Message(metaclass=SingletonMeta):
                     url=url
                 )
 
-    def send_plugin_message(self, title, text="", image=""):
+    def send_plugin_message(self, title, text="", image="", url=""):
         """
         发送插件消息
         """
@@ -617,6 +617,7 @@ class Message(metaclass=SingletonMeta):
                     client=client,
                     title=title,
                     text=text,
+                    url=url,
                     image=image
                 )
 

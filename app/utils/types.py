@@ -155,6 +155,8 @@ class EventType(Enum):
     SiteSignin = "site.signin"
     # Cookie同步
     CookieSync = "cookie.sync"
+    # 微信登录
+    WeworkLogin = "wework.login"
 
 
 # 系统配置Key字典

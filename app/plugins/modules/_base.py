@@ -186,12 +186,13 @@ class _IPluginModule(metaclass=ABCMeta):
         return DbHelper().delete_plugin_history(plugin_id=plugin_id, key=key)
 
     @staticmethod
-    def send_message(title, text=None, image=None):
+    def send_message(title, text=None, image=None, url=""):
         """
         发送消息
         """
         return Message().send_plugin_message(title=title,
                                              text=text,
+                                             url=url,
                                              image=image)
 
     def info(self, msg):
