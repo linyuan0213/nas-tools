@@ -1,7 +1,7 @@
 {
-    "id": "ourbits",
-    "name": "我堡",
-    "domain": "https://ourbits.club/",
+    "id": "hspt",
+    "name": "\u56de\u58f0",
+    "domain": "https://hspt.club/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
@@ -24,44 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies"
-            },
-            {
-                "id": 402,
-                "cat": "Movies/3D",
-                "desc": "Movies 3D"
+                "desc": "\u7535\u5f71/Movies"
             }
         ],
         "tv": [
             {
-                "id": 405,
+                "id": 402,
                 "cat": "TV",
-                "desc": "TV Packs"
+                "desc": "\u8fde\u7eed\u5267/TV-Series"
             },
             {
-                "id": 410,
+                "id": 403,
+                "cat": "TV",
+                "desc": "\u7efc\u827a/TV-Show"
+            },
+            {
+                "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries"
+                "desc": "\u7eaa\u5f55\u7247/Documentary"
             },
             {
-                "id": 411,
+                "id": 405,
                 "cat": "TV/Anime",
-                "desc": "Animations"
-            },
-            {
-                "id": 412,
-                "cat": "TV",
-                "desc": "TV Episodes"
-            },
-            {
-                "id": 413,
-                "cat": "TV",
-                "desc": "TV Shows"
-            },
-            {
-                "id": 419,
-                "cat": "TV",
-                "desc": "Concert"
+                "desc": "\u52a8\u6f2b/Animation"
             }
         ]
     },
@@ -113,8 +98,7 @@
                 "attribute": "href"
             },
             "size": {
-                "selector": "td:nth-child(5)",
-                "index": 1
+                "selector": "td:nth-child(5)"
             },
             "grabs": {
                 "selector": "td:nth-child(8)"
@@ -126,11 +110,11 @@
                 "selector": "td:nth-child(7)"
             },
             "date_elapsed": {
-                "selector": "td:nth-child(4) > span[title]",
+                "selector": "td:nth-child(4) > span",
                 "optional": true
             },
             "date_added": {
-                "selector": "td:nth-child(4):not(:has(\"span\"))",
+                "selector": "td:nth-child(4) > span",
                 "attribute": "title",
                 "optional": true
             },
@@ -173,18 +157,13 @@
                     }
                 ]
             },
-            "tags": {
-                "selector": "table.torrentname > tr > td.embedded > div:has(\"a\")"
-            },
-            "subject": {
-                "selector": "table.torrentname > tr > td.embedded",
-                "remove": "div,a,img,b"
-            },
             "description": {
-                "text": "{% if fields['tags']%}{{ fields['subject'].split('\u5269\u4f59\u65f6\u95f4\uff1a')[0].strip() + ' ' + fields['tags'] }}{% else %}{{ fields['subject'].split('\u5269\u4f59\u65f6\u95f4\uff1a')[0].strip() }}{% endif %}"
+                "selector": "table.torrentname > tr > td.embedded",
+                "remove": "span,a,img,font,b",
+                "contents": -1
             },
             "labels": {
-                "selector": "table.torrentname td.embedded div[style*='inline-block'] a span[class^='tag']"
+                "selector": "table.torrentname > tr > td.embedded > span[title=\"\"]"
             }
         }
     },
@@ -195,9 +174,7 @@
         "2XFREE": [
             "//h1[@id='top']/b/font[@class='twoupfree']"
         ],
-        "HR": [
-            "//h1[@id='top']/img[@class='hitandrun']"
-        ],
+        "HR": [],
         "PEER_COUNT": [
             "//div[@id='peercount']/b[1]"
         ]
