@@ -20,7 +20,7 @@ class OpenAiHelper(metaclass=SingletonMeta):
         api_url = config.get("api_url")
         api_base = None
         if api_url:
-            api_base = f"{api_url}/v1"
+            api_base = f"{api_url}/"
 
         proxy_conf = Config().get_proxies()
         proxy = proxy_conf.get("https")
