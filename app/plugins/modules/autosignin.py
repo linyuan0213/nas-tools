@@ -366,7 +366,6 @@ class AutoSignIn(_IPluginModule):
                      for site in Sites().get_site_dict()}
             for s in status:
                 if not s:
-                    failed_msg.append("签到失败，未获取到数据")
                     continue
                 # 记录本次命中重试关键词的站点
                 if self._retry_keyword:
