@@ -281,10 +281,10 @@
               <div class="col-lg">
                 <div class="mb-3">
                   <label class="form-label">OpenAI API Url <span class="form-help"
-                                                                        title="自定义openai请求地址（请注意格式，请求地址需带有请求头且最后没有/号），不填默认使用https://api.openai.com"
+                                                                        title="自定义openai请求地址（请注意格式，请求地址需带有请求头，以及例如/v1的版本号，并且最后没有/号），不填默认使用https://api.openai.com/v1。兼容非标准api的gemini，可填写https://generativelanguage.googleapis.com/v1beta/openai"
                                                                         data-bs-toggle="tooltip">?</span></label>
                   <input type="text" value="{% if Config.openai %}{{ Config.openai.api_url or '' }}{% endif %}" class="form-control"
-                         id="openai.api_url" placeholder="https://api.openai.com" autocomplete="off">
+                         id="openai.api_url" placeholder="https://api.openai.com/v1" autocomplete="off">
                 </div>
               </div>
               <div class="col-lg">
