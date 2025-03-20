@@ -19,11 +19,11 @@ class MediaSyncDel(_IPluginModule):
     # 主题色
     module_color = "#C90425"
     # 插件版本
-    module_version = "1.0"
+    module_version = "1.1"
     # 插件作者
-    module_author = "thsrite"
+    module_author = "linyuan0213"
     # 作者主页
-    author_url = "https://github.com/thsrite"
+    author_url = "https://github.com/linyuan0213"
     # 插件配置项ID前缀
     module_config_prefix = "mediasyncdel_"
     # 加载顺序
@@ -50,7 +50,7 @@ class MediaSyncDel(_IPluginModule):
                         {
                             'title': '开启Emby同步删除',
                             'required': "",
-                            'tooltip': 'Emby删除媒体后同步删除历史记录，需按照wiki（https://github.com/thsrite/emby_sync_del_nt）配置Emby Scripter-X插件后才能正常使用。',
+                            'tooltip': 'Emby删除媒体后同步删除历史记录，在需要配置Webhook，并勾选媒体删除',
                             'type': 'switch',
                             'id': 'enable',
                         },
@@ -110,40 +110,31 @@ class MediaSyncDel(_IPluginModule):
         if not self._enable:
             return
         event_data = event.event_data
-        event_type = event_data.get("event_type")
-        if not event_type or str(event_type) != 'media_del':
+        event_type = event_data.get("Event")
+        if not event_type or str(event_type) != 'library.deleted':
             return
 
-        # 是否虚拟标识
-        item_isvirtual = event_data.get("item_isvirtual")
-        if not item_isvirtual:
-            self.error("item_isvirtual参数未配置，为防止误删除，暂停插件运行")
-            self.update_config({
-                "enable": False,
-                "del_source": self._del_source,
-                "exclude_path": self._exclude_path,
-                "send_notify": self._send_notify
-            })
+        # 路径不存在不处理
+        item_path = event_data.get('Item', {}).get('Path')
+        if not item_path:
             return
 
-        # 如果是虚拟item，则直接return，不进行删除
-        if item_isvirtual == 'True':
-            return
+        item = event_data.get('Item')
 
         # 媒体类型
-        media_type = event_data.get("media_type")
+        media_type = item.get("Type")
         # 媒体名称
-        media_name = event_data.get("media_name")
+        media_name = item.get("Name")
         # 媒体路径
-        media_path = event_data.get("media_path")
+        media_path = item.get("Path")
         # tmdb_id
-        tmdb_id = event_data.get("tmdb_id")
+        tmdb_id = item.get("ProviderIds").get("Tmdb")
         # 季数
-        season_num = event_data.get("season_num")
+        season_num = item.get("ParentIndexNumber")
         if season_num and str(season_num).isdigit() and int(season_num) < 10:
             season_num = f'0{season_num}'
         # 集数
-        episode_num = event_data.get("episode_num")
+        episode_num = item.get("IndexNumber")
         if episode_num and str(episode_num).isdigit() and int(episode_num) < 10:
             episode_num = f'0{episode_num}'
 
