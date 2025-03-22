@@ -11,7 +11,7 @@ from app.utils.commons import SingletonMeta
 from config import MT_URL, Config
 
 
-class Sites(metaclass=SingletonMeta):
+class Sites:
     message = None
     dbhelper = None
 

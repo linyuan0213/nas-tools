@@ -512,6 +512,20 @@ class DbHelper:
                 "NOTE": json.dumps(note)
             }
         )
+        
+    @DbPersist(_db)
+    def update_site_rssurl(self, tid, rssurl):
+        """
+        更新站点rssurl
+        """
+        if not tid:
+            return
+
+        self._db.query(CONFIGSITE).filter(CONFIGSITE.ID == int(tid)).update(
+            {
+                "RSSURL": rssurl
+            }
+        )
 
     def get_config_filter_group(self, gid=None):
         """

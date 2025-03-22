@@ -18,7 +18,7 @@ class RequestUtils:
     def __init__(self,
                  headers=None,
                  cookies=None,
-                 proxies=False,
+                 proxies=None,
                  session=None,
                  timeout=None,
                  referer=None,
