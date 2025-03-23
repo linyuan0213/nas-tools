@@ -31,7 +31,7 @@ class AutoGenRss(_IPluginModule):
     # 插件图标
     module_icon = "rss.png"
     # 主题色
-    module_color = "#4179F4"
+    module_color = "#eaffd0"
     # 插件版本
     module_version = "1.0"
     # 插件作者
