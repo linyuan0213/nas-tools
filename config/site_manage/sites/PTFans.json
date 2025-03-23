@@ -24,29 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "\u7535\u5f71/Movies"
+                "desc": "电影/Movies"
             }
         ],
         "tv": [
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "\u8fde\u7eed\u5267/TV-Series"
+                "desc": "连续剧/TV-Series"
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "\u7efc\u827a/TV-Show"
+                "desc": "综艺/TV-Show"
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "\u7eaa\u5f55\u7247/Documentary"
+                "desc": "纪录片/Documentary"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "\u52a8\u6f2b/Animation"
+                "desc": "动漫/Animation"
             }
         ]
     },
