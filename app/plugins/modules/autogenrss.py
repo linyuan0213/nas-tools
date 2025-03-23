@@ -224,8 +224,7 @@ class AutoGenRss(_IPluginModule):
             failed_msg = []
 
             gen_success_msg = []
-            sites = {site.get('name'): site.get("id")
-                     for site in Sites().get_site_dict()}
+
             for s in status:
                 if not s:
                     continue
@@ -238,7 +237,7 @@ class AutoGenRss(_IPluginModule):
             # 发送通知
             if self._notify:
                 # rss生成详细信息
-                rss_message = gen_success_msg + failed_msg
+                rss_message = "\n".join(gen_success_msg + failed_msg)
 
                 if self._scheduler and self._scheduler.SCHEDULER:
                     for job in self._scheduler.get_jobs():
@@ -345,8 +344,8 @@ class AutoGenRss(_IPluginModule):
                             #插入到数据库
                             self._dbhelper.update_site_rssurl(site_info.get("id"), gen_rss_url)
                         
-                        self.info(f"{site} 生成RSS成功")
-                        return f"【{site}】生成RSS成功"
+                            self.info(f"{site} 生成RSS成功")
+                            return f"【{site}】生成RSS成功"
                 elif res is not None:
                     self.warn(f"{site} 生成RSS失败，状态码：{res.status_code}")
                     return f"【{site}】生成RSS失败，状态码：{res.status_code}！"
