@@ -320,6 +320,7 @@ class AutoGenRss(_IPluginModule):
                 headers.update({'User-Agent': ua})
                 res = RequestUtils(cookies=site_cookie,
                                     headers=headers,
+                                    referer=site_url,
                                     proxies=Config().get_proxies() if site_info.get("proxy") else None
                                     ).post_res(url=rss_url, data=data)
                 if res and res.status_code in [200, 500, 403]:
