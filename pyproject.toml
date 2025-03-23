@@ -66,4 +66,6 @@ dependencies = [
     "backports-shutil-get-terminal-size>=1.0.0",
     "pickleshare>=0.7.5",
     "pytz-deprecation-shim>=0.1.0.post0",
+    "webdav4>=0.10.0",
+    "pysmb>=1.2.10",
 ]
