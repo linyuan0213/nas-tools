@@ -420,6 +420,8 @@ class Downloader(metaclass=SingletonMeta):
                     else:
                         tags.append(tag)
             else:
+                # 字符串是空串或者None
+                tags = []
                 if tag:
                     if isinstance(tag, list):
                         tags = tag
@@ -429,7 +431,7 @@ class Downloader(metaclass=SingletonMeta):
                         tags.extend(hr_tag)
             # 添加站点tag
             site_tags = self.sites.get_site_download_tags(media_info.site)
-            if tags:
+            if site_tags:
                 tags.extend(str(site_tags).split(";"))
             # 暂停
             if is_paused is None:
