@@ -1,6 +1,6 @@
 {
     "id": "ourbits",
-    "name": "我堡",
+    "name": "\u6211\u5821",
     "domain": "https://ourbits.club/",
     "encoding": "UTF-8",
     "public": false,
@@ -181,7 +181,11 @@
                 "remove": "div,a,img,b"
             },
             "description": {
-                "text": "{% if fields['tags']%}{{ fields['subject'].split('剩余时间：')[0].strip() + ' ' + fields['tags'] }}{% else %}{{ fields['subject'].split('剩余时间：')[0].strip() }}{% endif %}"
+                "selector": "table.torrentname tr td.embedded:first-child",
+                "remove": "img, a, b, span, font, div",
+                "filters": [
+                    "trim"
+                ]
             },
             "labels": {
                 "selector": "table.torrentname td.embedded div[style*='inline-block'] a span[class^='tag']"
