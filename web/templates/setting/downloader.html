@@ -46,9 +46,9 @@
             data-bs-toggle="tooltip"
             >
             {% if DefaultDownloader == Id %}
-              {{ SVG.star('icon-filled w-100 h-100 text-purple') }}
+              {{ SVG.open() }}
             {% else %}
-              {{ SVG.star('w-100 h-100 text-muted') }}
+              {{ SVG.close() }}
             {% endif %}
           </span>
           <span class="avatar avatar-xl avatar-thumb avatar-rounded"
@@ -517,6 +517,17 @@
 
   // 设置默认下载器
   function set_default_downloader(did){
+    // 获取当前默认下载器
+    let current_default = "{{ DefaultDownloader }}";
+    // 获取下载器总数
+    let downloader_count = {{ Downloaders|length }};
+    
+    // 如果只有一个下载器且尝试取消其默认状态
+    if (downloader_count === 1 && current_default === did) {
+      show_warning_modal("系统中只有一个下载器，必须保持为默认状态！")
+      return;
+    }
+
     let params = {
       'key': "DefaultDownloader",
       'value': did

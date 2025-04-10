@@ -56,9 +56,9 @@
                 <a href="javascript:set_default_filtergroup('{{ RuleGroup.id }}')" class="btn-action"
                    title="设置/取消默认">
                   {% if RuleGroup.default == 'Y' %}
-                    <span class="text-purple">{{ SVG.star('icon-filled') }}</span>
+                    <span class="text-purple svg-open">{{ SVG.open() }}</span>
                   {% else %}
-                    {{ SVG.star() }}
+                    {{ SVG.close() }}
                   {% endif %}
                 </a>
                 <a href="javascript:show_add_filterrule_modal('{{ RuleGroup.id }}', '{{ RuleGroup.name }}')"

@@ -414,3 +414,12 @@ body, .page {
     width: 28px;
     height: 28px;
 }
+
+/* 调整五角星过滤规则开关图标大小 */
+span.btn-action.p-1[aria-label="设置默认"] {
+    width: 3rem !important;
+}
+/* 过滤规则开关图标大小 */
+.svg-open {
+    width: 32px;
+}
