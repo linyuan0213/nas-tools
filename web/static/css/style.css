@@ -419,3 +419,7 @@ body, .page {
 span.btn-action.p-1[aria-label="设置默认"] {
     width: 3rem !important;
 }
+/* 过滤规则开关图标大小 */
+.svg-open {
+    width: 32px;
+}
