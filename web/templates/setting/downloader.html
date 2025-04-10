@@ -46,9 +46,9 @@
             data-bs-toggle="tooltip"
             >
             {% if DefaultDownloader == Id %}
-              {{ SVG.star('icon-filled w-100 h-100 text-purple') }}
+              {{ SVG.open() }}
             {% else %}
-              {{ SVG.star('w-100 h-100 text-muted') }}
+              {{ SVG.close() }}
             {% endif %}
           </span>
           <span class="avatar avatar-xl avatar-thumb avatar-rounded"
