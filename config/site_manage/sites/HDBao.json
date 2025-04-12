@@ -1,7 +1,7 @@
 {
-    "id": "ourbits",
-    "name": "我堡",
-    "domain": "https://ourbits.club/",
+    "id": "hdbao",
+    "name": "HDBao",
+    "domain": "https://hdbao.cc/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
@@ -24,44 +24,19 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "Movies"
-            },
-            {
-                "id": 402,
-                "cat": "Movies/3D",
-                "desc": "Movies 3D"
+                "desc": "Movies/\u7535\u5f71"
             }
         ],
         "tv": [
             {
-                "id": 405,
+                "id": 402,
                 "cat": "TV",
-                "desc": "TV Packs"
+                "desc": "TV Series/\u7535\u89c6\u5267"
             },
             {
-                "id": 410,
+                "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "Documentaries"
-            },
-            {
-                "id": 411,
-                "cat": "TV/Anime",
-                "desc": "Animations"
-            },
-            {
-                "id": 412,
-                "cat": "TV",
-                "desc": "TV Episodes"
-            },
-            {
-                "id": 413,
-                "cat": "TV",
-                "desc": "TV Shows"
-            },
-            {
-                "id": 419,
-                "cat": "TV",
-                "desc": "Concert"
+                "desc": "Documentaries/\u7eaa\u5f55\u7247"
             }
         ]
     },
@@ -108,29 +83,32 @@
                 "selector": "a[href*=\"details.php?id=\"]",
                 "attribute": "href"
             },
+            "poster": {
+                "selector": "img[data-orig]",
+                "attribute": "data-orig"
+            },
             "download": {
                 "selector": "a[href*=\"download.php?id=\"]",
                 "attribute": "href"
             },
             "size": {
-                "selector": "td:nth-child(5)",
-                "index": 1
+                "selector": "td.rowfollow:nth-child(5)"
             },
             "grabs": {
-                "selector": "td:nth-child(8)"
+                "selector": "td.rowfollow:nth-child(8)"
             },
             "seeders": {
-                "selector": "td:nth-child(6)"
+                "selector": "td.rowfollow:nth-child(6)"
             },
             "leechers": {
-                "selector": "td:nth-child(7)"
+                "selector": "td.rowfollow:nth-child(7)"
             },
             "date_elapsed": {
-                "selector": "td:nth-child(4) > span[title]",
+                "selector": "td.rowfollow:nth-child(4) > span",
                 "optional": true
             },
             "date_added": {
-                "selector": "td:nth-child(4):not(:has(\"span\"))",
+                "selector": "td.rowfollow:nth-child(4) > span",
                 "attribute": "title",
                 "optional": true
             },
@@ -164,7 +142,7 @@
             "free_deadline": {
                 "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
                 "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
-                "selector": "td[class=\"embedded\"] > b > span[title]",
+                "selector": "div > b > span[title]",
                 "attribute": "title",
                 "filters": [
                     {
@@ -174,36 +152,30 @@
                 ]
             },
             "tags": {
-                "selector": "table.torrentname > tr > td.embedded > div:has(\"a\")"
+                "selector": "div > a.torrents-tag"
             },
             "subject": {
-                "selector": "table.torrentname > tr > td.embedded",
-                "remove": "div,a,img,b"
+                "selector": "td.embedded:nth-child(2) > div > div[style] > span",
+                "contents": -1
             },
             "description": {
-                "selector": "table.torrentname tr td.embedded:first-child",
-                "remove": "img, a, b, span, font, div",
-                "filters": [
-                    "trim"
-                ]
+                "selector": "table.torrentname tr td.embedded:nth-child(2)",
+                "remove": "span,a,img,font,b",
+                "contents": -1
             },
             "labels": {
-                "selector": "table.torrentname td.embedded div[style*='inline-block'] a span[class^='tag']"
+                "selector": "table.torrentname tr td.embedded:nth-child(2) > span"
             }
         }
     },
     "conf": {
         "FREE": [
-            "//h1[@id='top']/b/font[@class='free']"
+            "//h1[@id='top']/b/b/font[@class='free']"
         ],
         "2XFREE": [
-            "//h1[@id='top']/b/font[@class='twoupfree']"
+            "//h1[@id='top']/b/b/font[@class='twoupfree']"
         ],
-        "HR": [
-            "//h1[@id='top']/img[@class='hitandrun']"
-        ],
-        "PEER_COUNT": [
-            "//div[@id='peercount']/b[1]"
-        ]
+        "HR": [],
+        "PEER_COUNT": []
     }
 }
