@@ -97,6 +97,37 @@
     </div>
   </div>
 </div>
+<style>
+/* ----插件市场卡片同排高度样式统一---- */
+/* 修改网格容器为行内等高 */
+.grid-normal-card {
+  grid-auto-rows: auto; /* 恢复自动高度 */
+  align-items: stretch; /* 关键属性：拉伸子项高度 */
+}
+/* 卡片容器 */
+.grid-normal-card > .card {
+  height: 100%; /* 继承网格单元格高度 */
+  display: flex;
+  flex-direction: column;
+}
+/* 内容区域自动填充 */
+.card-body {
+  flex: 1;
+  min-height: 90px; /* 根据实际情况调整 */
+}
+/* 底部按钮区域保持固定高度 */
+.card > .d-flex {
+  flex-shrink: 0; /* 禁止收缩 */
+}
+/* 可选：限制描述文字行数 */
+.text-muted {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;  /* 显示2行 */
+  line-clamp: 2;  /* 标准属性，提供更好的兼容性 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
 <script type="text/javascript">
   // 保存配置
   function save_config(id, prefix, func) {
@@ -126,10 +157,34 @@
       if (ret.result) {
         $("#plugin_apps_content").empty();
         for (let pid in ret.result) {
+        
+        // 对插件进行排序，已安装的显示在前面
+        let sortedPlugins = [];
+        for (let pid in ret.result) {
+        for (let pid in ret.result) {
           let plugin = ret.result[pid];
+          sortedPlugins.push({
           let count = ret.statistic[pid];
+            id: pid,
+            plugin: ret.result[pid],
+            count: ret.statistic[pid]
+          });
+        }
+        
+        // 根据安装状态排序
+        sortedPlugins.sort((a, b) => {
+          if (a.plugin.installed && !b.plugin.installed) return -1;
+          if (!a.plugin.installed && b.plugin.installed) return 1;
+          return 0;
+        });
+        
+        // 遍历排序后的插件列表
+        for (let item of sortedPlugins) {
+          let pid = item.id;
+          let plugin = item.plugin;
+          let count = item.count;
           let plugin_html = `
-            <div class="card card-link-pop card-borderless p-0 shadow-sm rounded-3 overflow-hidden" href="javascript:void(0)">
+            <div class="card card-link-pop card-borderless p-0 shadow-sm rounded-3 overflow-hidden ${plugin.installed ? 'plugin-installed' : 'plugin-not-installed'}" href="javascript:void(0)">
               <div class="card-cover card-cover-blurred text-center ${plugin.color.startsWith('bg-') ? plugin.color:''}"
                 ${plugin.color.startsWith('#') ? `style="background-color: ${plugin.color}"` : ''}
               >
@@ -137,10 +192,15 @@
                     style="background-image: url('../static/img/plugins/${plugin.icon}')"
                 >
                 </span>
-                ${count ? `<span class="badge position-absolute" style="top: 10px; right: 10px;">${count.toLocaleString()}</span>` : ''}
+                <div class="position-absolute" style="top: 10px; right: 10px;">
+                  ${plugin.installed ? `<span class="badge bg-blue">已安装</span>` : `<span class="badge bg-muted">未安装</span>`}
+                  ${count ? `<span class="badge ms-1">${count.toLocaleString()}</span>` : ''}
+                </div>
               </div>
               <div class="card-body text-start">
-                <div class="card-title mb-1">${plugin.name}</div>
+                <div class="card-title mb-1">
+                  ${plugin.name}
+                </div>
                 <div class="text-muted"><strong>描述：</strong>${plugin.desc}</div>
                 <div class="text-muted mt-1"><strong>作者：</strong>
                 ${plugin.author_url ? `<a href="${plugin.author_url}" target="_blank">${plugin.author}</a>`
