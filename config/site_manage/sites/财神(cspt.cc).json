@@ -1,7 +1,7 @@
 {
-    "id": "hspt",
-    "name": "回声",
-    "domain": "https://hspt.club/",
+    "id": "csptcc",
+    "name": "\u8d22\u795e",
+    "domain": "https://cspt.cc/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
@@ -24,29 +24,29 @@
             {
                 "id": 401,
                 "cat": "Movies",
-                "desc": "电影/Movies"
+                "desc": "\u7535\u5f71/Movies"
             }
         ],
         "tv": [
             {
                 "id": 402,
                 "cat": "TV",
-                "desc": "连续剧/TV-Series"
+                "desc": "\u8fde\u7eed\u5267/TV-Series"
             },
             {
                 "id": 403,
                 "cat": "TV",
-                "desc": "综艺/TV-Show"
+                "desc": "\u7efc\u827a/TV-Show"
             },
             {
                 "id": 404,
                 "cat": "TV/Documentary",
-                "desc": "纪录片/Documentary"
+                "desc": "\u7eaa\u5f55\u7247/Documentary"
             },
             {
                 "id": 405,
                 "cat": "TV/Anime",
-                "desc": "动漫/Animation"
+                "desc": "\u52a8\u6f2b/Animation"
             }
         ]
     },
@@ -158,7 +158,7 @@
                 ]
             },
             "description": {
-                "selector": "table.torrentname > tr > td.embedded",
+                "selector": "table.torrentname > tr > td.embedded:nth-child(2)",
                 "remove": "span,a,img,font,b",
                 "contents": -1
             },
