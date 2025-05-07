@@ -1,7 +1,7 @@
 {
     "id": "hspt",
     "name": "回声",
-    "domain": "",
+    "domain": "https://hspt.club/",
     "encoding": "UTF-8",
     "public": false,
     "search": {
