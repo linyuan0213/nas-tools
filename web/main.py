@@ -166,7 +166,7 @@ def action_login_check(func):
 
 # 主页面
 @App.route('/', methods=['GET', 'POST'])
-async def login():
+def login():
     def redirect_to_navigation():
         """
         跳转到导航页面
@@ -234,7 +234,7 @@ async def login():
 
 @App.route('/web', methods=['POST', 'GET'])
 @login_required
-async def web():
+def web():
     # 跳转页面
     GoPage = request.args.get("next") or ""
     # 判断当前的运营环境
@@ -277,7 +277,7 @@ async def web():
 @App.route('/index', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='index')
 @login_required
-async def index():
+def index():
     # 媒体服务器类型
     MSType = Config().get_config('media').get('media_server')
     # 获取媒体数量
@@ -327,7 +327,7 @@ async def index():
 @App.route('/search', methods=['POST', 'GET'])
 @cache.cached(timeout=43200, key_prefix='search')
 @login_required
-async def search():
+def search():
     # 权限
     if current_user.is_authenticated:
         username = current_user.username
@@ -349,7 +349,7 @@ async def search():
 # 电影订阅页面
 @App.route('/movie_rss', methods=['POST', 'GET'])
 @login_required
-async def movie_rss():
+def movie_rss():
     RssItems = WebAction().get_movie_rss_list().get("result")
     RuleGroups = {str(group["id"]): group["name"]
                   for group in Filter().get_rule_groups()}
@@ -365,7 +365,7 @@ async def movie_rss():
 # 电视剧订阅页面
 @App.route('/tv_rss', methods=['POST', 'GET'])
 @login_required
-async def tv_rss():
+def tv_rss():
     RssItems = WebAction().get_tv_rss_list().get("result")
     RuleGroups = {str(group["id"]): group["name"]
                   for group in Filter().get_rule_groups()}
@@ -381,7 +381,7 @@ async def tv_rss():
 # 订阅历史页面
 @App.route('/rss_history', methods=['POST', 'GET'])
 @login_required
-async def rss_history():
+def rss_history():
     mtype = request.args.get("t")
     RssHistory = WebAction().get_rss_history({"type": mtype}).get("result")
     return render_template("rss/rss_history.html",
@@ -395,7 +395,7 @@ async def rss_history():
 @App.route('/rss_calendar', methods=['POST', 'GET'])
 @cache.cached(timeout=300, key_prefix='rss_calendar')
 @login_required
-async def rss_calendar():
+def rss_calendar():
     Today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
     # 电影订阅
     RssMovieItems = WebAction().get_movie_rss_items().get("result")
@@ -410,7 +410,7 @@ async def rss_calendar():
 # 站点维护页面
 @App.route('/site', methods=['POST', 'GET'])
 @login_required
-async def sites():
+def sites():
     CfgSites = Sites().get_sites()
     RuleGroups = {str(group["id"]): group["name"]
                   for group in Filter().get_rule_groups()}
@@ -431,7 +431,7 @@ async def sites():
 # 站点列表页面
 @App.route('/sitelist', methods=['POST', 'GET'])
 @login_required
-async def sitelist():
+def sitelist():
     # IndexerSites = Indexer().get_indexers(check=False)
     IndexerSites = Indexer().get_builtin_indexers(check=False)
     return render_template("site/sitelist.html",
@@ -449,7 +449,7 @@ def open_app():
 
 @App.route('/resources', methods=['POST', 'GET'])
 @login_required
-async def resources():
+def resources():
     site_id = request.args.get("site")
     site_name = request.args.get("title")
     page = request.args.get("page") or 0
@@ -473,7 +473,7 @@ async def resources():
 # 推荐页面
 @App.route('/recommend', methods=['POST', 'GET'])
 @login_required
-async def recommend():
+def recommend():
     Type = request.args.get("type") or ""
     SubType = request.args.get("subtype") or ""
     Title = request.args.get("title") or ""
@@ -508,7 +508,7 @@ async def recommend():
 @App.route('/ranking', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='ranking')
 @login_required
-async def ranking():
+def ranking():
     return render_template("discovery/ranking.html",
                            DiscoveryType="RANKING")
 
@@ -517,7 +517,7 @@ async def ranking():
 @App.route('/douban_movie', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='douban_movie')
 @login_required
-async def douban_movie():
+def douban_movie():
     return render_template("discovery/recommend.html",
                            Type="DOUBANTAG",
                            SubType="MOV",
@@ -530,7 +530,7 @@ async def douban_movie():
 @App.route('/douban_tv', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='douban_tv')
 @login_required
-async def douban_tv():
+def douban_tv():
     return render_template("discovery/recommend.html",
                            Type="DOUBANTAG",
                            SubType="TV",
@@ -542,7 +542,7 @@ async def douban_tv():
 @App.route('/tmdb_movie', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='tmdb_movie')
 @login_required
-async def tmdb_movie():
+def tmdb_movie():
     return render_template("discovery/recommend.html",
                            Type="DISCOVER",
                            SubType="MOV",
@@ -554,7 +554,7 @@ async def tmdb_movie():
 @App.route('/tmdb_tv', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='tmdb_tv')
 @login_required
-async def tmdb_tv():
+def tmdb_tv():
     return render_template("discovery/recommend.html",
                            Type="DISCOVER",
                            SubType="TV",
@@ -567,7 +567,7 @@ async def tmdb_tv():
 @App.route('/bangumi', methods=['POST', 'GET'])
 @cache.cached(timeout=600, key_prefix='bangumi')
 @login_required
-async def discovery_bangumi():
+def discovery_bangumi():
     return render_template("discovery/ranking.html",
                            DiscoveryType="BANGUMI")
 
@@ -575,7 +575,7 @@ async def discovery_bangumi():
 # 媒体详情页面
 @App.route('/media_detail', methods=['POST', 'GET'])
 @login_required
-async def media_detail():
+def media_detail():
     TmdbId = request.args.get("id")
     Type = request.args.get("type")
     return render_template("discovery/mediainfo.html",
@@ -586,7 +586,7 @@ async def media_detail():
 # 演职人员页面
 @App.route('/discovery_person', methods=['POST', 'GET'])
 @login_required
-async def discovery_person():
+def discovery_person():
     TmdbId = request.args.get("tmdbid")
     Title = request.args.get("title")
     SubTitle = request.args.get("subtitle")
@@ -603,7 +603,7 @@ async def discovery_person():
 # 正在下载页面
 @App.route('/downloading', methods=['POST', 'GET'])
 @login_required
-async def downloading():
+def downloading():
     DispTorrents = WebAction().get_downloading().get("result")
     return render_template("download/downloading.html",
                            DownloadCount=len(DispTorrents),
@@ -613,7 +613,7 @@ async def downloading():
 # 近期下载页面
 @App.route('/downloaded', methods=['POST', 'GET'])
 @login_required
-async def downloaded():
+def downloaded():
     CurrentPage = request.args.get("page") or 1
     return render_template("discovery/recommend.html",
                            Type='DOWNLOADED',
@@ -623,7 +623,7 @@ async def downloaded():
 
 @App.route('/torrent_remove', methods=['POST', 'GET'])
 @login_required
-async def torrent_remove():
+def torrent_remove():
     Downloaders = Downloader().get_downloader_conf_simple()
     TorrentRemoveTasks = TorrentRemover().get_torrent_remove_tasks()
     return render_template("download/torrent_remove.html",
@@ -637,7 +637,7 @@ async def torrent_remove():
 @App.route('/statistics', methods=['POST', 'GET'])
 @cache.cached(timeout=43200, key_prefix='statistics')
 @login_required
-async def statistics():
+def statistics():
     # 刷新单个site
     refresh_site = request.args.getlist("refresh_site")
     # 强制刷新所有
@@ -707,7 +707,7 @@ async def statistics():
 # 刷流任务页面
 @App.route('/brushtask', methods=['POST', 'GET'])
 @login_required
-async def brushtask():
+def brushtask():
     # 站点列表
     CfgSites = Sites().get_sites(brush=True)
     # 下载器列表
@@ -724,7 +724,7 @@ async def brushtask():
 # 服务页面
 @App.route('/service', methods=['POST', 'GET'])
 @login_required
-async def service():
+def service():
     # 所有规则组
     RuleGroups = Filter().get_rule_groups()
     # 所有同步目录
@@ -801,7 +801,7 @@ async def service():
 # 历史记录页面
 @App.route('/history', methods=['POST', 'GET'])
 @login_required
-async def history():
+def history():
     pagenum = request.args.get("pagenum")
     keyword = request.args.get("s") or ""
     current_page = request.args.get("page")
@@ -824,7 +824,7 @@ async def history():
 # TMDB缓存页面
 @App.route('/tmdbcache', methods=['POST', 'GET'])
 @login_required
-async def tmdbcache():
+def tmdbcache():
     page_num = request.args.get("pagenum")
     if not page_num:
         page_num = 30
@@ -856,7 +856,7 @@ async def tmdbcache():
 # 手工识别页面
 @App.route('/unidentification', methods=['POST', 'GET'])
 @login_required
-async def unidentification():
+def unidentification():
     pagenum = request.args.get("pagenum")
     keyword = request.args.get("s") or ""
     current_page = request.args.get("page")
@@ -878,7 +878,7 @@ async def unidentification():
 # 文件管理页面
 @App.route('/mediafile', methods=['POST', 'GET'])
 @login_required
-async def mediafile():
+def mediafile():
     media_default_path = Config().get_config('media').get('media_default_path')
     if media_default_path:
         DirD = media_default_path
@@ -900,7 +900,7 @@ async def mediafile():
 # 基础设置页面
 @App.route('/basic', methods=['POST', 'GET'])
 @login_required
-async def basic():
+def basic():
     proxy = Config().get_config('app').get("proxies", {}).get("http")
     if proxy:
         proxy = proxy.replace("http://", "")
@@ -921,7 +921,7 @@ async def basic():
 # 自定义识别词设置页面
 @App.route('/customwords', methods=['POST', 'GET'])
 @login_required
-async def customwords():
+def customwords():
     groups = WebAction().get_customwords().get("result")
     return render_template("setting/customwords.html",
                            Groups=groups,
@@ -931,7 +931,7 @@ async def customwords():
 # 目录同步页面
 @App.route('/directorysync', methods=['POST', 'GET'])
 @login_required
-async def directorysync():
+def directorysync():
     RmtModeDict = WebAction().get_rmt_modes()
     SyncPaths = Sync().get_sync_path_conf()
     return render_template("setting/directorysync.html",
@@ -943,7 +943,7 @@ async def directorysync():
 # 下载器页面
 @App.route('/downloader', methods=['POST', 'GET'])
 @login_required
-async def downloader():
+def downloader():
     DefaultDownloader = Downloader().default_downloader_id
     Downloaders = Downloader().get_downloader_conf()
     DownloadersCount = len(Downloaders)
@@ -965,7 +965,7 @@ async def downloader():
 # 下载设置页面
 @App.route('/download_setting', methods=['POST', 'GET'])
 @login_required
-async def download_setting():
+def download_setting():
     DefaultDownloadSetting = Downloader().default_download_setting_id
     Downloaders = Downloader().get_downloader_conf_simple()
     DownloadSetting = Downloader().get_download_setting()
@@ -979,7 +979,7 @@ async def download_setting():
 # 索引器页面
 @App.route('/indexer', methods=['POST', 'GET'])
 @login_required
-async def indexer():
+def indexer():
     # 只有选中的索引器才搜索
     indexers = Indexer().get_builtin_indexers(check=False)
     private_count = len([item.id for item in indexers if not item.public])
@@ -997,7 +997,7 @@ async def indexer():
 # 媒体库页面
 @App.route('/library', methods=['POST', 'GET'])
 @login_required
-async def library():
+def library():
     return render_template("setting/library.html",
                            Config=Config().get_config())
 
@@ -1005,7 +1005,7 @@ async def library():
 # 媒体服务器页面
 @App.route('/mediaserver', methods=['POST', 'GET'])
 @login_required
-async def mediaserver():
+def mediaserver():
     return render_template("setting/mediaserver.html",
                            Config=Config().get_config(),
                            MediaServerConf=ModuleConf.MEDIASERVER_CONF)
@@ -1014,7 +1014,7 @@ async def mediaserver():
 # 通知消息页面
 @App.route('/notification', methods=['POST', 'GET'])
 @login_required
-async def notification():
+def notification():
     MessageClients = Message().get_message_client_info()
     Channels = ModuleConf.MESSAGE_CONF.get("client")
     Switchs = ModuleConf.MESSAGE_CONF.get("switch")
@@ -1028,7 +1028,7 @@ async def notification():
 # 用户管理页面
 @App.route('/users', methods=['POST', 'GET'])
 @login_required
-async def users():
+def users():
     Users = WebAction().get_users().get("result")
     TopMenus = WebAction().get_top_menus().get("menus")
     return render_template("setting/users.html",
@@ -1040,7 +1040,7 @@ async def users():
 # 过滤规则设置页面
 @App.route('/filterrule', methods=['POST', 'GET'])
 @login_required
-async def filterrule():
+def filterrule():
     result = WebAction().get_filterrules()
     return render_template("setting/filterrule.html",
                            Count=len(result.get("ruleGroups")),
@@ -1051,7 +1051,7 @@ async def filterrule():
 # 自定义订阅页面
 @App.route('/user_rss', methods=['POST', 'GET'])
 @login_required
-async def user_rss():
+def user_rss():
     Tasks = RssChecker().get_rsstask_info()
     RssParsers = RssChecker().get_userrss_parser()
     RuleGroups = {str(group["id"]): group["name"]
@@ -1073,7 +1073,7 @@ async def user_rss():
 # RSS解析器页面
 @App.route('/rss_parser', methods=['POST', 'GET'])
 @login_required
-async def rss_parser():
+def rss_parser():
     RssParsers = RssChecker().get_userrss_parser()
     return render_template("rss/rss_parser.html",
                            RssParsers=RssParsers,
@@ -1083,7 +1083,7 @@ async def rss_parser():
 # 插件页面
 @App.route('/plugin', methods=['POST', 'GET'])
 @login_required
-async def plugin():
+def plugin():
     Plugins = WebAction().get_plugins_conf().get("result")
     return render_template("setting/plugin.html",
                            Plugins=Plugins,
@@ -1570,7 +1570,7 @@ def slack():
 # Jellyseerr Overseerr订阅接口
 @App.route('/subscribe', methods=['POST'])
 @require_auth
-async def subscribe():
+def subscribe():
     """
     {
         "notification_type": "{{notification_type}}",
@@ -1658,7 +1658,7 @@ async def subscribe():
 # 备份配置文件
 @App.route('/backup', methods=['POST'])
 @login_required
-async def backup():
+def backup():
     """
     备份用户设置文件
     :return: 备份文件.zip_file
@@ -1672,7 +1672,7 @@ async def backup():
 # 上传文件到服务器
 @App.route('/upload', methods=['POST'])
 @login_required
-async def upload():
+def upload():
     try:
         files = request.files['file']
         temp_path = Config().get_temp_path()

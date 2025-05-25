@@ -2,7 +2,7 @@ import os
 import threading
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.pool import NullPool
 
 from app.db.models import Base
 from app.utils import ExceptionUtils, PathUtils
@@ -12,11 +12,7 @@ lock = threading.Lock()
 _Engine = create_engine(
     f"sqlite:///{os.path.join(Config().get_config_path(), 'user.db')}?check_same_thread=False",
     echo=False,
-    poolclass=QueuePool,
-    pool_pre_ping=True,
-    pool_size=200,
-    pool_recycle=60 * 10,
-    max_overflow=10,
+    poolclass=NullPool,
     connect_args={'timeout': 30}
 )
 
@@ -117,10 +113,6 @@ class MainDb:
 
 
 class DbPersist(object):
-    """
-    数据库持久化装饰器
-    """
-
     def __init__(self, db):
         self.db = db
 
@@ -129,10 +121,13 @@ class DbPersist(object):
             try:
                 ret = f(*args, **kwargs)
                 self.db.commit()
-                return True if ret is None else ret
+                return ret if ret is not None else True
             except Exception as e:
                 ExceptionUtils.exception_traceback(e)
                 self.db.rollback()
                 return False
-
+            finally:
+                # 确保 Session 关闭并重置
+                self.db.session.close()
+                _Session.remove()  # 清理 scoped_session
         return persist
