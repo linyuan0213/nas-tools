@@ -241,7 +241,10 @@ class OpenSubtitles(_IPluginModule):
                 description = tr_doc('span[itemprop="name"]').text()
                 link = tr_doc('a[href^="/download/"]').attr("href")
             if link:
-                link = "https://www.opensubtitles.org%s" % link
+                # 从链接中提取字幕ID
+                sub_id = link.split('/')[-1]
+                # 构建实际的下载链接
+                link = f"https://dl.opensubtitles.org/zh/download/sub/{sub_id}"
             else:
                 continue
             ret_subtitles.append({
