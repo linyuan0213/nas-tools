@@ -152,81 +152,73 @@
 
   // 显示插件市场页面
   function show_plugin_apps_modal() {
-    // 获取插件列表
-    ajax_post("get_plugin_apps", {}, function(ret){
-      if (ret.result) {
-        $("#plugin_apps_content").empty();
-        for (let pid in ret.result) {
-        
-        // 对插件进行排序，已安装的显示在前面
-        let sortedPlugins = [];
-        for (let pid in ret.result) {
-        for (let pid in ret.result) {
-          let plugin = ret.result[pid];
-          sortedPlugins.push({
-          let count = ret.statistic[pid];
-            id: pid,
-            plugin: ret.result[pid],
-            count: ret.statistic[pid]
-          });
-        }
-        
-        // 根据安装状态排序
-        sortedPlugins.sort((a, b) => {
-          if (a.plugin.installed && !b.plugin.installed) return -1;
-          if (!a.plugin.installed && b.plugin.installed) return 1;
-          return 0;
-        });
-        
-        // 遍历排序后的插件列表
-        for (let item of sortedPlugins) {
-          let pid = item.id;
-          let plugin = item.plugin;
-          let count = item.count;
-          let plugin_html = `
-            <div class="card card-link-pop card-borderless p-0 shadow-sm rounded-3 overflow-hidden ${plugin.installed ? 'plugin-installed' : 'plugin-not-installed'}" href="javascript:void(0)">
-              <div class="card-cover card-cover-blurred text-center ${plugin.color.startsWith('bg-') ? plugin.color:''}"
-                ${plugin.color.startsWith('#') ? `style="background-color: ${plugin.color}"` : ''}
-              >
-                <span class="avatar avatar-xl avatar-thumb avatar-rounded"
-                    style="background-image: url('../static/img/plugins/${plugin.icon}')"
-                >
-                </span>
-                <div class="position-absolute" style="top: 10px; right: 10px;">
-                  ${plugin.installed ? `<span class="badge bg-blue">已安装</span>` : `<span class="badge bg-muted">未安装</span>`}
-                  ${count ? `<span class="badge ms-1">${count.toLocaleString()}</span>` : ''}
-                </div>
-              </div>
-              <div class="card-body text-start">
-                <div class="card-title mb-1">
-                  ${plugin.name}
-                </div>
-                <div class="text-muted"><strong>描述：</strong>${plugin.desc}</div>
-                <div class="text-muted mt-1"><strong>作者：</strong>
-                ${plugin.author_url ? `<a href="${plugin.author_url}" target="_blank">${plugin.author}</a>`
-                  : `<span class="text-muted">${plugin.author}</span>`}
-                </div>
-              </div>
-              <div class="d-flex">
-                ${plugin.installed ? `
-                  <a href="javascript:uninstall_plugin('${pid}', '${plugin.name}')" class="card-btn text-danger">
-                    {{ SVG.trash('me-2') }}
-                     卸载
-                  </a>
-                  ` : `
-                  <a href="javascript:install_plugin('${pid}', '${plugin.name}')" class="card-btn">
-                    {{ SVG.cloud_download('me-2') }}
-                     安装
-                  </a>
-                  `}
-              </div>
-            </div>
-          `;
-          $("#plugin_apps_content").append(plugin_html);
-        }
-        $("#modal-plugin-apps").modal('show');
-      }
-    });
+      // 获取插件列表
+      ajax_post("get_plugin_apps", {}, function(ret) {
+          if (ret.result) {
+              $("#plugin_apps_content").empty();
+              // 准备排序的插件数组
+              let sortedPlugins = [];
+              
+              // 遍历所有插件并收集数据
+              for (let pid in ret.result) {
+                  let plugin = ret.result[pid];
+                  let count = ret.statistic[pid];
+                  sortedPlugins.push({
+                      id: pid,
+                      plugin: plugin,
+                      count: count
+                  });
+              }
+  
+              // 根据安装状态排序（已安装在前）
+              sortedPlugins.sort((a, b) => {
+                  if (a.plugin.installed && !b.plugin.installed) return -1;
+                  if (!a.plugin.installed && b.plugin.installed) return 1;
+                  return 0;
+              });
+  
+              // 生成HTML内容
+              for (let item of sortedPlugins) {
+                  let pid = item.id;
+                  let plugin = item.plugin;
+                  let count = item.count;
+                  let plugin_html = `
+                      <div class="card card-link-pop card-borderless p-0 shadow-sm rounded-3 overflow-hidden ${plugin.installed ? 'plugin-installed' : 'plugin-not-installed'}">
+                          <div class="card-cover card-cover-blurred text-center ${plugin.color.startsWith('bg-') ? plugin.color : ''}"
+                              ${plugin.color.startsWith('#') ? `style="background-color: ${plugin.color}"` : ''}>
+                              <span class="avatar avatar-xl avatar-thumb avatar-rounded"
+                                  style="background-image: url('../static/img/plugins/${plugin.icon}')">
+                              </span>
+                              <div class="position-absolute" style="top: 10px; right: 10px;">
+                                  ${plugin.installed ? `<span class="badge bg-blue">已安装</span>` : `<span class="badge bg-muted">未安装</span>`}
+                                  ${count ? `<span class="badge ms-1">${count.toLocaleString()}</span>` : ''}
+                              </div>
+                          </div>
+                          <div class="card-body text-start">
+                              <div class="card-title mb-1">${plugin.name}</div>
+                              <div class="text-muted"><strong>描述：</strong>${plugin.desc}</div>
+                              <div class="text-muted mt-1"><strong>作者：</strong>
+                                  ${plugin.author_url ? `<a href="${plugin.author_url}" target="_blank">${plugin.author}</a>` 
+                                  : `<span class="text-muted">${plugin.author}</span>`}
+                              </div>
+                          </div>
+                          <div class="d-flex">
+                              ${plugin.installed ? `
+                                  <a href="javascript:uninstall_plugin('${pid}', '${plugin.name}')" class="card-btn text-danger">
+                                      {{ SVG.trash('me-2') }}卸载
+                                  </a>` 
+                              : `
+                                  <a href="javascript:install_plugin('${pid}', '${plugin.name}')" class="card-btn">
+                                      {{ SVG.cloud_download('me-2') }}安装
+                                  </a>`}
+                          </div>
+                      </div>
+                  `;
+                  $("#plugin_apps_content").append(plugin_html);
+              }
+              $("#modal-plugin-apps").modal('show');
+          }
+      });
   }
 
   // 显示插件页面
