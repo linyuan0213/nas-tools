@@ -1726,24 +1726,48 @@ def ical():
 @login_required
 def Img():
     """
-    图片中换服务
+    图片缓存服务
     """
     url = request.args.get('url')
     if not url:
         return make_response("参数错误", 400)
+    
     # 计算Etag
     etag = hashlib.sha256(url.encode('utf-8')).hexdigest()
+    
     # 检查协商缓存
     if_none_match = request.headers.get('If-None-Match')
     if if_none_match and if_none_match == etag:
         return make_response('', 304)
-    # 获取图片数据
-    response = Response(
-        WebUtils.request_cache(url),
-        mimetype='image/jpeg'
-    )
-    response.headers.set('Cache-Control', 'max-age=604800')
+    
+    # 检查Redis缓存
+    redis_key = f"image_cache:{etag}"
+    cached_img = App.config['SESSION_REDIS'].get(redis_key)
+    
+    if cached_img:
+        # 从缓存返回
+        response = Response(
+            cached_img,
+            mimetype='image/jpeg'
+        )
+    else:
+        # 获取原始图片数据
+        img_data = WebUtils.request_cache(url)
+        if not img_data:
+            return make_response("获取图片失败", 404)
+        
+        # 存入Redis缓存 (1周过期)
+        App.config['SESSION_REDIS'].setex(redis_key, 604800, img_data)
+        
+        response = Response(
+            img_data,
+            mimetype='image/jpeg'
+        )
+    
+    # 设置缓存头
+    response.headers.set('Cache-Control', 'max-age=604800, public')
     response.headers.set('Etag', etag)
+    response.headers.set('Expires', (datetime.datetime.now() + datetime.timedelta(days=7)).strftime('%a, %d %b %Y %H:%M:%S GMT'))
     return response
 
 
