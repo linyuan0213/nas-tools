@@ -1213,6 +1213,7 @@ dependencies = [
     { name = "redis-py-cluster" },
     { name = "requests", extra = ["socks"] },
     { name = "ruamel-yaml" },
+    { name = "serverchan-sdk" },
     { name = "setuptools" },
     { name = "slack-bolt" },
     { name = "sqlalchemy" },
@@ -1280,6 +1281,7 @@ requires-dist = [
     { name = "redis-py-cluster", specifier = ">=2.1.3" },
     { name = "requests", extras = ["socks"], specifier = ">=2.32.3" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
+    { name = "serverchan-sdk", specifier = ">=1.0.6" },
     { name = "setuptools", specifier = ">=75.7.0" },
     { name = "slack-bolt", specifier = ">=1.22.0" },
     { name = "sqlalchemy", specifier = ">=2.0.36" },
@@ -1962,6 +1964,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/87/b8/01c29b924dcbbed75cc45b30c30d565d763b9c4d540545a0eeecffb8f09c/ruamel.yaml.clib-0.2.12-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:4f6f3eac23941b32afccc23081e1f50612bdbe4e982012ef4f5797986828cd01", size = 709059 },
     { url = "https://files.pythonhosted.org/packages/30/8c/ed73f047a73638257aa9377ad356bea4d96125b305c34a28766f4445cc0f/ruamel.yaml.clib-0.2.12-cp313-cp313-win32.whl", hash = "sha256:6442cb36270b3afb1b4951f060eccca1ce49f3d087ca1ca4563a6eb479cb3de6", size = 98583 },
     { url = "https://files.pythonhosted.org/packages/b0/85/e8e751d8791564dd333d5d9a4eab0a7a115f7e349595417fd50ecae3395c/ruamel.yaml.clib-0.2.12-cp313-cp313-win_amd64.whl", hash = "sha256:e5b8daf27af0b90da7bb903a876477a9e6d7270be6146906b276605997c7e9a3", size = 115190 },
+]
+
+[[package]]
+name = "serverchan-sdk"
+version = "1.0.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/ee/be5e6f23cedc1f583f6679324ee1afd2630507b574fb12169574afa404f2/serverchan_sdk-1.0.6.tar.gz", hash = "sha256:a79a8f0a0d4b83d8cabae4f6ca004338e404d4dbba9d9d935f27b15379cd502b", size = 2652 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/74/7673ff33a6a0ad580d99580f8e91daf42bf1717dbe951015f035cffa80d6/serverchan_sdk-1.0.6-py3-none-any.whl", hash = "sha256:c9715f2401f7a0cce8bd3aaba3a3a5f56e59dbc533c023c285c73a67d383b304", size = 1668 },
 ]
 
 [[package]]

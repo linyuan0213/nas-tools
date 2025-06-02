@@ -1,7 +1,7 @@
-from urllib.parse import urlencode
+from serverchan_sdk import sc_send
 
 from app.message.client._base import _IMessageClient
-from app.utils import RequestUtils, ExceptionUtils
+from app.utils import ExceptionUtils
 
 
 class ServerChan(_IMessageClient):
@@ -36,20 +36,13 @@ class ServerChan(_IMessageClient):
         if not self._sckey:
             return False, "参数未配置"
         try:
-            sc_url = "https://sctapi.ftqq.com/%s.send?%s" % (self._sckey, urlencode({"title": title, "desp": text}))
-            res = RequestUtils().get_res(sc_url)
-            if res and res.status_code == 200:
-                ret_json = res.json()
-                errno = ret_json.get('code')
-                error = ret_json.get('message')
-                if errno == 0:
-                    return True, error
-                else:
-                    return False, error
-            elif res is not None:
-                return False, f"错误码：{res.status_code}，错误原因：{res.reason}"
+            ret_json = sc_send(self._sckey, title, text, {"tags": "NASTOOL"})
+            errno = ret_json.get('code')
+            error = ret_json.get('message')
+            if errno == 0:
+                return True, error
             else:
-                return False, "未获取到返回信息"
+                return False, error
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
