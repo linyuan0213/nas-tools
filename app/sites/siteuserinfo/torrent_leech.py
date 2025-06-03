@@ -14,7 +14,7 @@ class TorrentLeechSiteUserInfo(_ISiteUserInfo):
 
     @classmethod
     def match(cls, html_text):
-        return 'TorrentLeech' in html_text
+        return 'TorrentLeech' in html_text and 'NexusPHP' not in html_text
 
     def _parse_site_page(self, html_text):
         html_text = self._prepare_html_text(html_text)
