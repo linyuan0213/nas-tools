@@ -42,6 +42,7 @@
             <span class="badge badge-pill bg-teal"><small>{{ Site.pri }}</small></span>
             <a href="{% if Site.signurl %}{{ Site.signurl }}{% else %}javascript:void(0){% endif %}"
             {% if Site.signurl %}target="_blank" {% endif %} class="ms-1">
+            <span class="avatar avatar-xs me-1 siteicon-{{ Site.name|hash }}" style="width: 1.5rem; height: 1.5rem;"></span>
               <strong>{{ Site.name }}</strong>
               </a>
           </h3>
