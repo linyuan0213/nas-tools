@@ -171,7 +171,24 @@
             {% for target in SchedulerTasks['nettest'].targets %}
             <tr>
               <td>
-                <span>{{ target }}</span>
+                <div class="d-flex align-items-center">
+                  <span class="avatar avatar-sm me-2">
+                    {% if 'themoviedb.org' in target or 'tmdb.org' in target %}
+                      <img src="./static/img/services/tmdb.png" alt="TMDB" class="avatar-img">
+                    {% elif 'telegram.org' in target %}
+                      <img src="./static/img/services/telegram.webp" alt="Telegram" class="avatar-img">
+                    {% elif 'fanart.tv' in target %}
+                      <img src="./static/img/services/fanart.webp" alt="Fanart" class="avatar-img">
+                    {% elif 'weixin.qq.com' in target or 'wechat' in target %}
+                      <img src="./static/img/services/wechat.png" alt="WeChat" class="avatar-img">
+                    {% elif 'douban.com' in target %}
+                      <img src="./static/img/services/douban.png" alt="Douban" class="avatar-img">
+                    {% elif 'opensubtitles.org' in target %}
+                      <img src="./static/img/plugins/opensubtitles.png" alt="OpenSubtitles" class="avatar-img">
+                    {% endif %}
+                  </span>
+                  <span>{{ target }}</span>
+                </div>
                 <input name="nettest_item" value="{{ target }}|{{ loop.index0 }}" type="hidden">
               </td>
               <td id="nettest_item_res_{{ loop.index0 }}"></td>
