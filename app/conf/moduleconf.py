@@ -575,7 +575,8 @@ class ModuleConf(object):
         "webservice.fanart.tv",
         "api.telegram.org",
         "qyapi.weixin.qq.com",
-        "www.opensubtitles.org"
+        "www.opensubtitles.org",
+        "frodo.douban.com"
     ]
 
     # 下载器
