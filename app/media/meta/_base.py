@@ -177,7 +177,7 @@ class MetaBase(object):
 
     def get_star_string(self):
         if self.vote_average:
-            return "评分：%s" % self.get_stars()
+            return "评分：%s (%s)" % (self.get_stars(), round(float(self.vote_average), 1))
         else:
             return ""
 
@@ -456,11 +456,17 @@ class MetaBase(object):
             return "https://movie.douban.com/subject/%s" % self.douban_id
         return ""
 
-    # 返回评分星星个数
+    # 返回评分星星，总星数为10，只使用整星
     def get_stars(self):
         if not self.vote_average:
             return ""
-        return "".rjust(int(self.vote_average), "★")
+        # 将评分转换为整数精度
+        score = round(float(self.vote_average))
+        # 计算整星数
+        full_stars = min(int(score), 10)
+        empty_stars = 10 - full_stars
+        # 返回星星字符串：★表示整星，☆表示空星
+        return "★" * full_stars + "☆" * empty_stars
 
     # 返回促销信息
     def get_volume_factor_string(self):
