@@ -26,12 +26,13 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_session import Session
 
 from app.helper.drissionpage_helper import DrissionPageHelper
+from app.helper.tmdb_blacklist_helper import TmdbBlacklistHelper
 import log
 from app.brushtask import BrushTask
 from app.conf import ModuleConf, SystemConfig
 from app.downloader import Downloader
 from app.filter import Filter
-from app.helper import SecurityHelper, MetaHelper, ThreadHelper
+from app.helper import SecurityHelper, ThreadHelper
 from app.indexer import Indexer
 from app.media.meta import MetaInfo
 from app.mediaserver import MediaServer
@@ -822,9 +823,9 @@ def history():
 
 
 # TMDB缓存页面
-@App.route('/tmdbcache', methods=['POST', 'GET'])
+@App.route('/tmdbblacklist', methods=['POST', 'GET'])
 @login_required
-def tmdbcache():
+def tmdb_blacklist():
     page_num = request.args.get("pagenum")
     if not page_num:
         page_num = 30
@@ -836,16 +837,15 @@ def tmdbcache():
         current_page = 1
     else:
         current_page = int(current_page)
-    total_count, tmdb_caches = MetaHelper().dump_meta_data(
+    tmdb_blacklist, total_count = TmdbBlacklistHelper().get_blacklist(
         search_str, current_page, page_num)
     total_page = floor(total_count / page_num) + 1
     page_range = WebUtils.get_page_range(current_page=current_page,
                                          total_page=total_page)
-
-    return render_template("rename/tmdbcache.html",
+    return render_template("rename/tmdbblacklist.html",
                            TotalCount=total_count,
-                           Count=len(tmdb_caches),
-                           TmdbCaches=tmdb_caches,
+                           Count=len(tmdb_blacklist),
+                           TmdbBlacklist=tmdb_blacklist,
                            Search=search_str,
                            CurrentPage=current_page,
                            TotalPage=total_page,

@@ -5,17 +5,17 @@
     <div class="row align-items-center">
       <div class="col">
         <h2 class="page-title">
-          TMDB缓存
+          TMDB黑名单
         </h2>
       </div>
       <div class="col-auto ms-auto d-print-none">
         <div class="btn-list">
-          <a href="javascript:clear_tmdb_cache()" class="btn btn-danger d-none d-sm-inline-block">
-            {{ SVG.eraser() }}
-            清空TMDB缓存
+          <a href="javascript:add_to_blacklist()" class="btn btn-primary d-none d-sm-inline-block">
+            {{ SVG.plus() }}
+            添加黑名单
           </a>
-          <a href="javascript:clear_tmdb_cache()" class="btn btn-danger d-sm-none btn-icon" title="清空TMDB缓存">
-            {{ SVG.eraser() }}
+          <a href="javascript:add_to_blacklist()" class="btn btn-primary d-sm-none btn-icon" title="添加黑名单">
+            {{ SVG.plus() }}
           </a>
         </div>
       </div>
@@ -48,42 +48,31 @@
               <tr>
                 <th>索引</th>
                 <th>标题</th>
-                <th>TMDB</th>
-                <th></th>
-                <th></th>
+                <th>TMDB ID</th>
+                <th>海报</th>
+                <th>操作</th>
               </tr>
               </thead>
               <tbody>
               {% if TotalCount > 0 %}
-                {% for TmdbCache in TmdbCaches %}
+                {% for Item in TmdbBlacklist %}
                   <tr>
                     <td>
-                      <div class="d-flex py-1 align-items-center">
-                        <span class="avatar me-2 text-nowrap">
-                          {% if TmdbCache[1].media_type == "电影" %}
-                            {{ SVG.movie() }}
-                          {% else %}
-                            {{ SVG.device_tv() }}
-                          {% endif %}
-                        </span>
-                        <div class="flex-fill">
-                          <div class="font-weight-medium">{{ TmdbCache[2] }}</div>
-                        </div>
-                      </div>
+                      <div class="text-muted text-nowrap">{{ Item.id }}</div>
                     </td>
                     <td>
-                      <div>{{ TmdbCache[1].title }}</div>
+                      <div>{{ Item.title }}</div>
                     </td>
                     <td>
-                      <div class="text-muted text-nowrap">{{ TmdbCache[1].id }}
-                        {% if TmdbCache[1].media_type == "电影" %}
+                      <div class="text-muted text-nowrap">{{ Item.tmdb_id }}
+                        {% if Item.media_type == "电影" %}
                           <a class="ms-1"
-                             href="https://www.themoviedb.org/movie/{{ TmdbCache[1].id }}"
+                             href="https://www.themoviedb.org/movie/{{ Item.tmdb_id }}"
                              target="_blank">
                             {{ SVG.link() }}
                           </a>
                         {% else %}
-                          <a class="ms-1" href="https://www.themoviedb.org/tv/{{ TmdbCache[1].id }}"
+                          <a class="ms-1" href="https://www.themoviedb.org/tv/{{ Item.tmdb_id }}"
                              target="_blank">
                             {{ SVG.link() }}
                           </a>
@@ -91,30 +80,19 @@
                       </div>
                     </td>
                     <td>
-                      {% if TmdbCache[1].poster_path %}
+                      {% if Item.poster_path %}
                         <img class="rounded shadow-sm w-5"
-                            src="https://image.tmdb.org/t/p/w500{{ TmdbCache[1].poster_path }}"
+                            src="https://image.tmdb.org/t/p/w500{{ Item.poster_path }}"
                             onerror="this.src='../static/img/no-image.png'" alt=""
                             style="min-width: 50px"/>
                       {% endif %}
                     </td>
                     <td>
-                      <div class="dropdown">
-                        <a href="#" class="btn-action" data-bs-toggle="dropdown"
-                           aria-expanded="false">
-                          {{ SVG.dots_vertical() }}
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-end">
-                          <a class="dropdown-item"
-                             href='javascript:show_modify("{{ TmdbCache[2] }}", "{{ TmdbCache[1].title }}")'>
-                            修改
-                          </a>
-                          <a class="dropdown-item text-danger"
-                             href='javascript:manual_delete("{{ TmdbCache[0] }}")'>
-                            删除
-                          </a>
-                        </div>
-                      </div>
+                      <a class="btn-action text-danger" 
+                         href='javascript:delete_from_blacklist("{{ Item.tmdb_id }}", "{{ Item.media_type }}")'
+                         title="删除">
+                        {{ SVG.trash() }}
+                      </a>
                     </td>
                   </tr>
                 {% endfor %}
@@ -139,7 +117,7 @@
                 {% for page in PageRange %}
                   <li class="page-item {% if page==CurrentPage %} active {% endif %}">
                     <a class="page-link"
-                       href="javascript:navmenu('tmdbcache?s={{ Search }}&page={{ page }}')">{{ page }}</a>
+                       href="javascript:navmenu('tmdbblacklist?s={{ Search }}&page={{ page }}')">{{ page }}</a>
                   </li>
                 {% endfor %}
                 <li class="page-item {% if CurrentPage >= TotalPage %} disabled {% endif %}">
@@ -173,83 +151,86 @@
     </div>
   </div>
 </div>
-<div class="modal modal-blur fade" id="modal-tmdbcache-modify" tabindex="-1" role="dialog" aria-hidden="true"
+<div class="modal modal-blur fade" id="modal-add-blacklist" tabindex="-1" role="dialog" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">修改TMDB缓存</h5>
+        <h5 class="modal-title">添加黑名单</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="row">
-          <label class="form-label required">标题</label>
-          <div class="row mb-3">
-            <input type="hidden" id="tmdbcache_key">
-            <input type="text" value="" id="tmdbcache_title" class="form-control" placeholder="标题">
-          </div>
+        <div class="mb-3">
+          <label class="form-label required">TMDB ID</label>
+          <input type="text" id="blacklist_tmdb_id" class="form-control" placeholder="请输入TMDB ID">
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">媒体类型</label>
+          <select id="blacklist_media_type" class="form-select">
+            <option value="">请选择</option>
+            <option value="电影">电影</option>
+            <option value="电视剧">电视剧</option>
+          </select>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-link me-auto" data-bs-dismiss="modal">取消</button>
-        <a href="javascript:modify_title()" id="tmdbcache_modify_btn" class="btn btn-primary">确定</a>
+        <button type="button" class="btn btn-primary" onclick="submit_add_blacklist()">确定</button>
       </div>
     </div>
   </div>
 </div>
+
 <script type="text/javascript">
   // 上一页
   function go_pre_page(search, page) {
-    navmenu("tmdbcache?s=" + search + "&page=" + (page - 1))
+    navmenu("tmdbblacklist?s=" + search + "&page=" + (page - 1))
   }
 
   // 下一页
   function go_next_page(search, page) {
-    navmenu("tmdbcache?s=" + search + "&page=" + (page + 1))
+    navmenu("tmdbblacklist?s=" + search + "&page=" + (page + 1))
   }
 
-  // 显示修改
-  function show_modify(key, title) {
-    $("#tmdbcache_key").val(key);
-    $("#tmdbcache_title").val(title);
-    $("#modal-tmdbcache-modify").modal('show');
+  // 添加到黑名单
+  function add_to_blacklist() {
+    $("#blacklist_tmdb_id").val('');
+    $("#blacklist_media_type").val('');
+    $("#modal-add-blacklist").modal('show');
   }
 
-  // 修改标题
-  function modify_title() {
-    const key = $("#tmdbcache_key").val();
-    if (!key) {
+  // 提交手动添加黑名单
+  function submit_add_blacklist() {
+    const tmdb_id = $("#blacklist_tmdb_id").val();
+    const media_type = $("#blacklist_media_type").val();
+    
+    if (!tmdb_id) {
+      $("#blacklist_tmdb_id").addClass("is-invalid");
       return;
     }
-    const title = $("#tmdbcache_title").val();
-    if (!title) {
-      $("#tmdbcache_title").addClass("is-invalid");
+    if (!media_type) {
+      $("#blacklist_media_type").addClass("is-invalid");
       return;
-    } else {
-      $("#tmdbcache_title").removeClass("is-invalid");
     }
-    $("#modal-tmdbcache-modify").modal('hide');
-    ajax_post("modify_tmdb_cache", {"key": key, "title": title}, function () {
+
+    $("#modal-add-blacklist").modal('hide');
+    ajax_post("add_tmdb_blacklist", {
+      "tmdb_id": tmdb_id,
+      "media_type": media_type
+    }, function(ret) {
+      show_success_modal("已添加到黑名单！");
       window_history_refresh();
     });
   }
 
-  //清空TMDB缓存
-  function clear_tmdb_cache() {
-    show_confirm_modal("清空TMDB缓存后，将会增加TMDB API的请求次数，增加搜索响应时间，但是可以一次性解决TMDB改名后本地缓存未更新的问题，是否确认？", function () {
+  // 从黑名单删除
+  function delete_from_blacklist(tmdb_id, media_type) {
+    show_confirm_modal(tmdb_id + " 对应的TMDB黑名单条目将被删除，是否确认？", function () {
       hide_confirm_modal();
-      ajax_post("clear_tmdb_cache", {}, function (ret) {
-        show_success_modal("TMDB缓存清理完成！");
-        window_history_refresh();
-      });
-    });
-  }
-
-  //删除提示
-  function manual_delete(key) {
-    show_confirm_modal(key + " 对应的缓存TMDB条目将被删除，是否确认？", function () {
-      hide_confirm_modal();
-      ajax_post("delete_tmdb_cache", {"cache_key": key}, function () {
+      ajax_post("delete_tmdb_blacklist", {
+        "tmdb_id": tmdb_id,
+        "media_type": media_type
+      }, function () {
         window_history_refresh();
       });
     });
@@ -259,7 +240,7 @@
   $('#search_word').bind('keypress', function (event) {
     if (event.keyCode == "13") {
       let keyword = $("#search_word").val();
-      navmenu("tmdbcache?s=" + keyword);
+      navmenu("tmdbblacklist?s=" + keyword);
     }
   });
 
