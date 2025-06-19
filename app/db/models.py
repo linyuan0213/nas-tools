@@ -591,3 +591,19 @@ class MEDIASYNCSTATISTIC(BaseMedia):
     MOVIE_COUNT = Column(Text)
     TV_COUNT = Column(Text)
     UPDATE_TIME = Column(Text)
+
+
+class TMDBBLACKLIST(Base):
+    __tablename__ = 'TMDB_BLACKLIST'
+
+    ID = Column(Integer, Sequence('ID'), primary_key=True)
+    TMDB_ID = Column(Text, index=True)
+    TITLE = Column(Text)
+    YEAR = Column(Text)
+    MEDIA_TYPE = Column(Text)
+    POSTER_PATH = Column(Text)
+    BACKDROP_PATH = Column(Text)
+    NOTE = Column(Text)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

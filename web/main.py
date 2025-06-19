@@ -26,12 +26,13 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_session import Session
 
 from app.helper.drissionpage_helper import DrissionPageHelper
+from app.helper.tmdb_blacklist_helper import TmdbBlacklistHelper
 import log
 from app.brushtask import BrushTask
 from app.conf import ModuleConf, SystemConfig
 from app.downloader import Downloader
 from app.filter import Filter
-from app.helper import SecurityHelper, MetaHelper, ThreadHelper
+from app.helper import SecurityHelper, ThreadHelper
 from app.indexer import Indexer
 from app.media.meta import MetaInfo
 from app.mediaserver import MediaServer
@@ -822,9 +823,9 @@ def history():
 
 
 # TMDB缓存页面
-@App.route('/tmdbcache', methods=['POST', 'GET'])
+@App.route('/tmdbblacklist', methods=['POST', 'GET'])
 @login_required
-def tmdbcache():
+def tmdb_blacklist():
     page_num = request.args.get("pagenum")
     if not page_num:
         page_num = 30
@@ -836,16 +837,15 @@ def tmdbcache():
         current_page = 1
     else:
         current_page = int(current_page)
-    total_count, tmdb_caches = MetaHelper().dump_meta_data(
+    tmdb_blacklist, total_count = TmdbBlacklistHelper().get_blacklist(
         search_str, current_page, page_num)
     total_page = floor(total_count / page_num) + 1
     page_range = WebUtils.get_page_range(current_page=current_page,
                                          total_page=total_page)
-
-    return render_template("rename/tmdbcache.html",
+    return render_template("rename/tmdbblacklist.html",
                            TotalCount=total_count,
-                           Count=len(tmdb_caches),
-                           TmdbCaches=tmdb_caches,
+                           Count=len(tmdb_blacklist),
+                           TmdbBlacklist=tmdb_blacklist,
                            Search=search_str,
                            CurrentPage=current_page,
                            TotalPage=total_page,
@@ -1726,24 +1726,48 @@ def ical():
 @login_required
 def Img():
     """
-    图片中换服务
+    图片缓存服务
     """
     url = request.args.get('url')
     if not url:
         return make_response("参数错误", 400)
+    
     # 计算Etag
     etag = hashlib.sha256(url.encode('utf-8')).hexdigest()
+    
     # 检查协商缓存
     if_none_match = request.headers.get('If-None-Match')
     if if_none_match and if_none_match == etag:
         return make_response('', 304)
-    # 获取图片数据
-    response = Response(
-        WebUtils.request_cache(url),
-        mimetype='image/jpeg'
-    )
-    response.headers.set('Cache-Control', 'max-age=604800')
+    
+    # 检查Redis缓存
+    redis_key = f"image_cache:{etag}"
+    cached_img = App.config['SESSION_REDIS'].get(redis_key)
+    
+    if cached_img:
+        # 从缓存返回
+        response = Response(
+            cached_img,
+            mimetype='image/jpeg'
+        )
+    else:
+        # 获取原始图片数据
+        img_data = WebUtils.request_cache(url)
+        if not img_data:
+            return make_response("获取图片失败", 404)
+        
+        # 存入Redis缓存 (1周过期)
+        App.config['SESSION_REDIS'].setex(redis_key, 604800, img_data)
+        
+        response = Response(
+            img_data,
+            mimetype='image/jpeg'
+        )
+    
+    # 设置缓存头
+    response.headers.set('Cache-Control', 'max-age=604800, public')
     response.headers.set('Etag', etag)
+    response.headers.set('Expires', (datetime.datetime.now() + datetime.timedelta(days=7)).strftime('%a, %d %b %Y %H:%M:%S GMT'))
     return response
 
 

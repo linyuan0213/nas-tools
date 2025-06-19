@@ -68,4 +68,5 @@ dependencies = [
     "pytz-deprecation-shim>=0.1.0.post0",
     "webdav4>=0.10.0",
     "pysmb>=1.2.10",
+    "serverchan-sdk>=1.0.6",
 ]

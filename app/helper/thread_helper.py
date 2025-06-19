@@ -14,4 +14,4 @@ class ThreadHelper(metaclass=SingletonMeta):
         pass
 
     def start_thread(self, func, kwargs):
-        self.executor.submit(func, *kwargs)
+        return self.executor.submit(func, *kwargs)

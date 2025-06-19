@@ -47,6 +47,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
                       timeout: int = 120,
                       click_xpath: str = None,
                       delay: int = 2) -> str:
+        
+        if not self.get_status():
+            return ""
+        
         """获取HTML内容"""
         headers = {"Content-Type": "application/json"}
         tab_id = self.create_tab(url=url, cookies=cookies, timeout=timeout)
@@ -105,6 +109,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
         """
         获取html并保持标签页打开
         """
+        
+        if not self.get_status():
+            return ""
+
         if is_refresh:
             self._refresh_tab(tab_id=tab_id)
         # 获取html内容
@@ -135,6 +143,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             raise
 
     def create_tab(self, url: str, cookies: str, timeout: int = 20)->str:
+        
+        if not self.get_status():
+            return ""
+
         headers = {"Content-Type": "application/json"}
         tab_id = generate_tab_id()
 
@@ -165,6 +177,9 @@ class DrissionPageHelper(metaclass=SingletonMeta):
     def get_cookie(self, tab_id: str, timeout: int = 20) -> str:
         """返回cookie"""
         # 延迟加载，等待网页渲染完成
+        if not self.get_status():
+            return ""
+
         try:
             response = self._request_with_retry(
                 method="GET",
@@ -181,6 +196,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
 
     def close_tab(self, tab_id: str):
         """关闭标签页"""
+        
+        if not self.get_status():
+            return
+
         close_url = f"{self.url}/tabs/{tab_id}"
         try:
             self._request_with_retry(method="DELETE", url=close_url)
@@ -203,6 +222,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             raise
         
     def input_on_element(self, tab_id: str, selector: str, input_str: str, timeout: str = 20): 
+
+        if not self.get_status():
+            return False
+
         headers = {"Content-Type": "application/json"}  
         click_url = f"{self.url}/tabs/input/"
         click_data = json.dumps({
@@ -227,6 +250,9 @@ class DrissionPageHelper(metaclass=SingletonMeta):
 
     def close_all_tabs(self):
         """关闭标签页"""
+        if not self.get_status():
+            return
+
         close_url = f"{self.url}/tabs/"
         try:
             self._request_with_retry(method="DELETE", url=close_url)

@@ -1,5 +1,4 @@
 from .indexer_helper import IndexerHelper, IndexerConf
-from .meta_helper import MetaHelper
 from .progress_helper import ProgressHelper
 from .security_helper import SecurityHelper
 from .thread_helper import ThreadHelper
@@ -15,3 +14,4 @@ from .rss_helper import RssHelper
 from .plugin_helper import PluginHelper
 from .drissionpage_helper import DrissionPageHelper
 from .cookiecloud_helper import CookiecloudHelper
+from .tmdb_blacklist_helper import TmdbBlacklistHelper

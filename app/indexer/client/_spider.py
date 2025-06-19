@@ -22,11 +22,12 @@ from feapder.utils.tools import urlencode
 class TorrentSpider(feapder.AirSpider):
     _redis_valid = RedisHelper.is_valid()
     __custom_setting__ = dict(
-        SPIDER_THREAD_COUNT=1,
-        SPIDER_MAX_RETRY_TIMES=0,
+        SPIDER_THREAD_COUNT=3,
+        SPIDER_MAX_RETRY_TIMES=3,
         REQUEST_LOST_TIMEOUT=10,
         RETRY_FAILED_REQUESTS=False,
-        LOG_LEVEL="ERROR",
+        LOG_LEVEL="INFO",
+        KEEP_ALIVE=False,
         RANDOM_HEADERS=False,
         REDISDB_IP_PORTS="127.0.0.1:6379",
         REDISDB_USER_PASS="",
@@ -81,6 +82,8 @@ class TorrentSpider(feapder.AirSpider):
     torrents_info_array = []
     #站点信息
     site_info = None
+    # 重试次数
+    retry_times = 0
 
     def setparam(self, indexer,
                  keyword: [str, list] = None,
@@ -254,11 +257,13 @@ class TorrentSpider(feapder.AirSpider):
             yield feapder.Request(url=searchurl,
                                 use_session=True,
                                 data=params,
-                                method="GET")
+                                method="GET",
+                                retry_times=3)
         else:
             yield feapder.Request(url=searchurl,
                                 use_session=True,
-                                method="GET")
+                                method="GET",
+                                retry_times=3)
 
     def download_midware(self, request):
         response = None
@@ -268,17 +273,15 @@ class TorrentSpider(feapder.AirSpider):
                 "referer": self.domain
             }
             request.cookies = RequestUtils.cookie_parse(self.cookie)
-            if self.proxies:
+            if self.proxies and self.proxies.get("http"):
                 request.proxies = self.proxies
         else:
             chrome = DrissionPageHelper()
-
             html_text = ""
             if chrome.get_status():
                 html_text = chrome.get_page_html(url=request.url, cookies=self.cookie)
             if html_text:
                 response = feapder.Response.from_text(text=html_text, url="", cookies={}, headers={})
-    
         return request, response
 
     def Gettitle_default(self, torrent):
@@ -659,6 +662,14 @@ class TorrentSpider(feapder.AirSpider):
         elif isinstance(items, list):
             items = items[0]
         return items
+
+    def failed_request(self, request, response):
+        """
+        Handle failed requests after all retry attempts
+        """
+        self.is_error = True
+        self.is_complete = True
+        log.warn(f"【Spider】请求失败已达到最大重试次数：{request.url}")
 
     def parse(self, request, response):
         """
