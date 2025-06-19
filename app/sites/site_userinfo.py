@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 from multiprocessing.dummy import Pool as ThreadPool
 from threading import Lock
-from time import sleep
 
 import requests
 

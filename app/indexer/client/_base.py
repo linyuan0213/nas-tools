@@ -309,7 +309,7 @@ class _IIndexClient(metaclass=ABCMeta):
                     media_info = self.media.merge_media_info(meta_info, match_media)
                 else:
                     # 查询缓存
-                    cache_info = self.media.get_cache_info(meta_info)
+                    cache_info = self.media.get_cache_info(match_media)
                     if match_media \
                             and str(cache_info.get("id")) == str(match_media.tmdb_id):
                         # 缓存匹配，合并媒体数据

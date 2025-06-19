@@ -10,6 +10,8 @@ class TMDBCache:
 
     def get_tmdb_info(self, mtype: MediaType, tmdbid: str, language: str = None) -> Optional[Any]:
         """从缓存获取TMDB信息，支持字典和对象"""
+        if mtype == MediaType.ANIME:
+            mtype = MediaType.TV
         cache_key = f"tmdb:{mtype.value}:{tmdbid}:{language or 'default'}"
         cached = self.redis.get(cache_key)
         if cached:
@@ -25,7 +27,9 @@ class TMDBCache:
     def set_tmdb_info(self, mtype: MediaType, tmdbid: str, info: Any, 
                      language: str = None, ttl: int = 3600) -> None:
         """缓存TMDB信息，支持字典和对象，默认1小时"""
-        import pickle
+        if mtype == MediaType.ANIME:
+            mtype = MediaType.TV
+
         cache_key = f"tmdb:{mtype.value}:{tmdbid}:{language or 'default'}"
         # 其他类型则序列化存储
         value = pickle.dumps(info)
@@ -35,6 +39,8 @@ class TMDBCache:
     def get_media_info(self, title: str, year: str = None, 
                       mtype: MediaType = None) -> Optional[Any]:
         """从缓存获取媒体信息，支持字典和对象"""
+        if mtype == MediaType.ANIME:
+            mtype = MediaType.TV
         cache_key = self._get_media_cache_key(title, year, mtype)
         cached = self.redis.get(cache_key)
         if cached:
@@ -51,8 +57,10 @@ class TMDBCache:
 
     def set_media_info(self, title: str, info: Any, 
                       year: str = None, mtype: MediaType = None, 
-                      ttl: int = 3600) -> None:
+                      ttl: int = 3600*12) -> None:
         """缓存媒体信息，支持字典和对象，默认1小时"""
+        if mtype == MediaType.ANIME:
+            mtype = MediaType.TV
         cache_key = self._get_media_cache_key(title, year, mtype)
         value = pickle.dumps(info)
         self.redis.set(cache_key, value, ex=ttl)

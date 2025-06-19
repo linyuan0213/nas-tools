@@ -6,7 +6,7 @@ import pytz
 from threading import Lock
 
 import log
-from app.helper import MetaHelper, ThreadHelper, SubmoduleHelper
+from app.helper import ThreadHelper, SubmoduleHelper
 from app.mediaserver import MediaServer
 from app.rss import Rss
 from app.sites import SiteUserInfo
@@ -143,16 +143,6 @@ class Scheduler(metaclass=SingletonMeta):
                     })
                     log.info("媒体库同步服务启动")
 
-        # 元数据定时保存
-        scheduler_queue.put({
-            "func_str": "MetaHelper.save_meta_data",
-                        "args": [],
-                        "trigger": "interval",
-                        "job_id": "MetaHelper.save_meta_data",
-                        "seconds": METAINFO_SAVE_INTERVAL,
-                        "jobstore": self._jobstore
-        })
-
         # 定时把队列中的监控文件转移走
         scheduler_queue.put({
             "func_str": "Sync.transfer_mon_files",
@@ -180,16 +170,6 @@ class Scheduler(metaclass=SingletonMeta):
                         "job_id": "Subscribe.refresh_rss_metainfo",
                         "trigger": "interval",
                         "hours": RSS_REFRESH_TMDB_INTERVAL,
-                        "jobstore": self._jobstore
-        })
-
-        # 定时清除未识别的缓存
-        scheduler_queue.put({
-            "func_str": "MetaHelper.delete_unknown_meta",
-                        "args": [],
-                        "job_id": "MetaHelper.delete_unknown_meta",
-                        "trigger": "interval",
-                        "hours": META_DELETE_UNKNOWN_INTERVAL,
                         "jobstore": self._jobstore
         })
 

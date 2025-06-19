@@ -6,7 +6,7 @@ import log
 from app.conf import SystemConfig
 from app.downloader import Downloader
 from app.filter import Filter
-from app.helper import DbHelper, MetaHelper
+from app.helper import DbHelper
 from app.indexer import Indexer
 from app.media import Media, DouBan
 from app.media.meta import MetaInfo
@@ -24,7 +24,6 @@ lock = Lock()
 
 class Subscribe(metaclass=SingletonMeta):
     dbhelper = None
-    metahelper = None
     searcher = None
     message = None
     media = None
@@ -40,7 +39,6 @@ class Subscribe(metaclass=SingletonMeta):
 
     def init_config(self):
         self.dbhelper = DbHelper()
-        self.metahelper = MetaHelper()
         self.searcher = Searcher()
         self.message = Message()
         self.media = Media()
@@ -603,8 +601,6 @@ class Subscribe(metaclass=SingletonMeta):
                                                     image=media_info.get_message_image(),
                                                     desc=media_info.overview,
                                                     note=self.gen_rss_note(media_info))
-                # 清除TMDB缓存
-                self.metahelper.delete_meta_data_by_tmdbid(media_info.tmdb_id)
 
         # 更新电视剧
         rss_tvs = self.get_subscribe_tvs(state='R')
@@ -653,8 +649,6 @@ class Subscribe(metaclass=SingletonMeta):
                         rid=rssid, 
                         episodes=range(total_episode - lack_episode + 1, total_episode + 1)
                     )
-                    # 清除TMDB缓存
-                    self.metahelper.delete_meta_data_by_tmdbid(media_info.tmdb_id)
         log.info("【Subscribe】订阅TMDB信息刷新完成")
 
     def __get_media_info(self, tmdbid, name, year, mtype, cache=True):

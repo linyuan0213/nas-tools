@@ -721,24 +721,14 @@ class BrushTask(metaclass=SingletonMeta):
         # 没有订阅退出
         if not rss_movies and not rss_tvs:
             return False
-        
-        # 识别种子名称，开始搜索TMDB
-        media_info = MetaInfo(title=title)
-        cache_info = media.get_cache_info(media_info)
-        if cache_info.get("id"):
-            # 使用缓存信息
-            media_info.tmdb_id = cache_info.get("id")
-            media_info.type = cache_info.get("type")
-            media_info.title = cache_info.get("title")
-            media_info.year = cache_info.get("year")
-        else:
-            # 重新查询TMDB
-            media_info = media.get_media_info(title=title)
-            if not media_info:
-                log.warn(f"【Brush】{title} 无法识别出媒体信息！")
-                return
-            elif not media_info.tmdb_info:
-                log.info(f"【Brush】{title} 识别为 {media_info.get_name()} 未匹配到TMDB媒体信息")
+
+        # 查询TMDB
+        media_info = media.get_media_info(title=title)
+        if not media_info:
+            log.warn(f"【Brush】{title} 无法识别出媒体信息！")
+            return
+        elif not media_info.tmdb_info:
+            log.info(f"【Brush】{title} 识别为 {media_info.get_name()} 未匹配到TMDB媒体信息")
         
         match_flag = False
         match_rss_info = {}

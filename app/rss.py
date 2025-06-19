@@ -164,23 +164,13 @@ class Rss(metaclass=SingletonMeta):
                         if self.rsshelper.is_rssd_by_enclosure(enclosure):
                             log.info(f"【Rss】{title} 已成功订阅过")
                             continue
-                        # 识别种子名称，开始搜索TMDB
-                        media_info = MetaInfo(title=title)
-                        cache_info = self.media.get_cache_info(media_info)
-                        if cache_info.get("id"):
-                            # 使用缓存信息
-                            media_info.tmdb_id = cache_info.get("id")
-                            media_info.type = cache_info.get("type")
-                            media_info.title = cache_info.get("title")
-                            media_info.year = cache_info.get("year")
-                        else:
-                            # 重新查询TMDB
-                            media_info = self.media.get_media_info(title=title)
-                            if not media_info:
-                                log.warn(f"【Rss】{title} 无法识别出媒体信息！")
-                                continue
-                            elif not media_info.tmdb_info:
-                                log.info(f"【Rss】{title} 识别为 {media_info.get_name()} 未匹配到TMDB媒体信息")
+                        # 重新查询TMDB
+                        media_info = self.media.get_media_info(title=title)
+                        if not media_info:
+                            log.warn(f"【Rss】{title} 无法识别出媒体信息！")
+                            continue
+                        elif not media_info.tmdb_info:
+                            log.info(f"【Rss】{title} 识别为 {media_info.get_name()} 未匹配到TMDB媒体信息")
                         # 大小及种子页面
                         media_info.set_torrent_info(size=size,
                                                     page_url=page_url,
