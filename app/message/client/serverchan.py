@@ -85,8 +85,6 @@ class ServerChan(_IMessageClient):
         :param user_id: 未使用
         :param title: 消息标题
         """
-        if not SERVERCHAN_SDK_AVAILABLE:
-            return False, "serverchan-sdk包未安装或版本不兼容，当前不可用"
         
         if not self._sckey:
             return False, "参数未配置"
