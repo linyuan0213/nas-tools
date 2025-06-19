@@ -272,6 +272,16 @@
               </select>
             </div>
           </div>
+          <div class="col-lg-4">
+            <div class="mb-3">
+              <label class="form-label required">下载器添加站点标签 <span class="form-help"
+                  title="开启后推送种子到下载器会添加站点标签" data-bs-toggle="tooltip">?</span></label>
+              <select class="form-select" id="site_tag">
+                <option value="Y" selected>是</option>
+                <option value="N">否</option>
+              </select>
+            </div>
+          </div>
           <div class="col-lg-8">
             <div class="mb-3">
             <label class="form-label">User-Agent <span class="form-help"
@@ -429,6 +439,7 @@
     $("#site_proxy").val('N');
     $("#site_parse").val('Y');
     $("#site_subtitle").val('N');
+    $("#site_tag").val('Y');
     $("#site_unread_msg_notify").val('Y');
     $("#sitelimit_interval").val('');
     $("#sitelimit_count").val('');
@@ -473,6 +484,11 @@
           $("#site_subtitle").val("Y");
         } else {
           $("#site_subtitle").val("N");
+        }
+        if (ret.site.tag) {
+          $("#site_tag").val("Y");
+        } else {
+          $("#site_tag").val("N");
         }
         if (ret.site.unread_msg_notify) {
           $("#site_unread_msg_notify").val("Y");
@@ -554,6 +570,7 @@
     let chrome = $("#site_chrome").val();
     let proxy = $("#site_proxy").val();
     let subtitle = $("#site_subtitle").val();
+    let tag = $("#site_tag").val();
     // 流控规则
     let limit_interval = $("#sitelimit_interval").val();
     if (limit_interval && isNaN(limit_interval)) {
@@ -594,6 +611,7 @@
         "proxy": proxy,
         "message": site_unread_msg_notify,
         "subtitle": subtitle,
+        "tag": tag,
         "limit_interval": limit_interval,
         "limit_count": limit_count,
         "limit_seconds": limit_seconds

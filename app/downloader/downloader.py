@@ -404,16 +404,10 @@ class Downloader(metaclass=SingletonMeta):
             # 下载设置中的分类
             category = download_attr.get("category")
 
-            # 添加hr tag
-            hr_tag = []
-            if torrent_attr and torrent_attr.get('hr'):
-                hr_tag = ['HR']
-
             # 合并TAG
             tags = download_attr.get("tags")
             if tags:
                 tags = str(tags).split(";")
-                tags.extend(hr_tag)
                 if tag:
                     if isinstance(tag, list):
                         tags.extend(tag)
@@ -423,11 +417,16 @@ class Downloader(metaclass=SingletonMeta):
                 if tag:
                     if isinstance(tag, list):
                         tags = tag
-                        tags.extend(hr_tag)
                     else:
                         tags = [tag]
-                        tags.extend(hr_tag)
 
+            # 添加hr 标签
+            if torrent_attr and torrent_attr.get('hr'):
+                tags.append("HR")
+            # 添加站点标签
+            if site_info and site_info.get("tag"):
+                tags.append(site_info.get("tag"))
+            
             # 暂停
             if is_paused is None:
                 is_paused = StringUtils.to_bool(download_attr.get("is_paused"))

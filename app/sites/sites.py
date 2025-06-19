@@ -105,7 +105,8 @@ class Sites:
                 "limit_interval": site_note.get("limit_interval"),
                 "limit_count": site_note.get("limit_count"),
                 "limit_seconds": site_note.get("limit_seconds"),
-                "strict_url": strict_url
+                "strict_url": strict_url,
+                "tag": site.NAME if site_note.get("tag") == "Y" else ""
             }
             # 以ID存储
             self._siteByIds[site.ID] = site_info
