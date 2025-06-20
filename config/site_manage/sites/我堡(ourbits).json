@@ -184,7 +184,6 @@
                 "selector": "table.torrentname tr td.embedded:first-child",
                 "remove": "img, a, b, span, font, div",
                 "filters": [
-                    "trim"
                 ]
             },
             "labels": {
