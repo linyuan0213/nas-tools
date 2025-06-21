@@ -95,7 +95,7 @@ class SiteConf(metaclass=SingletonMeta):
 
     def init_config(self):
         try:
-            with open(os.path.join(Config().get_inner_config_path(),
+            with open(os.path.join(Config().get_config_path(),
                                    "sites.dat"),
                       "rb") as f:
                 self._RSS_SITE_GRAP_CONF = pickle.load(f).get("conf")

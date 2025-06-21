@@ -2,6 +2,9 @@ import io
 import os
 import shutil
 import sys
+import filecmp
+import requests
+import pickle
 from threading import Lock
 from filelock import FileLock
 import ruamel.yaml
@@ -96,6 +99,9 @@ REDIS_PORT = "6379"
 # M-Team base url
 MT_URL = 'https://api.m-team.io'
 
+# sites.dat github
+SITES_DATA_URL = "https://api.github.com/repos/linyuan0213/nas-tools-sites/releases/latest"
+
 # 线程锁
 lock = Lock()
 
@@ -127,6 +133,68 @@ class Config(object):
         self.init_syspath()
         self.init_config()
 
+    def _download_file(self, url, dest_path):
+        """下载文件并校验"""
+        try:
+            # 获取GitHub Release信息
+            api_response = requests.get(url, timeout=10, proxies=self.get_proxies())
+            api_response.raise_for_status()
+            release_info = api_response.json()
+            
+            # 获取实际文件下载URL
+            download_url = release_info.get("assets")[0].get("browser_download_url")
+            if not download_url:
+                raise Exception("未找到下载URL")
+            
+            # 下载实际文件内容
+            file_response = requests.get(download_url, timeout=30)
+            file_response.raise_for_status()
+            
+            # 保存文件
+            with open(dest_path, 'wb') as f:
+                f.write(file_response.content)
+                
+            return True
+        except Exception as e:
+            print(f"【Config】下载文件失败: {str(e)}")
+            return False
+
+    def _get_sites_version(self, filepath):
+        """获取sites.dat版本号"""
+        try:
+            with open(filepath, 'rb') as f:
+                data = pickle.load(f)
+                return data.get("version", "0")
+        except:
+            return "0"
+
+    def _check_sites_update(self):
+        """检查并更新sites.dat"""
+        try:
+            # 假GitHub Release URL
+            release_url = SITES_DATA_URL
+            local_path = os.path.join(os.path.dirname(self._config_path), "sites.dat")
+            
+            # 下载最新文件到临时位置
+            temp_path = os.path.join(self.get_temp_path(), "sites.dat.tmp")
+            if not self._download_file(release_url, temp_path):
+                return False
+                    
+            new_version = self._get_sites_version(temp_path)
+            current_version = self._get_sites_version(local_path) if os.path.exists(local_path) else "0"
+            
+            if new_version > current_version:
+                shutil.move(temp_path, local_path)
+                print(f"【Config】sites.dat 已更新到版本 {new_version}")
+            else:
+                os.remove(temp_path)
+                print(f"【Config】当前版本 {current_version} 已是最新")
+                
+            return True
+        except Exception as e:
+            print(f"【Config】更新sites.dat失败: {str(e)}")
+            return False
+
     def init_config(self):
         try:
             if not self._config_path:
@@ -146,6 +214,18 @@ class Config(object):
                 except Exception as e:
                     print("【Config】配置文件 config.yaml 格式出现严重错误！请检查：%s" % str(e))
                     self._config = {}
+            
+            # 启动时检查sites.dat更新
+            self._check_sites_update()
+            # 复制sites.dat文件(使用版本号比较)
+            src_sites = os.path.join(self.get_inner_config_path(), "sites.dat")
+            dst_sites = os.path.join(os.path.dirname(self._config_path), "sites.dat")
+            src_version = self._get_sites_version(src_sites)
+            dst_version = self._get_sites_version(dst_sites) if os.path.exists(dst_sites) else "0"
+            if not os.path.exists(dst_sites) or src_version > dst_version:
+                shutil.copy2(src_sites, dst_sites)
+                print(f"【Config】sites.dat 已更新到版本 {src_version}")
+
         except Exception as err:
             print("【Config】加载 config.yaml 配置出错：%s" % str(err))
             return False
