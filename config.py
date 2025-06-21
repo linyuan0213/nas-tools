@@ -2,7 +2,6 @@ import io
 import os
 import shutil
 import sys
-import filecmp
 import requests
 import pickle
 from threading import Lock
