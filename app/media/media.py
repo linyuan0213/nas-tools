@@ -98,7 +98,7 @@ class Media:
         self.redis_cache = TMDBCache()
         self.blacklist = TmdbBlacklistHelper()
 
-    def __set_language(self, language):
+    def __set_language(self, language: str = ""):
         """
         设置语言
         :param language: zh/en
@@ -610,6 +610,9 @@ class Media:
             # 转换中文标题
             if chinese:
                 tmdb_info = self.__update_tmdbinfo_cn_title(tmdb_info)
+        
+        # 重置默认语言
+        self.__set_language()
 
         # 设置缓存
         self.redis_cache.set_tmdb_info(mtype, tmdbid, tmdb_info, language)
@@ -659,6 +662,9 @@ class Media:
                 results = self.__search_movie_tmdbinfos(title, year)
             else:
                 results = self.__search_tv_tmdbinfos(title, year)
+        
+        # 重置默认语言
+        self.__set_language()
         return results[(page - 1) * 20:page * 20]
 
     def __search_multi_tmdbinfos(self, title):
@@ -828,6 +834,9 @@ class Media:
                                                  tmdbid=file_media_info.get("id"),
                                                  chinese=chinese,
                                                  append_to_response=append_to_response)
+            
+        # 重置默认语言
+        self.__set_language()
  
         # 赋值TMDB信息并返回
         meta_info.set_tmdb_info(file_media_info)
@@ -973,7 +982,9 @@ class Media:
             except Exception as err:
                 print(str(err))
                 log.error("【Rmt】发生错误：%s - %s" % (str(err), traceback.format_exc()))
-        # 循环结束
+        # 重置默认语言
+        self.__set_language()
+
         return return_media_infos
 
     def __dict_tmdbpersons(self, infos, chinese=True):
@@ -1920,6 +1931,8 @@ class Media:
                 return None
             episodes = self.get_tmdb_season_episodes(tmdbid=media_info.tmdb_id,
                                                      season=int(media_info.get_season_seq()))
+            # 重置默认语言
+            self.__set_language()
             for episode in episodes:
                 if episode.get("episode_number") == media_info.begin_episode:
                     return episode.get("name")
