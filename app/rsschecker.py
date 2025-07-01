@@ -237,6 +237,8 @@ class RssChecker(metaclass=SingletonMeta):
                     continue
 
                 if task_type == "D":
+                    media_info = MetaInfo(title=meta_name,
+                                          mtype=mediatype)
                     if taskinfo.get("recognization") == "Y":
      
                         
