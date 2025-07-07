@@ -1,3 +1,6 @@
+import os
+import shutil
+import time
 from python_hosts import Hosts, HostsEntry
 
 from app.plugins import EventHandler
@@ -167,15 +170,53 @@ class CustomHosts(_IPluginModule):
         # 写入系统hosts
         if new_entrys:
             try:
+                # 检查文件是否可写
+                hosts_path = system_hosts.path
+                if not os.access(hosts_path, os.W_OK):
+                    raise PermissionError(f"没有写入权限，请尝试: 1) 以管理员/root运行 2) 检查文件权限: ls -l {hosts_path}")
+
                 # 添加分隔标识
                 system_hosts.add([HostsEntry(entry_type='comment', comment="# CustomHostsPlugin")])
                 # 添加新的Hosts
                 system_hosts.add(new_entrys)
+                
+                # 尝试创建备份（先在相同目录，失败则用临时目录）
+                backup_path = None
+                try:
+                    # 首选系统目录备份
+                    system_backup = f"{hosts_path}.bak"
+                    if os.path.exists(hosts_path):
+                        shutil.copy2(hosts_path, system_backup)
+                        backup_path = system_backup
+                        self.info(f"已创建hosts文件备份: {system_backup}")
+                except Exception as e:
+                    # 系统目录备份失败，尝试临时目录
+                    try:
+                        temp_backup = os.path.join("/tmp" if not SystemUtils.is_windows() else os.getenv("TEMP"), 
+                                                 f"hosts_backup_{int(time.time())}.bak")
+                        if os.path.exists(hosts_path):
+                            shutil.copy2(hosts_path, temp_backup)
+                            backup_path = temp_backup
+                            self.warn(f"系统目录备份失败，已创建临时备份: {temp_backup}")
+                    except Exception as e:
+                        self.error(f"创建备份失败: {str(e)}，将继续修改hosts但不创建备份")
+                
+                # 写入新内容
                 system_hosts.write()
                 self.info("更新系统hosts文件成功")
+            except PermissionError as err:
+                err_flag = True
+                self.error(f"权限不足: {str(err)}")
+                if SystemUtils.is_windows():
+                    self.error("Windows解决方案: 1) 以管理员身份运行 2) 检查文件是否只读")
+                else:
+                    self.error("Linux/macOS解决方案: 1) sudo运行 2) chmod +w /etc/hosts 3) chown当前用户")
             except Exception as err:
                 err_flag = True
-                self.error(f"更新系统hosts文件失败：{str(err) or '请检查权限'}")
+                self.error(f"更新系统hosts文件失败: {str(err)}")
+                if os.path.exists(backup_path):
+                    self.info(f"已恢复hosts文件备份")
+                    shutil.copy2(backup_path, hosts_path)
         return err_flag, err_hosts
 
     def get_state(self):

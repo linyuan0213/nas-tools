@@ -1,4 +1,10 @@
 import os
+import platform
+import requests
+import shutil
+import subprocess
+import zipfile
+import tarfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from threading import Event
@@ -282,15 +288,36 @@ class CloudflareSpeedTest(_IPluginModule):
 
         # 开始优选
         if err_flag:
-            self.info("正在进行CLoudflare CDN优选，请耐心等待")
+            self.info("正在进行Cloudflare CDN优选，请耐心等待")
             # 执行优选命令，-dd不测速
-            cf_command = f'cd {self._cf_path} && ./{self._binary_name} {self._additional_args} -o {self._result_file}' + (
-                f' -f {self._cf_ipv4}' if self._ipv4 else '') + (f' -f {self._cf_ipv6}' if self._ipv6 else '')
-            self.info(f'正在执行优选命令 {cf_command}')
-            os.system(cf_command)
+            cf_command = [
+                f'./{self._binary_name}',
+                *self._additional_args.split(),
+                '-o', self._result_file
+            ]
+            if self._ipv4:
+                cf_command.extend(['-f', self._cf_ipv4])
+            if self._ipv6:
+                cf_command.extend(['-f', self._cf_ipv6])
+            self.info(f'正在执行优选命令 {" ".join(cf_command)}')
+            try:
+                subprocess.run(cf_command, cwd=self._cf_path, check=True)
+            except subprocess.CalledProcessError as e:
+                self.error(f"CloudflareSpeedTest执行失败: {str(e)}")
+                return
 
             # 获取优选后最优ip
-            best_ip = SystemUtils.execute("sed -n '2,1p' " + self._result_file + " | awk -F, '{print $1}'")
+            try:
+                with open(self._result_file, 'r') as f:
+                    lines = f.readlines()
+                    if len(lines) >= 2:
+                        best_ip = lines[1].strip().split(',')[0]
+                    else:
+                        self.error("结果文件格式不正确")
+                        return
+            except Exception as e:
+                self.error(f"获取最优IP失败: {str(e)}")
+                return
             self.info(f"\n获取到最优ip==>[{best_ip}]")
 
             # 替换自定义Hosts插件数据库hosts
@@ -385,13 +412,21 @@ class CloudflareSpeedTest(_IPluginModule):
         # 是否重新安装
         if self._re_install:
             install_flag = True
-            os.system(f'rm -rf {self._cf_path}')
-            self.info(f'删除CloudflareSpeedTest目录 {self._cf_path}，开始重新安装')
+            try:
+                shutil.rmtree(self._cf_path)
+                self.info(f'删除CloudflareSpeedTest目录 {self._cf_path}，开始重新安装')
+            except Exception as e:
+                self.error(f"删除目录失败: {str(e)}")
+                return False, None
 
         # 判断目录是否存在
         cf_path = Path(self._cf_path)
         if not cf_path.exists():
-            os.mkdir(self._cf_path)
+            try:
+                cf_path.mkdir(parents=True)
+            except Exception as e:
+                self.error(f"创建目录失败: {str(e)}")
+                return False, None
 
         # 获取CloudflareSpeedTest最新版本
         release_version = self.__get_release_version()
@@ -431,22 +466,28 @@ class CloudflareSpeedTest(_IPluginModule):
             return False, None
         elif SystemUtils.is_macos():
             # mac
-            uname = SystemUtils.execute('uname -m')
-            arch = 'amd64' if uname == 'x86_64' else 'arm64'
-            cf_file_name = f'CloudflareST_darwin_{arch}.zip'
-            download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
-            return self.__os_install(download_url, cf_file_name, release_version,
-                                     f"ditto -V -x -k --sequesterRsrc {self._cf_path}/{cf_file_name} {self._cf_path}")
+            try:
+                machine = platform.machine().lower()
+                arch = 'amd64' if machine in ('x86_64', 'amd64') else 'arm64'
+                cf_file_name = f'CloudflareST_darwin_{arch}.zip'
+                download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
+                return self.__os_install(download_url, cf_file_name, release_version, 'zip')
+            except Exception as e:
+                self.error(f"获取系统架构失败: {str(e)}")
+                return False, None
         else:
             # docker
-            uname = SystemUtils.execute('uname -m')
-            arch = 'amd64' if uname == 'x86_64' else 'arm64'
-            cf_file_name = f'CloudflareST_linux_{arch}.tar.gz'
-            download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
-            return self.__os_install(download_url, cf_file_name, release_version,
-                                     f"tar -zxf {self._cf_path}/{cf_file_name} -C {self._cf_path}")
+            try:
+                machine = platform.machine().lower()
+                arch = 'amd64' if machine in ('x86_64', 'amd64') else 'arm64'
+                cf_file_name = f'CloudflareST_linux_{arch}.tar.gz'
+                download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
+                return self.__os_install(download_url, cf_file_name, release_version, 'tar')
+            except Exception as e:
+                self.error(f"获取系统架构失败: {str(e)}")
+                return False, None
 
-    def __os_install(self, download_url, cf_file_name, release_version, unzip_command):
+    def __os_install(self, download_url, cf_file_name, release_version, archive_type):
         """
         macos docker安装cloudflare
         """
@@ -454,28 +495,38 @@ class CloudflareSpeedTest(_IPluginModule):
         if not Path(f'{self._cf_path}/{cf_file_name}').exists():
             # 首次下载或下载新版压缩包
             proxies = Config().get_proxies()
-            https_proxy = proxies.get("https") if proxies and proxies.get("https") else None
-            if https_proxy:
-                os.system(
-                    f'wget -P {self._cf_path} --no-check-certificate -e use_proxy=yes -e https_proxy={https_proxy} {download_url}')
-            else:
-                os.system(f'wget -P {self._cf_path} https://ghproxy.com/{download_url}')
+            proxy_dict = proxies if proxies and proxies.get("https") else None
+            try:
+                response = requests.get(download_url, proxies=proxy_dict, verify=False)
+                response.raise_for_status()
+                with open(f'{self._cf_path}/{cf_file_name}', 'wb') as f:
+                    f.write(response.content)
+            except Exception as e:
+                self.error(f"下载CloudflareSpeedTest安装包失败: {str(e)}")
+                return False, None
 
         # 判断是否下载好安装包
         if Path(f'{self._cf_path}/{cf_file_name}').exists():
             try:
                 # 解压
-                os.system(f'{unzip_command}')
+                archive_path = f'{self._cf_path}/{cf_file_name}'
+                if archive_type == 'zip':
+                    with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+                        zip_ref.extractall(self._cf_path)
+                elif archive_type == 'tar':
+                    with tarfile.open(archive_path, 'r:gz') as tar_ref:
+                        tar_ref.extractall(self._cf_path)
+                
                 # 赋权
-                os.system(f'chmod +x {self._cf_path}/{self._binary_name}')
+                Path(f'{self._cf_path}/{self._binary_name}').chmod(0o755)
                 # 删除压缩包
-                os.system(f'rm -rf {self._cf_path}/{cf_file_name}')
+                Path(f'{self._cf_path}/{cf_file_name}').unlink()
                 if Path(f'{self._cf_path}/{self._binary_name}').exists():
                     self.info(f"CloudflareSpeedTest安装成功，当前版本：{release_version}")
                     return True, release_version
                 else:
                     self.error(f"CloudflareSpeedTest安装失败，请检查")
-                    os.removedirs(self._cf_path)
+                    shutil.rmtree(self._cf_path)
                     return False, None
             except Exception as err:
                 # 如果升级失败但是有可执行文件CloudflareST，则可继续运行，反之停止
@@ -484,7 +535,7 @@ class CloudflareSpeedTest(_IPluginModule):
                     return True, None
                 else:
                     self.error(f"CloudflareSpeedTest安装失败：{str(err)}，无可用版本，停止运行")
-                    os.removedirs(self._cf_path)
+                    shutil.rmtree(self._cf_path)
                     return False, None
         else:
             # 如果升级失败但是有可执行文件CloudflareST，则可继续运行，反之停止
@@ -493,7 +544,7 @@ class CloudflareSpeedTest(_IPluginModule):
                 return True, None
             else:
                 self.error(f"CloudflareSpeedTest安装失败，无可用版本，停止运行")
-                os.removedirs(self._cf_path)
+                shutil.rmtree(self._cf_path)
                 return False, None
 
     def __update_config(self):
