@@ -45,7 +45,7 @@
              href='javascript:{% if Attr.tmdbid %}show_mediainfo_modal("TV", "{{ Attr.name }}", "{{ Attr.year }}", "{{ Attr.tmdbid }}", "tv_rss", "{{ Attr.id }}"){% else %}show_edit_rss_media_modal("{{ Attr.id }}", "TV"){% endif %}'>
             <div class="text-center" style="overflow:hidden">
               <custom-img img-class="w-100"
-                          img-src="{{ Attr.image }}"
+                          img-src="/img?url={{ Attr.image }}"
                           img-ratio="60%"
                           img-style="object-fit:cover;"
               ></custom-img>
