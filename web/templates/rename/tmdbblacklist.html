@@ -17,6 +17,13 @@
           <a href="javascript:add_to_blacklist()" class="btn btn-primary d-sm-none btn-icon" title="添加黑名单">
             {{ SVG.plus() }}
           </a>
+          <a href="javascript:clear_blacklist()" class="btn btn-danger d-none d-sm-inline-block">
+            {{ SVG.trash() }}
+            清空黑名单
+          </a>
+          <a href="javascript:clear_blacklist()" class="btn btn-danger d-sm-none btn-icon" title="清空黑名单">
+            {{ SVG.trash() }}
+          </a>
         </div>
       </div>
     </div>
@@ -243,5 +250,15 @@
       navmenu("tmdbblacklist?s=" + keyword);
     }
   });
+
+  // 清空黑名单
+  function clear_blacklist() {
+    show_confirm_modal("确定要清空所有TMDB黑名单记录吗？此操作不可恢复！", function () {
+      hide_confirm_modal();
+      ajax_post("clear_tmdb_blacklist", {}, function () {
+        window_history_refresh();
+      });
+    });
+  }
 
 </script>

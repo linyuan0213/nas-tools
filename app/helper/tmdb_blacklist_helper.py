@@ -35,7 +35,7 @@ class TmdbBlacklistHelper:
             formatted_items.append({
                 'backdrop_path': item.BACKDROP_PATH,
                 'id': item.ID,
-                'media_type': '电视剧' if item.MEDIA_TYPE == MediaType.TV.value else '电影',
+                'media_type': '电影' if item.MEDIA_TYPE == MediaType.MOVIE.value else '电视剧',
                 'note': item.NOTE,
                 'poster_path': item.POSTER_PATH,
                 'title': item.TITLE,
@@ -69,7 +69,7 @@ class TmdbBlacklistHelper:
             tmdb_id=tmdb_id,
             title=meta_info.title,
             year=meta_info.year,
-            media_type=meta_info.type.value,
+            media_type=media_type,
             poster_path=meta_info.poster_path,
             backdrop_path=meta_info.backdrop_path,
             note=str(meta_info.note)
@@ -82,3 +82,9 @@ class TmdbBlacklistHelper:
         :param media_type: 媒体类型
         """
         self._db.delete_tmdb_blacklist(tmdb_id, media_type)
+
+    def clear_blacklist(self):
+        """
+        清空所有黑名单记录
+        """
+        self._db.clear_tmdb_blacklist()

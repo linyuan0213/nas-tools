@@ -237,7 +237,8 @@ class WebAction:
             "run_plugin_method": self.run_plugin_method,
             "update_all_config": self.__update_all_config,
             "add_tmdb_blacklist": self.__add_tmdb_blacklist,
-            "delete_tmdb_blacklist": self.__delete_tmdb_blacklist
+            "delete_tmdb_blacklist": self.__delete_tmdb_blacklist,
+            "clear_tmdb_blacklist": self.__clear_tmdb_blacklist
         }
         # 远程命令响应
         self._commands = {
@@ -1757,6 +1758,14 @@ class WebAction:
         media_type = data.get("media_type")
         if tmdb_blacklist_helper.is_blacklisted(tmdb_id, media_type):
             tmdb_blacklist_helper.remove_from_blacklist(tmdb_id=tmdb_id, media_type=media_type)
+        return {"code": 0}
+    
+    
+    @staticmethod
+    def __clear_tmdb_blacklist(data):
+        tmdb_blacklist_helper = TmdbBlacklistHelper()
+        if tmdb_blacklist_helper.get_blacklist():
+            tmdb_blacklist_helper.clear_blacklist()
         return {"code": 0}
 
     @staticmethod

@@ -2764,3 +2764,10 @@ class DbHelper:
             self._db.query(TMDBBLACKLIST).filter(
                 TMDBBLACKLIST.TMDB_ID == str(tmdb_id)
             ).delete()
+
+    @DbPersist(_db)
+    def clear_tmdb_blacklist(self):
+        """
+        清空所有TMDB黑名单记录
+        """
+        self._db.query(TMDBBLACKLIST).delete()
