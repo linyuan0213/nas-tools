@@ -1,16 +1,16 @@
 {% import 'macro/svg.html' as SVG %}
 {% import 'macro/oops.html' as OOPS %}
 <div class="container-xl">
-  <!-- Page title -->
-  <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
-        <h2 class="page-title">
+  <!-- Page title with improved layout -->
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center g-3">
+      <div class="col-md-6">
+        <h2 class="page-title mb-0">
           我的媒体库
         </h2>
       </div>
-      <div class="col-auto ms-auto d-print-none">
-        <div class="btn-list">
+      <div class="col-md-6 d-flex justify-content-md-end">
+        <div class="btn-list d-flex gap-2">
           <a href="javascript:show_mediasync_modal()" class="btn btn-primary d-none d-sm-inline-block">
             {{ SVG.refresh() }}
             媒体库同步
@@ -41,7 +41,13 @@
 {% with curdomainleft = request.host.split(':')[0] %}
 <div class="page-body">
   <div class="container-xl">
-    <div class="d-grid gap-3 grid-normal-card">
+    <div id="library-grid" class="d-grid gap-3 grid-normal-card" data-loading>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+    <div id="library-content" class="d-grid gap-3 grid-normal-card" style="display:none">
       {% for Library in Librarys %}
         {% if LibrarySyncConf and Library.id|string in LibrarySyncConf %}
         {% set theLibLink = Library.link %}
@@ -70,17 +76,16 @@
   </div>
 </div>
 {% if Resumes %}
-<div class="container-xl">
-  <div class="page-header d-print-none">
-    <div class="row align-items-center">
+<div class="container-xl mt-5">
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center g-3">
       <div class="col">
-        <h2 class="page-title">
+        <h2 class="page-title mb-0">
           正在观看
         </h2>
       </div>
     </div>
   </div>
-</div>
 <div class="page-body">
   <div class="container-xl">
     <div class="d-grid gap-3 grid-normal-card align-items-start">
@@ -116,17 +121,16 @@
 </div>
 {% endif %}
 {% if Latests %}
-<div class="container-xl">
-  <div class="page-header d-print-none">
-    <div class="row align-items-center">
+<div class="container-xl mt-5">
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center g-3">
       <div class="col">
-        <h2 class="page-title">
+        <h2 class="page-title mb-0">
           最新入库
         </h2>
       </div>
     </div>
   </div>
-</div>
 <div class="page-body">
   <div class="container-xl">
     <div class="d-grid gap-3 grid-media-card align-items-start">
@@ -395,6 +399,28 @@
   }
 
 </script>
+
+<script type="text/javascript">
+  // 页面加载完成后隐藏骨架屏
+  $(document).ready(function() {
+    console.log('jQuery ready - 执行骨架屏隐藏脚本');
+    const grid = $('#library-grid');
+    const content = $('#library-content');
+    
+    if (grid.length && content.length) {
+      console.log('找到骨架屏元素');
+      setTimeout(() => {
+        grid.removeAttr("data-loading");
+        grid.addClass('d-none');
+        content.css('display', 'grid');
+        console.log('已隐藏骨架屏并显示内容');
+      }, 800);
+    } else {
+      console.error('未找到骨架屏元素');
+    }
+  });
+</script>
+
 <script type="text/javascript">
 
   var chart_statistics = undefined;

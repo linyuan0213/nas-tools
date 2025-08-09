@@ -168,12 +168,80 @@ body, .page {
     background-image: linear-gradient(45deg, #bbbbbd, #8597aa 60%);
 }
 
+:root {
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --transition-base: all 0.3s ease;
+    --primary-color: #4361ee;
+    --secondary-color: #3a0ca3;
+}
+
 .grid-normal-card {
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1.5rem;
 }
 
 .grid-media-card {
-    grid-template-columns: repeat(auto-fill, minmax(9.375rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-base);
+    overflow: hidden;
+    background: var(--tblr-bg-surface);
+}
+
+.card:hover {
+    transform: translateY(-0.25rem);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.card-link-pop {
+    text-decoration: none;
+    color: inherit;
+}
+
+.card-link-pop:hover {
+    color: var(--primary-color);
+}
+
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+.page-title {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--tblr-headings-color);
+}
+
+.btn {
+    transition: var(--transition-base);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+    .grid-normal-card {
+        grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    }
+    
+    .grid-media-card {
+        grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    }
 }
 
 .grid-info-card {
@@ -413,4 +481,22 @@ body, .page {
 .main-bottom-menubar svg {
     width: 28px;
     height: 28px;
+}
+
+/* Skeleton loading styles */
+.skeleton-card {
+    height: 200px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    border-radius: 0.75rem;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+[data-loading] {
+    display: grid !important;
 }
