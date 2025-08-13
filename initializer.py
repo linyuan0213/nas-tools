@@ -400,6 +400,12 @@ def stop_config_monitor():
     except Exception as err:
         print(str(err))
 
+def update_sites_data():
+    try:
+        Config().update_sites_data()
+        log.info("站点资源数据已更新...")
+    except redis.exceptions.ConnectionError:
+        log.error("站点资源更新失败 ..")
 
 def check_redis():
     try:

@@ -213,21 +213,22 @@ class Config(object):
                 except Exception as e:
                     print("【Config】配置文件 config.yaml 格式出现严重错误！请检查：%s" % str(e))
                     self._config = {}
-            
-            # 启动时检查sites.dat更新
-            self._check_sites_update()
-            # 复制sites.dat文件(使用版本号比较)
-            src_sites = os.path.join(self.get_inner_config_path(), "sites.dat")
-            dst_sites = os.path.join(os.path.dirname(self._config_path), "sites.dat")
-            src_version = self._get_sites_version(src_sites)
-            dst_version = self._get_sites_version(dst_sites) if os.path.exists(dst_sites) else "0"
-            if not os.path.exists(dst_sites) or src_version > dst_version:
-                shutil.copy2(src_sites, dst_sites)
-                print(f"【Config】sites.dat 已更新到版本 {src_version}")
 
         except Exception as err:
             print("【Config】加载 config.yaml 配置出错：%s" % str(err))
             return False
+
+    def update_sites_data(self):
+        # 启动时检查sites.dat更新
+        self._check_sites_update()
+        # 复制sites.dat文件(使用版本号比较)
+        src_sites = os.path.join(self.get_inner_config_path(), "sites.dat")
+        dst_sites = os.path.join(os.path.dirname(self._config_path), "sites.dat")
+        src_version = self._get_sites_version(src_sites)
+        dst_version = self._get_sites_version(dst_sites) if os.path.exists(dst_sites) else "0"
+        if not os.path.exists(dst_sites) or src_version > dst_version:
+            shutil.copy2(src_sites, dst_sites)
+            print(f"【Config】sites.dat 已更新到版本 {src_version}")
 
     def init_syspath(self):
         with open(os.path.join(self.get_root_path(),

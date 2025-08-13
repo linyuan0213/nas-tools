@@ -1267,6 +1267,7 @@ class WebAction:
 
         # 保存配置
         if not config_test:
+            cfg.pop("test", None)
             Config().save_config(cfg)
 
         return {"code": 0}
