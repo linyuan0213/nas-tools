@@ -826,6 +826,44 @@ class ModuleConf(object):
                 }
             }
         },
+        "fnos": {
+            "name": "FnOS",
+            "img_url": "../static/img/mediaserver/fnos.png",
+            "background": "bg-blue",
+            "test_command": "app.mediaserver.client.fnos|FnOS",
+            "config": {
+                "host": {
+                    "id": "fnos.host",
+                    "required": True,
+                    "title": "服务器地址",
+                    "tooltip": "配置IP地址和端口，如为https则需要增加https://前缀",
+                    "type": "text",
+                    "placeholder": "http://127.0.0.1:5666"
+                },
+                "username": {
+                    "id": "fnos.username",
+                    "required": False,
+                    "title": "用户名",
+                    "type": "text",
+                    "placeholder": ""
+                },
+                "password": {
+                    "id": "fnos.password",
+                    "required": False,
+                    "title": "密码",
+                    "type": "password",
+                    "placeholder": ""
+                },
+                "play_host": {
+                    "id": "fnos.play_host",
+                    "required": False,
+                    "title": "媒体播放地址",
+                    "tooltip": "配置播放设备的访问地址，用于媒体详情页跳转播放页面；如为https则需要增加https://前缀，留空则默认与服务器地址一致",
+                    "type": "text",
+                    "placeholder": "https://app.fnos.tv"
+                }
+            }
+        },
     }
 
     # 索引器

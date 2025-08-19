@@ -70,6 +70,7 @@ class MediaServerType(Enum):
     JELLYFIN = "Jellyfin"
     EMBY = "Emby"
     PLEX = "Plex"
+    FNOS = "FnOS"
 
 
 class BrushDeleteType(Enum):
