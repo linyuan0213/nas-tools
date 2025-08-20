@@ -237,9 +237,11 @@ class Qbittorrent(_IDownloadClient):
         移除种子Tag
         :param ids: 种子Hash列表
         :param tag: 标签内容
+        :return: 是否成功移除
         """
         try:
-            return self.qbc.torrents_delete_tags(torrent_hashes=ids, tags=tag)
+            self.qbc.torrents_delete_tags(torrent_hashes=ids, tags=tag)
+            return True
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return False
@@ -426,8 +428,34 @@ class Qbittorrent(_IDownloadClient):
             if torrent_id is None:
                 continue
             else:
-                self.remove_torrents_tag(torrent_id, tag)
-                break
+                # 尝试移除标签，最多重试3次
+                tag_removed = False
+                for retry in range(3):
+                    if self.remove_torrents_tag(torrent_id, tag):
+                        # 验证标签是否真的被移除
+                        time.sleep(1)  # 给QB一点时间更新状态
+                        torrents, error = self.get_torrents(ids=[torrent_id])
+                        if not error and torrents:
+                            torrent = torrents[0]
+                            if tag not in torrent.labels:
+                                tag_removed = True
+                                log.info(f"【{self.client_name}】{self.name} 成功移除种子 {torrent_id} 的标签: {tag}")
+                                break
+                            else:
+                                log.warn(f"【{self.client_name}】{self.name} 种子 {torrent_id} 标签 {tag} 移除失败，重试 {retry + 1}/3")
+                        else:
+                            log.warn(f"【{self.client_name}】{self.name} 无法获取种子 {torrent_id} 信息验证标签移除")
+                    else:
+                        log.warn(f"【{self.client_name}】{self.name} 移除种子 {torrent_id} 标签 {tag} 失败，重试 {retry + 1}/3")
+                    
+                    if retry < 2:  # 如果不是最后一次重试，等待一下
+                        time.sleep(2)
+                
+                if tag_removed:
+                    break
+                else:
+                    log.error(f"【{self.client_name}】{self.name} 无法移除种子 {torrent_id} 的标签 {tag}，继续尝试获取新种子")
+                    torrent_id = None  # 重置torrent_id，继续循环尝试获取新种子
         return torrent_id
 
     def add_torrent(self,

@@ -427,6 +427,8 @@ class Downloader(metaclass=SingletonMeta):
             if site_info and site_info.get("tag"):
                 tags.append(site_info.get("tag"))
             
+            # 排序
+            tags.sort()
             # 暂停
             if is_paused is None:
                 is_paused = StringUtils.to_bool(download_attr.get("is_paused"))
