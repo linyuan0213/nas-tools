@@ -69,6 +69,20 @@ class FnOS(_IMediaClient):
                         app_name="trimemedia-web",
                         auth_key="16CCEB3D-AB42-077D-36A1-F355324E4237"
                     )
+                    # 检查登录是否成功
+                    if self._fnos and hasattr(self._fnos, '_get_token'):
+                        try:
+                            # 尝试获取token来验证登录是否成功
+                            token = self._fnos._get_token()
+                            if not token:
+                                log.error(f"【{self.client_name}】FnOS服务器登录失败：无法获取有效token")
+                                self._fnos = None
+                            else:
+                                log.info(f"【{self.client_name}】FnOS服务器登录成功")
+                        except Exception as e:
+                            ExceptionUtils.exception_traceback(e)
+                            log.error(f"【{self.client_name}】FnOS服务器登录失败：{str(e)}")
+                            self._fnos = None
                 except Exception as e:
                     ExceptionUtils.exception_traceback(e)
                     self._fnos = None
