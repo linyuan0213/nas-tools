@@ -1517,6 +1517,23 @@ class DbHelper:
         else:
             return False
 
+    def is_exists_download_history_by_tmdb(self, tmdb_id, season_episode):
+        """
+        查询下载历史是否存在，根据TMDB ID和季集信息
+        """
+        if not tmdb_id:
+            return False
+            
+        query = self._db.query(DOWNLOADHISTORY).filter(
+            DOWNLOADHISTORY.TMDBID == tmdb_id
+        )
+        
+        if season_episode:
+            query = query.filter(DOWNLOADHISTORY.SE == season_episode)
+            
+        count = query.count()
+        return count > 0
+
     @DbPersist(_db)
     def insert_download_history(self, media_info, downloader, download_id, save_dir):
         """

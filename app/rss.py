@@ -177,6 +177,12 @@ class Rss(metaclass=SingletonMeta):
                                                     site=site_name,
                                                     site_order=site_order,
                                                     enclosure=enclosure)
+                        # 检查是否已在下载历史中存在（防止与searcher模块重复下载）
+                        if media_info.tmdb_id:
+                            season_episode = media_info.get_season_episode_string()
+                            if self.dbhelper.is_exists_download_history_by_tmdb(media_info.tmdb_id, season_episode):
+                                log.info(f"【Rss】{title} 已在下载历史中存在，跳过下载")
+                                continue
                         # 检查种子是否匹配订阅，返回匹配到的订阅ID、是否洗版、总集数、上传因子、下载因子
                         match_flag, match_msg, match_info = self.check_torrent_rss(
                             media_info=media_info,
