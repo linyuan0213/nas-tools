@@ -65,7 +65,7 @@ class CloudflareSpeedTest(_IPluginModule):
     _cf_ipv6 = None
     _result_file = None
     _release_prefix = 'https://github.com/XIU2/CloudflareSpeedTest/releases/download'
-    _binary_name = 'CloudflareST'
+    _binary_name = 'cfst'
 
     # 退出事件
     _event = Event()
@@ -439,7 +439,7 @@ class CloudflareSpeedTest(_IPluginModule):
                 self.error(f"获取CloudflareSpeedTest版本失败，获取上次运行版本{self._version}，开始安装")
                 install_flag = True
             else:
-                release_version = "v2.2.2"
+                release_version = "v2.3.4"
                 self._version = release_version
                 self.error(f"获取CloudflareSpeedTest版本失败，获取默认版本{release_version}，开始安装")
                 install_flag = True
@@ -469,7 +469,7 @@ class CloudflareSpeedTest(_IPluginModule):
             try:
                 machine = platform.machine().lower()
                 arch = 'amd64' if machine in ('x86_64', 'amd64') else 'arm64'
-                cf_file_name = f'CloudflareST_darwin_{arch}.zip'
+                cf_file_name = f'cfst_darwin_{arch}.zip'
                 download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
                 return self.__os_install(download_url, cf_file_name, release_version, 'zip')
             except Exception as e:
@@ -480,7 +480,7 @@ class CloudflareSpeedTest(_IPluginModule):
             try:
                 machine = platform.machine().lower()
                 arch = 'amd64' if machine in ('x86_64', 'amd64') else 'arm64'
-                cf_file_name = f'CloudflareST_linux_{arch}.tar.gz'
+                cf_file_name = f'cfst_linux_{arch}.tar.gz'
                 download_url = f'{self._release_prefix}/{release_version}/{cf_file_name}'
                 return self.__os_install(download_url, cf_file_name, release_version, 'tar')
             except Exception as e:
