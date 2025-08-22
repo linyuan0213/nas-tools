@@ -13,7 +13,7 @@ NAS-Tools 是一个功能强大的媒体库管理工具，提供自动化追剧�
 - [目录同步](docs/directory_sync.md) - 目录同步功能指南
 - [媒体库](docs/media_library.md) - 媒体库管理指南
 - [下载器配置](docs/downloaders.md) - 支持的下载器及配置
-- [媒体服务器配置](docs/media_servers.md) - Emby/Jellyfin/Plex配置指南
+- [媒体服务器配置](docs/media_servers.md) - Emby/Jellyfin/Plex/FnOS配置指南
 - [索引器配置](docs/indexers.md) - 索引器配置指南
 - [插件配置](docs/plugins.md) - 插件使用和开发指南
 - [版本历史](docs/changelog.md) - 版本更新记录
