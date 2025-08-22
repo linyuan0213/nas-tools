@@ -428,7 +428,13 @@ class Downloader(metaclass=SingletonMeta):
                 tags.append(site_info.get("tag"))
             
             # 排序
-            tags.sort()
+            # 自定义排序：NASTOOL第一，site_info.get("tag")第二，其他按升序
+            site_tag = site_info.get("tag") if site_info else None
+            tags.sort(key=lambda x: (
+                0 if x == "NASTOOL" else 
+                1 if x == site_tag else 
+                2, x  # 添加x作为第二排序键，确保相同优先级的标签按字母顺序排序
+            ))
             # 暂停
             if is_paused is None:
                 is_paused = StringUtils.to_bool(download_attr.get("is_paused"))
