@@ -189,10 +189,10 @@ class FnOS(_IMediaClient):
         season_list = self._fnos.get_session_list(item_id)
         
         ret_tvs = []
-        for season in season_list:
-            if season and season.get("season_number") != int(season):
+        for season_dict in season_list:
+            if season and season_dict.get("season_number") != int(season):
                 continue
-            season_id = season.get("guid")
+            season_id = season_dict.get("guid")
             episodes = self._fnos.get_episode_list(season_id)
             for episode in episodes:
                 ret_tvs.append({
