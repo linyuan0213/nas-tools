@@ -439,9 +439,9 @@ class FnOS(_IMediaClient):
                 name = item.get("title")
             else:
                 if item.get("season_number") == 1:
-                    name = "%s 第%s集" % (item.get("title"), item.get("episode_number") + 1)
+                    name = "%s 第%s集" % (item.get("tv_title"), item.get("episode_number") + 1)
                 else:
-                    name = "%s 第%s季第%s集" % (item.get("title"), item.get("season_number"), item.get("episode_number") + 1)
+                    name = "%s 第%s季第%s集" % (item.get("tv_title"), item.get("season_number"), item.get("episode_number") + 1)
             link = self.get_play_url(item.get("guid"), libtype=("TV" if item.get("type") != "Movie" else "Movie"))
             image_link = f"{self._host}v/api/v1/sys/img{item.get('poster')}"
             image = self.get_nt_image_url(image_link)
@@ -465,14 +465,16 @@ class FnOS(_IMediaClient):
         count = 0
         ret_resume = []
         for item in items:
+            if item.get("path"):
+                continue
             item_type = MediaType.MOVIE.value if item.get("type") == "Movie" else MediaType.TV.value
             if item_type == MediaType.MOVIE.value:
                 name = item.get("title")
             else:
                 if item.get("season_number") == 1:
-                    name = "%s 第%s集" % (item.get("title"), item.get("episode_number") + 1)
+                    name = "%s 共%s集" % (item.get("title"), item.get("local_number_of_episodes"))
                 else:
-                    name = "%s 第%s季第%s集" % (item.get("title"), item.get("season_number"), item.get("episode_number") + 1)
+                    name = "%s 第%s季共%s集" % (item.get("title"), item.get("season_number"), item.get("local_number_of_episodes"))
             link = self.get_play_url(item.get("guid"), libtype=("TV" if item.get("type") != "Movie" else "Movie"))
             image_link = f"{self._host}v/api/v1/sys/img{item.get('poster')}"
             image = self.get_nt_image_url(image_link)
