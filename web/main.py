@@ -55,7 +55,7 @@ from web.backend.web_utils import WebUtils
 from web.security import require_auth
 from web.cache import cache
 from app.db import init_db, update_db, init_data
-from initializer import check_redis, update_config, check_config, update_sites_data
+from initializer import check_redis, update_config, check_config, update_sites_data, update_rss_state
 from version import APP_VERSION
 
 # 配置文件锁
@@ -119,6 +119,8 @@ with App.app_context():
     check_config()
     # 检查Redis是否启动
     check_redis()
+    # 更新RSS订阅状态为R
+    update_rss_state()
     log.console("开始启动服务...")
     # 启动服务
     WebAction.start_service()
