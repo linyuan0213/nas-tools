@@ -3,6 +3,7 @@ import os.path
 import re
 from time import sleep
 import zhconv
+import hashlib
 
 import log
 from app.downloader import Downloader
@@ -21,6 +22,8 @@ from web.backend.web_utils import WebUtils
 
 SEARCH_MEDIA_CACHE = {}
 SEARCH_MEDIA_TYPE = {}
+# 媒体识别结果缓存，避免重复识别
+MEDIA_IDENT_CACHE = {}
 
 
 def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, media_type=None):
@@ -55,9 +58,18 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
         if tmdbid:
             media_info = WebUtils.get_mediainfo_from_id(mtype=mtype, mediaid=tmdbid)
         else:
-            # 按输入名称查
-            media_info = _media.get_media_info(mtype=media_type or mtype,
-                                               title=content)
+            # 检查缓存
+            cache_key = hashlib.md5(f"{content}_{mtype}".encode()).hexdigest()
+            if cache_key in MEDIA_IDENT_CACHE:
+                media_info = MEDIA_IDENT_CACHE[cache_key]
+                log.info(f"【Web】从缓存获取媒体信息: {content}")
+            else:
+                # 按输入名称查
+                media_info = _media.get_media_info(mtype=media_type or mtype,
+                                                   title=content)
+                # 缓存识别结果
+                if media_info and media_info.tmdb_info:
+                    MEDIA_IDENT_CACHE[cache_key] = media_info
 
         # 整合集
         if media_info:
@@ -98,19 +110,30 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
             # 繁体中文
             search_zhtw_name = _media.get_tmdb_zhtw_title(media_info)
 
-            # 多语言搜索
-            search_name_list.append(search_cn_name)
-            search_name_list.append(search_en_name)
-            # 开启多语言搜索
+            # 多语言搜索 - 优化逻辑，减少不必要的搜索
+            # 首先添加中文名
+            if search_cn_name:
+                search_name_list.append(search_cn_name)
+            
+            # 只有当英文名与中文名不同时才添加英文名
+            if search_en_name and search_en_name != search_cn_name:
+                search_name_list.append(search_en_name)
+            
+            # 开启多语言搜索时才添加其他语言
             if Config().get_config("laboratory").get("search_multi_language"):
-                # 简体中文和繁体中文是否相同
-                if search_zhtw_name != search_cn_name:
+                # 繁体中文与简体中文不同时才添加
+                if search_zhtw_name and search_zhtw_name != search_cn_name and search_zhtw_name != search_en_name:
                     search_name_list.append(search_zhtw_name)
-                if media_info.original_language != 'cn' and search_en_name != media_info.original_title:
+                # 原始标题与现有名称都不同时才添加
+                if (media_info.original_language != 'cn' and 
+                    media_info.original_title and 
+                    media_info.original_title != search_cn_name and 
+                    media_info.original_title != search_en_name):
                     search_name_list.append(media_info.original_title)
-                max_workers = len(search_name_list)
-            # 去除空元素
-            search_name_list = list(filter(None, search_name_list))
+            
+            # 去除空元素和重复元素
+            search_name_list = list(set(filter(None, search_name_list)))
+            max_workers = min(len(search_name_list), 4)  # 限制最大并发数
 
             filter_args = {"season": search_season,
                            "episode": search_episode,
@@ -141,23 +164,27 @@ def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, m
     # 开始搜索
     log.info("【Web】开始通过 %s 搜索 ..." % search_name_list)
 
-    # 多线程
-    executor = ThreadPoolExecutor(max_workers=max_workers)
-    all_task = []
-    for search_name in search_name_list:
-        task = executor.submit(_searcher.search_medias,
-                                search_name,
-                                filter_args,
-                                media_info,
-                                SearchType.WEB
-                            )
-        all_task.append(task)
-        sleep(0.5)
+    # 多线程 - 优化线程管理和减少延迟
     media_list = []
-    for future in as_completed(all_task):
-        result = future.result()
-        if result:
-            media_list = media_list + result
+    if search_name_list:
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        all_task = []
+        for search_name in search_name_list:
+            task = executor.submit(_searcher.search_medias,
+                                    search_name,
+                                    filter_args,
+                                    media_info,
+                                    SearchType.WEB
+                                )
+            all_task.append(task)
+            # 减少线程间延迟，只在需要时添加微小延迟
+            if len(search_name_list) > 1:
+                sleep(0.1)  # 从0.5秒减少到0.1秒
+        
+        for future in as_completed(all_task):
+            result = future.result()
+            if result:
+                media_list.extend(result)
 
     # 根据 org_string 去重列表
     unique_media_list = []
