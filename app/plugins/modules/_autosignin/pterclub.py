@@ -10,7 +10,7 @@ class PTerClub(_ISiteSigninHandler):
     猫签到
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
-    site_url = "pterclub.com"
+    site_url = "pterclub.net"
 
 
     @classmethod
@@ -37,7 +37,7 @@ class PTerClub(_ISiteSigninHandler):
         sign_res = RequestUtils(cookies=site_cookie,
                                 headers=ua,
                                 proxies=proxy
-                                ).get_res(url="https://pterclub.com/attendance-ajax.php")
+                                ).get_res(url="https://pterclub.net/attendance-ajax.php")
         if not sign_res or sign_res.status_code != 200:
             self.error(f"签到失败，签到接口请求失败")
             return False, f'【{site}】签到失败，请检查cookie是否失效'
