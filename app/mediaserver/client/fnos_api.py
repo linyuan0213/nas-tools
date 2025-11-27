@@ -15,7 +15,8 @@ class Singleton(type):
 
 class FnOSClient(metaclass=Singleton):
     def __init__(self, base_url, username, password, app_name, auth_key):
-        self.base_url = base_url
+        # 在初始化时就处理base_url，确保格式统一
+        self.base_url = base_url.rstrip('/') + '/'
         self.username = username
         self.password = password
         self.app_name = app_name
@@ -97,6 +98,7 @@ class FnOSClient(metaclass=Singleton):
     
     def _login(self):
         """执行登录获取新token"""
+        # 由于base_url已在初始化时统一处理，直接拼接即可
         url = f"{self.base_url}v/api/v1/login"
         request_data = {
             "method": "post",

@@ -196,12 +196,45 @@ class WebUtils:
         """
         带缓存的请求
         """
-        if url.find('douban') != -1:
+        # 解析URL，判断是否需要特殊处理
+        parsed_url = url.lower()
+        
+        # 豆瓣图片
+        if 'douban' in parsed_url:
             ret = RequestUtils(referer="https://movie.douban.com").get_res(url)
-        elif url.find('tmdb') != -1:
+        # TMDB图片
+        elif 'tmdb' in parsed_url:
             ret = RequestUtils(proxies=Config().get_proxies()).get_res(url)
+        # FnOS图片 - 需要携带cookie
+        elif '/v/api/v1/sys/img/' in url:
+            # 获取FnOS配置
+            fnos_config = Config().get_config('fnos')
+            if fnos_config:
+                # 从FnOS客户端获取cookie
+                try:
+                    from app.mediaserver.client.fnos_api import FnOSClient
+                    fnos_client = FnOSClient(
+                        base_url=fnos_config.get('host'),
+                        username=fnos_config.get('username'),
+                        password=fnos_config.get('password'),
+                        app_name="trimemedia-web",
+                        auth_key="16CCEB3D-AB42-077D-36A1-F355324E4237"
+                    )
+                    token = fnos_client._get_token()
+                    if token:
+                        # 使用token作为cookie
+                        cookies = {"Trim-MC-token": token}
+                        ret = RequestUtils(cookies=cookies).get_res(url)
+                    else:
+                        ret = RequestUtils().get_res(url)
+                except Exception:
+                    ret = RequestUtils().get_res(url)
+            else:
+                ret = RequestUtils().get_res(url)
+        # 其他情况
         else:
             ret = RequestUtils().get_res(url)
+            
         if ret:
             return ret.content
         return None
