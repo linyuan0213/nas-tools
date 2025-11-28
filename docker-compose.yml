@@ -37,6 +37,8 @@ services:
     image: linyuan0213/nas-tools-chrome:latest
     container_name: nas-tools-chrome
     shm_size: 2g # 共享内存大小
+    volumes:
+      - ./data:/var/lib/chromium/user_data
     ports:
       - 9850:9850
       - 6080:6080
