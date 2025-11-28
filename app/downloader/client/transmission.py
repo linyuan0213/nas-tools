@@ -114,8 +114,25 @@ class Transmission(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return [], True
-        if status and not isinstance(status, list):
-            status = [status]
+        if status:
+            if not isinstance(status, list):
+                # 如果是单个TorrentStatus枚举值，直接转为列表
+                if isinstance(status, TorrentStatus):
+                    status = [status]
+                # 如果是字符串，需要转换为TorrentStatus枚举值
+                elif isinstance(status, str):
+                    status = [self._convert_status_string(status)]
+            else:
+                # 如果是列表，检查每个元素类型
+                converted_status = []
+                for s in status:
+                    if isinstance(s, TorrentStatus):
+                        converted_status.append(s)
+                    elif isinstance(s, str):
+                        converted_status.append(self._convert_status_string(s))
+                    else:
+                        converted_status.append(s)
+                status = converted_status
         if tag and not isinstance(tag, list):
             tag = [tag]
         ret_torrents = []
@@ -156,8 +173,9 @@ class Transmission(_IDownloadClient):
             return None
         try:
             torrents, error = self.get_torrents(ids=ids,
-                                                status=[TorrentStatus.Downloading],
+                                                status=[TorrentStatus.Downloading, TorrentStatus.Stopped],
                                                 tag=tag)
+            torrents = [t for t in torrents if t.progress * 100 < 100]
             return None if error else torrents or []
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
@@ -522,7 +540,7 @@ class Transmission(_IDownloadClient):
                 _upspeed = StringUtils.str_filesize(torrent.upload_speed)
                 speed = "%s%sB/s %s%sB/s" % (chr(8595), _dlspeed, chr(8593), _upspeed)
             # 进度
-            progress = round(torrent.progress) * 100
+            progress = round(torrent.progress * 100, 2)
             DispTorrents.append({
                 'id': torrent.id,
                 'name': torrent.name,
@@ -639,6 +657,25 @@ class Transmission(_IDownloadClient):
         torrent_obj.save_path = torrent.download_dir
         
         return torrent_obj
+
+    @staticmethod
+    def _convert_status_string(status_str):
+        """
+        转换通用状态字符串为TorrentStatus枚举值
+        """
+        status_mapping = {
+            "Uploading": TorrentStatus.Uploading,
+            "Downloading": TorrentStatus.Downloading,
+            "Pending": TorrentStatus.Pending,
+            "Checking": TorrentStatus.Checking,
+            "Queued": TorrentStatus.Queued,
+            "Stopped": TorrentStatus.Stopped,
+            "Unknown": TorrentStatus.Unknown,
+            "Paused": TorrentStatus.Paused,
+            "Error": TorrentStatus.Error
+        }
+        # 直接匹配英文状态字符串
+        return status_mapping.get(status_str, TorrentStatus.Unknown)
 
     @staticmethod
     def _judge_status(state, errno):
