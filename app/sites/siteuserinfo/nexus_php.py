@@ -172,6 +172,13 @@ class NexusPhpSiteUserInfo(_ISiteUserInfo):
         if not html:
             return None
 
+        # 直接能解析出总数
+        record_match = re.search(r'<b>(\d+)</b>条记录 Total: ([\d.]+ TB)', html_text)
+        if record_match:
+            self.seeding = StringUtils.str_int(record_match.group(1).strip()) if record_match else 0
+            self.seeding_size = StringUtils.num_filesize(record_match.group(2).strip()) if record_match else 0
+            return None
+
         # 首页存在扩展链接，使用扩展链接
         seeding_url_text = html.xpath('//a[contains(@href,"torrents.php") '
                                       'and contains(@href,"seeding")]/@href')
@@ -316,15 +323,15 @@ class NexusPhpSiteUserInfo(_ISiteUserInfo):
                 self._torrent_seeding_params = {'userid': self.userid, 'type': 'seeding', 'csrf': csrf_text[0].strip()}
 
         # 判断是否有其他做种页面
-        html_text = self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
-                                    self._torrent_seeding_params,
-                                    self._torrent_seeding_headers)
-        html = etree.HTML(str(html_text).replace(r'\/', '/'))
-        if html:
-            seeding_url_text = html.xpath('//a[contains(@href,"usertorrentlist.php") '
-                                        'and contains(@href,"seeding")]/@href')
-            if seeding_url_text:
-                self._torrent_seeding_page = seeding_url_text[0].strip()
+        # html_text = self._get_page_content(urljoin(self._base_url, self._torrent_seeding_page),
+        #                             self._torrent_seeding_params,
+        #                             self._torrent_seeding_headers)
+        # html = etree.HTML(str(html_text).replace(r'\/', '/'))
+        # if html:
+        #     seeding_url_text = html.xpath('//a[contains(@href,"usertorrentlist.php") '
+        #                                 'and contains(@href,"seeding")]/@href')
+        #     if seeding_url_text:
+        #         self._torrent_seeding_page = seeding_url_text[0].strip()
         # 分类做种模式
         # 临时屏蔽
         # seeding_url_text = html.xpath('//tr/td[text()="当前做种"]/following-sibling::td[1]'
