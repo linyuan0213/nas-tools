@@ -828,6 +828,8 @@ class BrushTask(metaclass=SingletonMeta):
             return False
         if rule_value == "2XFREE" and not torrent_attr.get("2xfree"):
             return False
+        if rule_value == "NORMAL" and (torrent_attr.get("free") or torrent_attr.get("2xfree")):
+            return False
         return True
 
     @staticmethod

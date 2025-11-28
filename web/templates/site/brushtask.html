@@ -401,10 +401,11 @@
           <div class="col-lg-4">
             <div class="mb-3">
               <label class="form-label">促销 <span class="form-help"
-                                                   title="选全部即不过滤会下载到非促销的种子，免费包括2X免费"
+                                                   title="选全部即不过滤会下载到非促销的种子，免费包括2X免费，选择普通则只下载非促销种子"
                                                    data-bs-toggle="tooltip">?</span></label>
               <select class="form-select" id="brushtask_free">
                 <option value="" selected>全部</option>
+                <option value="NORMAL">普通</option>
                 <option value="FREE">免费</option>
                 <option value="2XFREE">2X免费</option>
               </select>
@@ -1015,6 +1016,8 @@
     }
     ajax_post("get_site", {"id": site_id}, function (ret) {
       $("#brushtask_free").empty().append('<option value="" selected>全部</option>');
+      $("#brushtask_free").append('<option value="NORMAL">普通</option>');
+
       if (ret.site_free) {
         $("#brushtask_free").append('<option value="FREE">免费</option>');
       }
