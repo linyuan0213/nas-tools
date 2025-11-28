@@ -1,6 +1,7 @@
 import json
 import uuid
 import time
+from regex import D
 import requests
 
 from app.utils.commons import SingletonMeta
@@ -23,9 +24,22 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             self.url = url
 
     def get_status(self) -> bool:
-        if self.url:
-            return True
-        return False
+        """检查 Chrome 服务器连接状态，只有连接成功才返回 True"""
+        if not self.url:
+            return False
+        
+        try:
+            # 测试连接状态
+            response = self._request_with_retry(
+                method="GET",
+                url=f"{self.url}/status",
+                timeout=5
+            )
+            # 如果响应状态码为 200，表示连接成功
+            return response.status_code == 200
+        except Exception as e:
+            log.warn(f"Chrome 服务器连接失败: {str(e)}")
+            return False
 
     def _request_with_retry(self, method, url, retries=3, delay=2, **kwargs):
         """通用的网络请求重试逻辑"""
@@ -46,7 +60,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
                       cookies=None,
                       timeout: int = 120,
                       click_xpath: str = None,
-                      delay: int = 2) -> str:
+                      delay: int = 5) -> str:
         
         if not self.get_status():
             return ""
@@ -95,6 +109,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
                 return ""
 
         # 关闭标签
+        time.sleep(delay)
         self.close_tab(tab_id)
         html_dict = json.loads(res_json)
         content = html_dict.get("html")
