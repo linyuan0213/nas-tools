@@ -39,4 +39,5 @@ services:
     shm_size: 2g # 共享内存大小
     ports:
       - 9850:9850
+      - 6080:6080
     restart: always
