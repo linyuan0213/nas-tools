@@ -93,30 +93,6 @@ def update_config():
         _config['security']['api_key'] = StringUtils.generate_random_str(32)
         overwrite_cofig = True
 
-    # 字幕兼容旧配置
-    try:
-        subtitle = Config().get_config('subtitle') or {}
-        if subtitle:
-            if subtitle.get("server") == "opensubtitles":
-                PluginManager().save_plugin_config(pid="OpenSubtitles",
-                                                   conf={
-                                                       "enable": subtitle.get("opensubtitles", {}).get("enable")
-                                                   })
-            else:
-                chinesesubfinder = subtitle.get("chinesesubfinder", {})
-                PluginManager().save_plugin_config(pid="ChineseSubFinder", conf={
-                    "host": chinesesubfinder.get("host"),
-                    "api_key": chinesesubfinder.get("api_key"),
-                    "local_path": chinesesubfinder.get("local_path"),
-                    "remote_path": chinesesubfinder.get("remote_path")
-                })
-            # 删除旧配置
-            _config.pop("subtitle")
-            overwrite_cofig = True
-
-    except Exception as e:
-        ExceptionUtils.exception_traceback(e)
-
     # 自定义制作组/字幕组兼容旧配置
     try:
         custom_release_groups = (Config().get_config('laboratory') or {}).get('release_groups')
