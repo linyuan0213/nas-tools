@@ -492,47 +492,71 @@ class AutoSignIn(_IPluginModule):
                 if "1ptba" in home_url:
                     home_url = f"{home_url}/index.php"
 
+                # 访问首页并获取页面内容
                 html_text = chrome.get_page_html(url=home_url, cookies=site_cookie)
 
                 if not html_text:
                     self.warn("%s 无法打开网站" % site)
                     return f"【{site}】仿真签到失败，无法打开网站！"
-                # 查找签到按钮
+                
+                # 第一步：检查是否已经签到
+                if re.search(r'已签|签到已得|今日已签|已签到|签到成功', html_text, re.IGNORECASE):
+                    self.info("%s 今日已签到" % site)
+                    return f"【{site}】今日已签到"
+                
+                # 第二步：检查是否需要两步验证
+                if re.search(r'完成两步验证|两步验证|2FA|二次验证', html_text, re.IGNORECASE):
+                    self.warn("%s 仿真签到失败，需要两步验证" % site)
+                    return f"【{site}】仿真签到失败，需要两步验证"
+                
+                # 第三步：检查登录状态
+                if not SiteHelper.is_logged_in(html_text):
+                    self.warn("%s 仿真签到失败，登录状态异常" % site)
+                    return f"【{site}】仿真签到失败，登录状态异常"
+                
+                # 第四步：查找签到按钮
                 html = etree.HTML(html_text)
                 xpath_str = None
                 for xpath in self.siteconf.get_checkin_conf():
                     if html.xpath(xpath):
                         xpath_str = xpath
+                        self.debug("%s 找到签到按钮XPath: %s" % (site, xpath_str))
                         break
-                if re.search(r'已签|签到已得', html_text, re.IGNORECASE) \
-                        and not xpath_str:
-                    self.info("%s 今日已签到" % site)
-                    return f"【{site}】今日已签到"
+                
                 if not xpath_str:
-                    if SiteHelper.is_logged_in(html_text):
-                        self.warn("%s 未找到签到按钮，模拟登录成功" % site)
-                        return f"【{site}】模拟登录成功"
-                    else:
-                        self.info("%s 未找到签到按钮，且模拟登录失败" % site)
-                        return f"【{site}】模拟登录失败！"
-                # 开始仿真
+                    self.warn("%s 未找到签到按钮，但登录成功" % site)
+                    return f"【{site}】模拟登录成功"
+                
+                # 第五步：执行仿真签到
                 try:
+                    self.debug("%s 开始点击签到按钮" % site)
                     html_text = chrome.get_page_html(url=home_url,
                             cookies=site_cookie,
-                            click_xpath=f'xpath:{xpath_str}')
+                            click_xpath=f'xpath:{xpath_str}',
+                            click_delay=15)  # 增加点击后等待时间，确保页面完全加载
 
                     if not html_text:
-                        self.info("%s 仿真签到失败，无法通过Cloudflare" % site)
+                        self.warn("%s 仿真签到失败，无法通过Cloudflare" % site)
                         return f"【{site}】仿真签到失败，无法通过Cloudflare！"
 
-                    # 判断是否已签到   [签到已得125, 补签卡: 0]
-                    if re.search(r'已签|签到已得', html_text, re.IGNORECASE):
+                    # 第六步：判断签到结果
+                    if re.search(r'已签|签到已得|签到成功|签到.*成功|获得.*积分|签到.*积分', html_text, re.IGNORECASE):
                         self.info("%s 仿真签到成功" % site)
                         return f"【{site}】仿真签到成功"
-
-                    if re.search(r'完成两步验证', html_text, re.IGNORECASE):
+                    elif re.search(r'完成两步验证|两步验证|2FA|二次验证', html_text, re.IGNORECASE):
                         self.warn("%s 仿真签到失败，需要两步验证" % site)
                         return f"【{site}】仿真签到失败，需要两步验证"
+                    elif re.search(r'已签到|今日已签|重复签到', html_text, re.IGNORECASE):
+                        self.info("%s 今日已签到" % site)
+                        return f"【{site}】今日已签到"
+                    else:
+                        # 检查是否有错误信息
+                        if re.search(r'错误|失败|异常|error|fail', html_text, re.IGNORECASE):
+                            self.warn("%s 仿真签到失败，页面显示错误" % site)
+                            return f"【{site}】仿真签到失败，页面显示错误"
+                        else:
+                            self.warn("%s 仿真签到失败，未知原因" % site)
+                            return f"【{site}】仿真签到失败，未知原因"
                 except Exception as e:
                     ExceptionUtils.exception_traceback(e)
                     self.warn("%s 仿真签到失败：%s" % (site, str(e)))
