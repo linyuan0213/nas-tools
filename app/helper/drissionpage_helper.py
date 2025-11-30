@@ -62,6 +62,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
     def get_page_html(self,
                       url: str,
                       cookies: Optional[str] = None,
+                      local_storage: Optional[Dict[str, Any]] = None,
                       timeout: int = 120,
                       click_xpath: Optional[str] = None,
                       delay: int = 5,
@@ -71,6 +72,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
         Args:
             url: 页面URL
             cookies: Cookie字符串
+            local_storage: LocalStorage字典数据
             timeout: 超时时间（秒）
             click_xpath: 点击元素的XPath
             delay: 页面加载延迟时间（秒）
@@ -80,7 +82,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             return ""
         
         headers = {"Content-Type": "application/json"}
-        tab_id = self.create_tab(url=url, cookies=cookies, timeout=timeout)
+        tab_id = self.create_tab(url=url, cookies=cookies, local_storage=local_storage, timeout=timeout)
         if not tab_id:
             return ""
 
@@ -205,27 +207,40 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             log.error(f"解析HTML响应失败: {str(e)}")
             return ""
 
-    def create_tab(self, url: str, cookies: Optional[str] = None, timeout: int = 20) -> str:
-        """创建新标签页"""
+    def create_tab(self, url: str, cookies: Optional[str] = None, local_storage: Optional[Dict[str, Any]] = None, timeout: int = 20) -> str:
+        """创建新标签页
+        
+        Args:
+            url: 页面URL
+            cookies: Cookie字符串
+            local_storage: LocalStorage字典数据
+            timeout: 超时时间（秒）
+        """
         if not self.get_status():
             return ""
 
         headers = {"Content-Type": "application/json"}
         tab_id = generate_tab_id()
 
-        # 打开新标签
-        tabs_url = f"{self.url}/tabs"
-        open_tab_data = json.dumps({
+        # 构建请求数据
+        open_tab_data = {
             "url": url,
             "tab_name": tab_id,
             "cookie": cookies
-        }, separators=(',', ':'))
+        }
+        
+        # 如果有local_storage数据，添加到请求中
+        if local_storage:
+            open_tab_data["local_storage"] = local_storage
+
+        # 打开新标签
+        tabs_url = f"{self.url}/tabs"
         try:
             response = self._request_with_retry(
                 method="POST",
                 url=tabs_url,
                 headers=headers,
-                data=open_tab_data,
+                data=json.dumps(open_tab_data, separators=(',', ':')),
                 timeout=timeout
             )
             if response.status_code not in (200, 400): 

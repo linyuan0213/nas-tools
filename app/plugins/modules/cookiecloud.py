@@ -509,6 +509,46 @@ class CookieCloud(_IPluginModule):
             self._redis_store.hset('cookie', domain_url, cookie_str)
         self.info("Cookie同步Redis 成功")
 
+    @EventHandler.register(EventType.LocalStorageSync)
+    def local_storage_save(self, event):
+        """
+        同步站点LocalStorage
+        """
+        # 同步数据
+        self.info(f"开始同步LocalStorage ...")
+        contents, msg, flag = self.__download_data()
+        if not flag:
+            self.error(msg)
+            self.__send_message(msg)
+            return
+        if not contents:
+            self.info(f"未从CookieCloud获取到数据")
+            self.__send_message(msg)
+            return
+        # 整理数据,使用domain域名的最后两级作为分组依据
+        domain_storage_groups = {}
+        local_storage = contents.get("local_storage_data") or {}
+        for site, storage in local_storage.items():
+            if not storage:
+                continue
+            if not self.check_domain(site):
+                continue
+            domain_parts = site.split(".")[-2:]
+            domain_key = tuple(domain_parts)
+            domain_storage_groups[domain_key] = storage
+
+        # 索引器
+        for domain, content in domain_storage_groups.items():
+            if not content:
+                continue
+            # 域名
+            domain_url = ".".join(domain)
+            if 'm-team' in domain_url:
+                domain_url = '.'.join(MT_URL.split('.')[-2:])
+            # LocalStorage 存储到redis
+            self._redis_store.hset('local_storage', domain_url, json.dumps(content))
+        self.info("LocalStorage同步Redis 成功")
+
     def __send_message(self, msg):
         """
         发送通知
