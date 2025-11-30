@@ -533,6 +533,7 @@ class AutoSignIn(_IPluginModule):
                     html_text = chrome.get_page_html(url=home_url,
                             cookies=site_cookie,
                             click_xpath=f'xpath:{xpath_str}',
+                            delay=10,  # 增加点击后等待时间，确保页面完全加载
                             click_delay=15)  # 增加点击后等待时间，确保页面完全加载
 
                     if not html_text:
