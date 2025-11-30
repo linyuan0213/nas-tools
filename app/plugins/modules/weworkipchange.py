@@ -216,12 +216,13 @@ class WeworkIPChange(_IPluginModule):
         self._scheduler = SchedulerService()
         self._drissonpage_helper = DrissionPageHelper()
         self._redis_store = RedisStore()
-        tab_id = (self._redis_store.get("tab_id") or b'').decode('utf-8')
-        if not self._drissonpage_helper.get_page_html_without_closetab(tab_id=self._tab_id):
-            self._tab_id = self._drissonpage_helper.create_tab('https://work.weixin.qq.com/wework_admin/frame', self._cookie)
-            self._redis_store.set("tab_id", self._tab_id)
-        else:
-          self._tab_id = tab_id
+        if self._enabled:
+            tab_id = (self._redis_store.get("tab_id") or b'').decode('utf-8')
+            if not self._drissonpage_helper.get_page_html_without_closetab(tab_id=self._tab_id):
+                self._tab_id = self._drissonpage_helper.create_tab('https://work.weixin.qq.com/wework_admin/frame', self._cookie)
+                self._redis_store.set("tab_id", self._tab_id)
+            else:
+                self._tab_id = tab_id
         
         # 停止现有任务
         self.stop_service()
