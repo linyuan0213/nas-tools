@@ -217,6 +217,8 @@ class StringUtils:
             url2 = parse.urlparse(url2).netloc
         if url1.replace("www.", "") == url2.replace("www.", ""):
             return True
+        if url1.replace("pt.", "") == url2.replace("pt.", ""):
+            return True
         return False
 
     @staticmethod
