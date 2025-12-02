@@ -505,7 +505,7 @@ class AutoSignIn(_IPluginModule):
                     return f"【{site}】今日已签到"
                 
                 # 第二步：检查是否需要两步验证
-                if re.search(r'完成两步验证|两步验证|2FA|二次验证', html_text, re.IGNORECASE):
+                if re.search(r'完成两步验证', html_text, re.IGNORECASE):
                     self.warn("%s 仿真签到失败，需要两步验证" % site)
                     return f"【{site}】仿真签到失败，需要两步验证"
                 
