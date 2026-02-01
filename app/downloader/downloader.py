@@ -526,7 +526,7 @@ class Downloader(metaclass=SingletonMeta):
                         # 种子文件为单独文件
                         save_dir = os.path.join(visit_dir, dl_files[0])
                         subtitle_dir = visit_dir
-                    elif url.startswith("magnet:"):
+                    elif url.startswith("magnet:") or (isinstance(content, str) and content.startswith("magnet:")):
                         save_dir = None
                         subtitle_dir = visit_dir
                     else:
