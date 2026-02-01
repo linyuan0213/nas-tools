@@ -125,25 +125,39 @@ class MediaSyncDel(_IPluginModule):
         media_type = item.get("Type")
         # 媒体名称
         media_name = item.get("Name")
+        # 剧集名称
+        series_name = item.get("SeriesName")
         # 媒体路径
         media_path = item.get("Path")
         # tmdb_id
-        tmdb_id = item.get("ProviderIds").get("Tmdb")
+        tmdb_id = item.get("ProviderIds", {}).get("Tmdb")
+        # 剧集TMDB ID
+        series_tmdb_id = item.get("SeriesProviderIds", {}).get("Tmdb")
         # 季数
         season_num = item.get("ParentIndexNumber")
-        if season_num and str(season_num).isdigit() and int(season_num) < 10:
-            season_num = f'0{season_num}'
         # 集数
         episode_num = item.get("IndexNumber")
-        if episode_num and str(episode_num).isdigit() and int(episode_num) < 10:
-            episode_num = f'0{episode_num}'
 
         if not media_type:
             self.error(f"{media_name} 同步删除失败，未获取到媒体类型")
             return
+
+        # 重新确定TMDB ID和名称
+        if media_type in ["Season", "Episode"]:
+            if series_tmdb_id:
+                tmdb_id = series_tmdb_id
+            if series_name:
+                media_name = series_name
+
         if not tmdb_id or not str(tmdb_id).isdigit():
             self.error(f"{media_name} 同步删除失败，未获取到TMDB ID")
             return
+
+        # 格式化季集
+        if season_num is not None and str(season_num).isdigit():
+            season_num = str(season_num).rjust(2, '0')
+        if episode_num is not None and str(episode_num).isdigit():
+            episode_num = str(episode_num).rjust(2, '0')
 
         if self._exclude_path and media_path and any(
                 os.path.abspath(media_path).startswith(os.path.abspath(path)) for path in
