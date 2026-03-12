@@ -45,14 +45,29 @@ class Webhook(_IMessageClient):
         支持的变量:
           - 单条消息: title, text, image, url, user_id
           - 列表消息: title, user_id, medias (数组，每项包含: title, url, type, vote)
+        注意：转义变量中的所有特殊字符，不转义 JSON 模板本身的格式化换行符
         """
         if not template_str:
             return None
         try:
+            # 使用 json.dumps 转义变量中的所有特殊字符（换行符、引号、反斜杠、制表符等）
+            escaped_variables = {}
+            for key, value in variables.items():
+                if isinstance(value, str):
+                    # json.dumps 会自动转义所有需要转义的字符
+                    # 例如：\n -> \\n, " -> \", \ -> \\, \t -> \\t 等
+                    escaped_value = json.dumps(value, ensure_ascii=False)
+                    # 去掉 json.dumps 添加的外层引号
+                    escaped_variables[key] = escaped_value[1:-1]
+                elif value is None:
+                    escaped_variables[key] = ''
+                else:
+                    escaped_variables[key] = value
+
             template = Template(template_str)
-            return template.render(**variables)
+            return template.render(**escaped_variables)
         except Exception as e:
-            raise ValueError(f"模板渲染失败：{str(e)}") from e
+            raise ValueError(f"模板渲染失败：{str(e)}\n原始模板：{template_str}\n变量：{variables}") from e
 
     def init_config(self):
         if self._client_config:
@@ -97,24 +112,14 @@ class Webhook(_IMessageClient):
 
             # 渲染JSON模板
             if self._json_tpl:
+                # 使用模板：直接发送渲染后的 JSON 字符串
                 rendered_tpl = self.__render_template(self._json_tpl, variables)
-                if rendered_tpl:
-                    json_body = json.loads(rendered_tpl)
-                else:
-                    json_body = {}
+                if not rendered_tpl:
+                    return False, "模板渲染失败"
+                return self.__send_request(query_params, rendered_tpl)
             else:
-                # 模板为空时，使用默认变量结构
-                json_body = {k: v for k, v in variables.items() if v}
-
-            if self._method == 'GET':
-                query_params.update(variables)
-            else:
-                # 如果模板中没有定义某些字段，则添加它们
-                for key, value in variables.items():
-                    if value and key not in json_body:
-                        json_body[key] = value
-
-            return self.__send_request(query_params, json_body)
+                # 不使用模板：直接序列化 variables
+                return self.__send_request(query_params, json.dumps(variables, ensure_ascii=False))
 
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
@@ -153,34 +158,37 @@ class Webhook(_IMessageClient):
 
             # 渲染JSON模板（使用列表消息模板）
             if self._json_list_tpl:
+                # 使用模板：直接发送渲染后的 JSON 字符串
                 rendered_tpl = self.__render_template(self._json_list_tpl, variables)
-                if rendered_tpl:
-                    json_body = json.loads(rendered_tpl)
-                else:
-                    json_body = {}
+                if not rendered_tpl:
+                    return False, "模板渲染失败"
+                return self.__send_request(query_params, rendered_tpl)
             else:
-                # 模板为空时，使用默认变量结构
-                json_body = {k: v for k, v in variables.items() if v}
-
-            # 如果模板中没有定义某些字段，则添加它们
-            for key, value in variables.items():
-                if value and key not in json_body:
-                    json_body[key] = value
-
-            return self.__send_request(query_params, json_body)
+                # 不使用模板：直接序列化 variables
+                return self.__send_request(query_params, json.dumps(variables, ensure_ascii=False))
         except Exception as msg_e:
             ExceptionUtils.exception_traceback(msg_e)
             return False, str(msg_e)
 
-    def __send_request(self, query_params, json_body):
+    def __send_request(self, query_params, json_data=None):
         """
         发送消息请求
+        :param query_params: 查询参数
+        :param json_data: JSON 字符串（POST/PUT 等请求），None 表示 GET 请求
         """
-        response = requests.request(self._method,
-                                    self._url,
-                                    params=query_params,
-                                    json=json_body,
-                                    headers=self.header)
+        # GET 请求不发送 body
+        if json_data is None:
+            response = requests.request(self._method,
+                                        self._url,
+                                        params=query_params,
+                                        headers=self.header)
+        else:
+            # POST/PUT 等请求发送 JSON body
+            response = requests.request(self._method,
+                                        self._url,
+                                        params=query_params,
+                                        data=json_data,
+                                        headers=self.header)
         if not response:
             return False, "未获取到返回信息"
         if 200 <= response.status_code <= 299:
