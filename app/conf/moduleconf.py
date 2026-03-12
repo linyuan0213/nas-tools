@@ -450,6 +450,67 @@ class ModuleConf(object):
                     }
                 }
             },
+            "webhook": {
+                "name": "Webhook",
+                "img_url": "../static/img/webhook_icon.png",
+                "config": {
+                    "url": {
+                        "id": "url",
+                        "required": True,
+                        "title": "URL",
+                        "tooltip": "",
+                        "type": "text",
+                        "placeholder": "https://xxx.com/your_api/"
+                    },
+                    "method": {
+                        "id": "method",
+                        "required": True,
+                        "title": "HTTP方法",
+                        "tooltip": "GET方法中请求体将被忽略，由于查询参数不支持复杂格式，发送列表类消息请使用POST",
+                        "type": "select",
+                        "options": {
+                            "GET": "GET",
+                            "POST": "POST",
+                            "PUT": "PUT",
+                            "PATCH": "PATCH",
+                            "DELETE": "DELETE",
+                        },
+                        "default": "POST"
+                    },
+                    "token": {
+                        "id": "token",
+                        "required": False,
+                        "title": "Token",
+                        "tooltip": "会放在Header的Authorization中",
+                        "type": "text",
+                        "placeholder": """Authorization-Token"""
+                    },
+                    "query_params": {
+                        "id": "query_params",
+                        "required": False,
+                        "title": "额外查询参数",
+                        "tooltip": "JSON字符串",
+                        "type": "text",
+                        "placeholder": """{"search": "keyword"}"""
+                    },
+                    "json_tpl": {
+                        "id": "json_tpl",
+                        "required": False,
+                        "title": "单条消息模板",
+                        "tooltip": "Jinja2 JSON模板，用于单条消息。可用变量：title, text, image, url, user_id。为空时使用默认结构：{title, text, image, url, user_id}。GET方法中被忽略",
+                        "type": "textarea",
+                        "placeholder": """{\n  "title": "{{ title }}",\n  "text": "{{ text }}",\n  "image": "{{ image }}",\n  "url": "{{ url }}",\n  "user_id": "{{ user_id }}"\n}"""
+                    },
+                    "json_list_tpl": {
+                        "id": "json_list_tpl",
+                        "required": False,
+                        "title": "列表消息模板",
+                        "tooltip": "Jinja2 JSON模板，用于列表消息。可用变量：title, user_id, medias（数组，每项包含：title, url, type, vote）。为空时使用默认结构：{title, user_id, medias}",
+                        "type": "textarea",
+                        "placeholder": """{\n  "title": "{{ title }}",\n  "user_id": "{{ user_id }}",\n  "items": [\n    {% for media in medias %}\n    {\n      "title": "{{ media.title }}",\n      "url": "{{ media.url }}",\n      "type": "{{ media.type }}",\n      "vote": "{{ media.vote }}"\n    }{% if not loop.last %},{% endif %}\n    {% endfor %}\n  ]\n}"""
+                    },
+                }
+            },
         },
         "switch": {
             "download_start": {
