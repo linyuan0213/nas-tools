@@ -497,7 +497,7 @@ class ModuleConf(object):
                         "id": "json_tpl",
                         "required": False,
                         "title": "单条消息模板",
-                        "tooltip": "Jinja2 JSON模板，用于单条消息。可用变量：title, text, image, url, user_id。为空时使用默认结构：{title, text, image, url, user_id}。GET方法中被忽略",
+                        "tooltip": "Jinja2 JSON模板，用于单条消息。可用变量：title, text, image, url, user_id。字符串变量默认会进行 tojson 过滤以保证生成的JSON格式正确，如需使用原始字符串请使用 |safe 过滤器，如：{{ text|safe }}",
                         "type": "textarea",
                         "placeholder": """{\n  "title": "{{ title }}",\n  "text": "{{ text }}",\n  "image": "{{ image }}",\n  "url": "{{ url }}",\n  "user_id": "{{ user_id }}"\n}"""
                     },
@@ -505,7 +505,7 @@ class ModuleConf(object):
                         "id": "json_list_tpl",
                         "required": False,
                         "title": "列表消息模板",
-                        "tooltip": "Jinja2 JSON模板，用于列表消息。可用变量：title, user_id, medias（数组，每项包含：title, url, type, vote）。为空时使用默认结构：{title, user_id, medias}",
+                        "tooltip": "Jinja2 JSON模板，用于列表消息。可用变量：title, user_id, medias（数组，每项包含：title, url, type, vote）。字符串变量默认会进行 tojson 过滤以保证生成的JSON格式正确，如需使用原始字符串请使用 |safe 过滤器，如：{{ media.title|safe }}",
                         "type": "textarea",
                         "placeholder": """{\n  "title": "{{ title }}",\n  "user_id": "{{ user_id }}",\n  "items": [\n    {% for media in medias %}\n    {\n      "title": "{{ media.title }}",\n      "url": "{{ media.url }}",\n      "type": "{{ media.type }}",\n      "vote": "{{ media.vote }}"\n    }{% if not loop.last %},{% endif %}\n    {% endfor %}\n  ]\n}"""
                     },

@@ -2,13 +2,27 @@ import json
 from threading import Lock
 
 import requests
-from jinja2 import Template
+from jinja2 import Environment, BaseLoader, Template
 
 from app.message.client._base import _IMessageClient
 from app.utils import ExceptionUtils
 from config import Config
 
 lock = Lock()
+
+
+class JsonTemplateEnvironment(Environment):
+    """自定义 Jinja2 环境，自动应用 tojson 过滤器到所有变量"""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # 注册默认的 tojson 过滤器（如果 jinja2 内置版本支持）
+        if 'tojson' not in self.filters:
+            self.filters['tojson'] = self._tojson
+
+    @staticmethod
+    def _tojson(value):
+        """将值转为 JSON 字符串，确保中文正常显示"""
+        return json.dumps(value, ensure_ascii=False)
 
 
 class Webhook(_IMessageClient):
@@ -45,27 +59,15 @@ class Webhook(_IMessageClient):
         支持的变量:
           - 单条消息: title, text, image, url, user_id
           - 列表消息: title, user_id, medias (数组，每项包含: title, url, type, vote)
-        注意：转义变量中的所有特殊字符，不转义 JSON 模板本身的格式化换行符
+        使用自定义 Jinja2 环境，自动应用 tojson 过滤器
         """
         if not template_str:
             return None
         try:
-            # 使用 json.dumps 转义变量中的所有特殊字符（换行符、引号、反斜杠、制表符等）
-            escaped_variables = {}
-            for key, value in variables.items():
-                if isinstance(value, str):
-                    # json.dumps 会自动转义所有需要转义的字符
-                    # 例如：\n -> \\n, " -> \", \ -> \\, \t -> \\t 等
-                    escaped_value = json.dumps(value, ensure_ascii=False)
-                    # 去掉 json.dumps 添加的外层引号
-                    escaped_variables[key] = escaped_value[1:-1]
-                elif value is None:
-                    escaped_variables[key] = ''
-                else:
-                    escaped_variables[key] = value
-
-            template = Template(template_str)
-            return template.render(**escaped_variables)
+            # 使用自定义环境，自动应用 tojson 过滤器
+            env = JsonTemplateEnvironment(loader=BaseLoader())
+            template = env.from_string(template_str)
+            return template.render(**variables)
         except Exception as e:
             raise ValueError(f"模板渲染失败：{str(e)}\n原始模板：{template_str}\n变量：{variables}") from e
 
