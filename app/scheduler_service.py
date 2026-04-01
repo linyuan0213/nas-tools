@@ -184,18 +184,27 @@ class SchedulerService(metaclass=SingletonMeta):
     def _retry_failed_job(self, job_id, max_retries=3):
         """
         失败任务重试
+        使用 Redis 存储重试次数，因为 APScheduler 的 Job 对象没有 retries 属性
         """
         job = self.get_job(job_id)
         if not job:
             return
-            
-        retries = getattr(job, 'retries', 0)
+        
+        # 使用 Redis 存储重试次数
+        retry_key = f"scheduler:retry:{job_id}"
+        try:
+            retries = int(self.redis_store.get(retry_key) or 0)
+        except Exception:
+            retries = 0
+        
         if retries < max_retries:
-            setattr(job, 'retries', retries + 1)
+            self.redis_store.set(retry_key, retries + 1, ex=3600)  # 1小时过期
             log.info(f"准备重试任务 {job_id}, 重试次数: {retries + 1}")
             self.reschedule_job(job_id, jobstore=job.jobstore)
         else:
             log.error(f"任务 {job_id} 已达到最大重试次数 {max_retries}, 不再重试")
+            # 清除重试计数
+            self.redis_store.delete(retry_key)
 
     def reschedule_job(self, job_id, jobstore=None):
         """
