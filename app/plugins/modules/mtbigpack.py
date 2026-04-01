@@ -290,8 +290,6 @@ class MTBigPack(_IPluginModule):
         data = json.dumps(param, separators=(',', ':'))
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        if headers.get("authorization"):
-            headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
             "User-Agent": f"{self._site_info.get('ua')}"
@@ -324,8 +322,6 @@ class MTBigPack(_IPluginModule):
         data = {"id": torrent_id, "make": f"{make}"}
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        if headers.get("authorization"):
-            headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
             "User-Agent": f"{self._site_info.get('ua')}"
@@ -343,8 +339,6 @@ class MTBigPack(_IPluginModule):
     def _get_rss(self, url):
         headers = self._site_info.get('headers')
         headers = json.loads(headers)
-        if headers.get("authorization"):
-            headers.pop('authorization')
         headers.update({
             "Content-Type": "application/json; charset=utf-8",
             "User-Agent": f"{self._site_info.get('ua')}"

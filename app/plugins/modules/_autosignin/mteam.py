@@ -60,7 +60,7 @@ class MTeam(_ISiteSigninHandler):
         if site_info.get("chrome") and chrome.get_status():
             self.info(f"{site} 开始仿真登录")
             
-            html_text = chrome.get_page_html(url="https://kp.m-team.cc/index", local_storage=local_storage)
+            html_text = chrome.get_page_html(url="https://kp.m-team.cc/index", local_storage=local_storage, user_agent=Config().get_ua(), timeout=30)
 
             if not html_text:
                 self.warn("%s 获取站点源码失败" % site)

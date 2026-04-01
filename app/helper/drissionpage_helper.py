@@ -66,7 +66,8 @@ class DrissionPageHelper(metaclass=SingletonMeta):
                       timeout: int = 120,
                       click_xpath: Optional[str] = None,
                       delay: int = 5,
-                      click_delay: Optional[int] = None) -> str:
+                      click_delay: Optional[int] = None,
+                      user_agent: Optional[str] = None) -> str:
         """获取HTML内容，带超时保护
         
         Args:
@@ -77,12 +78,13 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             click_xpath: 点击元素的XPath
             delay: 页面加载延迟时间（秒）
             click_delay: 点击后等待时间（秒），如果为None则使用delay
+            user_agent: 自定义User-Agent字符串
         """
         if not self.get_status():
             return ""
         
         headers = {"Content-Type": "application/json"}
-        tab_id = self.create_tab(url=url, cookies=cookies, local_storage=local_storage, timeout=timeout)
+        tab_id = self.create_tab(url=url, cookies=cookies, local_storage=local_storage, timeout=timeout, user_agent=user_agent)
         if not tab_id:
             return ""
 
@@ -207,7 +209,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             log.error(f"解析HTML响应失败: {str(e)}")
             return ""
 
-    def create_tab(self, url: str, cookies: Optional[str] = None, local_storage: Optional[Dict[str, Any]] = None, timeout: int = 20) -> str:
+    def create_tab(self, url: str, cookies: Optional[str] = None, local_storage: Optional[Dict[str, Any]] = None, timeout: int = 20, user_agent: Optional[str] = None) -> str:
         """创建新标签页
         
         Args:
@@ -215,6 +217,7 @@ class DrissionPageHelper(metaclass=SingletonMeta):
             cookies: Cookie字符串
             local_storage: LocalStorage字典数据
             timeout: 超时时间（秒）
+            user_agent: 自定义User-Agent字符串
         """
         if not self.get_status():
             return ""
@@ -232,6 +235,10 @@ class DrissionPageHelper(metaclass=SingletonMeta):
         # 如果有local_storage数据，添加到请求中
         if local_storage:
             open_tab_data["local_storage"] = local_storage
+            
+        # 如果有user_agent数据，添加到请求中
+        if user_agent:
+            open_tab_data["user_agent"] = user_agent
 
         # 打开新标签
         tabs_url = f"{self.url}/tabs"

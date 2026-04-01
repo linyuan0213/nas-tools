@@ -69,7 +69,7 @@ class AutoSignIn(_IPluginModule):
 
     @staticmethod
     def get_fields():
-        sites = {site.get("id"): site for site in Sites().get_site_dict()}
+        sites = {site.get("id"): site for site in Sites().get_site_dict(signin=True)}
         return [
             {
                 'type': 'div',
@@ -334,11 +334,18 @@ class AutoSignIn(_IPluginModule):
             return
         new_sign_sites = []
         for site in sign_sites:
+            # 跳过BT站点（公开站点不需要签到）
+            if site.get("public"):
+                self.info(f"站点 {site.get('name')} 是BT站点，跳过签到")
+                continue
             if str(site.get("id")) in emulate_sites:
                 site['chrome'] = True
             new_sign_sites.append(site)
 
         sign_sites = new_sign_sites
+        if not sign_sites:
+            self.info("没有可签到站点（已过滤BT站点），停止运行")
+            return
         # 执行签到
         self.info("开始执行签到任务")
         with ThreadPoolExecutor(min(len(sign_sites), int(self._queue_cnt) if self._queue_cnt else 10)) as p:

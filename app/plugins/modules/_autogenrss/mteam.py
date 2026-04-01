@@ -37,9 +37,6 @@ class Mteam(_ISiteRssGenHandler):
             "User-Agent": ua
         })
         
-        if headers and headers.get("authorization"):
-            headers.pop('authorization')
-
         proxy = Config().get_proxies() if site_info.get("proxy") else None
         
         rss_url = f"{MT_URL}/api/rss/genlink"
