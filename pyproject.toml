@@ -1,6 +1,6 @@
 [project]
 name = "nas-tools"
-version = "4.6.4"
+version = "3.7.0"
 description = "Nas Tools"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -69,4 +69,10 @@ dependencies = [
     "webdav4>=0.10.0",
     "pysmb>=1.2.10",
     "serverchan-sdk>=1.0.6",
+    "bencodepy>=0.9.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
 ]
