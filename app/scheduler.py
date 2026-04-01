@@ -24,6 +24,7 @@ from config import METAINFO_SAVE_INTERVAL, \
     SYNC_TRANSFER_INTERVAL, RSS_CHECK_INTERVAL, \
     RSS_REFRESH_TMDB_INTERVAL, META_DELETE_UNKNOWN_INTERVAL, REFRESH_WALLPAPER_INTERVAL, Config
 from web.backend.wallpaper import get_login_wallpaper
+from app.helper.temp_cleanup_helper import TempCleanupHelper
 
 from app.scheduler_service import SchedulerService
 from app.queue import scheduler_queue
@@ -184,6 +185,17 @@ class Scheduler(metaclass=SingletonMeta):
                         "hours": REFRESH_WALLPAPER_INTERVAL,
                         "next_run_time": datetime.datetime.now(),
                         "jobstore": self._jobstore
+        })
+
+        # 定时清理临时文件（每6小时执行一次）
+        scheduler_queue.put({
+            "func_str": "TempCleanupHelper.do_cleanup",
+            "args": [],
+            "trigger": "interval",
+            "job_id": "TempCleanupHelper.do_cleanup",
+            "seconds": 6 * 3600,  # 6小时
+            "next_run_time": datetime.datetime.now(),
+            "jobstore": self._jobstore
         })
 
         ThreadHelper().start_thread(self.add_task, ())
