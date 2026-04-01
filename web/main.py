@@ -57,6 +57,7 @@ from web.cache import cache
 from app.db import init_db, update_db, init_data
 from initializer import check_redis, update_config, check_config, update_sites_data, update_rss_state
 from version import APP_VERSION
+from app.utils.temp_manager import temp_manager
 
 # 配置文件锁
 ConfigLock = Lock()
@@ -1679,10 +1680,7 @@ def backup():
 def upload():
     try:
         files = request.files['file']
-        temp_path = Config().get_temp_path()
-        if not os.path.exists(temp_path):
-            os.makedirs(temp_path)
-        file_path = Path(temp_path) / files.filename
+        file_path = Path(temp_manager.get_temp_path()) / files.filename
         files.save(str(file_path))
         return {"code": 0, "filepath": str(file_path)}
     except Exception as e:
