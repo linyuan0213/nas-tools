@@ -418,33 +418,6 @@ class CookieCloud(_IPluginModule):
                         rss_uses='T'
                     )
                     add_count += 1
-        for domain, content in domain_storage_groups.items():
-            if not content:
-                continue
-            # 域名
-            domain_url = ".".join(domain)
-            if 'm-team' in domain_url:
-                domain_url = '.'.join(MT_URL.split('.')[-2:])
-            site_info = self.sites.get_sites_by_suffix(domain_url)
-            if site_info:
-                self.debug(f"获取站点 {domain_url} LocalStorage: {content}")
-                if content.get("auth"):
-                    headers = site_info.get("headers")
-                    headers = json.loads(headers)
-                    headers.update({
-                        "authorization": content.get("auth")
-                    })
-                    headers = json.dumps(headers)
-                    self.debug(f"同步 authorization: {headers}")
-                    # 更新 headers
-                    note = self.sites.get_site_note_by_id(site_info.get("id"))
-                    if isinstance(note, dict):
-                        note.update({
-                            "headers": headers
-                        })
-                        note = json.dumps(note)
-                        self.sites.update_site_note(site_info.get("id"), note)
-                        self.info("同步 authorization 成功")
 
         # 发送消息
         if update_count or add_count:
