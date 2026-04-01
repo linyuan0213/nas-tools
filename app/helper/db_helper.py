@@ -18,10 +18,13 @@ class DbHelper:
     def insert_search_results(self, media_items: list, title=None, ident_flag=True):
         """
         将返回信息插入数据库
+        使用批量插入映射以提高性能
         """
         if not media_items:
             return
-        data_list = []
+        
+        # 使用批量插入映射（比ORM对象更快）
+        mappings = []
         for media_item in media_items:
             if media_item.type == MediaType.TV:
                 mtype = "TV"
@@ -29,41 +32,43 @@ class DbHelper:
                 mtype = "MOV"
             else:
                 mtype = "ANI"
-            data_list.append(
-                SEARCHRESULTINFO(
-                    TORRENT_NAME=media_item.org_string,
-                    ENCLOSURE=media_item.enclosure,
-                    DESCRIPTION=media_item.description,
-                    TYPE=mtype if ident_flag else '',
-                    TITLE=media_item.title if ident_flag else title,
-                    YEAR=media_item.year if ident_flag else '',
-                    SEASON=media_item.get_season_string() if ident_flag else '',
-                    EPISODE=media_item.get_episode_string() if ident_flag else '',
-                    ES_STRING=media_item.get_season_episode_string() if ident_flag else '',
-                    VOTE=media_item.vote_average or "0",
-                    IMAGE=media_item.get_backdrop_image(default=False, original=True),
-                    POSTER=media_item.get_poster_image(),
-                    TMDBID=media_item.tmdb_id,
-                    OVERVIEW=media_item.overview,
-                    RES_TYPE=json.dumps({
-                        "respix": media_item.resource_pix,
-                        "restype": media_item.resource_type,
-                        "reseffect": media_item.resource_effect,
-                        "video_encode": media_item.video_encode
-                    }),
-                    RES_ORDER=media_item.res_order,
-                    SIZE=StringUtils.str_filesize(int(media_item.size)),
-                    SEEDERS=media_item.seeders,
-                    PEERS=media_item.peers,
-                    SITE=media_item.site,
-                    SITE_ORDER=media_item.site_order,
-                    PAGEURL=media_item.page_url,
-                    OTHERINFO=media_item.resource_team,
-                    UPLOAD_VOLUME_FACTOR=media_item.upload_volume_factor,
-                    DOWNLOAD_VOLUME_FACTOR=media_item.download_volume_factor,
-                    NOTE=media_item.labels
-                ))
-        self._db.insert(data_list)
+            
+            mappings.append({
+                'TORRENT_NAME': media_item.org_string,
+                'ENCLOSURE': media_item.enclosure,
+                'DESCRIPTION': media_item.description,
+                'TYPE': mtype if ident_flag else '',
+                'TITLE': media_item.title if ident_flag else title,
+                'YEAR': media_item.year if ident_flag else '',
+                'SEASON': media_item.get_season_string() if ident_flag else '',
+                'EPISODE': media_item.get_episode_string() if ident_flag else '',
+                'ES_STRING': media_item.get_season_episode_string() if ident_flag else '',
+                'VOTE': media_item.vote_average or "0",
+                'IMAGE': media_item.get_backdrop_image(default=False, original=True),
+                'POSTER': media_item.get_poster_image(),
+                'TMDBID': media_item.tmdb_id,
+                'OVERVIEW': media_item.overview,
+                'RES_TYPE': json.dumps({
+                    "respix": media_item.resource_pix,
+                    "restype": media_item.resource_type,
+                    "reseffect": media_item.resource_effect,
+                    "video_encode": media_item.video_encode
+                }),
+                'RES_ORDER': media_item.res_order,
+                'SIZE': StringUtils.str_filesize(int(media_item.size)),
+                'SEEDERS': media_item.seeders,
+                'PEERS': media_item.peers,
+                'SITE': media_item.site,
+                'SITE_ORDER': media_item.site_order,
+                'PAGEURL': media_item.page_url,
+                'OTHERINFO': media_item.resource_team,
+                'UPLOAD_VOLUME_FACTOR': media_item.upload_volume_factor,
+                'DOWNLOAD_VOLUME_FACTOR': media_item.download_volume_factor,
+                'NOTE': media_item.labels
+            })
+        
+        # 使用批量插入映射，性能更好
+        self._db.bulk_insert_mappings(SEARCHRESULTINFO, mappings, batch_size=500)
 
     def get_search_result_by_id(self, dl_id):
         """
@@ -1295,14 +1300,11 @@ class DbHelper:
     def is_site_user_statistics_exists(self, url):
         """
         判断站点用户数据是否存在
+        使用first()代替count()提高性能
         """
         if not url:
             return False
-        count = self._db.query(SITEUSERINFOSTATS).filter(SITEUSERINFOSTATS.URL == url).count()
-        if count > 0:
-            return True
-        else:
-            return False
+        return self._db.query(SITEUSERINFOSTATS).filter(SITEUSERINFOSTATS.URL == url).first() is not None
 
     def get_site_user_statistics(self, num=100, strict_urls=None):
         """
@@ -1320,15 +1322,14 @@ class DbHelper:
     def is_site_statistics_history_exists(self, url, date):
         """
         判断站点历史数据是否存在
+        使用first()代替count()提高性能
         """
         if not url or not date:
             return False
-        count = self._db.query(SITESTATISTICSHISTORY).filter(SITESTATISTICSHISTORY.URL == url,
-                                                             SITESTATISTICSHISTORY.DATE == date).count()
-        if count > 0:
-            return True
-        else:
-            return False
+        return self._db.query(SITESTATISTICSHISTORY).filter(
+            SITESTATISTICSHISTORY.URL == url,
+            SITESTATISTICSHISTORY.DATE == date
+        ).first() is not None
 
     @DbPersist(_db)
     def update_site_statistics_site_name(self, new_name, old_name):
@@ -1348,10 +1349,27 @@ class DbHelper:
     def insert_site_statistics_history(self, site_user_infos: list):
         """
         插入站点数据
+        使用批量插入/更新提高性能
         """
         if not site_user_infos:
             return
+        
         date_now = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        
+        # 预先获取需要更新的记录，避免N+1查询
+        urls = [info.site_url for info in site_user_infos if info.site_url]
+        existing_records = {}
+        if urls:
+            records = self._db.query(SITESTATISTICSHISTORY.URL).filter(
+                SITESTATISTICSHISTORY.DATE == date_now,
+                SITESTATISTICSHISTORY.URL.in_(urls)
+            ).all()
+            existing_records = {r[0] for r in records}
+        
+        # 批量收集插入和更新数据
+        insert_mappings = []
+        update_mappings = []
+        
         for site_user_info in site_user_infos:
             site = site_user_info.site_name
             upload = site_user_info.upload
@@ -1363,35 +1381,36 @@ class DbHelper:
             leeching = site_user_info.leeching
             bonus = site_user_info.bonus
             url = site_user_info.site_url
-            if not self.is_site_statistics_history_exists(date=date_now, url=url):
-                self._db.insert(SITESTATISTICSHISTORY(
-                    SITE=site,
-                    USER_LEVEL=user_level,
-                    DATE=date_now,
-                    UPLOAD=upload,
-                    DOWNLOAD=download,
-                    RATIO=ratio,
-                    SEEDING=seeding,
-                    LEECHING=leeching,
-                    SEEDING_SIZE=seeding_size,
-                    BONUS=bonus,
-                    URL=url
-                ))
+            
+            data = {
+                "SITE": site,
+                "USER_LEVEL": user_level,
+                "DATE": date_now,
+                "UPLOAD": upload,
+                "DOWNLOAD": download,
+                "RATIO": ratio,
+                "SEEDING": seeding,
+                "LEECHING": leeching,
+                "SEEDING_SIZE": seeding_size,
+                "BONUS": bonus,
+                "URL": url
+            }
+            
+            if url in existing_records:
+                update_mappings.append((url, data))
             else:
-                self._db.query(SITESTATISTICSHISTORY).filter(SITESTATISTICSHISTORY.DATE == date_now,
-                                                             SITESTATISTICSHISTORY.URL == url).update(
-                    {
-                        "SITE": site,
-                        "USER_LEVEL": user_level,
-                        "UPLOAD": upload,
-                        "DOWNLOAD": download,
-                        "RATIO": ratio,
-                        "SEEDING": seeding,
-                        "LEECHING": leeching,
-                        "SEEDING_SIZE": seeding_size,
-                        "BONUS": bonus
-                    }
-                )
+                insert_mappings.append(data)
+        
+        # 批量插入新记录
+        if insert_mappings:
+            self._db.bulk_insert_mappings(SITESTATISTICSHISTORY, insert_mappings, batch_size=100)
+        
+        # 批量更新已有记录
+        for url, data in update_mappings:
+            self._db.query(SITESTATISTICSHISTORY).filter(
+                SITESTATISTICSHISTORY.DATE == date_now,
+                SITESTATISTICSHISTORY.URL == url
+            ).update(data)
 
     def get_site_statistics_history(self, site, days=30):
         """
@@ -1412,13 +1431,11 @@ class DbHelper:
     def is_site_seeding_info_exist(self, url):
         """
         判断做种数据是否已存在
+        使用first()代替count()提高性能
         """
-        count = self._db.query(SITEUSERSEEDINGINFO).filter(
-            SITEUSERSEEDINGINFO.URL == url).count()
-        if count > 0:
-            return True
-        else:
-            return False
+        return self._db.query(SITEUSERSEEDINGINFO).filter(
+            SITEUSERSEEDINGINFO.URL == url
+        ).first() is not None
 
     def get_site_statistics_recent_sites(self, days=7, end_day=None, strict_urls=None):
         """
@@ -2470,7 +2487,8 @@ class DbHelper:
                               switchs: list,
                               interactive,
                               enabled,
-                              note=''):
+                              note='',
+                              templates=None):
         """
         设置消息服务器
         """
@@ -2481,7 +2499,8 @@ class DbHelper:
             SWITCHS=json.dumps(switchs),
             INTERACTIVE=int(interactive),
             ENABLED=int(enabled),
-            NOTE=note
+            NOTE=note,
+            TEMPLATES=json.dumps(templates) if templates else None
         ))
 
     @DbPersist(_db)

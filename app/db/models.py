@@ -200,6 +200,7 @@ class MESSAGECLIENT(Base):
     INTERACTIVE = Column(Integer)
     ENABLED = Column(Integer)
     NOTE = Column(Text)
+    TEMPLATES = Column(Text)
 
 
 class RSSHISTORY(Base):

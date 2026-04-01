@@ -15,6 +15,7 @@ class DownloaderType(Enum):
     PAN115 = '115网盘'
     ARIA2 = 'Aria2'
     PIKPAK = 'PikPak'
+    THUNDER = '迅雷'
 
 
 class SyncType(Enum):
@@ -110,6 +111,7 @@ class SiteSchema(Enum):
     FSM = "FSM"
     YemaPT = "YemaPT"
     FireFly = "FireFly"
+    RousiPro = "RousiPro"
 
 
 # 可监听事件
