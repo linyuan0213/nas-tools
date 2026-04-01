@@ -16,10 +16,11 @@ _Engine = create_engine(
     f"sqlite:///{os.path.join(Config().get_config_path(), 'user.db')}?check_same_thread=False",
     echo=False,
     poolclass=QueuePool,
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
+    pool_size=20,
+    max_overflow=40,
+    pool_timeout=60,
     pool_recycle=3600,
+    pool_pre_ping=True,  # 启用连接健康检查，自动回收失效连接
     connect_args={'timeout': 30}
 )
 
