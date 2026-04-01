@@ -13,6 +13,7 @@ from app.utils.commons import retry
 from config import Config, RMT_MEDIAEXT
 from app.utils import DomUtils, RequestUtils, ExceptionUtils, NfoReader, SystemUtils
 from app.utils.types import MediaType, SystemConfigKey, RmtMode
+from app.utils.temp_manager import temp_manager
 from app.media import Media
 
 
@@ -33,9 +34,7 @@ class Scraper:
             self._scraper_nfo = scraper_conf.get('scraper_nfo') or {}
             self._scraper_pic = scraper_conf.get('scraper_pic') or {}
         self._rmt_mode = None
-        self._temp_path = os.path.join(Config().get_temp_path(), "scraper")
-        if not os.path.exists(self._temp_path):
-            os.makedirs(self._temp_path)
+        self._temp_path = temp_manager.create_subdir("scraper")
 
     def folder_scraper(self, path, exclude_path=None, mode=None):
         """

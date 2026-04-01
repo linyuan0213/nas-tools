@@ -3,6 +3,7 @@ import os.path
 import time
 import re
 from urllib.parse import unquote
+from contextlib import contextmanager
 
 from bencode import bdecode
 
@@ -10,6 +11,7 @@ import log
 from app.utils import StringUtils
 from app.utils.http_utils import RequestUtils
 from app.utils.types import MediaType
+from app.utils.temp_manager import temp_manager
 from config import Config
 
 
@@ -17,9 +19,15 @@ class Torrent:
     _torrent_temp_path = None
 
     def __init__(self):
-        self._torrent_temp_path = Config().get_temp_path()
-        if not os.path.exists(self._torrent_temp_path):
-            os.makedirs(self._torrent_temp_path)
+        self._torrent_temp_path = temp_manager.get_temp_path()
+
+    @staticmethod
+    def delete_torrent_file(file_path):
+        """
+        删除临时种子文件
+        :param file_path: 种子文件路径
+        """
+        temp_manager.delete_file(file_path)
 
     def get_torrent_info(self, url, cookie=None, ua=None, referer=None, proxy=False):
         """

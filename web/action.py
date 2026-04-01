@@ -54,6 +54,7 @@ from web.backend.search_torrents import search_medias_for_web, search_media_by_m
 from web.backend.user import User
 from web.backend.web_utils import WebUtils
 from web.cache import cache
+from app.utils.temp_manager import temp_manager
 
 
 class WebAction:
@@ -654,11 +655,13 @@ class WebAction:
         if not files and not urls:
             return {"code": -1, "msg": "没有种子文件或者种子链接"}
         # 下载种子
+        uploaded_files = []
         for file_item in files:
             if not file_item:
                 continue
             file_name = file_item.get("upload", {}).get("filename")
-            file_path = os.path.join(Config().get_temp_path(), file_name)
+            file_path = temp_manager.get_temp_path(file_name)
+            uploaded_files.append(file_path)
             media_info = Media().get_media_info(title=file_name)
             if media_info:
                 media_info.site = "WEB"
@@ -669,6 +672,14 @@ class WebAction:
                                   torrent_file=file_path,
                                   in_from=SearchType.WEB,
                                   user_name=current_user.username)
+        # 清理上传的临时文件
+        for tmp_file in uploaded_files:
+            try:
+                if os.path.exists(tmp_file):
+                    os.remove(tmp_file)
+                    log.debug(f"【Web】已删除上传的临时文件: {tmp_file}")
+            except Exception as e:
+                log.warn(f"【Web】删除上传的临时文件失败: {tmp_file}, {str(e)}")
         # 下载链接
         if urls and not isinstance(urls, list):
             urls = [urls]
@@ -2628,8 +2639,7 @@ class WebAction:
         filename = data.get("file_name")
         if filename:
             config_path = Config().get_config_path()
-            temp_path = Config().get_temp_path()
-            file_path = os.path.join(temp_path, filename)
+            file_path = temp_manager.get_temp_path(filename)
             try:
                 shutil.unpack_archive(file_path, config_path, format='zip')
                 return {"code": 0, "msg": ""}

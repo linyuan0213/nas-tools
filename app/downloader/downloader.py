@@ -323,6 +323,7 @@ class Downloader(metaclass=SingletonMeta):
         # 默认值
         site_info, dl_files_folder, dl_files, retmsg = {}, "", [], ""
         torrent_attr = {}
+        file_path = None  # 临时种子文件路径，用于后续清理
         if torrent_file:
             # 有种子文件时解析种子信息
             url = os.path.basename(torrent_file)
@@ -354,7 +355,7 @@ class Downloader(metaclass=SingletonMeta):
                                                     proxy=proxy if proxy is not None else site_info.get("proxy"))
 
                 # 下载种子文件，并读取信息
-                _, content, dl_files_folder, dl_files, retmsg = Torrent().get_torrent_info(
+                file_path, content, dl_files_folder, dl_files, retmsg = Torrent().get_torrent_info(
                     url=url,
                     cookie=cookie,
                     ua=site_info.get("ua"),
@@ -576,6 +577,14 @@ class Downloader(metaclass=SingletonMeta):
             __download_fail(str(e))
             log.error(f"【Downloader】下载器 {downloader_name} 添加任务出错：%s" % str(e))
             return None, None, str(e)
+        finally:
+            # 清理临时种子文件
+            if not url.startswith("magnet:"):
+                try:
+                    if file_path:
+                        Torrent().delete_torrent_file(file_path)
+                except Exception:
+                    pass
 
     def transfer(self, downloader_id=None):
         """
@@ -1339,6 +1348,9 @@ class Downloader(metaclass=SingletonMeta):
         )
         if not files:
             log.error("【Downloader】读取种子文件集数出错：%s" % retmsg)
+            # 清理临时文件
+            if file_path:
+                Torrent().delete_torrent_file(file_path)
             return [], None
         episodes = []
         for file in files:

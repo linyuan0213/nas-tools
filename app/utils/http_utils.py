@@ -114,6 +114,7 @@ class RequestUtils:
                                               verify=False,
                                               headers=self._headers,
                                               proxies=self._proxies,
+                                              cookies=self._cookies,
                                               timeout=self._timeout,
                                               json=json)
                 else:
@@ -121,6 +122,7 @@ class RequestUtils:
                                          data=data,
                                          verify=False,
                                          headers=self._headers,
+                                         cookies=self._cookies,
                                          proxies=self._proxies,
                                          timeout=self._timeout,
                                          json=json)
@@ -153,12 +155,14 @@ class RequestUtils:
                                           verify=False,
                                           headers=self._headers,
                                           proxies=self._proxies,
+                                          cookies=self._cookies,
                                           timeout=self._timeout,
                                           params=params)
                 else:
                     r = requests.get(url,
                                      verify=False,
                                      headers=self._headers,
+                                     cookies=self._cookies,
                                      proxies=self._proxies,
                                      timeout=self._timeout,
                                      params=params)
@@ -191,6 +195,7 @@ class RequestUtils:
                                             verify=False,
                                             headers=self._headers,
                                             proxies=self._proxies,
+                                            cookies=self._cookies,
                                             timeout=self._timeout,
                                             allow_redirects=allow_redirects)
                 else:
@@ -233,6 +238,7 @@ class RequestUtils:
                                                 verify=False,
                                                 headers=self._headers,
                                                 proxies=self._proxies,
+                                                cookies=self._cookies,
                                                 timeout=self._timeout,
                                                 allow_redirects=allow_redirects,
                                                 files=files,
