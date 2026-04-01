@@ -21,11 +21,40 @@ body, .page {
 
 .fileTree {
     width: 240px;
-    max-height: 200px;
-    overflow-y: scroll;
+    max-height: 300px;
+    overflow-y: scroll !important;
     overflow-x: hidden;
     position: absolute;
     display: none;
+    z-index: 9999;
+    background-color: var(--tblr-bg-surface, #fff);
+}
+
+.fileTree .jqueryFileTree {
+    display: block !important;
+    overflow: visible !important;
+}
+
+.fileTree .jqueryFileTree li {
+    cursor: pointer;
+}
+
+/* Ensure scrollbar is visible */
+.fileTree::-webkit-scrollbar {
+    width: 8px;
+}
+
+.fileTree::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.fileTree::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.fileTree::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .dropzone {
@@ -499,4 +528,55 @@ body, .page {
 
 [data-loading] {
     display: grid !important;
+}
+
+/* 修复下载页面下拉菜单被遮挡的问题 - 简化版 */
+.d-grid.gap-3.grid-info-card .card {
+    position: relative;
+    overflow: visible;
+}
+
+.d-grid.gap-3.grid-info-card .card .dropdown {
+    position: relative;
+}
+
+.d-grid.gap-3.grid-info-card .card .dropdown-menu {
+    z-index: 1060;
+    position: absolute;
+    right: 0;
+    left: auto;
+    min-width: 120px;
+}
+
+/* 确保下拉菜单按钮有足够的点击区域 */
+.d-grid.gap-3.grid-info-card .card .btn-action {
+    padding: 0.5rem;
+}
+
+/* 防止卡片遮挡下拉菜单 */
+.d-grid.gap-3.grid-info-card {
+    position: relative;
+    z-index: 1;
+}
+
+.d-grid.gap-3.grid-info-card .card .dropdown-menu {
+    z-index: 9999 !important;
+}
+
+/* 确保卡片内容不会溢出导致遮挡 */
+.d-grid.gap-3.grid-info-card .card .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+/* 移动端适配：确保下拉菜单在视口内 */
+@media (max-width: 768px) {
+    .d-grid.gap-3.grid-info-card .card .dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: auto !important;
+        right: 10px !important;
+        left: auto !important;
+        transform: none !important;
+    }
 }

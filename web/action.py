@@ -4241,6 +4241,7 @@ class WebAction:
         switchs = data.get("switchs")
         interactive = data.get("interactive")
         enabled = data.get("enabled")
+        templates = data.get("templates")
         if cid:
             _message.delete_message_client(cid=cid)
         if int(interactive) == 1:
@@ -4250,7 +4251,8 @@ class WebAction:
                                        config=config,
                                        switchs=switchs,
                                        interactive=interactive,
-                                       enabled=enabled)
+                                       enabled=enabled,
+                                       templates=templates)
         return {"code": 0}
 
     @staticmethod
@@ -4772,10 +4774,6 @@ class WebAction:
         """
         # 需要过滤的菜单
         ignore = []
-        # 查询最早加入PT站的时间, 如果不足一个月, 则隐藏刷流任务
-        first_pt_site = SiteUserInfo().get_pt_site_min_join_date()
-        if not first_pt_site or not StringUtils.is_one_month_ago(first_pt_site):
-            ignore.append('')
         # 获取可用菜单
         menus = current_user.get_usermenus(ignore=ignore)
         return {

@@ -91,7 +91,7 @@
 {% endif %}
 <div class="modal modal-blur fade" id="modal-downloader" tabindex="-1" role="dialog" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="downloader_modal_title">新增下载器</h5>
@@ -432,7 +432,6 @@
   function add_downloaddir(dir_type, dir_subtype, save_path, container_path, label) {
     let html = $("#div_downloader_downloaddir_template").text();
     $("#div_downloader_downloaddir").append(html.replaceAll('{DIRDIV_LEVEL}', CURRENT_DIRDIV_LEVEL));
-    $(`#container_path_${CURRENT_DIRDIV_LEVEL}`).attr("onclick", "openFileBrowser(this,$(this).val(),'',true,false);");
     if (dir_type) {
       $(`#dir_type_${CURRENT_DIRDIV_LEVEL}`).val(dir_type);
       get_categories(CURRENT_DIRDIV_LEVEL.toString())
@@ -560,10 +559,10 @@
     </div>
     <div class="row">
       <div class="col-12 col-lg mb-1">
-        <input type="text" value="" id="save_path_{DIRDIV_LEVEL}" class="form-control" placeholder="下载保存目录" autocomplete="off">
+        <input type="text" value="" id="save_path_{DIRDIV_LEVEL}" class="form-control" placeholder="下载保存目录" autocomplete="off" onclick="openFileBrowser(this,'','',true,false,false);">
       </div>
       <div class="col-12 col-lg mb-1">
-        <input type="text" value="" id="container_path_{DIRDIV_LEVEL}" class="form-control" placeholder="NAStool访问目录" autocomplete="off">
+        <input type="text" value="" id="container_path_{DIRDIV_LEVEL}" class="form-control" placeholder="NAStool访问目录" autocomplete="off" onclick="openFileBrowser(this,'','',true,false,false);">
       </div>
       <div class="col-12 col-lg mb-1 align-self-center" style="text-align: center">
         <a href="javascript:del_downloaddir('{DIRDIV_LEVEL}')" class="btn-icon text-red" title="删除目录">

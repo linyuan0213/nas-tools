@@ -34,9 +34,24 @@
 {% if Sites %}
 <div class="page-body">
   <div class="container-xl">
-    <div class="d-grid gap-3 grid-info-card">
+    <!-- 站点类型Tab切换 -->
+    <div class="mb-4">
+      <div class="btn-group" role="group" aria-label="站点类型切换">
+        <button type="button" class="btn btn-primary active" data-site-type="all">全部站点</button>
+        <button type="button" class="btn btn-outline-primary" data-site-type="pt">PT站点</button>
+        <button type="button" class="btn btn-outline-primary" data-site-type="bt">BT站点</button>
+      </div>
+    </div>
+    
+    <div class="d-grid gap-3 grid-info-card" id="sites-container">
       {% for Site in Sites %}
-      <div class="card card-link-pop">
+      {# 判断站点类型：public为True是BT站点，False是PT站点 #}
+      {% if Site.public %}
+        {% set site_type = "bt" %}
+      {% else %}
+        {% set site_type = "pt" %}
+      {% endif %}
+      <div class="card card-link-pop site-card" data-site-type="{{ site_type }}">
         <div class="card-header">
           <h3 class="card-title">
             <span class="badge badge-pill bg-teal"><small>{{ Site.pri }}</small></span>
@@ -176,6 +191,22 @@
                 </label>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="mb-3">
+              <label class="form-label required">站点类型 <span class="form-help"
+                  title="选择站点类型：PT站点（私有站点）需要Cookie认证，BT站点（公开站点）不需要Cookie"
+                  data-bs-toggle="tooltip">?</span></label>
+              <select class="form-select" id="site_public">
+                <option value="N" selected>PT站点（私有站点）</option>
+                <option value="Y">BT站点（公开站点）</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <!-- 预留位置，保持布局平衡 -->
           </div>
         </div>
         <div class="col-lg-12">
@@ -441,6 +472,7 @@
     $("#site_subtitle").val('N');
     $("#site_tag").val('Y');
     $("#site_unread_msg_notify").val('Y');
+    $("#site_public").val('N'); // 默认PT站点
     $("#sitelimit_interval").val('');
     $("#sitelimit_count").val('');
     $("#sitelimit_seconds").val('');
@@ -494,6 +526,12 @@
           $("#site_unread_msg_notify").val("Y");
         } else {
           $("#site_unread_msg_notify").val("N");
+        }
+        // 加载站点类型（public字段）
+        if (ret.site.public) {
+          $("#site_public").val("Y");
+        } else {
+          $("#site_public").val("N");
         }
         select_SelectPart(ret.site.uses, "site_uses")
         $("#sitelimit_interval").val(ret.site.limit_interval);
@@ -571,6 +609,8 @@
     let proxy = $("#site_proxy").val();
     let subtitle = $("#site_subtitle").val();
     let tag = $("#site_tag").val();
+    // 站点类型
+    let site_public = $("#site_public").val();
     // 流控规则
     let limit_interval = $("#sitelimit_interval").val();
     if (limit_interval && isNaN(limit_interval)) {
@@ -612,6 +652,7 @@
         "message": site_unread_msg_notify,
         "subtitle": subtitle,
         "tag": tag,
+        "public": site_public,
         "limit_interval": limit_interval,
         "limit_count": limit_count,
         "limit_seconds": limit_seconds
@@ -764,6 +805,61 @@
     let userAgent = navigator.userAgent;
     if (userAgent){
         $("#"+id).val(userAgent);
+    }
+  }
+
+  // 站点类型Tab切换功能
+  $(document).ready(function() {
+    // 初始化：显示所有站点
+    filterSitesByType('all');
+    
+    // 为tab按钮添加点击事件
+    $('button[data-site-type]').click(function() {
+      // 更新按钮状态
+      $('button[data-site-type]').removeClass('btn-primary active').addClass('btn-outline-primary');
+      $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+      
+      // 过滤站点
+      var siteType = $(this).data('site-type');
+      filterSitesByType(siteType);
+    });
+  });
+  
+  // 根据站点类型过滤显示
+  function filterSitesByType(type) {
+    $('.site-card').each(function() {
+      var card = $(this);
+      var cardType = card.data('site-type');
+      
+      if (type === 'all' || cardType === type) {
+        card.show();
+      } else {
+        card.hide();
+      }
+    });
+    
+    // 如果没有站点显示，显示提示信息
+    var visibleCards = $('.site-card:visible').length;
+    if (visibleCards === 0) {
+      if (!$('#no-sites-message').length) {
+        $('#sites-container').append(
+          '<div class="col-12 text-center py-5" id="no-sites-message">' +
+          '<div class="empty">' +
+          '<div class="empty-icon">' +
+          '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-cloud-off" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>' +
+          '<path d="M9.58 5.548c.24 -.11 .492 -.207 .752 -.286c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 .957 -.383 1.824 -1.003 2.454m-2.997 1.033h-11.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.13 -.582 .37 -1.128 .7 -1.62"></path>' +
+          '<path d="M3 3l18 18"></path>' +
+          '</svg>' +
+          '</div>' +
+          '<p class="empty-title">没有找到符合条件的站点</p>' +
+          '<p class="empty-subtitle text-muted">尝试选择其他站点类型</p>' +
+          '</div>' +
+          '</div>'
+        );
+      }
+    } else {
+      $('#no-sites-message').remove();
     }
   }
 

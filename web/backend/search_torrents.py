@@ -5,6 +5,7 @@ from time import sleep
 import zhconv
 import hashlib
 
+from app import media
 import log
 from app.downloader import Downloader
 from app.helper import ProgressHelper
@@ -19,11 +20,15 @@ from app.utils import StringUtils, Torrent
 from app.utils.types import SearchType, IndexerType, ProgressKey, RssType
 from config import Config
 from web.backend.web_utils import WebUtils
+from app.utils.types import MediaType
+from app.media.meta import MetaInfo
 
 SEARCH_MEDIA_CACHE = {}
 SEARCH_MEDIA_TYPE = {}
 # 媒体识别结果缓存，避免重复识别
 MEDIA_IDENT_CACHE = {}
+# 分页缓存：user_id -> {"page": 当前页码, "page_size": 每页数量, "total": 总结果数, "all_items": 所有结果列表}
+SEARCH_MEDIA_PAGE = {}
 
 
 def search_medias_for_web(content, ident_flag=True, filters=None, tmdbid=None, media_type=None):
@@ -226,15 +231,162 @@ def search_media_by_message(input_str, in_from: SearchType, user_id, user_name=N
     """
     global SEARCH_MEDIA_TYPE
     global SEARCH_MEDIA_CACHE
+    global SEARCH_MEDIA_PAGE
 
     if not input_str:
         log.info("【Searcher】搜索关键字有误！")
         return
     else:
         input_str = str(input_str).strip()
+    
+    # 处理分页导航：n下一页，p上一页
+    if input_str.lower() in ['n', 'p']:
+        # 检查是否有分页缓存
+        if not SEARCH_MEDIA_PAGE.get(user_id):
+            Message().send_channel_msg(channel=in_from,
+                                       title="没有可用的搜索结果分页",
+                                       user_id=user_id)
+            return
+        
+        page_info = SEARCH_MEDIA_PAGE[user_id]
+        current_page = page_info.get("page", 1)
+        page_size = page_info.get("page_size", 8)
+        total_items = page_info.get("total", 0)
+        all_items = page_info.get("all_items", [])
+        
+        if input_str.lower() == 'n':
+            # 下一页
+            if current_page * page_size >= total_items:
+                Message().send_channel_msg(channel=in_from,
+                                           title="已经是最后一页了",
+                                           user_id=user_id)
+                return
+            current_page += 1
+        else:
+            # 上一页
+            if current_page <= 1:
+                Message().send_channel_msg(channel=in_from,
+                                           title="已经是第一页了",
+                                           user_id=user_id)
+                return
+            current_page -= 1
+        
+        # 更新页码
+        page_info["page"] = current_page
+        
+        # 计算当前页的项目
+        start_idx = (current_page - 1) * page_size
+        end_idx = min(start_idx + page_size, total_items)
+        current_items = all_items[start_idx:end_idx]
+        
+        # 创建文本消息显示搜索结果
+        text_lines = []
+        for i, item in enumerate(current_items, 1):
+            # 优先使用种子名称，展示种子重要属性
+            torrent_name = item.TORRENT_NAME or item.TITLE or "未知标题"
+            size_str = f"，大小: {StringUtils.str_filesize(item.SIZE)}" if item.SIZE else ""
+            seeders_str = f"，做种: {item.SEEDERS}" if item.SEEDERS else ""
+            site_str = f"，站点: {item.SITE}" if item.SITE else ""
+            
+            text_lines.append(f"{i}. {torrent_name}{size_str}{seeders_str}{site_str}")
+        
+        # 发送分页消息
+        total_pages = ((total_items - 1) // page_size) + 1
+        media_title = page_info.get("media_title", "搜索结果")
+        title = f"{media_title} 第{current_page}页，共{total_pages}页"
+        # 添加操作说明
+        if total_pages > 1:
+            title += f"\n输入 n 查看下一页，p 查看上一页"
+        title += f"\n输入 1-{min(page_size, len(current_items))} 选择下载对应资源"
+        
+        Message().send_channel_msg(channel=in_from,
+                                   title=title,
+                                   text="\n".join(text_lines),
+                                   user_id=user_id)
+        return
+    
     # 如果是数字，表示选择项
     if input_str.isdigit() and int(input_str) < 10:
-        # 获取之前保存的可选项
+        # 首先检查是否有分页缓存（搜索结果选择）
+        if SEARCH_MEDIA_PAGE.get(user_id):
+            # 从分页缓存中获取当前页的项目
+            page_info = SEARCH_MEDIA_PAGE[user_id]
+            current_page = page_info.get("page", 1)
+            page_size = page_info.get("page_size", 8)
+            all_items = page_info.get("all_items", [])
+            
+            # 计算当前页的起始索引
+            start_idx = (current_page - 1) * page_size
+            choose = int(input_str) - 1
+            item_index = start_idx + choose
+            
+            # 检查索引是否有效
+            if choose < 0 or choose >= page_size or item_index >= len(all_items):
+                Message().send_channel_msg(channel=in_from,
+                                           title="输入有误！",
+                                           user_id=user_id)
+                log.warn("【Web】错误的输入值：%s" % input_str)
+                return
+            
+            # 获取选中的搜索结果项
+            selected_item = all_items[item_index]
+            
+            # 检查是否有种子链接
+            if not selected_item.ENCLOSURE:
+                Message().send_channel_msg(channel=in_from,
+                                           title="选中的资源没有种子链接，无法下载",
+                                           user_id=user_id)
+                return
+            
+            # 根据选中的搜索结果创建媒体信息对象并直接下载
+
+            
+            # 获取标题和年份
+            title = selected_item.TITLE or selected_item.TORRENT_NAME or "未知标题"
+            year = selected_item.YEAR or ""
+            
+            # 确定媒体类型
+            if selected_item.TYPE == "MOV":
+                mtype = MediaType.MOVIE
+            elif selected_item.TYPE == "TV":
+                mtype = MediaType.TV
+            elif selected_item.TYPE == "ANI":
+                mtype = MediaType.ANIME
+            else:
+                mtype = MediaType.UNKNOWN
+            
+            # 创建媒体信息对象
+            tmdb_info = Media().get_tmdb_info(mtype=mtype, tmdbid=selected_item.TMDBID) if selected_item.TMDBID else Media().get_media_info(title=title, year=year, mtype=mtype)
+            media_info = MetaInfo(title=f"{title} {year}".strip(), mtype=mtype)
+            media_info.set_tmdb_info(tmdb_info)
+            
+            if not media_info or not media_info.tmdb_info:
+                Message().send_channel_msg(channel=in_from,
+                                           title=f"无法识别媒体信息: {title}",
+                                           user_id=user_id)
+                # 清除分页缓存
+                del SEARCH_MEDIA_PAGE[user_id]
+                return
+            
+            # 设置种子相关信息
+            media_info.enclosure = selected_item.ENCLOSURE
+            media_info.page_url = selected_item.PAGEURL or ""
+            media_info.site = selected_item.SITE
+            media_info.size = selected_item.SIZE or 0
+            media_info.org_string = selected_item.TORRENT_NAME or title
+            
+            # 直接下载选中的种子
+            Downloader().download(
+                media_info=media_info,
+                in_from=in_from,
+                user_name=user_name
+            )
+            
+            # 清除分页缓存
+            del SEARCH_MEDIA_PAGE[user_id]
+            return
+        
+        # 如果没有分页缓存，则使用原来的媒体选择逻辑
         choose = int(input_str) - 1
         if not SEARCH_MEDIA_CACHE.get(user_id) or \
                 choose < 0 or choose >= len(SEARCH_MEDIA_CACHE.get(user_id)):
@@ -450,6 +602,8 @@ def __search_media(in_from, media_info, user_id, user_name=None):
     """
     开始搜索和发送消息
     """
+    global SEARCH_MEDIA_PAGE
+    
     # 检查是否存在，电视剧返回不存在的集清单
     exist_flag, no_exists, messages = Downloader().check_exists_medias(meta_info=media_info)
     if messages:
@@ -477,10 +631,54 @@ def __search_media(in_from, media_info, user_id, user_name=None):
     else:
         # 搜索到了但是没开自动下载
         if download_count is None:
+            # 获取搜索结果（从数据库）
+            search_results = Searcher().get_search_results()
+            if not search_results:
+                Message().send_channel_msg(channel=in_from,
+                                           title="%s 共搜索到%s个资源，但无法获取结果列表" % (media_info.title, search_count),
+                                           user_id=user_id)
+                return
+            
+            # 设置分页信息
+            page_size = 8
+            total_items = len(search_results)
+            total_pages = ((total_items - 1) // page_size) + 1
+            
+            SEARCH_MEDIA_PAGE[user_id] = {
+                "page": 1,
+                "page_size": page_size,
+                "total": total_items,
+                "all_items": search_results,
+                "media_title": media_info.title
+            }
+            
+            # 显示第一页
+            current_page = 1
+            start_idx = (current_page - 1) * page_size
+            end_idx = min(start_idx + page_size, total_items)
+            current_items = search_results[start_idx:end_idx]
+            
+            # 创建文本消息显示搜索结果
+            text_lines = []
+            for i, item in enumerate(current_items, 1):
+                # 优先使用种子名称，展示种子重要属性
+                torrent_name = item.TORRENT_NAME or item.TITLE or "未知标题"
+                size_str = f"，大小: {StringUtils.str_filesize(item.SIZE)}" if item.SIZE else ""
+                seeders_str = f"，做种: {item.SEEDERS}" if item.SEEDERS else ""
+                site_str = f"，站点: {item.SITE}" if item.SITE else ""
+            
+                text_lines.append(f"{i}. {torrent_name}{size_str}{seeders_str}{site_str}")
+            
+            # 发送分页消息
+            title = f"{media_info.title} 共搜索到{total_items}个资源，第{current_page}页，共{total_pages}页"
+            # 添加操作说明
+            if total_pages > 1:
+                title += f"\n输入 n 查看下一页，p 查看上一页"
+            title += f"\n输入 1-{min(page_size, len(current_items))} 选择下载对应资源"
+            
             Message().send_channel_msg(channel=in_from,
-                                       title="%s 共搜索到%s个资源，点击选择下载" % (media_info.title, search_count),
-                                       image=media_info.get_message_image(),
-                                       url="search",
+                                       title=title,
+                                       text="\n".join(text_lines),
                                        user_id=user_id)
             return
         else:

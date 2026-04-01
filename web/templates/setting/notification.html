@@ -175,6 +175,32 @@
             </div>
           </div>
         </details>
+        <details>
+          <summary class="summary inline-flex">
+            消息模板 (高级)
+            <a href="javascript:void(0)" class="float-end" onclick="reset_message_templates()">重置为默认</a>
+          </summary>
+          <div class="row mt-2">
+            <div class="col-lg-12">
+              <div class="mb-3">
+                <label class="form-label">模板配置 (JSON格式)</label>
+                <div class="alert alert-info alert-dismissible py-2" role="alert">
+                  <div class="d-flex">
+                    <div>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v2m0 4v.01" /><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" /></svg>
+                    </div>
+                    <div class="ms-2">
+                      支持为每种消息类型自定义标题和内容模板，使用Jinja2语法。变量参考文档。
+                      <br>示例: {"download_start": {"title": "{{ '{{' }} item.get_title_ep_string() {{ '}}' }} 开始下载", "text": "来自：{{ '{{' }} in_from.value {{ '}}' }}"}}
+                    </div>
+                  </div>
+                </div>
+                <div id="message_templates_editor" style="height: 300px; width: 100%; border: 1px solid #ccc;"></div>
+                <textarea class="form-control font-monospace d-none" id="message_templates" rows="12" placeholder='{"download_start": {"title": "...", "text": "..."}}'></textarea>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
       <div class="modal-footer">
         <button onclick="add_or_edit_or_test_message_client('test')" id="test_message_client_btn"
@@ -253,6 +279,47 @@
 </div>
 <script type="text/javascript">
 
+  // 模板编辑器变量
+  let template_editor = null;
+
+  // 初始化模板编辑器
+  function init_template_editor() {
+    if (!template_editor && document.getElementById('message_templates_editor')) {
+      template_editor = ace.edit("message_templates_editor");
+      const isDarkTheme = localStorage.getItem("tablerTheme") === "dark";
+      template_editor.setTheme(isDarkTheme ? "ace/theme/one_dark" : "ace/theme/xcode");
+      template_editor.session.setMode("ace/mode/json");
+      template_editor.setOptions({
+        fontFamily: "Consolas, Monaco, monospace",
+        fontSize: "10pt",
+        showPrintMargin: false,
+        wrap: true,
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true
+      });
+      
+      // 监听编辑器变化，同步到隐藏的textarea
+      template_editor.session.on('change', function() {
+        const value = template_editor.getValue();
+        $("#message_templates").val(value);
+      });
+      
+      // 从textarea读取初始值设置到编辑器
+      const initialValue = $("#message_templates").val();
+      if (initialValue) {
+        template_editor.setValue(initialValue, -1);
+      }
+    }
+  }
+
+  // 销毁模板编辑器
+  function destroy_template_editor() {
+    if (template_editor) {
+      template_editor.destroy();
+      template_editor = null;
+    }
+  }
+
   // 恢复输入项为默认值
   function reset_message_config_fields() {
     {% for ClientId, ClientAttr in Channels.items() %}
@@ -274,16 +341,54 @@
     {% endfor %}
   }
 
+  // 重置消息模板为默认值
+  function reset_message_templates() {
+    const defaultTemplates = {
+      "download_start": {
+        "title": "🎬 {{ '{{' }} title_ep_string|default(item.get_title_ep_string()) {{ '}}' }} 开始下载 ⬇️",
+        "text": "🌐 站点：{{ '{{' }} site|default(item.site)|default('未知') {{ '}}' }} ｜ 💾 大小：{{ '{{' }} size_str|default(item.size|filesize) {{ '}}' }}\\n📦 质量：{{ '{{' }} resource_type|default(item.get_resource_type_string())|default('未知') {{ '}}' }}\\n\\n🧲 种子：{{ '{{' }} org_string|default(item.org_string)|truncatestr(50) {{ '}}' }}\\n🌱 做种：{{ '{{' }} seeders|default(item.seeders)|default(0) {{ '}}' }} ｜ ⚡️ 促销：{{ '{{' }} volume_factor|default(item.get_volume_factor_string())|default('未知') {{ '}}' }} ｜ 🚨 H&R：{{ '{{' }} hit_and_run|default(item.hit_and_run)|yesno('是','否') {{ '}}' }}"
+      },
+      "transfer_finished": {
+        "title": "✅ {{ '{{' }} media_info.get_title_string() {{ '}}' }} 已入库",
+        "text": "⭐ {{ '{{' }} media_info.get_vote_string() {{ '}}' }}\\n📺 类型：{{ '{{' }} media_info.type.value {{ '}}' }}\\n📦 质量：{{ '{{' }} media_info.get_resource_type_string()|default('未知') {{ '}}' }}\\n💾 大小：{{ '{{' }} media_info.size|filesize {{ '}}' }}"
+      },
+      "rss_success": {
+        "title": "📌 {{ '{{' }} media_info.get_title_string() {{ '}}' }} 已添加订阅",
+        "text": "⭐ {{ '{{' }} media_info.get_vote_string() {{ '}}' }}\\n📺 类型：{{ '{{' }} media_info.type.value {{ '}}' }}\\n📅 年份：{{ '{{' }} media_info.year|default('未知') {{ '}}' }}"
+      }
+    };
+    const templateJson = JSON.stringify(defaultTemplates, null, 2);
+    $("#message_templates").val(templateJson);
+    if (template_editor) {
+      template_editor.setValue(templateJson, -1);
+    }
+  }
+
   // 显示新增消息服务
   function show_add_message_client_modal() {
     $("#client_id").val('');
     $("#client_modal_title").text("新增消息通知");
     reset_message_config_fields();
+    reset_message_templates();
     show_client_type("{{ Channels.keys()|first }}");
     $("#test_message_client_btn").text("测试").attr("disabled", false);
     select_SelectALL(true, "message_switchs")
     $("#delete_message_client_btn").hide();
+    
+    // 初始化模板编辑器
+    setTimeout(function() {
+      init_template_editor();
+    }, 100);
+    
+    // 移除之前的事件监听器，避免重复绑定
+    $('#modal-message-client').off('hidden.bs.modal');
+    
     $("#modal-message-client").modal("show");
+    
+    // 模态框关闭时销毁编辑器
+    $('#modal-message-client').on('hidden.bs.modal', function () {
+      destroy_template_editor();
+    });
   }
 
   // 显示编辑消息服务
@@ -313,6 +418,13 @@
           {% endfor %}
           }
         {% endfor %}
+        // 设置模板到textarea
+        if (ret.detail.templates) {
+          const templateJson = JSON.stringify(ret.detail.templates, null, 2);
+          $("#message_templates").val(templateJson);
+        } else {
+          $("#message_templates").val("");
+        }
         show_client_type(type);
         $("#test_message_client_btn").text("测试").attr("disabled", false);
         if (ret.detail.switchs.length === 0) {
@@ -321,7 +433,21 @@
           select_SelectPart(ret.detail.switchs, "message_switchs");
         }
         $("#delete_message_client_btn").show();
+        
+        // 初始化模板编辑器
+        setTimeout(function() {
+          init_template_editor();
+        }, 100);
+        
+        // 移除之前的事件监听器，避免重复绑定
+        $('#modal-message-client').off('hidden.bs.modal');
+        
         $("#modal-message-client").modal("show");
+        
+        // 模态框关闭时销毁编辑器
+        $('#modal-message-client').on('hidden.bs.modal', function () {
+          destroy_template_editor();
+        });
       }
     });
   }
@@ -365,6 +491,17 @@
     let enabled = $("#client_enabled").val();
     // 推送设置
     let switchs = select_GetSelectedVAL("message_switchs")
+    // 模板数据
+    let templates = {};
+    let templatesText = $("#message_templates").val().trim();
+    if (templatesText) {
+      try {
+        templates = JSON.parse(templatesText);
+      } catch (e) {
+        show_warning_modal("模板JSON格式错误：" + e.message);
+        return;
+      }
+    }
     const params = {
       cid: cid,
       name: name,
@@ -372,7 +509,8 @@
       config: config,
       switchs: switchs,
       enabled: enabled,
-      interactive: interactive
+      interactive: interactive,
+      templates: JSON.stringify(templates)
     };
     if (action === "save") {
       $("#add_or_edit_message_client_btn").text("保存中").attr("disabled", true);

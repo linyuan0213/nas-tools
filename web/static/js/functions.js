@@ -1347,11 +1347,12 @@ function openFileBrowser(el, root, filter, on_folders, on_files, close_on_select
   if (!root.trim()) root = "";
   let p = $(el);
   // Skip is fileTree is already open
-  if (p.next().hasClass('fileTree')) return null;
+  if (p.data('filetree-open')) return null;
+  p.data('filetree-open', true);
   // create a random id
   const r = Math.floor((Math.random() * 1000) + 1);
-  // Add a new span and load fileTree
-  p.after("<div id='fileTree" + r + "' class='fileTree card shadow-sm' style='z-index: 99999;'></div>");
+  // Add fileTree after the input element
+  p.after("<div id='fileTree" + r + "' class='fileTree card shadow-sm'></div>");
   const ft = $('#fileTree' + r);
   ft.fileTree({
         script: 'dirlist',
@@ -1366,6 +1367,7 @@ function openFileBrowser(el, root, filter, on_folders, on_files, close_on_select
           if (close_on_select) {
             ft.slideUp('fast', function () {
               ft.remove();
+              p.data('filetree-open', false);
             });
           }
         }
@@ -1377,6 +1379,7 @@ function openFileBrowser(el, root, filter, on_folders, on_files, close_on_select
           if (close_on_select) {
             $(ft).slideUp('fast', function () {
               $(ft).remove();
+              p.data('filetree-open', false);
             });
           }
         }
@@ -1388,6 +1391,7 @@ function openFileBrowser(el, root, filter, on_folders, on_files, close_on_select
     if (!ft.is(e.target) && ft.has(e.target).length === 0) {
       ft.slideUp('fast', function () {
         $(ft).remove();
+        p.data('filetree-open', false);
       });
     }
   });
@@ -1395,6 +1399,7 @@ function openFileBrowser(el, root, filter, on_folders, on_files, close_on_select
   p.bind("keydown", function () {
     ft.slideUp('fast', function () {
       $(ft).remove();
+      p.data('filetree-open', false);
     });
   });
   // Open fileTree
