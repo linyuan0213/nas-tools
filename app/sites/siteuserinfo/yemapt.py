@@ -109,13 +109,21 @@ class YemaPTUserInfo(_ISiteUserInfo):
             self.join_at = local_date
 
     def _parse_user_traffic_info(self, html_text):
-        json_data = json.loads(html_text)
-        if json_data.get('data') is not None:
-            self.upload = int(json_data.get('data').get('promotionUploadSize'))
-
-            self.download = int(json_data.get('data').get('promotionDownloadSize'))
-
-            self.ratio = 0 if self.download <= 0 else round(self.upload / self.download, 3)
+        try:
+            json_data = json.loads(html_text)
+            if json_data.get('data') is not None:
+                data = json_data.get('data')
+                # 安全获取上传/下载数据，处理 None 情况
+                promotion_upload = data.get('promotionUploadSize')
+                promotion_download = data.get('promotionDownloadSize')
+                
+                self.upload = int(promotion_upload) if promotion_upload is not None else 0
+                self.download = int(promotion_download) if promotion_download is not None else 0
+                
+                self.ratio = 0 if self.download <= 0 else round(self.upload / self.download, 3)
+        except (json.JSONDecodeError, ValueError, TypeError, AttributeError) as e:
+            # 记录错误但不抛出异常，避免影响其他站点
+            pass
 
     def _parse_user_torrent_seeding_info(self, html_text, multi_page=False):
 

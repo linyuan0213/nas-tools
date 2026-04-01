@@ -107,7 +107,8 @@ class SiteUserInfo(metaclass=SingletonMeta):
                 # 单独处理json 格式
                 if JsonUtils.is_valid_json(html_text):
                     json_data = json.loads(html_text)
-                    if json_data.get('message').upper() != "SUCCESS" and not json_data.get('success'):
+                    message = json_data.get('message')
+                    if (message and message.upper() != "SUCCESS") and not json_data.get('success'):
                         return None
 
                 else:
