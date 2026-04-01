@@ -487,6 +487,12 @@ class Downloader(metaclass=SingletonMeta):
                                               seeding_time_limit=seeding_time_limit)
 
             elif downloader_type == DownloaderType.QB:
+                # 首先检查种子是否已存在
+                exists, torrent_hash = downloader.check_torrent_exists(content)
+                if exists:
+                    log.info(f"【Downloader】下载器 {downloader_name} 中已存在该任务，跳过添加")
+                    # 任务已存在，直接返回成功但不发送消息和登记历史
+                    return downloader_id, torrent_hash, ""
                 # 加标签以获取添加下载后的编号
                 torrent_tag = "NT" + StringUtils.generate_random_str(5)
                 if tags:
@@ -517,6 +523,16 @@ class Downloader(metaclass=SingletonMeta):
                 download_id = ret
             # 添加下载成功
             if ret:
+                # QB下载器特殊处理：add_torrent返回True但可能获取不到download_id
+                # 这种情况说明任务可能已存在，不要发送失败通知
+                if downloader_type == DownloaderType.QB and not download_id:
+                    log.warn(f"【Downloader】下载器 {downloader_name} 添加任务成功但无法获取任务ID，可能任务已存在")
+                    # 尝试通过hash查找
+                    _, torrent_hash = downloader.check_torrent_exists(content)
+                    if torrent_hash:
+                        return downloader_id, torrent_hash, ""
+                    return downloader_id, None, "添加任务成功但无法获取任务ID"
+                
                 # 计算数据文件保存的路径
                 save_dir = subtitle_dir = None
                 visit_dir = self.get_download_visit_dir(download_dir)
@@ -570,6 +586,13 @@ class Downloader(metaclass=SingletonMeta):
                                                        downloader_name=downloader_name)
                 return downloader_id, download_id, ""
             else:
+                # 添加失败，对于QB再检查一下是否实际已存在（处理API响应不一致的情况）
+                if downloader_type == DownloaderType.QB:
+                    exists, torrent_hash = downloader.check_torrent_exists(content)
+                    if exists:
+                        log.info(f"【Downloader】下载器 {downloader_name} 任务实际已存在，不发送失败通知")
+                        return downloader_id, torrent_hash, ""
+                
                 __download_fail("请检查下载任务是否已存在")
                 return downloader_id, None, f"下载器 {downloader_name} 添加下载任务失败，请检查下载任务是否已存在"
         except Exception as e:

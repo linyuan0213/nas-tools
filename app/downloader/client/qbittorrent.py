@@ -2,7 +2,10 @@ from typing import Tuple
 import os
 import re
 import time
+import hashlib
 from datetime import datetime
+
+from bencode import bdecode
 
 from app.entities.torrent import Torrent
 from app.entities.torrentstatus import TorrentStatus
@@ -414,6 +417,55 @@ class Qbittorrent(_IDownloadClient):
             return torrents[0].id
         else:
             return None
+
+    @staticmethod
+    def calculate_torrent_hash(content):
+        """
+        计算种子的info_hash
+        :param content: 种子内容(bytes)或磁力链接(str)
+        :return: info_hash字符串，无法计算则返回None
+        """
+        if not content:
+            return None
+        # 如果是磁力链接，提取hash
+        if isinstance(content, str) and content.startswith("magnet:"):
+            match = re.search(r'xt=urn:btih:([a-fA-F0-9]{40})', content)
+            if match:
+                return match.group(1).lower()
+            return None
+        # 如果是bytes，解析种子文件计算hash
+        if isinstance(content, bytes):
+            try:
+                torrent = bdecode(content)
+                if torrent and torrent.get("info"):
+                    info = torrent.get("info")
+                    # 重新编码info部分并计算sha1
+                    import bencode
+                    info_encoded = bencode.bencode(info)
+                    return hashlib.sha1(info_encoded).hexdigest().lower()
+            except Exception as err:
+                log.debug(f"【{Qbittorrent.client_name}】计算种子hash失败: {str(err)}")
+                return None
+        return None
+
+    def check_torrent_exists(self, content):
+        """
+        检查种子是否已存在于下载器中
+        :param content: 种子内容(bytes)或磁力链接(str)
+        :return: (exists, torrent_id)，exists为True表示已存在，torrent_id为种子hash
+        """
+        torrent_hash = self.calculate_torrent_hash(content)
+        if not torrent_hash:
+            return False, None
+        if not self.qbc:
+            return False, torrent_hash
+        try:
+            torrents, error = self.get_torrents(ids=[torrent_hash])
+            if not error and torrents:
+                return True, torrent_hash
+        except Exception as err:
+            log.debug(f"【{self.client_name}】{self.name} 检查种子存在性失败: {str(err)}")
+        return False, torrent_hash
 
     def get_torrent_id_by_tag(self, tag, status=None):
         """
