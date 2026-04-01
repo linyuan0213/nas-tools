@@ -82,12 +82,12 @@ class SiteUserInfo(metaclass=SingletonMeta):
                 req_url = url + '/api/user/profile'
             elif 'star-space' in url:
                 req_url = url + '/p_index/index.php'
+            elif 'rousi' in url:
+                req_url = url + '/api/v1/profile?include_fields[user]=seeding_leeching_data'
             else:
                 req_url = url
             if 'm-team' in url:
                 req_url = url + '/api/member/profile'
-                if site_headers.get("authorization"):
-                    site_headers.pop('authorization')
                 res = RequestUtils(session=session,
                                    headers=site_headers,
                                    proxies=proxies
@@ -107,7 +107,7 @@ class SiteUserInfo(metaclass=SingletonMeta):
                 # 单独处理json 格式
                 if JsonUtils.is_valid_json(html_text):
                     json_data = json.loads(html_text)
-                    if json_data.get('message') != "SUCCESS" and not json_data.get('success'):
+                    if json_data.get('message').upper() != "SUCCESS" and not json_data.get('success'):
                         return None
 
                 else:

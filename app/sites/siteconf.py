@@ -88,6 +88,7 @@ class SiteConf(metaclass=SingletonMeta):
         'fsm': "/api/Torrents/details?tid={tid}&page=1",
         'yemapt': "/api/torrent/fetchTorrentDetail?id={tid}&firstView=false",
         'star-space': "/p_torrent/video_detail.php?tid={tid}",
+        'rousi': "/api/v1/torrents/{tid}",
         'default': '/details.php?id={tid}'
     }
     def __init__(self):
@@ -124,6 +125,9 @@ class SiteConf(metaclass=SingletonMeta):
             if key in torrent_url:
                 if key == 'star-space':
                     tid = re.findall(r'tid=(\d+)', torrent_url)[0] or ""
+                elif key == 'rousi':
+                    # rousi 使用 UUID 格式，如: https://rousi.pro/torrents/dffb27c6-cb11-4431-a955-2f2a864d64df
+                    tid = re.findall(r'/torrents/([a-f0-9-]+)', torrent_url)[0] or ""
                 else:
                     tid = re.findall(r'\d+', torrent_url)[0] or ""
                     
@@ -151,8 +155,6 @@ class SiteConf(metaclass=SingletonMeta):
             "pubdate": None
         }
         try:
-            if headers and headers.get("authorization"):
-                headers.pop('authorization')
             # 这里headers必须是string类型
             headers = json.dumps(headers)
             if 'm-team' in torrent_url:
@@ -201,7 +203,7 @@ class SiteConf(metaclass=SingletonMeta):
                     for xpath_str in xpath_strs.get("2XFREE"):
                         name = JsonUtils.get_json_object(
                             html_text, xpath_str.split('=')[0])
-                        if name == xpath_str.split('=')[1]:
+                        if str(name) == xpath_str.split('=')[1]:
                             ret_attr["free"] = True
                             ret_attr["2xfree"] = True
 
@@ -209,7 +211,7 @@ class SiteConf(metaclass=SingletonMeta):
                     for xpath_str in xpath_strs.get("FREE"):
                         name = JsonUtils.get_json_object(
                             html_text, xpath_str.split('=')[0])
-                        if name == xpath_str.split('=')[1]:
+                        if str(name) == xpath_str.split('=')[1]:
                             ret_attr["free"] = True
 
                     # 检测HR
@@ -284,8 +286,6 @@ class SiteConf(metaclass=SingletonMeta):
             headers.update({
                 "contentType": 'application/json;charset=UTF-8'
             })
-            if headers.get('authorization'):
-                headers.pop('authorization')
             res = RequestUtils(
                 headers=headers,
                 proxies=Config().get_proxies() if proxy else None

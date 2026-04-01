@@ -82,6 +82,16 @@ class Sites:
             else:
                 strict_url = StringUtils.get_base_url(site_signurl or site_rssurl)
 
+            # 判断是否为公开站点（BT站点）
+            # 公开站点的判断逻辑：没有signurl和cookie，或者明确标记为public
+            is_public = False
+            if not site_signurl and not site_cookie:
+                is_public = True
+            if site_note.get("public") == "Y":
+                is_public = True
+            if site_note.get("public") == "N":
+                is_public = False
+                
             site_info = {
                 "id": site.ID,
                 "name": site.NAME,
@@ -106,7 +116,8 @@ class Sites:
                 "limit_count": site_note.get("limit_count"),
                 "limit_seconds": site_note.get("limit_seconds"),
                 "strict_url": strict_url,
-                "tag": site.NAME if site_note.get("tag") == "Y" else ""
+                "tag": site.NAME if site_note.get("tag") == "Y" else "",
+                "public": is_public
             }
             # 以ID存储
             self._siteByIds[site.ID] = site_info
@@ -216,9 +227,11 @@ class Sites:
     def get_site_dict(self,
                       rss=False,
                       brush=False,
-                      statistic=False):
+                      statistic=False,
+                      signin=False):
         """
         获取站点字典
+        :param signin: 是否为签到用途，True时过滤掉BT站点（公开站点）
         """
         return [
             {
@@ -228,7 +241,7 @@ class Sites:
                 rss=rss,
                 brush=brush,
                 statistic=statistic
-            )
+            ) if not (signin and site.get("public"))
         ]
 
     def get_site_names(self,
@@ -274,6 +287,32 @@ class Sites:
         site_info = self.get_sites(siteid=site_id)
         if not site_info:
             return False, "站点不存在", 0
+        
+        # 判断是否为公开站点（BT站点）
+        is_public = site_info.get("public", False)
+        
+        # 对于公开站点（BT站点），只需要测试RSS地址是否可访问
+        if is_public:
+            site_url = StringUtils.get_base_url(
+                site_info.get("rssurl") or site_info.get("signurl"))
+            if not site_url:
+                return False, "未配置站点地址", 0
+            
+            # 计时
+            start_time = datetime.now()
+            res = RequestUtils(
+                proxies=Config().get_proxies() if site_info.get("proxy") else None
+            ).get_res(url=site_url)
+            seconds = round((datetime.now() - start_time).total_seconds(), 3)
+            
+            if res and res.status_code == 200:
+                return True, "连接成功", seconds
+            elif res is not None:
+                return False, f"连接失败，状态码：{res.status_code}", seconds
+            else:
+                return False, "无法打开网站", seconds
+        
+        # 对于私有站点（PT站点），需要Cookie或headers
         site_cookie = site_info.get("cookie")
         headers = site_info.get("headers")
         if not site_cookie and not headers:
@@ -304,6 +343,9 @@ class Sites:
 
         if 'star-space' in site_url:
             site_url = site_url + '/p_index/index.php'
+        
+        if 'rousi' in site_url:
+            site_url = site_url + '/api/v1/profile?include_fields[user]=seeding_leeching_data'
 
         if site_info.get("chrome"):
             # 计时
@@ -325,8 +367,6 @@ class Sites:
             start_time = datetime.now()
             # m-team处理
             if 'm-team' in site_url:
-                if headers.get("authorization"):
-                    headers.pop('authorization')
                 url = site_url + '/api/member/profile'
                 res = RequestUtils(headers=headers,
                                    proxies=Config().get_proxies() if site_info.get("proxy") else None

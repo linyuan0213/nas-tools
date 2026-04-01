@@ -763,6 +763,40 @@ class ModuleConf(object):
                     "placeholder": ""
                 }
             }
+        },
+        "thunder": {
+            "name": "迅雷",
+            "img_url": "../static/img/downloader/thunder.png",
+            "color": "#FF6A00",
+            "monitor_enable": True,
+            "speedlimit_enable": False,
+            "config": {
+                "host": {
+                    "id": "thunder_host",
+                    "required": True,
+                    "title": "IP地址",
+                    "tooltip": "配置迅雷NAS设备的IP地址",
+                    "type": "text",
+                    "placeholder": "192.168.1.100"
+                },
+                "port": {
+                    "id": "thunder_port",
+                    "required": True,
+                    "title": "端口",
+                    "tooltip": "迅雷NAS Web管理端口，默认为2345",
+                    "type": "text",
+                    "placeholder": "2345",
+                    "default": "2345"
+                },
+                "token": {
+                    "id": "thunder_token",
+                    "required": False,
+                    "title": "认证令牌",
+                    "tooltip": "迅雷认证令牌，默认为Basic认证，格式为Basic base64(username:password)",
+                    "type": "text",
+                    "placeholder": "Basic bGlueXVhbjIxMzpMeTE5OTYwMjEzKio="
+                }
+            }
         }
     }
 

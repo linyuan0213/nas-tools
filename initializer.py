@@ -35,7 +35,7 @@ def check_config():
             if not logserver:
                 log.warn("【Config】日志中心地址未配置，无法正常输出日志")
             else:
-                log.info("日志将上送到服务器：{logserver}")
+                log.info(f"日志将上送到服务器：{logserver}")
         elif logtype == "file":
             logpath = Config().get_config('app').get('logpath')
             if not logpath:
