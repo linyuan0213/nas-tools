@@ -13,7 +13,7 @@ from app.indexer.client._spider import TorrentSpider
 from app.indexer.client._tnode import TNodeSpider
 from app.indexer.client._torrentleech import TorrentLeech
 from app.indexer.client._mteam import MteamSpider
-from app.indexer.client._fsm import FSMSpider
+from app.indexer.client._rousi import RousiSpider
 from app.indexer.client._yemapt import YemaPTSpider
 from app.indexer.client._firefly import FireFlySpider
 from app.sites import Sites
@@ -73,13 +73,23 @@ class BuiltinIndexer(_IIndexClient):
         _indexer_domains = []
         # 检查浏览器状态
         chrome_ok = DrissionPageHelper().get_status()
-        # 私有站点
+        # 处理所有用户添加的站点
         for site in Sites().get_sites():
             url = site.get("signurl") or site.get("rssurl")
             cookie = site.get("cookie")
             headers = site.get("headers")
-            if (not url or not cookie) and not headers:
+            
+            # 判断是否为公开站点（BT站点）
+            is_public = site.get("public", False)
+            
+            # 对于所有站点都需要URL
+            if not url:
                 continue
+                
+            # 公开站点（BT站点）可以没有Cookie，私有站点（PT站点）需要Cookie或headers
+            if not is_public and not cookie and not headers:
+                continue
+                
             render = False if not chrome_ok else site.get("chrome")
             indexer = IndexerHelper().get_indexer(url=url,
                                                   siteid=site.get("id"),
@@ -89,7 +99,7 @@ class BuiltinIndexer(_IIndexClient):
                                                   name=site.get("name"),
                                                   rule=site.get("rule"),
                                                   pri=site.get('pri'),
-                                                  public=False,
+                                                  public=is_public,  # 传递正确的public值
                                                   proxy=site.get("proxy"),
                                                   render=render)
             if indexer:
@@ -101,7 +111,7 @@ class BuiltinIndexer(_IIndexClient):
                     _indexer_domains.append(indexer.domain)
                     indexer.name = site.get("name")
                     ret_indexers.append(indexer)
-        # 公开站点
+        # 公开站点（从sites.dat加载的预定义公开站点）
         if public and self._show_more_sites:
             for indexer in IndexerHelper().get_all_indexers():
                 if not indexer.get("public"):
@@ -167,8 +177,8 @@ class BuiltinIndexer(_IIndexClient):
             elif indexer.parser == "MteamSpider":
                 error_flag, result_array = MteamSpider(indexer).search(keyword=search_word,
                                                                        mtype=match_media.type if match_media and match_media.tmdb_info else None)
-            elif indexer.parser == "FSMSpider":
-                error_flag, result_array = FSMSpider(indexer).search(keyword=search_word)
+            elif indexer.parser == "RousiSpider":
+                error_flag, result_array = RousiSpider(indexer).search(keyword=search_word)
             elif indexer.parser == "YemaPTSpider":
                 error_flag, result_array = YemaPTSpider(indexer).search(keyword=search_word,
                                                                         mtype=match_media.type if match_media and match_media.tmdb_info else None)
@@ -234,8 +244,8 @@ class BuiltinIndexer(_IIndexClient):
                                                                     page=page)
         elif indexer.parser == "MteamSpider":
             error_flag, result_array = MteamSpider(indexer).search(keyword=keyword, page=page)
-        elif indexer.parser == "FSMSpider":
-            error_flag, result_array = FSMSpider(indexer).search(keyword=keyword, page=page)
+        elif indexer.parser == "RousiSpider":
+            error_flag, result_array = RousiSpider(indexer).search(keyword=keyword, page=page)
         elif indexer.parser == "YemaPTSpider":
             error_flag, result_array = YemaPTSpider(indexer).search(keyword=keyword, page=page)
         elif indexer.parser == "FireFlySpider":

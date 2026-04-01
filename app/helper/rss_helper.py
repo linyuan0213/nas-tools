@@ -132,25 +132,24 @@ class RssHelper:
     def is_rssd_by_enclosure(self, enclosure):
         """
         查询RSS是否处理过，根据下载链接
+        使用first()代替count()以提高性能
         """
         if not enclosure:
             return True
-        if self._db.query(RSSTORRENTS).filter(RSSTORRENTS.ENCLOSURE == enclosure).count() > 0:
-            return True
-        else:
-            return False
+        # 使用first()代替count()，查询到第一条记录就返回，不需要计算总数
+        return self._db.query(RSSTORRENTS).filter(RSSTORRENTS.ENCLOSURE == enclosure).first() is not None
 
     def is_rssd_by_simple(self, torrent_name, enclosure):
         """
         查询RSS是否处理过，根据名称
+        使用first()代替count()以提高性能
         """
         if not torrent_name and not enclosure:
             return True
         if enclosure:
-            ret = self._db.query(RSSTORRENTS).filter(RSSTORRENTS.ENCLOSURE == enclosure).count()
+            return self._db.query(RSSTORRENTS).filter(RSSTORRENTS.ENCLOSURE == enclosure).first() is not None
         else:
-            ret = self._db.query(RSSTORRENTS).filter(RSSTORRENTS.TORRENT_NAME == torrent_name).count()
-        return True if ret > 0 else False
+            return self._db.query(RSSTORRENTS).filter(RSSTORRENTS.TORRENT_NAME == torrent_name).first() is not None
 
     @DbPersist(_db)
     def simple_insert_rss_torrents(self, title, enclosure):

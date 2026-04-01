@@ -1,5 +1,7 @@
 import regex as re
 import cn2an
+import functools
+import time
 
 from app.helper.db_helper import DbHelper
 from app.utils.commons import SingletonMeta
@@ -10,15 +12,40 @@ class WordsHelper(metaclass=SingletonMeta):
     dbhelper = None
     # 识别词
     words_info = []
+    _cache = {}
+    _cache_time = 0
+    _cache_ttl = 60  # 缓存60秒
 
     def __init__(self):
         self.init_config()
 
     def init_config(self):
         self.dbhelper = DbHelper()
-        self.words_info = self.dbhelper.get_custom_words(enabled=1)
+        self._load_words_with_cache()
+    
+    def _load_words_with_cache(self):
+        """带缓存的加载识别词"""
+        current_time = time.time()
+        if current_time - self._cache_time > self._cache_ttl or not self.words_info:
+            self.words_info = self.dbhelper.get_custom_words(enabled=1)
+            self._cache_time = current_time
+            # 清空处理缓存
+            self._cache.clear()
+
+    def clear_cache(self):
+        """清除缓存，用于配置更新后"""
+        self._cache_time = 0
+        self._cache.clear()
+        self.init_config()
 
     def process(self, title):
+        # 检查缓存
+        if title in self._cache:
+            return self._cache[title]
+        
+        # 刷新配置（如果需要）
+        self._load_words_with_cache()
+        
         # 错误信息
         msg = []
         # 应用屏蔽
@@ -87,7 +114,11 @@ class WordsHelper(metaclass=SingletonMeta):
                         msg.append(f"自定义集偏移词 {offset_word} 格式有误：{offset_msg}")
                 case _:
                     pass
-        return title, msg, {"ignored": used_ignored_words, "replaced": used_replaced_words, "offset": used_offset_words}
+        result = (title, msg, {"ignored": used_ignored_words, "replaced": used_replaced_words, "offset": used_offset_words})
+        # 缓存结果（限制缓存大小）
+        if len(self._cache) < 1000:  # 最多缓存1000个结果
+            self._cache[title] = result
+        return result
 
     @staticmethod
     def replace_regex(title, replaced, replace) -> (str, str, bool):

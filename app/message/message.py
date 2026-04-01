@@ -1,9 +1,11 @@
 import json
 import re
 import time
+from datetime import datetime
 from enum import Enum
 
 import log
+from jinja2 import Environment, BaseLoader
 from app.conf import ModuleConf
 from app.helper import DbHelper, SubmoduleHelper
 from app.message.message_center import MessageCenter
@@ -12,6 +14,62 @@ from app.utils.commons import SingletonMeta
 from app.utils.types import SearchType, MediaType
 from config import Config
 from web.backend.web_utils import WebUtils
+
+
+def _filesize_filter(value):
+    """Jinja2 filter: 格式化文件大小"""
+    if value is None:
+        return ''
+    return StringUtils.str_filesize(value) if value else ''
+
+
+def _datetime_filter(value, format_str='%Y-%m-%d %H:%M:%S'):
+    """Jinja2 filter: 格式化日期时间"""
+    if not value:
+        return ''
+    if isinstance(value, (int, float)):
+        return time.strftime(format_str, time.localtime(value))
+    if isinstance(value, str):
+        # 尝试解析时间戳
+        try:
+            timestamp = float(value)
+            return time.strftime(format_str, time.localtime(timestamp))
+        except (ValueError, TypeError):
+            return value
+    return str(value)
+
+
+def _default_filter(value, default_value=''):
+    """Jinja2 filter: 默认值处理"""
+    if value is None or value == '':
+        return default_value
+    return value
+
+
+def _yesno_filter(value, yes='是', no='否'):
+    """Jinja2 filter: 布尔值转换为是/否"""
+    if value is True:
+        return yes
+    elif value is False:
+        return no
+    return no
+
+
+def _truncatestr_filter(value, length=100, suffix='...'):
+    """Jinja2 filter: 截断字符串"""
+    if not value:
+        return ''
+    value = str(value)
+    if len(value) <= length:
+        return value
+    return value[:length - len(suffix)] + suffix
+
+
+def _striptags_filter(value):
+    """Jinja2 filter: 去除HTML标签"""
+    if not value:
+        return ''
+    return re.sub(r'<[^>]+>', '', str(value))
 
 
 class Message(metaclass=SingletonMeta):
@@ -53,6 +111,13 @@ class Message(metaclass=SingletonMeta):
             config.update({
                 "interactive": client_config.INTERACTIVE
             })
+            templates = {}
+            if client_config.TEMPLATES:
+                try:
+                    templates = json.loads(client_config.TEMPLATES)
+                except json.JSONDecodeError:
+                    log.error(f"【Message】客户端 {client_config.NAME} 的模板配置不是有效的JSON: {client_config.TEMPLATES}")
+                    templates = {}
             client_conf = {
                 "id": client_config.ID,
                 "name": client_config.NAME,
@@ -60,7 +125,8 @@ class Message(metaclass=SingletonMeta):
                 "config": config,
                 "switchs": json.loads(client_config.SWITCHS) if client_config.SWITCHS else [],
                 "interactive": client_config.INTERACTIVE,
-                "enabled": client_config.ENABLED
+                "enabled": client_config.ENABLED,
+                "templates": templates
             }
             self._client_configs[str(client_config.ID)] = client_conf
             if not client_config.ENABLED or not config:
@@ -83,6 +149,80 @@ class Message(metaclass=SingletonMeta):
             except Exception as e:
                 ExceptionUtils.exception_traceback(e)
         return None
+
+    def __render_template(self, template_str, variables):
+        """
+        使用Jinja2渲染模板
+        :param template_str: 模板字符串
+        :param variables: 变量字典
+        :return: 渲染后的字符串，如果渲染失败则返回None
+        """
+        if not template_str:
+            return None
+        try:
+            env = Environment(loader=BaseLoader())
+            # 添加自定义过滤器
+            env.filters['filesize'] = _filesize_filter
+            env.filters['datetime'] = _datetime_filter
+            env.filters['default'] = _default_filter
+            env.filters['yesno'] = _yesno_filter
+            env.filters['truncatestr'] = _truncatestr_filter
+            env.filters['striptags'] = _striptags_filter
+            template = env.from_string(template_str)
+            result = template.render(**variables)
+            # 处理转义字符（JSON中的\n需要转换为实际的换行符）
+            result = result.replace('\\n', '\n')
+            return result
+        except Exception as e:
+            ExceptionUtils.exception_traceback(e)
+            log.error(f"【Message】模板渲染失败：{str(e)}")
+            return None
+
+    def __apply_client_template(self, client, msg_type, variables):
+        """
+        应用客户端模板
+        :param client: 客户端配置
+        :param msg_type: 消息类型，如 'download_start', 'transfer_finished' 等
+        :param variables: 模板变量字典
+        :return: (title, text) 渲染后的标题和内容，如果无模板则返回 (None, None)
+        """
+        client_name = client.get('name', '未知')
+        templates = client.get("templates")
+        
+        log.debug(f"【Message】客户端 {client_name} 模板配置: {templates}")
+        
+        # 如果 templates 是字符串，尝试解析为 JSON
+        if isinstance(templates, str):
+            try:
+                templates = json.loads(templates)
+                log.debug(f"【Message】客户端 {client_name} 模板配置已解析为字典")
+            except json.JSONDecodeError as e:
+                log.error(f"【Message】客户端 {client_name} 模板配置 JSON 解析失败: {e}")
+                return None, None
+        
+        if not templates or not isinstance(templates, dict):
+            log.debug(f"【Message】客户端 {client_name} 没有模板配置或格式不正确, 类型: {type(templates)}")
+            return None, None
+        
+        template_config = templates.get(msg_type)
+        log.debug(f"【Message】客户端 {client_name} 消息类型 {msg_type} 的模板: {template_config}")
+        
+        if not template_config or not isinstance(template_config, dict):
+            log.debug(f"【Message】客户端 {client_name} 没有 {msg_type} 类型的模板配置")
+            return None, None
+        
+        title_template = template_config.get("title")
+        text_template = template_config.get("text")
+        
+        log.debug(f"【Message】客户端 {client_name} 标题模板: {title_template}")
+        log.debug(f"【Message】客户端 {client_name} 内容模板: {text_template}")
+        
+        rendered_title = self.__render_template(title_template, variables) if title_template else None
+        rendered_text = self.__render_template(text_template, variables) if text_template else None
+        
+        log.info(f"【Message】客户端 {client_name} 模板渲染结果 - 标题: {rendered_title is not None}, 内容: {rendered_text is not None}")
+        
+        return rendered_title, rendered_text
 
     def get_status(self, ctype=None, config=None):
         """
@@ -226,6 +366,7 @@ class Message(metaclass=SingletonMeta):
         :param downloader_name: 下载器名称
         :return: 发送状态、错误信息
         """
+        # 默认消息
         msg_title = f"{can_item.get_title_ep_string()} 开始下载"
         msg_text = f"{can_item.get_star_string()}"
         msg_text = f"{msg_text}\n来自：{in_from.value}"
@@ -265,10 +406,53 @@ class Message(metaclass=SingletonMeta):
         # 发送消息
         for client in self._active_clients:
             if "download_start" in client.get("switchs"):
+                # 准备模板变量 - 提供更丰富的字段
+                # 计算文件大小字符串
+                size_str = StringUtils.str_filesize(can_item.size) if can_item.size else ''
+                # 处理描述文本（去除HTML标签）
+                description_clean = ''
+                if can_item.description:
+                    description_clean = re.sub(r'<[^>]+>', '', can_item.description)
+                
+                variables = {
+                    "item": can_item,
+                    "in_from": in_from,
+                    "download_setting_name": download_setting_name or '',
+                    "downloader_name": downloader_name or '',
+                    # 常用字段直接暴露
+                    "title": can_item.title or can_item.get_name() or '',
+                    "year": can_item.year or '',
+                    "season": can_item.get_season_string() if hasattr(can_item, 'get_season_string') else '',
+                    "episode": can_item.get_episode_string() if hasattr(can_item, 'get_episode_string') else '',
+                    "site": can_item.site or '',
+                    "size": can_item.size or 0,
+                    "size_str": size_str,
+                    "seeders": can_item.seeders or 0,
+                    "peers": can_item.peers or 0,
+                    "org_string": can_item.org_string or '',
+                    "description": description_clean,
+                    "description_raw": can_item.description or '',
+                    "resource_type": can_item.get_resource_type_string() if hasattr(can_item, 'get_resource_type_string') else '',
+                    "volume_factor": can_item.get_volume_factor_string() if hasattr(can_item, 'get_volume_factor_string') else '未知',
+                    "hit_and_run": can_item.hit_and_run or False,
+                    "user_name": can_item.user_name or '',
+                    "page_url": can_item.page_url or '',
+                    "vote_average": can_item.vote_average or 0,
+                    "star_string": can_item.get_star_string() if hasattr(can_item, 'get_star_string') else '',
+                    "title_ep_string": can_item.get_title_ep_string() if hasattr(can_item, 'get_title_ep_string') else '',
+                    "title_string": can_item.get_title_string() if hasattr(can_item, 'get_title_string') else '',
+                }
+                # 应用模板
+                template_title, template_text = self.__apply_client_template(
+                    client, "download_start", variables
+                )
+                # 使用模板渲染结果或默认消息
+                final_title = template_title if template_title is not None else msg_title
+                final_text = template_text if template_text is not None else msg_text
                 self.__sendmsg(
                     client=client,
-                    title=msg_title,
-                    text=msg_text,
+                    title=final_title,
+                    text=final_text,
                     image=can_item.get_message_image(),
                     url='downloading'
                 )
@@ -714,7 +898,8 @@ class Message(metaclass=SingletonMeta):
                               switchs: list,
                               interactive,
                               enabled,
-                              note=''):
+                              note='',
+                              templates=None):
         """
         插入消息端
         """
@@ -725,7 +910,8 @@ class Message(metaclass=SingletonMeta):
             switchs=switchs,
             interactive=interactive,
             enabled=enabled,
-            note=note
+            note=note,
+            templates=templates
         )
         self.init_config()
         return ret

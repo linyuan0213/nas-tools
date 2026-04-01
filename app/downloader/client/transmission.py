@@ -531,7 +531,7 @@ class Transmission(_IDownloadClient):
         DispTorrents = []
         for torrent in Torrents:
             if torrent.status in [TorrentStatus.Stopped]:
-                state = "Stoped"
+                state = "Stopped"
                 speed = "已暂停"
             else:
                 state = "Downloading"

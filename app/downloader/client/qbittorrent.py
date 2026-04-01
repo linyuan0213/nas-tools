@@ -667,7 +667,7 @@ class Qbittorrent(_IDownloadClient):
             # 进度
             progress = round(torrent.progress * 100, 1)
             if torrent.status in [TorrentStatus.Paused]:
-                state = "Stoped"
+                state = "Stopped"
                 speed = "已暂停"
             else:
                 state = "Downloading"

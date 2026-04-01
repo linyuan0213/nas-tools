@@ -77,8 +77,6 @@ class MteamSpider(object):
                 "Content-Type": "application/json; charset=utf-8",
                 "User-Agent": f"{self._ua}"
             })
-        if self._headers.get('authorization'):
-            self._headers.pop('authorization')
         res = RequestUtils(
             headers=self._headers,
             proxies=self._proxy,

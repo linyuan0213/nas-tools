@@ -419,6 +419,8 @@ class Downloader(metaclass=SingletonMeta):
                         tags = tag
                     else:
                         tags = [tag]
+                else:
+                    tags = []
 
             # 添加hr 标签
             if torrent_attr and torrent_attr.get('hr'):
@@ -526,7 +528,7 @@ class Downloader(metaclass=SingletonMeta):
                         # 种子文件为单独文件
                         save_dir = os.path.join(visit_dir, dl_files[0])
                         subtitle_dir = visit_dir
-                    elif url.startswith("magnet:"):
+                    elif url.startswith("magnet:") or (isinstance(content, str) and content.startswith("magnet:")):
                         save_dir = None
                         subtitle_dir = visit_dir
                     else:
@@ -798,7 +800,10 @@ class Downloader(metaclass=SingletonMeta):
             if did:
                 if download_item not in return_items:
                     return_items.append(download_item)
-            return _downloader_id, did
+            else:
+                # 下载失败，记录错误信息
+                log.error(f"【Downloader】下载失败: {download_item.title}, 错误: {msg}")
+            return _downloader_id, did, msg
 
         def __update_seasons(tmdbid, need, current):
             """
@@ -876,13 +881,13 @@ class Downloader(metaclass=SingletonMeta):
                                     page_url=item.page_url)
                                 if not torrent_episodes \
                                         and len(torrent_episodes) >= __get_season_episodes(need_tmdbid, item_season[0]):
-                                    _, download_id = __download(download_item=item, torrent_file=torrent_path)
+                                    _, download_id, _ = __download(download_item=item, torrent_file=torrent_path)
                                 else:
                                     log.info(
                                         f"【Downloader】种子 {item.org_string} 未含集数信息，解析文件数为 {len(torrent_episodes)}")
                                     continue
                             else:
-                                _, download_id = __download(item)
+                                _, download_id, _ = __download(item)
                             if download_id:
                                 # 更新仍需季集
                                 need_season = __update_seasons(tmdbid=need_tmdbid,
@@ -929,7 +934,7 @@ class Downloader(metaclass=SingletonMeta):
                                     item_episodes = torrent_episodes
                             # 为需要集的子集则下载
                             if set(item_episodes).issubset(set(need_episodes)):
-                                _, download_id = __download(item)
+                                _, download_id, _ = __download(item)
                                 if download_id:
                                     # 更新仍需集数
                                     need_episodes = __update_episodes(tmdbid=need_tmdbid,
@@ -977,9 +982,9 @@ class Downloader(metaclass=SingletonMeta):
                                 log.info("【Downloader】%s 没有需要的集，跳过..." % item.org_string)
                                 continue
                             # 添加下载并暂停
-                            downloader_id, download_id = __download(download_item=item,
-                                                                    torrent_file=torrent_path,
-                                                                    is_paused=True)
+                            downloader_id, download_id, _ = __download(download_item=item,
+                                                                       torrent_file=torrent_path,
+                                                                       is_paused=True)
                             if not download_id:
                                 continue
                             # 更新仍需集数
@@ -1578,8 +1583,6 @@ class Downloader(metaclass=SingletonMeta):
             headers = json.loads(headers)
         else:
             headers = {}
-        if headers.get("authorization"):
-            headers.pop('authorization')
         headers.update({
                 "contentType": "application/json; charset=utf-8",
                 "User-Agent": f"{site_info.get('ua')}"

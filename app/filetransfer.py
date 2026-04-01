@@ -208,12 +208,12 @@ class FileTransfer(metaclass=SingletonMeta):
         # 字幕正则式
         _zhcn_sub_re = r"([.\[(](((zh[-_])?(cn|ch[si]|sg|sc))|zho?" \
                        r"|chinese|(cn|ch[si]|sg|zho?|eng)[-_&](cn|ch[si]|sg|zho?|eng)" \
-                       r"|简[体中]?)[.\])])" \
+                       r"|简[体中]?|JPSC)[.\])])" \
                        r"|([\u4e00-\u9fa5]{0,3}[中双][\u4e00-\u9fa5]{0,2}[字文语][\u4e00-\u9fa5]{0,3})" \
                        r"|简体|简中" \
                        r"|(?<![a-z0-9])gb(?![a-z0-9])"
         _zhtw_sub_re = r"([.\[(](((zh[-_])?(hk|tw|cht|tc))" \
-                       r"|繁[体中]?)[.\])])" \
+                       r"|繁[体中]?|JPTC)[.\])])" \
                        r"|繁体中[文字]|中[文字]繁体|繁体" \
                        r"|(?<![a-z0-9])big5(?![a-z0-9])"
         _eng_sub_re = r"[.\[(]eng[.\])]"
@@ -262,12 +262,11 @@ class FileTransfer(metaclass=SingletonMeta):
                         ".chi.zh-cn": ".简体中文",
                         ".zh-tw": ".繁体中文"
                     }
+                    # 如果未识别出语言，使用默认语言代码
+                    if not new_file_type:
+                        new_file_type = ".und"
                     new_sub_tag_list = [
-                        new_file_type if t == 0 else "%s%s(%s)" % (new_file_type,
-                                                                   new_sub_tag_dict.get(
-                                                                       new_file_type, ""
-                                                                   ),
-                                                                   t) for t in range(6)
+                        new_file_type if t == 0 else f"{new_file_type}.{t}" for t in range(6)
                     ]
                     for new_sub_tag in new_sub_tag_list:
                         new_file = os.path.splitext(new_name)[0] + new_sub_tag + file_ext
