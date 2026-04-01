@@ -10,6 +10,7 @@ from app.sites.sites import Sites
 from app.sites.siteconf import SiteConf
 from app.helper import SiteHelper
 from app.utils import RequestUtils, StringUtils, PathUtils, ExceptionUtils
+from app.utils.temp_manager import temp_manager
 from config import Config, RMT_SUBEXT, MT_URL
 
 
@@ -22,9 +23,7 @@ class SiteSubtitle:
     def __init__(self):
         self.siteconf = SiteConf()
         self.sites = Sites()
-        self._save_tmp_path = Config().get_temp_path()
-        if not os.path.exists(self._save_tmp_path):
-            os.makedirs(self._save_tmp_path)
+        self._save_tmp_path = temp_manager.get_temp_path()
 
     def download(self, media_info, site_id, cookie, ua, download_dir):
         """
