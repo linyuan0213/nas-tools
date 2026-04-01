@@ -160,7 +160,7 @@ class Aria2(_IDownloadClient):
             except ZeroDivisionError:
                 progress = 0.0
             if torrent.status in [TorrentStatus.Stopped]:
-                state = "Stoped"
+                state = "Stopped"
                 speed = "已暂停"
             else:
                 state = "Downloading"
