@@ -1725,7 +1725,9 @@ class DbHelper:
             return 0
         ret = self._db.query(func.sum(cast(SITEBRUSHTORRENTS.TORRENT_SIZE,
                                            Integer))).filter(SITEBRUSHTORRENTS.TASK_ID == brush_id,
-                                                             SITEBRUSHTORRENTS.DOWNLOAD_ID != '0').first()
+                                                              SITEBRUSHTORRENTS.DOWNLOAD_ID != '0',
+                                                              SITEBRUSHTORRENTS.TORRENT_SIZE != '',
+                                                              SITEBRUSHTORRENTS.TORRENT_SIZE.isnot(None)).first()
         if ret:
             return ret[0] or 0
         else:
