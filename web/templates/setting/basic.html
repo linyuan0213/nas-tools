@@ -24,53 +24,6 @@
             <div class="row">
               <div class="col-lg">
                 <div class="mb-3">
-                  <label class="form-label required">日志输出类型</label>
-                  <select class="form-select" id="app.logtype">
-                    <option value="console" {% if Config.app.logtype=='console' %}selected{% endif %}>控制台</option>
-                    <option value="file" {% if Config.app.logtype=='file' %}selected{% endif %}>文件</option>
-                    <option value="server" {% if Config.app.logtype=='server' %}selected{% endif %}>日志中心</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-lg">
-                <div class="mb-3">
-                  <label class="form-label">日志文件路径 <span class="form-help" title="日志输出类型为文件时需要配置该项"
-                      data-bs-toggle="tooltip">?</span></label>
-                  <input type="text" value="{{ Config.app.logpath or '' }}" class="form-control filetree-folders-only"
-                    id="app.logpath" placeholder="/config/logs" autocomplete="off">
-                </div>
-              </div>
-              <div class="col-lg">
-                <div class="mb-3">
-                  <label class="form-label">日志中心地址 <span class="form-help"
-                      title="日志输出类型为日志中心时需要配置该项；需要配置IP地址和端口，配置示例：127.0.0.1:514"
-                      data-bs-toggle="tooltip">?</span></label>
-                  <input type="text" value="{{ Config.app.logserver or '' }}" class="form-control" id="app.logserver"
-                    placeholder="127.0.0.1:514" autocomplete="off">
-                </div>
-              </div>
-              <div class="col-lg">
-                <div class="mb-3">
-                  <label class="form-label">日志级别 <span class="form-help" title="一般情况下请选择INFO，排查问题可选择DEBUG"
-                      data-bs-toggle="tooltip">?</span></label>
-                  <select class="form-select" id="app.loglevel">
-                    <option value="info" {% if not Config.app.loglevel or Config.app.loglevel=='info' %}selected{% endif
-                      %}>
-                      INFO
-                    </option>
-                    <option value="debug" {% if Config.app.loglevel=='debug' %}selected{% endif %}>
-                      DEBUG
-                    </option>
-                    <option value="error" {% if Config.app.loglevel=='error' %}selected{% endif %}>
-                      ERROR
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-lg">
-                <div class="mb-3">
                   <label class="form-label required">WEB壁纸来源 <span class="form-help"
                       title="登录界面壁纸来源：TMDB、Bing，设置为TMDB时需在媒体配置TMDB API Key" data-bs-toggle="tooltip">?</span></label>
                   <select class="form-select" id="app.wallpaper">
@@ -196,6 +149,63 @@
           </div>
         </div>
       </div>
+      <!-- [新增] 日志设置卡片 -->
+      <div class="col-md-12">
+        <div class="card" id="basic_log">
+          <div class="card-header">
+            <h3 class="card-title"><strong>日志</strong></h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-label required">日志输出类型</label>
+                  <select class="form-select" id="log.type">
+                    <option value="console" {% if Config.log.type=='console' %}selected{% endif %}>控制台</option>
+                    <option value="file" {% if Config.log.type=='file' %}selected{% endif %}>文件</option>
+                    <option value="server" {% if Config.log.type=='server' %}selected{% endif %}>日志中心</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-label">日志文件路径</label>
+                  <input type="text" value="{{ Config.log.path or '' }}" class="form-control filetree-folders-only"
+                    id="log.path" placeholder="/config/logs" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-label">日志中心地址</label>
+                  <input type="text" value="{{ Config.log.server or '' }}" class="form-control" id="log.server"
+                    placeholder="127.0.0.1:514" autocomplete="off">
+                </div>
+              </div>
+              <div class="col-lg">
+                <div class="mb-3">
+                  <label class="form-label">日志级别</label>
+                  <select class="form-select" id="log.level">
+                    <option value="info" {% if not Config.log.level or Config.log.level=='info' %}selected{% endif %}>
+                    </option>
+                    INFO</option>
+                    <option value="debug" {% if Config.log.level=='debug' %}selected{% endif %}>DEBUG</option>
+                    <option value="error" {% if Config.log.level=='error' %}selected{% endif %}>ERROR</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="row align-items-center">
+              <div class="col"></div>
+              <div class="col-auto">
+                <a id="basic_log_btn" href="javascript:save_basic_config('basic_log')" class="btn btn-primary">保存</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="col-md-12">
         <div class="card" id="basic_media">
           <div class="card-header">
