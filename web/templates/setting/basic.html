@@ -169,27 +169,35 @@
               </div>
               <div class="col-lg">
                 <div class="mb-3">
-                  <label class="form-label">日志文件路径</label>
+                  <label class="form-label">日志文件路径 <span class="form-help" title="日志输出类型为文件时需要配置该项"
+                      data-bs-toggle="tooltip">?</span></label>
                   <input type="text" value="{{ Config.log.path or '' }}" class="form-control filetree-folders-only"
                     id="log.path" placeholder="/config/logs" autocomplete="off">
                 </div>
               </div>
               <div class="col-lg">
                 <div class="mb-3">
-                  <label class="form-label">日志中心地址</label>
+                  <label class="form-label">日志中心地址 <span class="form-help"
+                      title="日志输出类型为日志中心时需要配置该项；需要配置IP地址和端口，配置示例：127.0.0.1:514"
+                      data-bs-toggle="tooltip">?</span></label>
                   <input type="text" value="{{ Config.log.server or '' }}" class="form-control" id="log.server"
                     placeholder="127.0.0.1:514" autocomplete="off">
                 </div>
               </div>
               <div class="col-lg">
                 <div class="mb-3">
-                  <label class="form-label">日志级别</label>
+                  <label class="form-label">日志级别 <span class="form-help" title="一般情况下请选择INFO，排查问题可选择DEBUG"
+                      data-bs-toggle="tooltip">?</span></label>
                   <select class="form-select" id="log.level">
                     <option value="info" {% if not Config.log.level or Config.log.level=='info' %}selected{% endif %}>
+                      INFO
                     </option>
-                    INFO</option>
-                    <option value="debug" {% if Config.log.level=='debug' %}selected{% endif %}>DEBUG</option>
-                    <option value="error" {% if Config.log.level=='error' %}selected{% endif %}>ERROR</option>
+                    <option value="debug" {% if Config.log.level=='debug' %}selected{% endif %}>
+                      DEBUG
+                    </option>
+                    <option value="error" {% if Config.log.level=='error' %}selected{% endif %}>
+                      ERROR
+                    </option>
                   </select>
                 </div>
               </div>
