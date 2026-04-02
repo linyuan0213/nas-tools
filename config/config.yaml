@@ -8,17 +8,6 @@
 #   move会直接移动原文件，会影响做种，请谨慎使用
 #   rclone需要自行映射rclone配置目录到容器中，或在容器内完成rclone配置
 app:
-  # 【日志记录类型】：server、file、console
-  # 如果是使用Docker安装建议设置为console，通过Docker管理器查看日志
-  # 如果是使用群晖套件建议配置为 server，可将日志输出到群晖的日志中心便于查看
-  # 其它情况可以设置为file，将日志写入文件
-  logtype: console
-  # 【日志文件的路径】：logtype为file时生效
-  logpath:
-  # 【群晖日志中心IP和端口】：logtype为SERVER时生效。端口一般是514，只需要改动IP为群晖的IP，示例：127.0.0.1:514
-  logserver: 127.0.0.1:514
-  # 【日志级别】：info、debug、error
-  loglevel: info
   # 【WEB管理界面监听地址】：如需支持ipv6需设置为::，如::无法访问可改为0.0.0.0
   web_host: "::"
   # 【WEB管理界面端口】：默认3000
@@ -56,6 +45,20 @@ app:
   debug: true
   # 开启后，只有Releases更新，才会有更新提示
   releases_update_only: false
+
+# 【配置日志信息】
+log:
+  # 【日志记录类型】：server、file、console
+  # 如果是使用Docker安装建议设置为console，通过Docker管理器查看日志
+  # 如果是使用群晖套件建议配置为 server，可将日志输出到群晖的日志中心便于查看
+  # 其它情况可以设置为file，将日志写入文件
+  type: console
+  # 【日志文件的路径】：type为file时生效
+  path:
+  # 【群晖日志中心IP和端口】：type为SERVER时生效。端口一般是514，只需要改动IP为群晖的IP，示例：127.0.0.1:514
+  server: 127.0.0.1:514
+  # 【日志级别】：info、debug、error
+  level: info
 
 # 【配置媒体库信息】
 media:

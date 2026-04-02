@@ -26,23 +26,27 @@ def check_config():
     检查配置文件，如有错误进行日志输出
     """
     # 检查日志输出
-    if Config().get_config('app'):
-        logtype = Config().get_config('app').get('logtype')
+    if Config().get_config('log'):
+        logtype = Config().get_config('log').get('type')
         if logtype:
             log.info(f"日志输出类型为：{logtype}")
         if logtype == "server":
-            logserver = Config().get_config('app').get('logserver')
+            logserver = Config().get_config('log').get('server')
             if not logserver:
                 log.warn("【Config】日志中心地址未配置，无法正常输出日志")
             else:
-                log.info(f"日志将上送到服务器：{logserver}")
+                log.info(f"日志将上送到服务器：{server}")
         elif logtype == "file":
-            logpath = Config().get_config('app').get('logpath')
+            logpath = Config().get_config('log').get('path')
             if not logpath:
                 log.warn("【Config】日志文件路径未配置，无法正常输出日志")
             else:
                 log.info(f"日志将写入文件：{logpath}")
+    else:
+        log.error("【Config】配置文件格式错误，找不到log配置项！")
 
+    # 检测系统设置
+    if Config().get_config('app'):
         # 检查WEB端口
         web_port = Config().get_config('app').get('web_port')
         if not web_port:
@@ -92,6 +96,36 @@ def update_config():
     if not _config.get("security", {}).get("api_key"):
         _config['security']['api_key'] = StringUtils.generate_random_str(32)
         overwrite_cofig = True
+
+    # 日志配置迁移：从 app.xxx 迁移到 log.xxx
+    try:
+        app_config = _config.get("app", {})
+        # 定义：{旧键: 新键}
+        log_mapping = {
+            "logtype": "type",
+            "loglevel": "level",
+            "logserver": "server",
+            "logpath": "path"
+        }
+        
+        # 初始化 log 节点（如果不存在）
+        if "log" not in _config:
+            _config["log"] = {}
+
+        migrated = False
+        for old_key, new_key in log_mapping.items():
+            if old_key in app_config:
+                # 1. 迁移数据到新位置
+                _config["log"][new_key] = app_config.get(old_key)
+                # 2. 删除旧位置的数据
+                app_config.pop(old_key)
+                migrated = True
+                log.info(f"【Config】日志配置已迁移：app.{old_key} -> log.{new_key}，并已移除旧配置。")
+        
+        if migrated:
+            overwrite_cofig = True
+    except Exception as e:
+        ExceptionUtils.exception_traceback(e)
 
     # 自定义制作组/字幕组兼容旧配置
     try:

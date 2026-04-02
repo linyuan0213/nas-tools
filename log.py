@@ -44,12 +44,12 @@ class Logger:
     def __init__(self, module):
         self.logger = logger
         self.__config = Config()
-        logtype = self.__config.get_config('app').get('logtype') or "console"
-        loglevel = self.__config.get_config('app').get('loglevel') or "info"
+        logtype = self.__config.get_config('log').get('type') or "console"
+        loglevel = self.__config.get_config('log').get('level') or "info"
         handlers = []
         self.logger.level(loglevel.upper())
         if logtype == "server":
-            logserver = self.__config.get_config('app').get('logserver', '').split(':')
+            logserver = self.__config.get_config('log').get('server', '').split(':')
             if logserver:
                 logip = logserver[0]
                 if len(logserver) > 1:
@@ -66,7 +66,7 @@ class Logger:
 
         elif logtype == "file":
             # 记录日志到文件
-            logpath = os.environ.get('NASTOOL_LOG') or self.__config.get_config('app').get('logpath') or ""
+            logpath = os.environ.get('NASTOOL_LOG') or self.__config.get_config('log').get('path') or ""
             if logpath:
                 if not os.path.exists(logpath):
                     os.makedirs(logpath)
