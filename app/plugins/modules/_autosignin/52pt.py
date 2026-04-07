@@ -14,7 +14,7 @@ from config import Config
 class FWpt(_ISiteSigninHandler):
     """
     52pt
-    如果填写openai key则调用chatgpt获取答案
+    如果填写openai key则调用AI获取答案
     否则随机
     """
     # 匹配的站点Url，每一个实现类都需要设置为自己的站点Url
@@ -123,35 +123,35 @@ class FWpt(_ISiteSigninHandler):
         except (FileNotFoundError, IOError, OSError) as e:
             self.debug("查询本地已知答案失败，继续请求豆瓣查询")
 
-        # 正确答案，默认随机，如果gpt返回则用gpt返回的答案提交
+        # 正确答案，默认随机，如果AI返回则用AI返回的答案提交
         choice = [option_ids[random.randint(0, len(option_ids) - 1)]]
 
-        # 组装gpt问题
-        gpt_options = "{\n" + ",\n".join([f"{num}:{value}" for num, value in answers]) + "\n}"
-        gpt_question = f"题目：{question_str}\n" \
-                       f"选项：{gpt_options}"
-        self.debug(f"组装chatgpt问题 {gpt_question}")
+        # 组装AI问题
+        ai_options = "{\n" + ",\n".join([f"{num}:{value}" for num, value in answers]) + "\n}"
+        ai_question = f"题目：{question_str}\n" \
+                       f"选项：{ai_options}"
+        self.debug(f"组装AI问题 {ai_question}")
 
-        # chatgpt获取答案
-        answer = OpenAiHelper().get_question_answer(question=gpt_question)
+        # AI获取答案
+        answer = OpenAiHelper().get_question_answer(question=ai_question)
         self.debug(f"chatpgt返回结果 {answer}")
 
-        # 处理chatgpt返回的答案信息
+        # 处理AI返回的答案信息
         if answer is None:
-            self.warn(f"ChatGPT未启用, 开始随机签到")
-            # return f"【{site}】签到失败，ChatGPT未启用"
+            self.warn(f"AI未启用, 开始随机签到")
+            # return f"【{site}】签到失败，AI未启用"
         elif answer:
             # 正则获取字符串中的数字
             answer_nums = list(map(int, re.findall("\d+", answer)))
             if not answer_nums:
-                self.warn(f"无法从chatgpt回复 {answer} 中获取答案, 将采用随机签到")
+                self.warn(f"无法从AI回复 {answer} 中获取答案, 将采用随机签到")
             else:
                 choice = []
                 for answer in answer_nums:
                     # 如果返回的数字在option_ids范围内，则直接作为答案
                     if str(answer) in option_ids:
                         choice.append(int(answer))
-                        self.info(f"chatgpt返回答案id {answer} 在签到选项 {option_ids} 中")
+                        self.info(f"AI返回答案id {answer} 在签到选项 {option_ids} 中")
         # 签到
         return self.__signin(questionid=questionid,
                              choice=choice,

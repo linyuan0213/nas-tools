@@ -38,7 +38,7 @@ class Media:
     _rmt_match_mode = None
     _search_keyword = None
     _search_tmdbweb = None
-    _chatgpt_enable = None
+    _ai_enable = None
     _default_language = None
 
     def __init__(self):
@@ -52,8 +52,8 @@ class Media:
         self._search_keyword = laboratory.get("search_keyword")
         # WEB辅助
         self._search_tmdbweb = laboratory.get("search_tmdbweb")
-        # ChatGPT辅助
-        self._chatgpt_enable = laboratory.get("chatgpt_enable")
+        # AI辅助
+        self._ai_enable = laboratory.get("ai_enable")
         # 默认语言
         self._default_language = media.get("tmdb_language", "zh") or "zh"
         # TMDB
@@ -82,7 +82,7 @@ class Media:
             self.trending = Trending()
             self.discover = Discover()
             self.genre = Genre()
-        # ChatGPT
+        # AI
         self.openai = OpenAiHelper()
         # 匹配模式
         rmt_match_mode = app.get('rmt_match_mode', 'normal')
@@ -446,9 +446,9 @@ class Media:
         return info
 
     @lru_cache(maxsize=512)
-    def __search_chatgpt(self, file_name, mtype: MediaType):
+    def __search_ai(self, file_name, mtype: MediaType):
         """
-        通过ChatGPT对话识别文件名和集数等信息，重新查询TMDB数据
+        通过AI对话识别文件名和集数等信息，重新查询TMDB数据
         :param file_name: 名称
         :param mtype: 媒体类型
         :return: 类型、季、集、TMDBINFO
@@ -462,17 +462,17 @@ class Media:
         if not file_name:
             return __failed_none()
 
-        log.info(f"【Meta】正在通过ChatGPT识别文件名：{file_name}")
+        log.info(f"【Meta】正在通过AI识别文件名：{file_name}")
         file_info = self.openai.get_media_name(file_name)
         
         if file_info is None:
-            log.info("【Meta】ChatGPT识别出错，请检查是否设置OpenAI ApiKey！")
+            log.info("【Meta】AI识别出错，请检查是否设置OpenAI ApiKey！")
             return __failed_none()
         if not file_info:
-            log.info("【Meta】ChatGPT识别失败！")
+            log.info("【Meta】AI识别失败！")
             return __failed()
 
-        log.info(f"【Meta】ChatGPT识别结果：{file_info}")
+        log.info(f"【Meta】AI识别结果：{file_info}")
         
         # 确定媒体类型
         if file_info.get("season") or file_info.get("episode"):
@@ -805,9 +805,9 @@ class Media:
             # 从网站查询
             file_media_info = self.__search_tmdb_web(file_media_name=meta_info.get_name(),
                                                      mtype=meta_info.type)
-        if not file_media_info and self._chatgpt_enable:
-            # 通过ChatGPT查询
-            mtype, seaons, episodes, file_media_info = self.__search_chatgpt(file_name=title,
+        if not file_media_info and self._ai_enable:
+            # 通过AI查询
+            mtype, seaons, episodes, file_media_info = self.__search_ai(file_name=title,
                                                                              mtype=meta_info.type)
             # 修正类型和集数
             meta_info.type = mtype
@@ -932,9 +932,9 @@ class Media:
                             # 去掉年份再查一次，有可能是年份错误
                             file_media_info = self.__search_tmdb(file_media_name=meta_info.get_name(),
                                                                  search_type=meta_info.type)
-                    if not file_media_info and self._chatgpt_enable:
-                        # 从ChatGPT查询
-                        mtype, seaons, episodes, file_media_info = self.__search_chatgpt(file_name=file_path,
+                    if not file_media_info and self._ai_enable:
+                        # 从AI查询
+                        mtype, seaons, episodes, file_media_info = self.__search_ai(file_name=file_path,
                                                                                          mtype=meta_info.type)
                         # 修正类型和集数
                         meta_info.type = mtype

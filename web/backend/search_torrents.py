@@ -443,7 +443,7 @@ def search_media_by_message(input_str, in_from: SearchType, user_id, user_name=N
         elif OpenAiHelper().get_state() \
                 and not input_str.startswith("搜索") \
                 and not input_str.startswith("下载"):
-            # 开启ChatGPT时，不以订阅、搜索、下载开头的均为聊天模式
+            # 开启AI时，不以订阅、搜索、下载开头的均为聊天模式
             SEARCH_MEDIA_TYPE[user_id] = "ASK"
         else:
             # 搜索
@@ -484,7 +484,7 @@ def search_media_by_message(input_str, in_from: SearchType, user_id, user_name=N
                                   user_name=user_name)
         # 聊天
         elif SEARCH_MEDIA_TYPE[user_id] == "ASK":
-            # 调用ChatGPT Api
+            # 调用AI Api
             answer = OpenAiHelper().get_answer(text=input_str,
                                                userid=user_id)
             if not answer:
