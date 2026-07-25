@@ -3,6 +3,8 @@ import re
 import log
 from app.domain.media_type_utils import MediaTypeMapper
 from app.domain.mediatypes import MediaType
+from app.infrastructure.cache_system import get_cache_manager
+from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.image_proxy import ImageProxy
 from app.media.lookup.base import BaseLookup, LookupResult
 from app.media.lookup.tmdb_client import TmdbClient, compare_tmdb_names
@@ -26,12 +28,22 @@ class TmdbLookup(BaseLookup):
         self.season = TmdbSeason(self.client)
         self.person = TmdbPerson(self.client)
         self.discover = TmdbDiscover(self.client)
+        self._lookup_cache = get_cache_manager().get_or_create("tmdb_lookup", "memory", maxsize=500, ttl=3600)
 
     def lookup(
         self, parsed, hint_type: MediaType | None = None, strict: bool | None = None, language: str | None = None
     ) -> LookupResult | None:
         if not parsed.title_en and not parsed.title_cn:
             return None
+
+        cache_key = (
+            f"lookup:{parsed.title_cn or ''}|{parsed.title_en or ''}|{parsed.year or ''}"
+            f"|{parsed.season or ''}|{parsed.type.value if parsed.type else ''}"
+        )
+        cached = self._lookup_cache.get(cache_key)
+        if cached is not None:
+            return cached if cached else None
+
         if language:
             self.client.set_language(language or "")
         search_type = hint_type or parsed.type or MediaType.UNKNOWN
@@ -39,38 +51,45 @@ class TmdbLookup(BaseLookup):
         # 优先使用中文名搜索（中文搜索结果通常更精确，避免外传/主系列混淆）
         result = None
         org_title = parsed.org_string or ""
-        if parsed.title_cn:
-            result = self._lookup_tmdb(
-                name=parsed.title_cn,
-                search_type=search_type,
-                first_year=parsed.year,
-                media_year=parsed.year,
-                season_number=parsed.season,
-                episode=parsed.episode,
-                strict=strict,
-                original_title=org_title,
-            )
-        # 中文名搜索失败时，使用英文名搜索
-        if not result and parsed.title_en:
-            result = self._lookup_tmdb(
-                name=parsed.title_en,
-                search_type=search_type,
-                first_year=parsed.year,
-                media_year=parsed.year,
-                season_number=parsed.season,
-                episode=parsed.episode,
-                strict=strict,
-                original_title=org_title,
-            )
+        try:
+            if parsed.title_cn:
+                result = self._lookup_tmdb(
+                    name=parsed.title_cn,
+                    search_type=search_type,
+                    first_year=parsed.year,
+                    media_year=parsed.year,
+                    season_number=parsed.season,
+                    episode=parsed.episode,
+                    strict=strict,
+                    original_title=org_title,
+                )
+            # 中文名搜索失败时，使用英文名搜索
+            if not result and parsed.title_en:
+                result = self._lookup_tmdb(
+                    name=parsed.title_en,
+                    search_type=search_type,
+                    first_year=parsed.year,
+                    media_year=parsed.year,
+                    season_number=parsed.season,
+                    episode=parsed.episode,
+                    strict=strict,
+                    original_title=org_title,
+                )
+        except HttpRateLimitError as err:
+            log.warn(f"[Meta]{parsed.title_cn or parsed.title_en} 查询被限流，中止降级链: {err}")
+            result = None
         if not result:
             if language:
                 self.client.set_language()
+            self._lookup_cache.set(cache_key, None)
             return None
         if not result.get("genres"):
             result = self.detail.get_detail(result.get("id"), result.get("media_type", search_type))
         if language:
             self.client.set_language()
-        return self._to_lookup_result(result)
+        final = self._to_lookup_result(result)
+        self._lookup_cache.set(cache_key, final)
+        return final
 
     def _lookup_tmdb(
         self,
@@ -266,6 +285,22 @@ class TmdbLookup(BaseLookup):
         )
 
     # ---------- 代理方法 ----------
+
+    def all_names(self, tmdb_id, media_type) -> list[str]:
+        """获取 TMDB 条目的全部名称（正名/原名 + 别名/译名），用于目标侧名称集扩充"""
+        try:
+            info, names = self.search._fetch_allnames(media_type, int(tmdb_id))
+        except Exception as e:
+            log.warn(f"[Meta]获取TMDB别名失败: {media_type}/{tmdb_id}, {e}")
+            return []
+        if not info:
+            return []
+        primary = [info.get("name") or info.get("title"), info.get("original_name") or info.get("original_title")]
+        ret = []
+        for n in [*primary, *names]:
+            if n and n not in ret:
+                ret.append(n)
+        return ret
 
     def get_tmdb_info(self, mtype, tmdbid, language=None, append_to_response=None, chinese=True):
         if language:

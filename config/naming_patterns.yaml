@@ -1,0 +1,37 @@
+# 站点/字幕组命名模式库
+#
+# 维护方式：
+#   1. 查看失败样本：uv run python scripts/naming_tool.py misses
+#   2. 在此文件添加/调整规则（有序，先匹配先赢）
+#   3. 验证规则：uv run python scripts/naming_tool.py check
+#   4. 测试单条标题：uv run python scripts/naming_tool.py test "标题"
+#   5. 为新规则补一条真实样本到 tests/unit/media/parser/test_naming_patterns.py
+#
+# 规则字段：
+#   name        规则名（必填，唯一）
+#   description 说明与真实样本（可选）
+#   match       前置触发正则（可选，先筛一遍提速）
+#   pattern     提取正则（必填），支持的命名组：
+#               cn_name / en_name / season / episode / episode_end / year
+#
+# 注意：YAML 单引号字符串中的反斜杠无需转义。
+
+rules:
+  - name: fansub-en-cn
+    description: >
+      [字幕组] 罗马字 / 中文名 - 04 [...]，ANi 为代表的英前中后格式。
+      样本: [ANi] Tenmaku no Jādūgar /  穹庐下的魔女 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]
+    pattern: '^\[[^\]]+\]\s*(?P<en_name>[A-Za-z][^/【\[\]()（）]*?)\s*/\s*(?P<cn_name>[一-鿿][^/【\[\]()（）]*?)\s*-\s*(?P<episode>\d{1,4})'
+
+  - name: fansub-cn-en
+    description: >
+      [字幕组] 中文名 [/ 其他中文名] / 罗马字 [03][...]，北宇治/绿茶/LoliHouse 等中前英后格式。
+      样本: [北宇治字幕组] 穹庐下的魔女 / 穹廬下的魔女 / Tenmaku no Jaadugar [01][WebRip][HEVC_AAC][简繁日内封]
+      样本: [黒ネズミたち] 穹庐下的魔女 / Tenmaku no Jaadugar - 04 (ABEMA 1920x1080 AVC AAC MKV)
+    pattern: '^\[[^\]]+\]\s*(?P<cn_name>[一-鿿][^/【\[\]()（）]*?)\s*(?:/[^/【\[\]()（）]*?)?/\s*(?P<en_name>[A-Za-z][^/【\[\]()（）]*?)\s*(?=[\[\(\-]|$)'
+
+  - name: fansub-cn-only
+    description: >
+      [字幕组] 中文名 - 03 (...)，无罗马字的纯中文命名。
+      样本: [Up to 21°C] 學姊是男孩 - 03 (Baha 1920x1080 AVC AAC MP4) [4D0F1DB2]
+    pattern: '^\[[^\]]+\]\s*(?P<cn_name>[一-鿿][^/【\[\]()（）]*?)\s*-\s*(?P<episode>\d{1,4})'

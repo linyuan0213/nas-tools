@@ -60,7 +60,7 @@ class SearchPipeline:
         total_raw = len(all_results)
 
         # ---------- 阶段1：本地解析和过滤 ----------
-        self.progress.update(
+        self.progress.update_max(
             ptype=progress_key,
             value=60,
             text=f"本地解析过滤 {total_raw} 条结果...",
@@ -75,16 +75,16 @@ class SearchPipeline:
         # ---------- 阶段2：批量识别（跨站点去重） ----------
         if candidates:
             ident_count = sum(1 for c in candidates if not c.skip_tmdb)
-            self.progress.update(
+            self.progress.update_max(
                 ptype=progress_key,
                 value=70,
                 text=f"批量识别 {ident_count} 条不重复结果...",
             )
-            self.batch_identifier.identify(candidates, progress_key=progress_key)
+            self.batch_identifier.identify(candidates, progress_key=progress_key, match_media=match_media)
 
         # ---------- 阶段3：TMDB匹配和最终过滤 ----------
         if match_media and candidates:
-            self.progress.update(
+            self.progress.update_max(
                 ptype=progress_key,
                 value=85,
                 text=f"TMDB 匹配过滤 {len(candidates)} 条候选...",
@@ -112,7 +112,7 @@ class SearchPipeline:
             f"有效 {total_stats.index_sucess}，"
             f"耗时 {elapsed} 秒"
         )
-        self.progress.update(
+        self.progress.update_max(
             ptype=progress_key,
             value=95,
             text=(

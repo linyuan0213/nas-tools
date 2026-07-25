@@ -3,7 +3,9 @@
 包含: 搜索结果信息
 """
 
-from sqlalchemy import BigInteger, Float, Index, Integer, Sequence, String, Text
+from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, Float, Index, Integer, Sequence, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.base import Base
@@ -51,3 +53,4 @@ class SEARCHRESULTINFO(Base):
     DOWNLOAD_VOLUME_FACTOR: Mapped[float] = mapped_column(Float, default=1.0)
     NOTE: Mapped[str] = mapped_column(Text, default="")
     SEARCH_SESSION_ID: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    CREATED_AT: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)

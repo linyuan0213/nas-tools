@@ -50,6 +50,14 @@ class ProgressTracker:
             detail["text"] = text
         log.debug(f"[ProgressTracker] update: key={ptype} value={value}")
 
+    def update_max(self, value=None, text=None, ptype=ProgressKey.Search):
+        """值只增不减的更新 — 多并发写同一 key 时保持进度单调"""
+        key = ptype.value if isinstance(ptype, Enum) else ptype
+        detail = self._process_detail.get(key, {})
+        if value is not None and value < detail.get("value", 0):
+            value = detail["value"]
+        self.update(value=value, text=text, ptype=ptype)
+
     def get_process(self, ptype=ProgressKey.Search):
         if isinstance(ptype, Enum):
             ptype = ptype.value

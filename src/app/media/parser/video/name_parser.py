@@ -32,8 +32,8 @@ def init_name(info, token):
     if info._stop_name_flag:
         return
     if token.upper() == "AKA":
-        info._continue_flag = False
-        info._stop_name_flag = True
+        # 跳过 AKA 本身但继续解析 —— 后续 token 可能含区分信息（如 Stand Alone Complex）
+        # 或其他语言别名；直接停止会把它们连同名称一起丢弃
         return
     if token in _name_se_words:
         info._last_token_type = "name_se_words"

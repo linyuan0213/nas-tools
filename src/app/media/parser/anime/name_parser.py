@@ -10,6 +10,8 @@ from app.media.parser.anime.constants import _ANIME_NO_WORDS, _NAME_CLEANUP_RE, 
 from app.utils import StringUtils
 from app.utils.chinese_utils import to_simplified
 
+_CHINESE_META_CLEAN = frozenset("粤日英简繁国台港双多单语字幕音轨频内嵌封挂压效硬软中外体转载自搬运")
+
 
 def extract_name(info, anitopy_info, title):
     """从 anitopy 结果中提取名称"""
@@ -21,6 +23,10 @@ def extract_name(info, anitopy_info, title):
         if StringUtils.is_chinese(left) and not StringUtils.is_all_chinese(right):
             info.cn_name = left
             name = right
+        elif StringUtils.is_all_chinese(right) and not StringUtils.is_chinese(left):
+            # 英文/罗马字在前、中文在后（如 ANi 格式）
+            info.cn_name = right
+            name = left
         elif not StringUtils.is_chinese(right) or len(parts) > 1:
             name = right if not StringUtils.is_all_chinese(right) else left
     if not name or name in _ANIME_NO_WORDS or (len(name) < 5 and not StringUtils.is_chinese(name)):
@@ -34,12 +40,19 @@ def extract_name(info, anitopy_info, title):
     if name and not StringUtils.is_chinese(name):
         _supp_name = _supplement_bracket_content(name, anitopy_info, title)
         bracket_contents = re.findall(r"\[([^\]]+)\]", title)
+        release_group = str((anitopy_info or {}).get("release_group") or "").strip()
         cn_found = None
-        for bc in bracket_contents:
-            bc_clean = bc.strip().replace("_", " ").strip()
-            if StringUtils.is_chinese(bc_clean) and len(bc_clean) >= 4:
-                cn_found = bc_clean
-                break
+        if not info.cn_name:
+            for bc in bracket_contents:
+                bc_clean = bc.strip().replace("_", " ").strip()
+                # 字幕组名不能当中文名
+                if release_group and bc_clean.upper() == release_group.upper():
+                    continue
+                if StringUtils.is_chinese(bc_clean) and len(bc_clean) >= 4:
+                    if all(c in _CHINESE_META_CLEAN for c in bc_clean):
+                        continue
+                    cn_found = bc_clean
+                    break
         name = cn_found or _supp_name
     elif name and len(name) <= 6 and StringUtils.is_chinese(name):
         supp = _supplement_bracket_content(name, anitopy_info, title)
@@ -78,6 +91,8 @@ def _supplement_bracket_content(name, anitopy_info, title):
         r"|^dvd(rip)?$|^remux$|^complete$|^fin$|^batch$|^v\d$|^rev\d*$|^jav$"
         r"|^x\.?\d{2,4}$|^h\.?\d{2,4}$|^h26[345]$|^aac$|^eac3$|^opus$|^dts$|^truehd$"
         r"|^hdr\d*$|^dv$|^sdr$"
+        r"|^(?:baha|cr|abema|nf|hulu|dsnp|friday|linetv|catchplay|kktv|b-global)$"
+        r"|^(?:mp4|mkv|avi|ts|m2ts|wmv|flv)$"
         r"|^movie([+&]?\w+)?$|^tv[+&]?\w*$|^ova([+&]?\w+)?$|^sp\w*$"
     )
 
@@ -109,6 +124,27 @@ def _supplement_bracket_content(name, anitopy_info, title):
     if remaining:
         return f"{name} {' '.join(remaining)}"
     return name
+
+
+def recover_cn_name(info, origin_anime_title, release_group=None):
+    """
+    回收中文名 — prepare_title 可能丢弃斜杠前的中文段，
+    从预处理前的 anitopy 结果中恢复；同时清除字幕组名的误标。
+    """
+    rg = (release_group or "").strip()
+    if info.cn_name and (not rg or info.cn_name.strip().upper() != rg.upper()):
+        return
+    raw = str(origin_anime_title or "")
+    if "/" not in raw:
+        # 字幕组名被误当中文名时清除
+        if info.cn_name and rg and info.cn_name.strip().upper() == rg.upper():
+            info.cn_name = None
+        return
+    for part in raw.split("/"):
+        part = part.strip()
+        if StringUtils.is_all_chinese(part) and len(part) >= 2:
+            info.cn_name = part
+            return
 
 
 def parse_name(info, name):

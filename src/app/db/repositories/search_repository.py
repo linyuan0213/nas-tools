@@ -3,6 +3,9 @@ Search Repository
 Handles search result related database operations.
 """
 
+import random
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import inspect
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -106,6 +109,7 @@ class SearchRepository(BaseRepository):
                 }
                 if session_id:
                     mapping["SEARCH_SESSION_ID"] = session_id
+                mapping["CREATED_AT"] = datetime.now(timezone.utc).replace(tzinfo=None)
                 mappings.append(mapping)
 
             # 按 DB 唯一约束 (PAGEURL, SITE, SEARCH_SESSION_ID) 去重
@@ -160,6 +164,16 @@ class SearchRepository(BaseRepository):
                 )
                 db.execute(stmt)
             db.commit()
+            # 概率性清理：删除 24 小时以上的旧记录
+            if random.random() < 0.1:
+                cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+                deleted = (
+                    db.query(SEARCHRESULTINFO)
+                    .filter(SEARCHRESULTINFO.CREATED_AT < cutoff)
+                    .delete(synchronize_session=False)
+                )
+                if deleted:
+                    db.commit()
 
     def get_search_result_by_id(self, dl_id):
         """

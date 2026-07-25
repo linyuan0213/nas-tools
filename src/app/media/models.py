@@ -635,11 +635,11 @@ class MediaInfo(BaseModel):
         if not title_text:
             return
         title_text = f" {title_text} "
-        subtitle_season_re = r"(?<!全\s*|共\s*)[第\s]+([0-9一二三四五六七八九十S\-]+)\s*季(?!\s*全|\s*共)"
+        subtitle_season_re = r"(?<!全\s*|共\s*)第\s*([0-9一二三四五六七八九十S\-]+)\s*季(?!\s*全|\s*共)"
         subtitle_season_all_re = (
             r"[全共]\s*([0-9一二三四五六七八九十]+)\s*季|([0-9一二三四五六七八九十]+)\s*季\s*[全共]"
         )
-        subtitle_episode_re = r"(?<!全\s*|共\s*)[第\s]+([0-9一二三四五六七八九十百零EP\-]+)\s*[集话話期](?!\s*全|\s*共)"
+        subtitle_episode_re = r"(?<!全\s*|共\s*)第\s*([0-9一二三四五六七八九十百零EP\-]+)\s*[集话話期](?!\s*全|\s*共)"
         subtitle_episode_all_re = (
             r"([0-9一二三四五六七八九十百零]+)\s*集\s*[全共]|[共全]\s*([0-9一二三四五六七八九十百零]+)\s*[集话話期]"
         )

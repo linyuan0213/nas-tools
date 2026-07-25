@@ -1,15 +1,19 @@
+import copy
 import difflib
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from types import SimpleNamespace
 
 import log
 from app.core.settings import settings
-from app.domain.enums import MatchMode
+from app.domain.enums import IdentifyStatus, MatchMode
 from app.domain.mediatypes import MediaType
 from app.domain.validators.media_title import is_valid_media_title
 from app.infrastructure.cache_system import cacheman
+from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.image_proxy import ImageProxy
+from app.media.lookup.base import LookupResult
 from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
 from app.media.parser.base import BaseParser
@@ -279,6 +283,10 @@ class MediaService:
 
     def identify_batch(self, items: list[dict], language: str | None = None) -> list:
         """批量识别 — Parser batch + 去重后并发 Lookup"""
+
+        def _norm_name(name: str) -> str:
+            return re.sub(r"[^\w\u4e00-\u9fff]", "", name.lower()).strip()
+
         if not items:
             return []
 
@@ -320,7 +328,7 @@ class MediaService:
                 parsed_list[idx] = None
                 continue
             key = (
-                f"{parsed.title_en or parsed.title_cn or ''}:"
+                f"{_norm_name(parsed.title_en or parsed.title_cn or '')}:"
                 f"{parsed.year or ''}:"
                 f"{parsed.type.value if parsed.type else ''}"
             )
@@ -333,7 +341,7 @@ class MediaService:
         lookup_results = {}
         if unique_keys:
             log.info(f"[MediaService]批量识别 {len(items)} 条，去重后 {len(unique_keys)} 条需查 TMDB")
-            max_workers = min(len(unique_keys), 8)
+            max_workers = min(len(unique_keys), 2)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key
@@ -346,6 +354,44 @@ class MediaService:
                     except Exception as e:
                         log.error(f"[MediaService]TMDB 查询出错: {key}, {e}")
                         lookup_results[key] = None
+
+                # 失败重试：用另一语言名再搜一次
+                _retry_items = []
+                _retry_keys = {}
+                for key, parsed in unique_keys.items():
+                    if lookup_results.get(key) and lookup_results[key].tmdb_id != 0:
+                        continue
+                    alt_name = parsed.title_cn if parsed.title_en else parsed.title_en
+                    if not alt_name or alt_name == (parsed.title_en or parsed.title_cn):
+                        continue
+                    alt_parsed = copy.copy(parsed)
+                    alt_parsed.title_en, alt_parsed.title_cn = alt_name, parsed.title_en or parsed.title_cn
+                    alt_key = (
+                        f"{alt_parsed.title_en or alt_parsed.title_cn or ''}:"
+                        f"{alt_parsed.year or ''}:"
+                        f"{alt_parsed.type.value if alt_parsed.type else ''}"
+                    )
+                    if alt_key in unique_keys or alt_key in _retry_keys:
+                        continue
+                    _retry_keys[alt_key] = key
+                    _retry_items.append((alt_key, alt_parsed))
+
+                if _retry_items:
+                    with ThreadPoolExecutor(max_workers=min(len(_retry_items), 2)) as executor:
+                        _retry_futures = {
+                            executor.submit(self._lookup.lookup, parsed, language=language or ""): alt_key
+                            for alt_key, parsed in _retry_items
+                        }
+                        for future in as_completed(_retry_futures):
+                            alt_key = _retry_futures[future]
+                            try:
+                                result = future.result()
+                                if result and result.tmdb_id and result.tmdb_id != 0:
+                                    orig_key = _retry_keys[alt_key]
+                                    lookup_results[orig_key] = result
+                                    lookup_results[alt_key] = result
+                            except Exception as e:
+                                log.debug(f"[MediaService]TMDB 重试查询出错: {alt_key}, {e}")
 
         # 4. 组装: 将结果映射回原始列表
         results = [MediaInfo() for _ in items]
@@ -417,6 +463,138 @@ class MediaService:
                     log.info(f"[EpisodeMapper]批量映射完成: {mapped_count}/{len(map_items)} 条已映射")
 
         return results
+
+    # ---------- 分组识别（名称候选驱动） ----------
+
+    def identify_groups(self, groups: list[dict], language: str | None = None) -> dict:
+        """
+        按组识别 — 组内聚合名称候选，中文优先，逐名尝试直到命中。
+
+        :param groups: [{_cache_key, names, cn_name, en_name, year, type,
+                         seasons, episodes, title, site, enclosure, size, seeders}]
+        :return: {cache_key: (IdentifyStatus, MediaInfo)}
+        """
+        results: dict = {}
+        if not groups:
+            return results
+
+        max_workers = min(len(groups), 2)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {
+                executor.submit(self._identify_group, group, language): group["_cache_key"] for group in groups
+            }
+            for future in as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    results[key] = future.result()
+                except Exception as e:
+                    log.error(f"[MediaService]组识别执行出错: {key}, {e}")
+                    results[key] = (IdentifyStatus.ERROR, MediaInfo(org_string=key))
+
+        # 集数映射（动漫合并季 / 绝对集号），仅处理命中项
+        if self._episode_mapping_enabled:
+            hit_infos = [
+                info
+                for status, info in results.values()
+                if status == IdentifyStatus.HIT and info.type != MediaType.MOVIE and info.tmdb_id and info.begin_episode
+            ]
+            if hit_infos:
+                map_items = [
+                    {"tmdb_id": info.tmdb_id, "season": info.begin_season, "episode": info.begin_episode}
+                    for info in hit_infos
+                ]
+                log.info(f"[EpisodeMapper]批量映射 {len(map_items)} 条记录")
+                mapped = self._episode_mapper.map_batch(map_items)
+                mapped_count = 0
+                for info, mapped_result in zip(hit_infos, mapped, strict=False):
+                    if mapped_result:
+                        info.begin_season = mapped_result[0]
+                        info.begin_episode = mapped_result[1]
+                        mapped_count += 1
+                if mapped_count > 0:
+                    log.info(f"[EpisodeMapper]批量映射完成: {mapped_count}/{len(map_items)} 条已映射")
+
+        return results
+
+    def _identify_group(self, group: dict, language: str | None) -> tuple:
+        """单组识别：按序尝试名称候选，返回 (IdentifyStatus, MediaInfo)"""
+        seasons = group.get("seasons") or []
+        episodes = group.get("episodes") or []
+        info = MediaInfo(
+            cn_name=group.get("cn_name"),
+            en_name=group.get("en_name"),
+            year=group.get("year"),
+            begin_season=seasons[0] if seasons else None,
+            end_season=seasons[-1] if len(seasons) > 1 else None,
+            begin_episode=episodes[0] if episodes else None,
+            end_episode=episodes[-1] if len(episodes) > 1 else None,
+            type=group.get("type"),
+        )
+        info.site = group.get("site")
+        info.enclosure = group.get("enclosure")
+        info.size = group.get("size", 0)
+        info.seeders = group.get("seeders", 0)
+        info.org_string = group.get("title", "")
+
+        hits: list[tuple[str, LookupResult]] = []
+        for name in group.get("names") or []:
+            is_cn = bool(StringUtils.is_chinese(name))
+            query = SimpleNamespace(
+                title_cn=name if is_cn else None,
+                title_en=None if is_cn else name,
+                year=group.get("year"),
+                season=seasons[0] if seasons else None,
+                episode=episodes[0] if episodes else None,
+                type=group.get("type"),
+                org_string=group.get("title") or "",
+            )
+            try:
+                looked_up = self._lookup.lookup(query, language=language or "")
+            except HttpRateLimitError as err:
+                log.warn(f"[MediaService]组识别被限流: {group.get('cn_name') or name}, {err}")
+                return IdentifyStatus.ERROR, info
+            except Exception as err:
+                log.error(f"[MediaService]组识别出错: {name}, {err}")
+                return IdentifyStatus.ERROR, info
+            if looked_up and looked_up.tmdb_id:
+                hits.append((name, looked_up))
+
+        if not hits:
+            return IdentifyStatus.NOT_FOUND, info
+        # 多名共识：全部名称指向同一 TMDB 条目才可信；
+        # 冲突时采信最具体（最长）名称 —— 短名往往是系列通称（如 攻壳机动队 vs ...Stand Alone Complex）
+        chosen_name, looked_up = hits[0]
+        distinct = {r.tmdb_id for _, r in hits}
+        if len(distinct) > 1:
+            chosen_name, looked_up = max(hits, key=lambda h: len(h[0]))
+            log.warn(
+                f"[MediaService]组内名称识别冲突: {[(n, r.tmdb_id) for n, r in hits]}，"
+                f"采信最具体名称 '{chosen_name}' -> TMDBID={looked_up.tmdb_id}"
+            )
+        if looked_up and looked_up.tmdb_id:
+            info.tmdb_id = looked_up.tmdb_id
+            info.title = looked_up.title
+            info.original_title = looked_up.original_title
+            info.year = looked_up.year or info.year
+            info.overview = looked_up.overview
+            info.vote_average = looked_up.vote_average
+            info.poster_path = looked_up.poster_path
+            info.backdrop_path = looked_up.backdrop_path
+            info.tmdb_info = {
+                "id": looked_up.tmdb_id,
+                "title": looked_up.title,
+                "original_title": looked_up.original_title,
+                "media_type": looked_up.media_type.value if looked_up.media_type else None,
+                "year": looked_up.year,
+                "overview": looked_up.overview,
+                "vote_average": looked_up.vote_average,
+                "poster_path": looked_up.poster_path,
+                "backdrop_path": looked_up.backdrop_path,
+                "genres": looked_up.genres,
+                "external_ids": looked_up.external_ids,
+            }
+            return IdentifyStatus.HIT, info
+        return IdentifyStatus.NOT_FOUND, info
 
     # ---------- 文件列表识别 ----------
 
@@ -552,7 +730,7 @@ class MediaService:
 
         lookup_results = {}
         if unique_keys:
-            max_workers = min(len(unique_keys), 8)
+            max_workers = min(len(unique_keys), 2)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key
@@ -827,6 +1005,10 @@ class MediaService:
 
     def get_person_medias(self, personid, mtype=None, page=1):
         return self._lookup.get_person_medias(personid, mtype, page)
+
+    def get_all_names(self, tmdb_id, mtype) -> list[str]:
+        """获取 TMDB 条目全部名称（正名/原名/别名/译名）"""
+        return self._lookup.all_names(tmdb_id, mtype)
 
     def merge_media_info(self, target, source):
         return self._lookup.merge_media_info(target, source)

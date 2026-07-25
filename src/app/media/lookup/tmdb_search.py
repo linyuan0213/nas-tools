@@ -10,6 +10,7 @@ from app.core.exceptions import TMDBError
 from app.domain.mediatypes import MediaType
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
+from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.tmdb import get_rate_limiter
 from app.media.lookup.tmdb_client import TmdbClient, compare_tmdb_names
 from app.media.lookup.tmdb_detail import TmdbDetail
@@ -80,6 +81,8 @@ class TmdbSearch:
         except TMDBError as err:
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return None
+        except HttpRateLimitError:
+            raise
         except Exception as err:
             log.error(f"[Meta]搜索电影时异常：{err!s}")
             return None
@@ -158,6 +161,8 @@ class TmdbSearch:
         except TMDBError as err:
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return None
+        except HttpRateLimitError:
+            raise
         except Exception as err:
             log.error(f"[Meta]搜索剧集时异常：{err!s}")
             return None
@@ -299,6 +304,8 @@ class TmdbSearch:
         except TMDBError as err:
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return None
+        except HttpRateLimitError:
+            raise
         except Exception as err:
             log.error(f"[Meta]按季搜索剧集时异常：{err!s}")
             return None
@@ -342,6 +349,8 @@ class TmdbSearch:
         except TMDBError as err:
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return None
+        except HttpRateLimitError:
+            raise
         except Exception as err:
             log.error(f"[Meta]多媒体搜索时异常：{err!s}")
             return None
@@ -401,6 +410,8 @@ class TmdbSearch:
         except TMDBError as err:
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return []
+        except HttpRateLimitError:
+            raise
         except Exception as err:
             log.error(f"[Meta]多媒体信息查询时异常：{err!s}")
             return []
@@ -515,7 +526,9 @@ class TmdbSearch:
         if not mtype or not tmdb_id:
             return {}, []
         ret_names = []
-        tmdb_info = self._get_detail(tmdb_id, mtype)
+        tmdb_info = TmdbDetail(self.client).get_detail(
+            tmdb_id, mtype, append_to_response="alternative_titles,translations"
+        )
         if not tmdb_info:
             return tmdb_info, []
         if mtype == MediaType.MOVIE:

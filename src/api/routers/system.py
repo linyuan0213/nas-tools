@@ -544,7 +544,7 @@ def search(
     """
     session_id = str(uuid.uuid4())
     TokenCache.delete("search")
-    TokenCache.set(f"search_session:{current_user.user_id}", session_id, ttl=600)
+    TokenCache.set(f"search_session:{current_user.user_id}", session_id, ttl=1800)
     search_word = req.search_word
     ident_flag = not req.unident
     executor.submit(
@@ -556,7 +556,7 @@ def search(
         media_type=req.media_type,
         session_id=session_id,
     )
-    return success()
+    return success(data={"session_id": session_id})
 
 
 def _flatten_config(cfg: dict, prefix: str = "") -> dict:

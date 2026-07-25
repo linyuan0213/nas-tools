@@ -27,6 +27,14 @@ class MatchMode(Enum):
     STRICT = "严格模式"
 
 
+class IdentifyStatus(Enum):
+    """批量识别结果状态"""
+
+    HIT = "hit"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
 class OsType(Enum):
     WINDOWS = "Windows"
     LINUX = "Linux"

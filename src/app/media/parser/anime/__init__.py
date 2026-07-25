@@ -10,7 +10,7 @@ import anitopy  # type: ignore
 from app.domain.mediatypes import MediaType
 from app.media.models import MediaInfo
 from app.media.parser._customization import CustomizationMatcher
-from app.media.parser.anime.name_parser import clean_name, extract_name, parse_name
+from app.media.parser.anime.name_parser import clean_name, extract_name, parse_name, recover_cn_name
 from app.media.parser.anime.prepare import extract_japanese_title, prepare_title
 from app.media.parser.anime.resource_parser import (
     parse_customization,
@@ -24,7 +24,8 @@ from app.media.parser.anime.season_episode_parser import (
     parse_type,
     parse_year,
 )
-from app.utils import ExceptionUtils
+from app.media.parser.naming_patterns import apply_hit_to_info, get_naming_patterns
+from app.utils import ExceptionUtils, StringUtils
 
 
 def parse_anime_title(
@@ -42,17 +43,34 @@ def parse_anime_title(
     info.fileflag = fileflag
     try:
         original_title = title
+        # 命名模式库优先：命中即获得权威名称，跳过脆弱的启发式抽取
+        pattern_hit = get_naming_patterns().apply(original_title)
         title = re.sub(r"(\d+\.\d+)\s+", r"\1", title)
         anitopy_info_origin = anitopy.parse(title)
         title = prepare_title(title)
         anitopy_info = anitopy.parse(title)
         if anitopy_info:
-            name = extract_name(info, anitopy_info, title)
-            parse_name(info, name)
+            if pattern_hit and (pattern_hit.get("cn_name") or pattern_hit.get("en_name")):
+                info.cn_name = pattern_hit.get("cn_name")
+                info.en_name = pattern_hit.get("en_name")
+            else:
+                name = extract_name(info, anitopy_info, title)
+                parse_name(info, name)
+                recover_cn_name(
+                    info,
+                    anitopy_info_origin.get("anime_title") if anitopy_info_origin else None,
+                    anitopy_info.get("release_group"),
+                )
             clean_name(info)
+            if not info.en_name:
+                raw_title = anitopy_info.get("anime_title")
+                if raw_title and not StringUtils.is_chinese(str(raw_title)):
+                    info.en_name = str(raw_title)
             parse_year(info, anitopy_info)
             parse_season(info, anitopy_info)
             parse_episode(info, anitopy_info)
+            if pattern_hit:
+                apply_hit_to_info(info, pattern_hit)
             parse_type(info, anitopy_info)
             parse_resource_pix(info, anitopy_info)
             parse_team(info, original_title, anitopy_info_origin)
