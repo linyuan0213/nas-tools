@@ -14,12 +14,14 @@ import re
 import log
 from app.core.settings import settings
 from app.db.repositories.config_repo_adapter import FilterGroupRepositoryAdapter, FilterRuleRepositoryAdapter
+from app.domain.enums import ProgressKey
 from app.domain.mediatypes import MediaType
 from app.indexer.core.batch_identifier import BatchIdentifier
 from app.indexer.core.filter_engine import IndexerFilterEngine
 from app.indexer.core.miss_collector import get_miss_collector
 from app.indexer.core.models import FilterStats, SearchCandidate
 from app.infrastructure.cache_system import get_cache_manager
+from app.infrastructure.progress import ProgressTracker
 from app.media.identity.matcher import get_target_matcher
 from app.media.parser.parse_cache import cached_meta_info
 from app.utils import StringUtils
@@ -561,17 +563,33 @@ class ResultFilter:
         """ADR-014 P3 灰度开关：TargetMatcher 统一判等"""
         return bool(settings.get("laboratory").get("target_matcher"))
 
-    def match_filter(self, candidates, match_media, filter_args):
+    def match_filter(
+        self,
+        candidates,
+        match_media,
+        filter_args,
+        progress: ProgressTracker | None = None,
+        progress_key=ProgressKey.Search,
+    ):
         """
         第三阶段：TMDB 匹配及后续过滤
 
+        :param progress: 进度追踪器，传入时按处理进度在 85~95 区间细分上报
         :return: (matched_results, stats)
         """
         ret_array = []
         stats = FilterStats()
         media_ident_cache = get_cache_manager().get_or_create("media_ident", "memory", maxsize=2000, ttl=3600)
 
-        for cand in candidates:
+        total = len(candidates)
+        report_step = max(1, total // 10)
+        for idx, cand in enumerate(candidates):
+            if progress and idx and idx % report_step == 0:
+                progress.update_max(
+                    value=85 + int(idx / total * 10),
+                    text=f"TMDB 匹配过滤 {idx}/{total} ...",
+                    ptype=progress_key,
+                )
             item = cand.item
             meta_info = cand.meta_info
             res_order = cand.res_order

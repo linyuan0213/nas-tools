@@ -93,6 +93,8 @@ class SearchPipeline:
                 candidates=candidates,
                 match_media=match_media,
                 filter_args=filter_args,
+                progress=self.progress,
+                progress_key=progress_key,
             )
         else:
             matched_results = []
