@@ -109,7 +109,7 @@ class _IDownloadClient(metaclass=ABCMeta):
                 continue
             true_path, replace_flag = self.get_replace_path(path, self.download_dir)
             if match_path and not replace_flag:
-                log.debug(f"[{self.client_name}]{self.name} 开启目录隔离，{display_name} 未匹配下载目录范围")
+                pass
                 continue
             subpath = self._get_content_subpath(torrent) or torrent.name or ""
             trans_tasks.append({"path": os.path.join(true_path, subpath).replace("\\", "/"), "id": torrent.id})

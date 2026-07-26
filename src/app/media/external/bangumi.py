@@ -27,6 +27,7 @@ class Bangumi:
     _urls = {
         "calendar": "calendar",
         "detail": "v0/subjects/%s",
+        "relations": "v0/subjects/%s/subjects",
     }
     _base_url = "https://api.bgm.tv/"
     _page_num = 30
@@ -57,6 +58,18 @@ class Bangumi:
         获取番剧详情
         """
         return self.__invoke(self._urls["detail"] % bid, _ts=datetime.strftime(datetime.now(), "%Y%m%d"))
+
+    def relations(self, bid) -> list:
+        """
+        获取番剧系列关系（续作/前传/衍生/番外）
+        返回 [{id, name, name_cn, relation, type}]，失败返回 []
+        """
+        try:
+            data = self.__invoke(self._urls["relations"] % bid, _ts=datetime.strftime(datetime.now(), "%Y%m%d"))
+            return data if isinstance(data, list) else []
+        except Exception as e:
+            log.debug(f"获取Bangumi关系失败: {bid}, {e}")
+            return []
 
     @staticmethod
     def __dict_item(item, weekday):

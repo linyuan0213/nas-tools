@@ -22,22 +22,58 @@ from app.indexer.client._base import _IIndexClient
 from app.indexer.configuration import IndexerHelper
 from app.indexer.core.pipeline import SearchPipeline
 from app.indexer.registry import get_all_clients, get_client_class
+from app.infrastructure.cache_system import get_cache_manager
 from app.infrastructure.progress import ProgressTracker
 from app.sites.engine import SiteEngine
 from app.sites.site_cache import SiteCache
 from app.utils import ExceptionUtils, StringUtils
 
-# 站点级搜索超时（秒）：单个站点超时即放弃，避免一站拖垮全局
-_SITE_FETCH_TIMEOUT = 30
+# 站点级搜索超时上下限（秒）：按历史延迟在区间内自适应
+_SITE_TIMEOUT_MIN = 10.0
+_SITE_TIMEOUT_MAX = 30.0
 
 
-def collect_search_results(futures: dict, per_site_timeout: float, on_advance=None) -> list:
+class SiteLatencyTracker:
+    """站点搜索延迟跟踪：按最近样本 p95 × 1.5 自适应超时，慢站不拖垮每次搜索"""
+
+    _KEEP = 20
+    _TTL = 7 * 24 * 3600
+
+    def __init__(self):
+        self._cache = get_cache_manager().get_or_create("site_latency", "tiered", memory_maxsize=300, ttl=self._TTL)
+
+    def timeout_for(self, indexer) -> float:
+        samples = self._cache.get(f"lat:{indexer.name}") or []
+        if len(samples) < 3:
+            return _SITE_TIMEOUT_MAX
+        ordered = sorted(samples)
+        p95 = ordered[max(0, int(len(ordered) * 0.95) - 1)]
+        return min(_SITE_TIMEOUT_MAX, max(_SITE_TIMEOUT_MIN, round(p95 * 1.5, 1)))
+
+    def record(self, indexer, seconds: float) -> None:
+        key = f"lat:{indexer.name}"
+        samples = self._cache.get(key) or []
+        samples.append(round(seconds, 2))
+        self._cache.set(key, samples[-self._KEEP :], ttl=self._TTL)
+
+
+_tracker: SiteLatencyTracker | None = None
+
+
+def get_site_latency_tracker() -> SiteLatencyTracker:
+    global _tracker
+    if _tracker is None:
+        _tracker = SiteLatencyTracker()
+    return _tracker
+
+
+def collect_search_results(futures: dict, timeout_for, on_advance=None) -> list:
     """
     带站点级超时的并发结果收集。
 
     :param futures: {Future: (client, indexer)}
-    :param per_site_timeout: 单站点超时秒数，超时放弃等待（线程由 HTTP 层自然终结）
-    :param on_advance: 每完成/超时一个站点的回调 (completed, total, indexer, timed_out)
+    :param timeout_for: 按站点返回超时秒数的回调，超时放弃等待（线程由 HTTP 层自然终结）
+    :param on_advance: 每完成/超时一个站点的回调 (completed, total, indexer, timed_out, elapsed)
     """
     pending = dict(futures)
     started = {f: time.monotonic() for f in futures}
@@ -49,6 +85,7 @@ def collect_search_results(futures: dict, per_site_timeout: float, on_advance=No
         for future in done:
             client, indexer = pending.pop(future)
             completed += 1
+            elapsed = time.monotonic() - started[future]
             try:
                 result = future.result()
                 if result:
@@ -56,15 +93,17 @@ def collect_search_results(futures: dict, per_site_timeout: float, on_advance=No
             except Exception:
                 log.error(f"[Indexer]{client.client_id} 搜索 {indexer.name} 失败")
             if on_advance:
-                on_advance(completed, total, indexer, False)
+                on_advance(completed, total, indexer, False, elapsed)
         now = time.monotonic()
         for future, (client, indexer) in list(pending.items()):
-            if now - started[future] > per_site_timeout:
+            limit = timeout_for(indexer)
+            if now - started[future] > limit:
                 pending.pop(future)
                 completed += 1
-                log.warn(f"[Indexer]{indexer.name} 搜索超时({per_site_timeout}s)，跳过")
+                elapsed = now - started[future]
+                log.warn(f"[Indexer]{indexer.name} 搜索超时({limit}s)，跳过")
                 if on_advance:
-                    on_advance(completed, total, indexer, True)
+                    on_advance(completed, total, indexer, True, elapsed)
     return results
 
 
@@ -335,7 +374,10 @@ class Indexer:
                 for client, indexer, order_seq in work_items
             }
 
-            def _on_advance(completed, total, indexer, timed_out):
+            tracker = get_site_latency_tracker()
+
+            def _on_advance(completed, total, indexer, timed_out, elapsed):
+                tracker.record(indexer, elapsed)
                 pct = 10 + round(50 * (completed / total))
                 tag = "超时跳过" if timed_out else "完成"
                 self.progress.update_max(
@@ -344,7 +386,7 @@ class Indexer:
                     text=f"站点搜索 {completed}/{total} {tag} ({indexer.name})",
                 )
 
-            all_raw_results = collect_search_results(futures, _SITE_FETCH_TIMEOUT, on_advance=_on_advance)
+            all_raw_results = collect_search_results(futures, timeout_for=tracker.timeout_for, on_advance=_on_advance)
         finally:
             executor.shutdown(wait=False)
 

@@ -1,11 +1,13 @@
 import re
 
 import log
+from app.core.settings import settings
 from app.domain.enums import IdentifyStatus, ProgressKey
 from app.domain.mediatypes import MediaType
 from app.domain.validators.media_title import is_valid_media_title
 from app.infrastructure.cache_system import get_cache_manager
 from app.infrastructure.progress import ProgressTracker
+from app.media.identity.resolver import get_identity_resolver
 from app.media.models import MediaInfo
 from app.utils import StringUtils
 
@@ -148,6 +150,11 @@ class BatchIdentifier:
 
         log.info(f"[BatchIdentifier]批量识别 {len(groups)} 组不重复结果 ...")
 
+        # 身份解析器（ADR-014 P2）灰度开关：开启后统一由 IdentityResolver 决策
+        if settings.get("laboratory").get("identity_resolver"):
+            self._identify_via_resolver(order, groups, match_media, progress_key)
+            return
+
         # 基础名：零网络成本，始终可用
         base_target_names = (
             [
@@ -253,6 +260,43 @@ class BatchIdentifier:
                     ptype=progress_key,
                     text=f"识别 {g['title'][:20]}... ({idx + 1}/{len(pending)})",
                 )
+
+    def _identify_via_resolver(self, order: list, groups: dict, match_media, progress_key) -> None:
+        """ADR-014 P2：统一由 IdentityResolver 决策识别路径（两阶段：本地先行 + 外部攒批并发）"""
+        resolver = get_identity_resolver(self.media)
+        total = len(order)
+        pending: list[dict] = []
+
+        # 阶段1：本地决策（直通/索引/评分，零外部调用）
+        for idx, key in enumerate(order):
+            g = groups[key]
+            result = resolver.resolve_local(g, match_media)
+            if result is None:
+                pending.append(g)
+                continue
+            self._apply_result(key, result)
+            log.info(f"[BatchIdentifier]{g['title'][:50]} [{result.reason}] confidence={result.confidence:.2f}")
+            if idx % 10 == 0 or idx == total - 1:
+                self.progress.update(ptype=progress_key, text=f"本地识别 {idx + 1}/{total} ...")
+
+        if not pending:
+            return
+
+        # 阶段2：外部解析（攒批并发，一次 identify_groups 调用）
+        log.info(f"[BatchIdentifier]{len(pending)} 组需外部识别 ...")
+        ext_results = resolver.resolve_external_batch(pending, match_media)
+        for g in pending:
+            result = ext_results.get(g["_cache_key"])
+            if result:
+                self._apply_result(g["_cache_key"], result)
+                log.info(f"[BatchIdentifier]{g['title'][:50]} [{result.reason}] confidence={result.confidence:.2f}")
+
+    def _apply_result(self, key: str, result) -> None:
+        if result.status == IdentifyStatus.HIT and result.media_info:
+            self._media_ident_cache.set(key, result.media_info)
+        elif result.status == IdentifyStatus.NOT_FOUND and result.media_info:
+            self._media_ident_cache.set(key, result.media_info, ttl=_NOT_FOUND_TTL)
+        # ERROR 不缓存，下次搜索立即重试
 
     @staticmethod
     def _guards_pass(group: dict, match_media) -> bool:

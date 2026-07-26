@@ -12,6 +12,7 @@ import difflib
 import re
 
 import log
+from app.core.settings import settings
 from app.db.repositories.config_repo_adapter import FilterGroupRepositoryAdapter, FilterRuleRepositoryAdapter
 from app.domain.mediatypes import MediaType
 from app.indexer.core.batch_identifier import BatchIdentifier
@@ -19,7 +20,8 @@ from app.indexer.core.filter_engine import IndexerFilterEngine
 from app.indexer.core.miss_collector import get_miss_collector
 from app.indexer.core.models import FilterStats, SearchCandidate
 from app.infrastructure.cache_system import get_cache_manager
-from app.media import meta_info
+from app.media.identity.matcher import get_target_matcher
+from app.media.parser.parse_cache import cached_meta_info
 from app.utils import StringUtils
 
 _EDITION_MARKERS: frozenset[str] = frozenset(
@@ -378,7 +380,7 @@ class ResultFilter:
                 stats.index_rule_fail += 1
                 continue
 
-            mi = meta_info(title=torrent_name, subtitle=f"{labels} {description}")
+            mi = cached_meta_info(title=torrent_name, subtitle=f"{labels} {description}")
             # 若标题未解析出中文名，尝试从 description 中提取与目标媒体匹配的中文短语
             if not mi.cn_name and description and match_media:
                 desc = str(description)
@@ -554,6 +556,11 @@ class ResultFilter:
 
         return candidates, direct_results, stats
 
+    @staticmethod
+    def _use_target_matcher() -> bool:
+        """ADR-014 P3 灰度开关：TargetMatcher 统一判等"""
+        return bool(settings.get("laboratory").get("target_matcher"))
+
     def match_filter(self, candidates, match_media, filter_args):
         """
         第三阶段：TMDB 匹配及后续过滤
@@ -638,6 +645,14 @@ class ResultFilter:
                         get_miss_collector().record(indexer_name, torrent_name, "tmdb_no_match")
                         stats.index_match_fail += 1
                         continue
+                elif self._use_target_matcher():
+                    # ADR-014 P3：TargetMatcher 统一判等（ID 判等 + edition 距离，可解释）
+                    result = get_target_matcher().match(media_info, match_media)
+                    if not result.matched:
+                        log.info(f"[ResultFilter]{torrent_name} ({cache_key}) {result.reason}")
+                        stats.index_match_fail += 1
+                        continue
+                    media_info = self._media.merge_media_info(media_info, match_media)
                 elif str(media_info.tmdb_id) != str(match_media.tmdb_id):
                     media_type_str = media_info.type.value if media_info.type else "Unknown"
                     match_type_str = match_media.type.value if match_media.type else "Unknown"

@@ -13,6 +13,8 @@ from app.domain.validators.media_title import is_valid_media_title
 from app.infrastructure.cache_system import cacheman
 from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.image_proxy import ImageProxy
+from app.media.identity import get_identity_builder
+from app.media.identity.remapper import EpisodeRemapper
 from app.media.lookup.base import LookupResult
 from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
@@ -36,6 +38,7 @@ class MediaService:
         self._parser = self._build_parser()
         self._lookup = tmdb_lookup
         self._episode_mapper = EpisodeMapper(self._lookup)
+        self._episode_remapper = EpisodeRemapper(episode_mapper=self._episode_mapper)
         self._init_config()
 
     def _init_config(self):
@@ -245,7 +248,7 @@ class MediaService:
                 f"[EpisodeMapper]尝试映射: {info.get_name()} "
                 f"S{info.begin_season}E{info.begin_episode} (tmdb_id={info.tmdb_id})"
             )
-            mapped = self._episode_mapper.map_auto(int(info.tmdb_id), info.begin_season, info.begin_episode)
+            mapped = self._episode_remapper.remap(int(info.tmdb_id), info.begin_season, info.begin_episode)
             if mapped:
                 log.info(
                     f"[EpisodeMapper]映射成功: S{info.begin_season}E{info.begin_episode} -> S{mapped[0]}E{mapped[1]}"
@@ -1007,7 +1010,17 @@ class MediaService:
         return self._lookup.get_person_medias(personid, mtype, page)
 
     def get_all_names(self, tmdb_id, mtype) -> list[str]:
-        """获取 TMDB 条目全部名称（正名/原名/别名/译名）"""
+        """获取 TMDB 条目全部名称（正名/原名/别名/译名）
+
+        开启 laboratory.identity_index 后走别名索引（热路径零网络），失败回退旧路径。
+        """
+        if settings.get("laboratory").get("identity_index"):
+            try:
+                names = get_identity_builder().get_work_names("tmdb", int(tmdb_id), mtype)
+                if names:
+                    return names
+            except Exception as e:
+                log.warn(f"[MediaService]身份索引获取别名失败，回退旧路径: {e}")
         return self._lookup.all_names(tmdb_id, mtype)
 
     def merge_media_info(self, target, source):

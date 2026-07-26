@@ -1,0 +1,19 @@
+# 版本与编号习惯补充表（ADR-014 P3）
+#
+# 用途：
+#   1. numbering_overrides — 发布组季号 → 规范季号映射
+#      例：发布组把 SAC 系列连贯计季（SAC=S1, 2nd GIG=S2, SAC_2045=S3/S4），
+#      但 TMDB 上 SAC_2045 是独立作品 S1/S2 → 需要 3→1, 4→2 的映射。
+#   2. edition_overrides — EditionGraph 手工补边（Bangumi relations 缺失时）
+#
+# numbering_overrides:
+#   - tmdb_id: 97699          # 规范作品的 TMDB ID
+#     season_map: {3: 1, 4: 2} # 发布组季号 → 该作品规范季号
+#
+# edition_overrides:
+#   - franchise: ghost-in-the-shell
+#     members:
+#       - {source: tmdb, work_id: 9323, note: "1995 剧场版"}
+
+numbering_overrides: []
+edition_overrides: []
