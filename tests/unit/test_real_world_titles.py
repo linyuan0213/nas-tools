@@ -1,0 +1,154 @@
+"""真实标题解析测试 — 从 RSS 采集的标题"""
+
+# ruff: noqa: E501
+
+import pytest
+
+from app.media.parser.unified import UnifiedParser
+
+TITLES = [
+    # (标题, 期望中文名, 期望集数, 期望季数, 期望分辨率, 备注)
+    ("[雪飘工作室][名探偵プリキュア！/Star Detective Precure！/名侦探光之美少女！][1080p][26][简繁日外挂]", "名侦探光之美少女", 26, None, "1080p", "雪飘多语言"),
+    ("[雪飄工作室][名探偵プリキュア！/Star Detective Precure！/名侦探光之美少女！][720p][26][繁日內嵌]", "名侦探光之美少女", 26, None, "720p", "雪飘720p"),
+    ("[LoliHouse] 地狱模式～喜欢速通游戏的玩家在废设定异世界无双～ S2 / Hell Mode S2 - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "地狱模式", 4, 2, "1080p", "S2+集数"),
+    ("[7³ACG] 命运之夜 无限剑制 第2季/Fate stay night Unlimited Blade Works S02 | 01-13 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "命运之夜 无限剑制", 1, 2, "1080p", "季度全集"),
+    ("[MagicStar] 便利店兄弟 最终回 / コンビニ兄弟 EP10 END [WEBDL] [1080p] [AMZN]", "便利店兄弟", 10, None, "1080p", "最终回+EP"),
+    ("[MagicStar] 便利店兄弟 / コンビニ兄弟 EP09 [WEBDL] [1080p] [AMZN]", "便利店兄弟", 9, None, "1080p", "日剧EP"),
+    ("[MagicStar] 角醒猎人欧米茄号角 / 角醒ハンター オメガホーン EP01 [WEBDL] [1080p] [TTFC]", "角醒猎人欧米茄号角", 1, None, "1080p", "特摄EP"),
+    ("[LoliHouse] 黄泉使者 / Yomi no Tsugai - 16 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "黄泉使者", 16, None, "1080p", "标准斜杠"),
+    ("[❀拨雪寻春❀] 我是不才恶女 / ふつつかな悪女ではございますが / Futsutsuka na Akujo de wa Gozaimasu ga - 02 [WebRip][HEVC-10bit 1080p][简日内嵌]", "我是不才恶女", 2, None, "1080p", "三段斜杠"),
+    ("[MagicStar] 假面骑士Zeztz 扩展姐妹篇 特工美浪 / 仮面ライダーゼッツ Series of Sister's Substory エージェント美浪 EP45 [WEBDL] [1080p] [TTFC]", "假面骑士Zeztz", 45, None, "1080p", "长标题特摄"),
+    ("[LoliHouse] 魔法少女奈叶 EXCEEDS Gun Blaze Vengeance / Magical Girl Lyrical Nanoha EXCEEDS Gun Blaze Vengeance - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "魔法少女奈叶", 4, None, "1080p", "长英文标题"),
+    ("[Skymoon-Raws] 魔法光源股份有限公司 第二季 - 04 [CHS][AVC AAC]", "魔法光源股份有限公司", 4, 2, None, "中文季数"),
+    ("[搬運][ANi] Tenmaku no Jādūgar / 穹廬下的魔女 - 05 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "穹廬下的魔女", 5, None, "1080p", "搬运前缀"),
+    ("[ANi] 才女的侍從 在滿是高嶺之花的貴族學校暗中照顧（毫無生活自理能力的）學院第一大小姐 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "才女的侍從", 4, None, "1080p", "超长中文名"),
+    ("[LoliHouse] MAO摩绪 - 17 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "MAO摩绪", 17, None, "1080p", "无斜杠"),
+    ("[银色子弹字幕组][名侦探柯南][第1208集 欢迎来到石器人之乡][WEBRIP][简繁日多语MKV][PGS][1080P]", "名侦探柯南", 1208, None, "1080p", "中文集数+标题"),
+    ("[Skymoon-Raws] 黃泉雙使 (黃泉使者) / Daemons of the Shadow Realm - 16 [ViuTV][WEB-DL][CHT][1080p][AVC AAC]", "黃泉雙使", 16, None, "1080p", "括号别名"),
+    ("[沸班亚马制作组] 死神 千年血战篇-祸进谭- - 41 [BILIBILI WebRip 2160p NVENC AAC][简繁内封字幕]", "死神 千年血战篇", 41, None, "2160p", "B站源"),
+    ("[ANi] 花織即使是轉生也想打架 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "花織即使是轉生也想打架", 3, None, "1080p", "ANi标准"),
+    ("[三明治摆烂组] 少女怪兽焦糖味 / 少女怪兽焦糖恋心 / Otome Kaijuu Carameliser / 乙女怪獣キャラメリゼ - 04 - [繁日内嵌][AVC 8bit 1080P]", "少女怪兽焦糖味", 4, None, "1080p", "四段斜杠"),
+    ("[Skymoon-Raws] 闇黑燈火 / Black Torch - 04 [ViuTV][WEB-DL][CHT][1080p][AVC AAC]", "闇黑燈火", 4, None, "1080p", "ViuTV源"),
+    ("[豌豆字幕组&风之圣殿字幕组][死神 千年血战篇 / BLEACH_Sennen_Kessen-hen][41][简体][1080P][MP4]", "死神 千年血战篇", 41, None, "1080p", "豌豆组合"),
+    ("[ANi] 魔法少女奈葉 EXCEEDS Gun Blaze Vengeance - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "魔法少女奈葉", 4, None, "1080p", "ANi奈叶"),
+    ("[ANi] Oni no Hanayome / 鬼的新娘 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "鬼的新娘", 4, None, "1080p", "ANi英中"),
+    ("[LoliHouse] 猫与龙 / Neko to Ryuu - 05 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "猫与龙", 5, None, "1080p", "标准斜杠"),
+    ("[绿茶字幕组] 碧蓝之海 第三季 / Grand Blue S3 [01][WebRip][1080p][简繁日内封]", "碧蓝之海", 1, 3, "1080p", "中文季+S3"),
+    ("[LoliHouse] 入间同学入魔了！S4 / Mairimashita! Iruma-kun S4 - 17 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "入间同学入魔了", 17, 4, "1080p", "S4+集数"),
+    ("[7³ACG] 街角魔族/Machikado Mazoku S01 | 01-12 [简繁字幕] BDrip 1080p x265 OPUS 2.0", "街角魔族", 1, 1, "1080p", "季度全集S01"),
+    ("[ANi] BLEACH 死神 千年血戰篇-禍進譚- - 41 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "BLEACH 死神 千年血戰篇", 41, None, "1080p", "ANi BLEACH"),
+    ("[jibaketa合成&二次壓制][TVB粵語]安妮的童話 / 安妮·雪莉 / Anne Shirley - 06 [粵語+無字幕][WEB 1920x1080 x264 AAC YUE]", "安妮的童話", 6, None, "1080p", "合成前缀"),
+    ("[ANi] Iwamotosenpai no Suisen / 岩元前輩的推薦 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "岩元前輩的推薦", 4, None, "1080p", "ANi英中"),
+    ("[北宇治字幕组] 與妳相戀到生命盡頭 / Kimi ga Shinu made Koi wo Shitai [03][WebRip][HEVC_AAC][繁日內嵌]", "與妳相戀到生命盡頭", 3, None, None, "北宇治"),
+    ("[北宇治字幕组] 与你相恋到生命尽头 / 與妳相戀到生命盡頭 / Kimi ga Shinu made Koi wo Shitai [02][WebRip][HEVC_AAC][简繁日内封]", "与你相恋到生命尽头", 2, None, None, "三段斜杠"),
+    ("[ANi] BLACK TORCH 闇黑燈火 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "BLACK TORCH 闇黑燈火", 4, None, "1080p", "ANi英中混合"),
+    ("[ANi] Neko to Ryū / 貓與龍 - 05 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "貓與龍", 5, None, "1080p", "ANi英中"),
+    ("[jibaketa合成&音頻壓制][代理商粵語]超宇宙刑事卡邦 無限 / 超次元英雄卡邦無限 / Chou Uchuu Keiji Gavan Infinity - 16 [粵日雙語+內封繁體中文字幕] (WEB 1920x1080 AVC AACx2 SRT Ani-One CHT)", "超宇宙刑事卡邦 無限", 16, None, "1080p", "合成音频压制"),
+    ("[jibaketa合成&音頻壓制][ViuTV粵語]名偵探光之美少女！ / Meitantei Precure! - 17 [粵語+無字幕] (WEB 1920x1080 AVC AAC YUE)", "名偵探光之美少女", 17, None, "1080p", "ViuTV粤语"),
+    ("[ANi] Mairimashita Irumakun S04 / 入間同學入魔了！第四季 - 17 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "入間同學入魔了", 17, 4, "1080p", "S04+中文季"),
+    ("[LoliHouse] 被放逐的重骑士用游戏知识开无双 / Tsuihou sareta Tensei Juukishi wa Game Chishiki de Musou suru - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "被放逐的重骑士用游戏知识开无双", 4, None, "1080p", "超长英文名"),
+    ("[7³ACG] 夏洛特/Charlotte S01 | 01-13+SPx1 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "夏洛特", 1, 1, "1080p", "含SP"),
+    ("[ANi] 小書痴的下剋上 為了成為圖書管理員不擇手段！領主的養女 - 15 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "小書痴的下剋上", 15, None, "1080p", "ANi长中文名"),
+    ("[7³ACG] 街角魔族 2丁目/Machikado Mazoku 2-Choume S02 | 01-12 [简繁字幕] BDrip 1080p x265 OPUS 2.0", "街角魔族 2丁目", 1, 2, "1080p", "S02+别名"),
+    ("[LoliHouse] [绿茶字幕组&LoliHouse] 描绘直至生命尽头 / 画完这个就去死 / 畫完這個再去死 / これ描いて死ね / Kore Kaite Shine - 03 [WebRip 1080p HEVC-10bit AAC][简繁日内封字幕]", "描绘直至生命尽头", 3, None, "1080p", "五段斜杠+组合"),
+    ("[LoliHouse] 正后方的神威 / 從後面來的神威先生 / うしろの正面カムイさん / Ushiro no Shoumen Kamui-san - 02 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "正后方的神威", 2, None, "1080p", "四段斜杠"),
+    ("[LoliHouse] 剧场版 暗杀教室 我们的时光 / Gekijouban Ansatsu Kyoushitsu: Minna no Jikan [WebRip 1080p HEVC-10bit AAC][无字幕]", "剧场版 暗杀教室 我们的时光", None, None, "1080p", "剧场版无集数"),
+    ("[7³ACG] 街角魔族/Machikado Mazoku S01 | 01-12 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "街角魔族", 1, 1, "1080p", "重复S01"),
+    ("[jibaketa合成&二次壓制][ViuTV粵語]超人 / 超人力霸王狄奧 / 提欧奥特曼 / Ultraman Teo - 03 [粵語+無對白字幕](WEB 1920x1080 x264 AAC YUE CHT)", "超人", 3, None, "1080p", "四段斜杠特摄"),
+    ("[7³ACG] 线上游戏的老婆不可能是女生？/And You Thought There Is Never a Girl Online S01 | 01-12 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "线上游戏的老婆不可能是女生", 1, 1, "1080p", "问号标题"),
+    ("[GM-Team][国漫][凡人修仙传 慕兰之战][Fan Ren Xiu Xian Zhuan][2026][08][AVC][GB][1080P]", "凡人修仙传 慕兰之战", 8, None, "1080p", "国漫"),
+    ("[搬运][Erai-raws]\u201c你们先走我断后\u201d于是10年后我成为了传说04|ここは俺に任せて先に行けと言ってから 10年がたったら伝説になっていた04 繁简中字 多国字幕", "你们先走我断后", 4, None, None, "Erai-raws引号"),
+    ("[ANi] Ultraman Teo / 超人力霸王狄奧 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "超人力霸王狄奧", 4, None, "1080p", "ANi特摄"),
+    ("[ANi] Adventures of the Little Koala / 拉拉熊 - 17 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "拉拉熊", 17, None, "1080p", "ANi英中"),
+    ("[7³ACG] 街角魔族 2丁目/Machikado Mazoku 2-Choume S02 | 01-12 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "街角魔族 2丁目", 1, 2, "1080p", "重复S02"),
+    ("[绿茶字幕组] 描繪直至生命盡頭 / 畫完這個就去死 / Kore Kaite Shine [03][WebRip][1080p][繁日內嵌]", "描繪直至生命盡頭", 3, None, "1080p", "三段斜杠"),
+    ("[绿茶字幕组] 描绘直至生命尽头 / 画完这个就去死 / Kore Kaite Shine [03][WebRip][1080p][简日内嵌]", "描绘直至生命尽头", 3, None, "1080p", "三段斜杠简"),
+    ("[豌豆字幕组&LoliHouse] 关于我转生变成史莱姆这档事 第四季 / Tensei Shitara Slime Datta Ken 4th Season - 16(88) [WebRip 1080p HEVC-10bit AAC][简繁外挂字幕]", "关于我转生变成史莱姆这档事", 16, 4, "1080p", "绝对集号(88)"),
+    ("[Skymoon-Raws] 關於我轉生變成史萊姆這檔事 第四季 / Tensei Shitara Slime Datta Ken S04 - 88 [ViuTV][WEB-DL][CHT][1080p][AVC AAC]", "關於我轉生變成史萊姆這檔事", 88, 4, "1080p", "S04绝对集号"),
+    ("[LoliHouse] 『你们先走我断后』，于是10年后我成为了传说 / Koko wa Ore ni Makasete Saki ni Ike to Itte kara 10-nen ga Tattara Densetsu ni Natteita. - 04 [WebRip 1080p HEVC-10bit AAC][无中字]", "你们先走我断后", 4, None, "1080p", "书名号"),
+    ("[LoliHouse] 从0位居民开始的边境领主大人 / Ryoumin 0-nin Start no Henkyou Ryoushu-sama - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "从0位居民开始的边境领主大人", 4, None, "1080p", "数字开头"),
+    ("[搬運][ANi] Nige Jouzu no Wakagimi S02 / 擅長逃跑的殿下 第二季 - 14 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "擅長逃跑的殿下", 14, 2, "1080p", "S02+中文季"),
+    ("[绿茶字幕组] 攻壳机动队 The Ghost in the Shell / Koukaku Kidoutai 2026 [01][WebRip][1080p][简繁日内封]", "攻壳机动队", 1, None, "1080p", "年份2026"),
+    ("[ANi] 花織即使是轉生也想打架 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "花織即使是轉生也想打架", 3, None, "1080p", "ANi重复"),
+    ("[Skymoon-Raws] 魔法光源股份有限公司 第二季 - 04 [CHS][AVC AAC]", "魔法光源股份有限公司", 4, 2, None, "重复第二季"),
+    ("[LoliHouse] 地狱模式～喜欢速通游戏的玩家在废设定异世界无双～ S2 / Hell Mode S2 - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "地狱模式", 4, 2, "1080p", "重复S2"),
+    ("[雪飘工作室][名探偵プリキュア！/Star Detective Precure！/名侦探光之美少女！][720p][26][简日内嵌]", "名侦探光之美少女", 26, None, "720p", "重复雪飘"),
+    ("[7³ACG] 命运之夜 无限剑制 第2季/Fate stay night Unlimited Blade Works S02 | 01-13 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "命运之夜 无限剑制", 1, 2, "1080p", "重复季度全集"),
+    ("[MagicStar] 便利店兄弟 最终回 / コンビニ兄弟 EP10 END [WEBDL] [1080p] [AMZN]", "便利店兄弟", 10, None, "1080p", "重复最终回"),
+    ("[MagicStar] 便利店兄弟 / コンビニ兄弟 EP08 [WEBDL] [1080p] [AMZN]", "便利店兄弟", 8, None, "1080p", "EP08"),
+    ("[MagicStar] 假面骑士Zeztz / 仮面ライダーゼッツ EP45 [WEBDL] [1080p] [TTFC]", "假面骑士Zeztz", 45, None, "1080p", "假面骑士"),
+    ("[LoliHouse] 魔法少女奈叶 EXCEEDS Gun Blaze Vengeance / Magical Girl Lyrical Nanoha EXCEEDS Gun Blaze Vengeance - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "魔法少女奈叶", 4, None, "1080p", "重复奈叶"),
+    ("[搬運][ANi] Grow Up Show ～向日葵馬戲團～ - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "向日葵马戏团", 4, None, "1080p", "Grow Up Show"),
+    ("[搬運][ANi] Yomi no Tsugai / 黃泉使者 - 16 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "黃泉使者", 16, None, "1080p", "Yomi no Tsugai"),
+    ("[LoliHouse] MAO摩绪 - 17 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "MAO摩绪", 17, None, "1080p", "重复MAO"),
+    ("[银色子弹字幕组][名侦探柯南][第1208集 歡迎來到石器人之鄉][WEBRIP][繁日雙語MP4][1080P]", "名侦探柯南", 1208, None, "1080p", "柯南繁体"),
+    ("[银色子弹字幕组][名侦探柯南][第1208集 欢迎来到石器人之乡][WEBRIP][简日双语MP4][1080P]", "名侦探柯南", 1208, None, "1080p", "柯南简体"),
+    ("[Skymoon-Raws] 黃泉雙使 (黃泉使者) / Daemons of the Shadow Realm - 16 [ViuTV][WEB-DL][CHT][1080p][AVC AAC]", "黃泉雙使", 16, None, "1080p", "重复黃泉雙使"),
+    ("[沸班亚马制作组] 死神 千年血战篇-祸进谭- - 41 [BILIBILI WebRip 2160p NVENC AAC][简繁内封字幕]", "死神 千年血战篇", 41, None, "2160p", "重复沸班"),
+    ("[三明治摆烂组] 少女怪兽焦糖味 / 少女怪兽焦糖恋心 / Otome Kaijuu Carameliser / 乙女怪獣キャラメリゼ - 04 - [简日内嵌][AVC 8bit 1080P]", "少女怪兽焦糖味", 4, None, "1080p", "重复三明治"),
+    ("[豌豆字幕组&风之圣殿字幕组][死神 千年血战篇 / BLEACH_Sennen_Kessen-hen][41][简体][1080P][MP4]", "死神 千年血战篇", 41, None, "1080p", "重复豌豆"),
+    ("[豌豆字幕組&風之聖殿字幕組][死神 千年血戰篇 / BLEACH_Sennen_Kessen-hen][41][繁體][1080P][MP4]", "死神 千年血戰篇", 41, None, "1080p", "豌豆繁体"),
+    ("[ANi] 魔法少女奈葉 EXCEEDS Gun Blaze Vengeance - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "魔法少女奈葉", 4, None, "1080p", "重复ANi奈叶"),
+    ("[LoliHouse] 猫与龙 / Neko to Ryuu - 05 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "猫与龙", 5, None, "1080p", "重复猫与龙"),
+    ("[绿茶字幕组] 碧蓝之海 第三季 / Grand Blue S3 [01][WebRip][1080p][简繁日内封]", "碧蓝之海", 1, 3, "1080p", "重复碧蓝"),
+    ("[綠茶字幕組] 碧藍之海 第三季 / Grand Blue S3 [02][WebRip][1080p][繁日內嵌]", "碧藍之海", 2, 3, "1080p", "碧蓝繁体02"),
+    ("[绿茶字幕组] 碧蓝之海 第三季 / Grand Blue S3 [02][WebRip][1080p][简日内嵌]", "碧蓝之海", 2, 3, "1080p", "碧蓝简体02"),
+    ("[LoliHouse] 入间同学入魔了！S4 / Mairimashita! Iruma-kun S4 - 17 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "入间同学入魔了", 17, 4, "1080p", "重复入间"),
+    ("[ANi] BLEACH 死神 千年血戰篇-禍進譚- - 41 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "BLEACH 死神 千年血戰篇", 41, None, "1080p", "重复BLEACH"),
+    ("[ANi] Mairimashita Irumakun S04 / 入間同學入魔了！第四季 - 17 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "入間同學入魔了", 17, 4, "1080p", "重复S04"),
+    ("[LoliHouse] 被放逐的重骑士用游戏知识开无双 / Tsuihou sareta Tensei Juukishi wa Game Chishiki de Musou suru - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "被放逐的重骑士用游戏知识开无双", 4, None, "1080p", "重复放逐"),
+    ("[7³ACG] 夏洛特/Charlotte S01 | 01-13+SPx1 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "夏洛特", 1, 1, "1080p", "重复夏洛特"),
+    ("[ANi] 小書痴的下剋上 為了成為圖書管理員不擇手段！領主的養女 - 15 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "小書痴的下剋上", 15, None, "1080p", "重复小書痴"),
+    ("[7³ACG] 街角魔族 2丁目/Machikado Mazoku 2-Choume S02 | 01-12 [简繁字幕] BDrip 1080p x265 OPUS 2.0", "街角魔族 2丁目", 1, 2, "1080p", "重复2丁目"),
+    ("[LoliHouse] [绿茶字幕组&LoliHouse] 描绘直至生命尽头 / 画完这个就去死 / 畫完這個再去死 / これ描いて死ね / Kore Kaite Shine - 03 [WebRip 1080p HEVC-10bit AAC][简繁日内封字幕]", "描绘直至生命尽头", 3, None, "1080p", "重复五段斜杠"),
+    ("[LoliHouse] 正后方的神威 / 從後面來的神威先生 / うしろの正面カムイさん / Ushiro no Shoumen Kamui-san - 02 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "正后方的神威", 2, None, "1080p", "重复神威"),
+    ("[LoliHouse] 剧场版 暗杀教室 我们的时光 / Gekijouban Ansatsu Kyoushitsu: Minna no Jikan [WebRip 1080p HEVC-10bit AAC][无字幕]", "剧场版 暗杀教室 我们的时光", None, None, "1080p", "重复剧场版"),
+    ("[7³ACG] 街角魔族/Machikado Mazoku S01 | 01-12 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "街角魔族", 1, 1, "1080p", "重复S01"),
+    ("[7³ACG] 线上游戏的老婆不可能是女生？/And You Thought There Is Never a Girl Online S01 | 01-12 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "线上游戏的老婆不可能是女生", 1, 1, "1080p", "重复线上游戏"),
+    ("[GM-Team][国漫][凡人修仙传 慕兰之战][Fan Ren Xiu Xian Zhuan][2026][08][AVC][GB][1080P]", "凡人修仙传 慕兰之战", 8, None, "1080p", "重复凡人"),
+    ("[ANi] Ultraman Teo / 超人力霸王狄奧 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "超人力霸王狄奧", 4, None, "1080p", "重复奥特曼"),
+    ("[ANi] Adventures of the Little Koala / 拉拉熊 - 17 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "拉拉熊", 17, None, "1080p", "重复拉拉熊"),
+    ("[绿茶字幕组] 描繪直至生命盡頭 / 畫完這個就去死 / Kore Kaite Shine [03][WebRip][1080p][繁日內嵌]", "描繪直至生命盡頭", 3, None, "1080p", "重复描绘繁"),
+    ("[绿茶字幕组] 描绘直至生命尽头 / 画完这个就去死 / Kore Kaite Shine [03][WebRip][1080p][简日内嵌]", "描绘直至生命尽头", 3, None, "1080p", "重复描绘简"),
+    ("[豌豆字幕组&LoliHouse] 关于我转生变成史莱姆这档事 第四季 / Tensei Shitara Slime Datta Ken 4th Season - 16(88) [WebRip 1080p HEVC-10bit AAC][简繁外挂字幕]", "关于我转生变成史莱姆这档事", 16, 4, "1080p", "重复史莱姆"),
+    ("[Skymoon-Raws] 關於我轉生變成史萊姆這檔事 第四季 / Tensei Shitara Slime Datta Ken S04 - 88 [ViuTV][WEB-DL][CHT][1080p][AVC AAC]", "關於我轉生變成史萊姆這檔事", 88, 4, "1080p", "重复史莱姆88"),
+    ("[LoliHouse] 『你们先走我断后』，于是10年后我成为了传说 / Koko wa Ore ni Makasete Saki ni Ike to Itte kara 10-nen ga Tattara Densetsu ni Natteita. - 04 [WebRip 1080p HEVC-10bit AAC][无中字]", "你们先走我断后", 4, None, "1080p", "重复书名号"),
+    ("[LoliHouse] 从0位居民开始的边境领主大人 / Ryoumin 0-nin Start no Henkyou Ryoushu-sama - 04 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]", "从0位居民开始的边境领主大人", 4, None, "1080p", "重复0位居民"),
+    ("[搬運][ANi] Nige Jouzu no Wakagimi S02 / 擅長逃跑的殿下 第二季 - 14 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]", "擅長逃跑的殿下", 14, 2, "1080p", "重复逃跑"),
+    ("[绿茶字幕组] 攻壳机动队 The Ghost in the Shell / Koukaku Kidoutai 2026 [01][WebRip][1080p][简繁日内封]", "攻壳机动队", 1, None, "1080p", "重复攻壳"),
+    ("[7³ACG] 命运之夜 无限剑制 第2季/Fate stay night Unlimited Blade Works S02 | 01-13 [简繁字幕] BDrip 1080p AV1 OPUS 2.0", "命运之夜 无限剑制", 1, 2, "1080p", "重复命运"),
+]
+
+
+@pytest.fixture
+def parser():
+    return UnifiedParser()
+
+
+@pytest.mark.parametrize("title,expected_cn,expected_ep,expected_season,expected_pix,note", TITLES)
+def test_real_world_title(parser, title, expected_cn, expected_ep, expected_season, expected_pix, note):
+    result = parser.parse(title)
+    assert result is not None, f"[{note}] 解析失败: {title[:60]}"
+
+    issues = []
+    if expected_cn and result.title_cn:
+        # 繁简双向匹配：解析器输出简体，期望可能是繁体
+        from app.utils.chinese_utils import to_simplified
+        expected_simplified = to_simplified(expected_cn)
+        actual_simplified = to_simplified(result.title_cn)
+        if expected_simplified not in actual_simplified and actual_simplified not in expected_simplified:
+            issues.append(f"cn_name: 期望含'{expected_cn}' 实际'{result.title_cn}'")
+    elif expected_cn and not result.title_cn:
+        issues.append(f"cn_name: 期望'{expected_cn}' 实际None")
+
+    if expected_ep is not None and result.episode != expected_ep:
+        issues.append(f"episode: 期望{expected_ep} 实际{result.episode}")
+
+    if expected_season is not None and result.season != expected_season:
+        issues.append(f"season: 期望{expected_season} 实际{result.season}")
+
+    if expected_pix and result.resource_pix != expected_pix:
+        issues.append(f"resource_pix: 期望'{expected_pix}' 实际'{result.resource_pix}'")
+
+    if issues:
+        pytest.fail(f"[{note}] {title[:60]}\n  " + "\n  ".join(issues))

@@ -1,6 +1,6 @@
 """测试动漫标题预处理和日文标题提取"""
 
-from app.media.parser.anime.prepare import extract_japanese_title, prepare_title
+from app.media.parser.unified.preprocessor import extract_japanese_title, prepare_title
 
 
 class TestPrepareTitle:

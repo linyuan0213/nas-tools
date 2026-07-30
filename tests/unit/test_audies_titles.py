@@ -1,0 +1,145 @@
+"""Audies/ADWeb 真实标题解析测试 — 电影/剧集/综艺"""
+
+# ruff: noqa: E501
+
+import pytest
+
+from app.domain.mediatypes import MediaType
+from app.media.parser.unified import UnifiedParser
+
+# (标题, 期望en名, 期望集数, 期望季数, 期望分辨率, 期望类型, 备注)
+TITLES = [
+    # === BluRay DIY 电影 ===
+    ("Deathstalker 2025 2160p UHD BluRay HEVC DV DTS-HD MA 5.1-DIY@Audies", "Deathstalker", None, None, "2160p", MediaType.MOVIE, "UHD电影"),
+    ("Dad's Army 2016 1080p EUR BluRay AVC DTS-HD MA 5.1-DIY@Audies", "Dad's Army", None, None, "1080p", MediaType.MOVIE, "EUR蓝光"),
+    ("American Violence 2017 1080p BluRay AVC DTS-HD MA 5.1-DIY@Audies", "American Violence", None, None, "1080p", MediaType.MOVIE, "标准蓝光"),
+    ("The Forest 2016 1080p BluRay AVC DTS-HD MA 5.1-DIY@Audies", "The Forest", None, None, "1080p", MediaType.MOVIE, "森林"),
+    ("Read My Lips 2001 1080p Criterion Collection BluRay AVC DTS-HD MA 5.1-DIY@Audies", "Read My Lips", None, None, "1080p", MediaType.MOVIE, "CC标准"),
+    ("The Housemaid 2010 1080p KOR BluRay AVC DTS-HD MA 5.1-DIY@Audies", "The Housemaid", None, None, "1080p", MediaType.MOVIE, "KOR韩版"),
+    ("Pillow Talk 1959 2160p UHD BluRay HEVC DV DTS-HD MA 2.0-DIY@Audies", "Pillow Talk", None, None, "2160p", MediaType.MOVIE, "UHD老片"),
+    ("Pressure 2026 2160p UHD BluRay HEVC DV TrueHD 7.1 Atmos-DIY@Audies", "Pressure", None, None, "2160p", MediaType.MOVIE, "UHD Atmos"),
+    ("The Mastermind 2025 2160p UHD BluRay HEVC DTS-HD MA 5.1-DIY@Audies", "The Mastermind", None, None, "2160p", MediaType.MOVIE, "UHD主谋"),
+    ("The Boxer 1977 1080p GBR BluRay AVC LPCM 1.0-Runrun@Audies", "The Boxer", None, None, "1080p", MediaType.MOVIE, "GBR英版"),
+    ("We Bury the Dead 2024 2160p GER UHD BluRay HEVC DV DTS-HD MA 5.1-DIY@Audies", "We Bury the Dead", None, None, "2160p", MediaType.MOVIE, "GER德版"),
+    ("The Snake Girl and the Silver-Haired Witch 1968 1080p GBR BluRay AVC DTS-HD MA 1.0-DIY@Audies", "The Snake Girl and the Silver-Haired Witch", None, None, "1080p", MediaType.MOVIE, "长标题"),
+    ("Becoming Jane 2007 1080p BluRay VC-1 LPCM 5.1-DIY@Audies", "Becoming Jane", None, None, "1080p", MediaType.MOVIE, "VC-1编码"),
+    ("Sense and Sensibility 1995 2160p EUR UHD BluRay HEVC HDR TrueHD 7.1 Atmos-DIY@Audies", "Sense and Sensibility", None, None, "2160p", MediaType.MOVIE, "UHD HDR"),
+
+    # === WebDL 电影 ===
+    ("A Ma 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "A Ma", None, None, "1080p", MediaType.MOVIE, "friDay电影"),
+    ("Sword and Armor 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Sword and Armor", None, None, "1080p", MediaType.MOVIE, "剑与甲"),
+    ("Fist to Fist 2028 1080p friDay WEB-DL H264 AAC-ADWeb", "Fist to Fist", None, None, "1080p", MediaType.MOVIE, "未来年份"),
+    ("Secret Lover Last Promise 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Secret Lover Last Promise", None, None, "1080p", MediaType.MOVIE, "秘密关系"),
+    ("Clutch 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Clutch", None, None, "1080p", MediaType.MOVIE, "绝命劫车"),
+    ("Relentless Fury 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Relentless Fury", None, None, "1080p", MediaType.MOVIE, "赴汤蹈火"),
+    ("The Road To Nowhere 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "The Road To Nowhere", None, None, "1080p", MediaType.MOVIE, "末日生存战"),
+    ("Home Behind Bars 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Home Behind Bars", None, None, "1080p", MediaType.MOVIE, "铁窗后的家"),
+    ("Exit Protocol 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Exit Protocol", None, None, "1080p", MediaType.MOVIE, "绝命清算"),
+    ("Tuned In 2025 1080p friDay WEB-DL H264 AAC-ADWeb", "Tuned In", None, None, "1080p", MediaType.MOVIE, "新来的小朋友"),
+
+    # === WebDL 剧集 (S01) ===
+    ("Purple Haze S01 2026 2160p WEB-DL H265 HDR DDP5.1-ADWeb", "Purple Haze", None, 1, "2160p", MediaType.TV, "剧集S01"),
+    ("Purple Haze S01 2026 2160p WEB-DL H265 DDP5.1-ADWeb", "Purple Haze", None, 1, "2160p", MediaType.TV, "剧集S01无HDR"),
+    ("Purple Haze S01 2026 1080p WEB-DL H264 AAC-ADWeb", "Purple Haze", None, 1, "1080p", MediaType.TV, "剧集S01-1080p"),
+    ("She Who Blazes S01 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "She Who Blazes", None, 1, "2160p", MediaType.TV, "灼灼不倾城S01"),
+    ("She Who Blazes S01 2026 1080p WEB-DL H264 AAC-ADWeb", "She Who Blazes", None, 1, "1080p", MediaType.TV, "灼灼不倾城S01-1080p"),
+    ("Mrs Revenge S01 2026 2160p WEB-DL H265 AAC-ADWeb", "Mrs Revenge", None, 1, "2160p", MediaType.TV, "夫妻的博弈S01"),
+    ("Mrs Revenge S01 2026 1080p WEB-DL H264 AAC-ADWeb", "Mrs Revenge", None, 1, "1080p", MediaType.TV, "夫妻的博弈S01-1080p"),
+    ("Fangzhou Whispers of the Unsolved S01 2026 2160p WEB-DL H265 AAC-ADWeb", "Fangzhou Whispers of the Unsolved", None, 1, "2160p", MediaType.TV, "房州探案录S01"),
+    ("Fangzhou Whispers of the Unsolved S01 2026 1080p WEB-DL H264 AAC-ADWeb", "Fangzhou Whispers of the Unsolved", None, 1, "1080p", MediaType.TV, "房州探案录S01-1080p"),
+
+    # === WebDL 剧集 (SxxExx) ===
+    ("Daemons of the Shadow Realm S01E16 2026 1080p CR WEB-DL x264 AAC-Nest@ADWeb", "Daemons of the Shadow Realm", 16, 1, "1080p", MediaType.TV, "黄泉使者S01E16"),
+    ("Mrs Revenge S01E25 2026 2160p WEB-DL H265 AAC-ADWeb", "Mrs Revenge", 25, 1, "2160p", MediaType.TV, "夫妻的博弈E25"),
+    ("Mrs Revenge S01E24 2026 2160p WEB-DL H265 AAC-ADWeb", "Mrs Revenge", 24, 1, "2160p", MediaType.TV, "夫妻的博弈E24"),
+    ("Mrs Revenge S01E23 2026 2160p WEB-DL H265 AAC-ADWeb", "Mrs Revenge", 23, 1, "2160p", MediaType.TV, "夫妻的博弈E23"),
+    ("Mrs Revenge S01E22 2026 2160p HQ WEB-DL H265 AAC-ADWeb", "Mrs Revenge", 22, 1, "2160p", MediaType.TV, "夫妻的博弈E22-HQ"),
+    ("Mrs Revenge S01E22 2026 2160p WEB-DL H265 AAC-ADWeb", "Mrs Revenge", 22, 1, "2160p", MediaType.TV, "夫妻的博弈E22"),
+    ("Mrs Revenge S01E22 2026 1080p WEB-DL H264 AAC-ADWeb", "Mrs Revenge", 22, 1, "1080p", MediaType.TV, "夫妻的博弈E22-1080p"),
+    ("As Scheduled S01E12 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "As Scheduled", 12, 1, "2160p", MediaType.TV, "如约而至E12"),
+    ("As Scheduled S01E14 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "As Scheduled", 14, 1, "2160p", MediaType.TV, "如约而至E14"),
+    ("As Scheduled S01E13 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "As Scheduled", 13, 1, "2160p", MediaType.TV, "如约而至E13"),
+    ("She Who Blazes S01E17 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "She Who Blazes", 17, 1, "2160p", MediaType.TV, "灼灼不倾城E17"),
+    ("She Who Blazes S01E18 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "She Who Blazes", 18, 1, "2160p", MediaType.TV, "灼灼不倾城E18"),
+    ("She Who Blazes S01E20 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "She Who Blazes", 20, 1, "2160p", MediaType.TV, "灼灼不倾城E20"),
+    ("She Who Blazes S01E19 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "She Who Blazes", 19, 1, "2160p", MediaType.TV, "灼灼不倾城E19"),
+    ("Princess Zhaoyang S01E09 2026 2160p WEB-DL H264 AAC-ADWeb", "Princess Zhaoyang", 9, 1, "2160p", MediaType.TV, "昭阳公主E09"),
+    ("Princess Zhaoyang S01E08 2026 2160p WEB-DL H264 AAC-ADWeb", "Princess Zhaoyang", 8, 1, "2160p", MediaType.TV, "昭阳公主E08"),
+    ("Princess Zhaoyang S01E09 2026 1080p WEB-DL H264 AAC-ADWeb", "Princess Zhaoyang", 9, 1, "1080p", MediaType.TV, "昭阳公主E09-1080p"),
+    ("Yiran s Silver Linings S01E16 2026 2160p WEB-DL H265 HDR 60FPS DDP2.0-ADWeb", "Yiran s Silver Linings", 16, 1, "2160p", MediaType.TV, "依然的喜事E16-HDR"),
+    ("Yiran s Silver Linings S01E15 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "Yiran s Silver Linings", 15, 1, "2160p", MediaType.TV, "依然的喜事E15"),
+    ("Portland Street Operation S01E16 2026 2160p WEB-DL H265 AAC-ADWeb", "Portland Street Operation", 16, 1, "2160p", MediaType.TV, "砵兰街行动E16"),
+    ("Feng Chi Sheng Chun S01E10 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "Feng Chi Sheng Chun", 10, 1, "2160p", MediaType.TV, "凤池生春E10"),
+    ("Feng Chi Sheng Chun S01E09 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "Feng Chi Sheng Chun", 9, 1, "2160p", MediaType.TV, "凤池生春E09"),
+    ("Yiran s Silver Linings S01E16 2026 1080p WEB-DL H265 AAC-ADWeb", "Yiran s Silver Linings", 16, 1, "1080p", MediaType.TV, "依然的喜事E16-1080p"),
+    ("Yiran s Silver Linings S01E15 2026 1080p WEB-DL H265 AAC-ADWeb", "Yiran s Silver Linings", 15, 1, "1080p", MediaType.TV, "依然的喜事E15-1080p"),
+    ("Portland Street Operation S01E16 2026 1080p WEB-DL H265 AAC-ADWeb", "Portland Street Operation", 16, 1, "1080p", MediaType.TV, "砵兰街行动E16-1080p"),
+    ("Feng Chi Sheng Chun S01E10 2026 1080p WEB-DL H265 AAC-ADWeb", "Feng Chi Sheng Chun", 10, 1, "1080p", MediaType.TV, "凤池生春E10-1080p"),
+    ("Feng Chi Sheng Chun S01E09 2026 1080p WEB-DL H265 AAC-ADWeb", "Feng Chi Sheng Chun", 9, 1, "1080p", MediaType.TV, "凤池生春E09-1080p"),
+    ("As Scheduled S01E14 2026 1080p WEB-DL H264 AAC-ADWeb", "As Scheduled", 14, 1, "1080p", MediaType.TV, "如约而至E14-1080p"),
+    ("She Who Blazes S01E19 2026 1080p WEB-DL H264 AAC-ADWeb", "She Who Blazes", 19, 1, "1080p", MediaType.TV, "灼灼不倾城E19-1080p"),
+    ("As Scheduled S01E12 2026 1080p WEB-DL H264 AAC-ADWeb", "As Scheduled", 12, 1, "1080p", MediaType.TV, "如约而至E12-1080p"),
+    ("She Who Blazes S01E18 2026 1080p WEB-DL H264 AAC-ADWeb", "She Who Blazes", 18, 1, "1080p", MediaType.TV, "灼灼不倾城E18-1080p"),
+    ("She Who Blazes S01E20 2026 1080p WEB-DL H264 AAC-ADWeb", "She Who Blazes", 20, 1, "1080p", MediaType.TV, "灼灼不倾城E20-1080p"),
+    ("She Who Blazes S01E17 2026 1080p WEB-DL H264 AAC-ADWeb", "She Who Blazes", 17, 1, "1080p", MediaType.TV, "灼灼不倾城E17-1080p"),
+    ("As Scheduled S01E13 2026 1080p WEB-DL H264 AAC-ADWeb", "As Scheduled", 13, 1, "1080p", MediaType.TV, "如约而至E13-1080p"),
+    ("Mrs Revenge S01E25 2026 1080p WEB-DL H264 AAC-ADWeb", "Mrs Revenge", 25, 1, "1080p", MediaType.TV, "夫妻的博弈E25-1080p"),
+    ("Mrs Revenge S01E24 2026 1080p WEB-DL H264 AAC-ADWeb", "Mrs Revenge", 24, 1, "1080p", MediaType.TV, "夫妻的博弈E24-1080p"),
+    ("Mrs Revenge S01E23 2026 1080p WEB-DL H264 AAC-ADWeb", "Mrs Revenge", 23, 1, "1080p", MediaType.TV, "夫妻的博弈E23-1080p"),
+
+    # === 综艺 ===
+    ("Still Hungry S01E09 2026 1080p friDay WEB-DL H264 AAC-DramaS@ADWeb", "Still Hungry", 9, 1, "1080p", MediaType.TV, "韩国大胃王E09"),
+    ("Zhe Shi Wo De Xi You S02E07 Interview 2026 2160p WEB-DL H265 AAC-ADWeb", "Zhe Shi Wo De Xi You", 7, 2, "2160p", MediaType.TV, "西游E07专访"),
+    ("Zhe Shi Wo De Xi You S02E09 Game 2026 2160p WEB-DL H265 AAC-ADWeb", "Zhe Shi Wo De Xi You", 9, 2, "2160p", MediaType.TV, "西游E09游戏"),
+    ("Zhe Shi Wo De Xi You S02E09 Game 2026 1080p WEB-DL H264 AAC-ADWeb", "Zhe Shi Wo De Xi You", 9, 2, "1080p", MediaType.TV, "西游E09-1080p"),
+    ("Zhe Shi Wo De Xi You S02E07 Interview 2026 1080p WEB-DL H264 AAC-ADWeb", "Zhe Shi Wo De Xi You", 7, 2, "1080p", MediaType.TV, "西游E07-1080p"),
+    ("The Rap of China S08E15 2026 2160p WEB-DL H265 DDP2.0-ADWeb", "The Rap of China", 15, 8, "2160p", MediaType.TV, "中国新说唱E15"),
+    ("The Rap of China S08E09 Extra 2026 2160p WEB-DL H265 DDP5.1-ADWeb", "The Rap of China", 9, 8, "2160p", MediaType.TV, "中国新说唱E09未播"),
+    ("The Rap of China S08E09 Extra 2026 1080p WEB-DL H264 AAC-ADWeb", "The Rap of China", 9, 8, "1080p", MediaType.TV, "中国新说唱E09-1080p"),
+    ("The Rap of China S08E15 2026 1080p WEB-DL H264 AAC-ADWeb", "The Rap of China", 15, 8, "1080p", MediaType.TV, "中国新说唱E15-1080p"),
+    ("The Chinese Restaurant S10E06 Shot 2026 2160p WEB-DL H265 AAC-ADWeb", "The Chinese Restaurant", 6, 10, "2160p", MediaType.TV, "中餐厅E06直拍"),
+    ("The Chinese Restaurant S10E06 Shot 2026 1080p WEB-DL H265 AAC-ADWeb", "The Chinese Restaurant", 6, 10, "1080p", MediaType.TV, "中餐厅E06-1080p"),
+    ("Crazy Treasure Hunt S02E11 2026 2160p WEB-DL H265 AAC-ADWeb", "Crazy Treasure Hunt", 11, 2, "2160p", MediaType.TV, "寻宝藏E11"),
+    ("Crazy Treasure Hunt S02E12 2026 2160p WEB-DL H265 AAC-ADWeb", "Crazy Treasure Hunt", 12, 2, "2160p", MediaType.TV, "寻宝藏E12"),
+    ("Crazy Treasure Hunt S02E11 2026 1080p WEB-DL H265 AAC-ADWeb", "Crazy Treasure Hunt", 11, 2, "1080p", MediaType.TV, "寻宝藏E11-1080p"),
+    ("Crazy Treasure Hunt S02E12 2026 1080p WEB-DL H265 AAC-ADWeb", "Crazy Treasure Hunt", 12, 2, "1080p", MediaType.TV, "寻宝藏E12-1080p"),
+    ("Great Escape S08E01 Plus 2026 2160p WEB-DL H265 AAC-ADWeb", "Great Escape", 1, 8, "2160p", MediaType.TV, "密室大逃脱E01"),
+    ("Great Escape S08E01 Plus 2026 1080p WEB-DL H265 AAC-ADWeb", "Great Escape", 1, 8, "1080p", MediaType.TV, "密室大逃脱E01-1080p"),
+    ("H!6 S2026E11 Plus 2026 2160p WEB-DL H265 AAC-ADWeb", "H!6", 11, 2026, "2160p", MediaType.TV, "你好星期六E11"),
+    ("H!6 S2026E11 Plus 2026 1080p WEB-DL H265 AAC-ADWeb", "H!6", 11, 2026, "1080p", MediaType.TV, "你好星期六E11-1080p"),
+    ("Im So Into You S06E14 Watch 2026 2160p WEB-DL H265 AAC-ADWeb", "Im So Into You", 14, 6, "2160p", MediaType.TV, "喜欢你我也是E14"),
+    ("Im So Into You S06E14 Watch 2026 1080p WEB-DL H264 AAC-ADWeb", "Im So Into You", 14, 6, "1080p", MediaType.TV, "喜欢你我也是E14-1080p"),
+]
+
+
+@pytest.fixture
+def parser():
+    return UnifiedParser()
+
+
+@pytest.mark.parametrize("title,expected_en,expected_ep,expected_season,expected_pix,expected_type,note", TITLES)
+def test_audies_title(parser, title, expected_en, expected_ep, expected_season, expected_pix, expected_type, note):
+    result = parser.parse(title)
+    assert result is not None, f"[{note}] 解析失败: {title[:60]}"
+
+    issues = []
+    if expected_en and result.title_en:
+        if expected_en.lower() not in result.title_en.lower() and result.title_en.lower() not in expected_en.lower():
+            issues.append(f"en_name: 期望含'{expected_en}' 实际'{result.title_en}'")
+    elif expected_en and not result.title_en:
+        issues.append(f"en_name: 期望'{expected_en}' 实际None")
+
+    if expected_ep is not None and result.episode != expected_ep:
+        issues.append(f"episode: 期望{expected_ep} 实际{result.episode}")
+
+    if expected_season is not None and result.season != expected_season:
+        issues.append(f"season: 期望{expected_season} 实际{result.season}")
+
+    if expected_pix and result.resource_pix != expected_pix:
+        issues.append(f"resource_pix: 期望'{expected_pix}' 实际'{result.resource_pix}'")
+
+    if expected_type and result.type != expected_type:
+        issues.append(f"type: 期望'{expected_type}' 实际'{result.type}'")
+
+    if issues:
+        pytest.fail(f"[{note}] {title[:60]}\n  " + "\n  ".join(issues))

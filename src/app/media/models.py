@@ -49,6 +49,10 @@ class MediaInfo(BaseModel):
     begin_episode: int | None = None
     end_episode: int | None = None
     part: str | None = None
+    # 种子原始季/集（remap 后保留重映射前的值）
+    seeds_season: int | None = None
+    seeds_episode: int | None = None
+    seeds_end_episode: int | None = None
 
     # ---- 资源信息 ----
     resource_type: str | None = None
@@ -140,9 +144,11 @@ class MediaInfo(BaseModel):
 
     def get_season_string(self) -> str:
         if self.begin_season is not None:
-            if self.end_season is None:
-                return "S{}".format(str(self.begin_season).rjust(2, "0"))
-            return "S{}-S{}".format(str(self.begin_season).rjust(2, "0"), str(self.end_season).rjust(2, "0"))
+            b = self.begin_season
+            e = self.end_season
+            if e is None or (isinstance(b, int) and isinstance(e, int) and e == b):
+                return "S{}".format(str(b).rjust(2, "0"))
+            return "S{}-S{}".format(str(b).rjust(2, "0"), str(e).rjust(2, "0"))
         if self.type == MediaType.MOVIE:
             return ""
         return "S01"
@@ -200,9 +206,11 @@ class MediaInfo(BaseModel):
 
     def get_episode_string(self) -> str:
         if self.begin_episode is not None:
-            if self.end_episode is None:
-                return "E{}".format(str(self.begin_episode).rjust(2, "0"))
-            return "E{}-E{}".format(str(self.begin_episode).rjust(2, "0"), str(self.end_episode).rjust(2, "0"))
+            b = self.begin_episode
+            e = self.end_episode
+            if e is None or (isinstance(b, int) and isinstance(e, int) and e == b):
+                return "E{}".format(str(b).rjust(2, "0"))
+            return "E{}-E{}".format(str(b).rjust(2, "0"), str(e).rjust(2, "0"))
         return ""
 
     def get_episode_items(self) -> str:
@@ -464,6 +472,12 @@ class MediaInfo(BaseModel):
             if self.year and tmdb_year and str(self.year) != str(tmdb_year):
                 log.debug(f"[MediaInfo]TMDB年份不匹配: 种子={self.year}, TMDB={tmdb_year}, 保留种子元数据")
                 tmdb_year = ""  # 年份冲突时不覆盖
+        elif self.type != MediaType.MOVIE and self.year and info:
+            tmdb_year = info.get("first_air_date", "")[:4] if info.get("first_air_date") else ""
+            if tmdb_year.isdigit() and self.year.isdigit() and abs(int(self.year) - int(tmdb_year)) > 5:
+                self.tmdb_id = None
+                self.tmdb_info = None
+                return
 
         if media_type == MediaType.MOVIE:
             self.title = info.get("title")
@@ -559,6 +573,9 @@ class MediaInfo(BaseModel):
             "link": self.get_detail_url(),
             "season": self.get_season_list(),
             "episode": self.get_episode_list(),
+            "seeds_season": self.seeds_season,
+            "seeds_episode": self.seeds_episode,
+            "seeds_end_episode": self.seeds_end_episode,
             "backdrop": self.get_backdrop_image(),
             "poster": self.get_poster_image(),
             "org_string": self.org_string,
