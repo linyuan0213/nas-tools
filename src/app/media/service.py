@@ -215,13 +215,10 @@ class MediaService:
                 # 文件年份早于 TMDB 首播 5 年以上 → 可能错配，拒绝
                 and int(original_year) < int(result.year) - 5
             ):
-                log.info(
-                    f"[service]年份冲突 种子={original_year} TMDB={result.year} → 尝试补充搜索"
-                )
+                log.info(f"[service]年份冲突 种子={original_year} TMDB={result.year} → 尝试补充搜索")
                 if parsed.title_en:
                     combined = f"{parsed.title_cn or ''} {parsed.title_en}".strip()
                     if combined != (parsed.title_cn or ""):
-                        lang = None
                         if language:
                             self._lookup.client.set_language(language or "")
                         try:
@@ -232,9 +229,7 @@ class MediaService:
                             )
                             if retry_result:
                                 # 重试结果也要年份校验
-                                r_year = (
-                                    retry_result.year or ""
-                                )
+                                r_year = retry_result.year or ""
                                 if (
                                     original_year
                                     and r_year
@@ -526,7 +521,7 @@ class MediaService:
                 mapped = self._episode_mapper.map_batch(map_items)
                 mapped_count = 0
                 for i, mapped_result in enumerate(mapped):
-                    if mapped_result:
+                    if isinstance(mapped_result, tuple):
                         idx = map_indices[i]
                         old_season = results[idx].begin_season
                         old_episode = results[idx].begin_episode
@@ -597,7 +592,7 @@ class MediaService:
                 mapped = self._episode_mapper.map_batch(map_items)
                 mapped_count = 0
                 for info, mapped_result in zip(hit_infos, mapped, strict=False):
-                    if mapped_result:
+                    if isinstance(mapped_result, tuple):
                         # 保存种子原始值
                         info.seeds_season = info.begin_season
                         info.seeds_episode = info.begin_episode
@@ -764,7 +759,7 @@ class MediaService:
                     mapped = self._episode_mapper.map_batch(map_items)
                     mapped_count = 0
                     for i, mapped_result in enumerate(mapped):
-                        if mapped_result:
+                        if isinstance(mapped_result, tuple):
                             file_path = map_paths[i]
                             info = return_media_infos[file_path]
                             info.seeds_season = info.begin_season
@@ -906,7 +901,7 @@ class MediaService:
                 mapped = self._episode_mapper.map_batch(map_items)
                 mapped_count = 0
                 for i, mapped_result in enumerate(mapped):
-                    if mapped_result:
+                    if isinstance(mapped_result, tuple):
                         file_path = map_paths[i]
                         info = return_media_infos[file_path]
                         info.seeds_season = info.begin_season
@@ -1142,7 +1137,7 @@ class MediaService:
         mapped = self._episode_remapper.remap(
             int(info.tmdb_id), info.begin_season, info.begin_episode, info.end_episode
         )
-        if mapped:
+        if isinstance(mapped, tuple):
             new_season = mapped[0]
             new_episode = mapped[1]
             if len(mapped) == 4:

@@ -94,7 +94,10 @@ RULES: list[ExtractionRule] = [
     ),
     ExtractionRule(
         name="streaming_sites",
-        pattern=re.compile(r"\b(BILIBILI|Baha|B-Global|Crunchyroll|Funimation|Netflix|NF|AMZN|HMAX|DSNP|iQIYI|Tencent|YOUKU|friDay|LINETV|CATCHPLAY)\b", re.IGNORECASE),
+        pattern=re.compile(
+            r"\b(BILIBILI|Baha|B-Global|Crunchyroll|Funimation|Netflix|NF|AMZN|HMAX|DSNP|iQIYI|Tencent|YOUKU|friDay|LINETV|CATCHPLAY)\b",
+            re.IGNORECASE,
+        ),
         category="source",
         priority=66,
         confidence=0.85,

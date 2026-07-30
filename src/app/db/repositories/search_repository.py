@@ -182,7 +182,7 @@ class SearchRepository(BaseRepository):
         with self.session() as db:
             return db.query(SEARCHRESULTINFO).filter(dl_id == SEARCHRESULTINFO.ID).all()
 
-    def get_search_results(self, session_id: str | None = None):
+    def get_search_results(self, session_id: str | None = None, user_id: str | None = None):
         with self.session() as db:
             query = db.query(SEARCHRESULTINFO)
             if session_id:
@@ -206,3 +206,11 @@ class SearchRepository(BaseRepository):
             db.query(SEARCHRESULTINFO).filter(SEARCHRESULTINFO.SEARCH_SESSION_ID == session_id).delete(
                 synchronize_session=False
             )
+
+    def delete_expired(self, ttl_hours: int = 24):
+        """
+        清理过期搜索结果
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=ttl_hours)
+        with self.session() as db:
+            db.query(SEARCHRESULTINFO).filter(SEARCHRESULTINFO.CREATED_AT < cutoff).delete(synchronize_session=False)

@@ -20,9 +20,7 @@ class ExtractionRule:
     consumes: bool = True
     confidence: float = 0.9
     stop: bool = False
-    _extract_fn: Callable[[re.Match[str], str], dict[str, Any] | None] | None = field(
-        default=None, repr=False
-    )
+    _extract_fn: Callable[[re.Match[str], str], dict[str, Any] | None] | None = field(default=None, repr=False)
 
     def extract(self, match: re.Match[str], text: str) -> dict[str, Any] | None:
         if self._extract_fn:

@@ -60,7 +60,7 @@ def prepare_title(title: str) -> str:
             break
         # 语言/字幕/制作标记 → 移除
         if _LANGUAGE_SUBTITLE_RE.search(inner):
-            title = title[m.end():]
+            title = title[m.end() :]
             continue
         # 发布组标记 → 移除
         has_cjk = bool(re.search(r"[぀-ヿ㐀-䶿一-鿿가-힯豈-﫿]", inner))
@@ -74,13 +74,10 @@ def prepare_title(title: str) -> str:
             )
         )
         is_short_group_name = (
-            not has_cjk
-            and " " not in inner
-            and len(inner) < 30
-            and re.fullmatch(r"[A-Za-z0-9\-_@.&+³]+", inner)
+            not has_cjk and " " not in inner and len(inner) < 30 and re.fullmatch(r"[A-Za-z0-9\-_@.&+³]+", inner)
         )
         if not has_cjk or looks_like_group or is_short_group_name:
-            title = title[m.end():]
+            title = title[m.end() :]
             continue
         break
 

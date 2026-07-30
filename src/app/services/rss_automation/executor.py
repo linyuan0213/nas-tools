@@ -140,7 +140,7 @@ def _check_task_rss(service, taskid: int | None, event_bus: EventBus | None = No
                     log.info(f"[RssTaskService]{match_msg}")
                     continue
                 if service.rss_repo.check_rss_history(
-                    type_str=MediaTypeMapper.to_tmdb(media_info.type),
+                    type_str=MediaTypeMapper.to_tmdb(media_info.type),  # type: ignore[reportArgumentType]
                     name=media_info.title,
                     year=media_info.year,
                     season=media_info.get_season_string(),

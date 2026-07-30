@@ -1,5 +1,8 @@
 """Test TMDB identify for problem files"""
-import sys; sys.path.insert(0, '/nexus-media/src')
+
+import sys
+
+sys.path.insert(0, "/nexus-media/src")
 from app.media.parser._metainfo import meta_info
 
 titles = [
@@ -10,4 +13,7 @@ titles = [
 ]
 for t in titles:
     mi = meta_info(t)
-    print(f"parser: en={mi.en_name!r} cn={mi.cn_name!r} season={mi.begin_season} ep={mi.begin_episode} year={mi.year} type={mi.type}")
+    print(
+        f"parser: en={mi.en_name!r} cn={mi.cn_name!r} season={mi.begin_season}"
+        f" ep={mi.begin_episode} year={mi.year} type={mi.type}"
+    )

@@ -134,7 +134,7 @@ class EpisodeMapper:
                     if i < len(blocks) and blocks[i][1] != tmdb_cumulative:
                         aligned = False
                         log.info(
-                            f"[EpisodeMapper]TMDB {tmdb_id} S{i+1}: "
+                            f"[EpisodeMapper]TMDB {tmdb_id} S{i + 1}: "
                             f"推断起始E{blocks[i][1]} ≠ TMDB起始E{tmdb_cumulative}，需要映射"
                         )
                         break
@@ -211,7 +211,7 @@ class EpisodeMapper:
                         seasons = None
                 if seasons:
                     for s in seasons:
-                        if s.get("season_number") == source_season:
+                        if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
                             return None  # TMDB 已有该季，不需要映射
                 # TMDB 没有该季 → 推断 blocks，范围内才映射
                 blocks = self._fetch_blocks(tmdb_id)
@@ -234,8 +234,8 @@ class EpisodeMapper:
                     seasons = None
             if seasons and source_season:
                 for s in seasons:
-                    if s.get("season_number") == source_season:
-                        if 1 <= (source_episode or 1) <= s.get("episode_count", 0):
+                    if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
+                        if 1 <= (source_episode or 1) <= s.get("episode_count", 0):  # type: ignore[reportAttributeAccessIssue]
                             return None  # TMDB 已有该季且集号在范围内
                         break
             return self.map_absolute(tmdb_id, source_episode, source_end_ep)
@@ -255,8 +255,8 @@ class EpisodeMapper:
                     seasons = None
             if seasons:
                 for s in seasons:
-                    if s.get("season_number") == source_season:
-                        count = s.get("episode_count", 0)
+                    if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
+                        count = s.get("episode_count", 0)  # type: ignore[reportAttributeAccessIssue]
                         if 1 <= source_episode <= count:
                             return None
                         break
@@ -264,7 +264,7 @@ class EpisodeMapper:
         # 快速检查未命中 → 无可靠映射，不猜测
         return None
 
-    def map_batch(self, items: list[dict]) -> list[tuple[int, int] | None]:
+    def map_batch(self, items: list[dict]) -> list[tuple[int, int] | tuple[int, int, int, int] | None]:
         """
         批量映射 — 相同 tmdb_id 共享缓存，不同 tmdb_id 并发查询
 

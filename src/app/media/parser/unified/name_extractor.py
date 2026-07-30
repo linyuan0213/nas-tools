@@ -134,6 +134,7 @@ def extract_name(ctx: ParseContext, original_text: str) -> None:
 
 def _clean_metadata_brackets(text: str) -> str:
     """移除方括号中的元数据内容（保留非元数据内容）"""
+
     def replace_bracket(m: re.Match[str]) -> str:
         inner = m.group(1).strip()
         if not inner:
@@ -143,6 +144,7 @@ def _clean_metadata_brackets(text: str) -> str:
         if re.fullmatch(r"[\s\-_\.]*", inner):
             return ""
         return m.group(0)
+
     return re.sub(r"\[([^\]]+)\]", replace_bracket, text)
 
 
@@ -376,9 +378,38 @@ def _recover_from_original(ctx: ParseContext, original_text: str) -> None:
 
 
 _HIGH_FREQ_TITLE_WORDS = frozenset(
-    {"the", "and", "for", "our", "you", "are", "not", "but", "all", "one",
-     "of", "in", "to", "is", "it", "on", "at", "we", "no", "so", "be", "me",
-     "my", "mr", "mrs", "ms", "dr", "st", "vs", "or"}
+    {
+        "the",
+        "and",
+        "for",
+        "our",
+        "you",
+        "are",
+        "not",
+        "but",
+        "all",
+        "one",
+        "of",
+        "in",
+        "to",
+        "is",
+        "it",
+        "on",
+        "at",
+        "we",
+        "no",
+        "so",
+        "be",
+        "me",
+        "my",
+        "mr",
+        "mrs",
+        "ms",
+        "dr",
+        "st",
+        "vs",
+        "or",
+    }
 )
 
 

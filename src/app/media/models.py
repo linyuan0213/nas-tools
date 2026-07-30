@@ -475,8 +475,8 @@ class MediaInfo(BaseModel):
         elif self.type != MediaType.MOVIE and self.year and info:
             tmdb_year = info.get("first_air_date", "")[:4] if info.get("first_air_date") else ""
             if tmdb_year.isdigit() and self.year.isdigit() and abs(int(self.year) - int(tmdb_year)) > 5:
-                self.tmdb_id = None
-                self.tmdb_info = None
+                self.tmdb_id = None  # type: ignore[reportAttributeAccessIssue]
+                self.tmdb_info = None  # type: ignore[reportAttributeAccessIssue]
                 return
 
         if media_type == MediaType.MOVIE:

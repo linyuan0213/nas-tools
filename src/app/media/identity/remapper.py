@@ -49,7 +49,9 @@ class EpisodeRemapper:
 
     # ---------- 单条映射 ----------
 
-    def remap(self, tmdb_id: int, season: int | None, episode: int | None) -> tuple[int, int] | None:
+    def remap(
+        self, tmdb_id: int, season: int | None, episode: int | None, end_episode: int | None = None
+    ) -> tuple[int, int] | None | tuple[int, int, int, int]:
         """
         返回 (season, episode) 规范季集；无需映射/失败返回 None。
         优先编号习惯补充表，其次合并季/绝对集推断。
@@ -60,14 +62,14 @@ class EpisodeRemapper:
         if overridden:
             return overridden
         if self._mapper:
-            return self._mapper.map_auto(tmdb_id, season, episode)
+            return self._mapper.map_auto(tmdb_id, season, episode, end_episode)
         return None
 
-    def remap_batch(self, items: list[dict]) -> list[tuple[int, int] | None]:
+    def remap_batch(self, items: list[dict]) -> list[tuple[int, int] | tuple[int, int, int, int] | None]:
         """批量映射：先应用补充表（零 API），剩余交 EpisodeMapper.map_batch"""
         if not items:
             return []
-        results: list[tuple[int, int] | None] = [None] * len(items)
+        results: list[tuple[int, int] | tuple[int, int, int, int] | None] = [None] * len(items)
         rest: list[tuple[int, dict]] = []
         for i, item in enumerate(items):
             overridden = self._apply_override(int(item.get("tmdb_id") or 0), item.get("season"), item.get("episode"))
