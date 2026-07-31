@@ -237,11 +237,31 @@ class ResultFilter:
                 if _has_cjk(mn) == _has_cjk(mmn):
                     if mmn in mn:
                         if len(mmn) / len(mn) >= 0.85:
+                            # 非 CJK 精确匹配时，检查 CJK 名称是否含衍生词（特别篇/OVA 等）
+                            if not _has_cjk(mn):
+                                _mcn = _cn_simplify(meta_info.cn_name or meta_info.title or "")
+                                _scn = _cn_simplify(match_media.cn_name or match_media.title or "")
+                                if _mcn and _scn and _has_cjk(_mcn) and _has_cjk(_scn):
+                                    if _scn in _mcn:
+                                        _extra = _mcn[len(_scn) :].strip()
+                                        if _extra and all("\u4e00" <= c <= "\u9fff" for c in _extra):
+                                            if any(m in _extra for m in _EDITION_SET):
+                                                continue
                             return True
                     elif mn in mmn:
                         if len(mn) / len(mmn) >= 0.6:
                             if not _has_cjk(mn) and meta_info.cn_name and re.search(r"[A-Za-z]", meta_info.cn_name):
                                 continue
+                            # 非 CJK 匹配时，检查 CJK 名称是否含衍生词（特别篇/OVA 等）
+                            if not _has_cjk(mn):
+                                _mcn = _cn_simplify(meta_info.cn_name or meta_info.title or "")
+                                _scn = _cn_simplify(match_media.cn_name or match_media.title or "")
+                                if _mcn and _scn and _has_cjk(_mcn) and _has_cjk(_scn):
+                                    if _scn in _mcn:
+                                        _extra = _mcn[len(_scn) :].strip()
+                                        if _extra and all("\u4e00" <= c <= "\u9fff" for c in _extra):
+                                            if any(m in _extra for m in _EDITION_SET):
+                                                continue
                             return True
                 # 中文虚词归一化后二次匹配（全中文后缀=元数据标签，宽松；含英文/数字=衍生，严格）
                 mn_simp = _cn_simplify(mn)

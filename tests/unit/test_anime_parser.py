@@ -6,7 +6,7 @@ from app.media.parser.unified.preprocessor import extract_japanese_title, prepar
 class TestPrepareTitle:
     def test_empty_title(self):
         assert prepare_title("") == ""
-        assert prepare_title("") is None
+        assert prepare_title(None) is None  # type: ignore[reportArgumentType]
 
     def test_mikan_march_tag(self):
         result = prepare_title("[喵萌奶茶屋][鬼灭之刃 柱训练篇][1080p][简日双语]")

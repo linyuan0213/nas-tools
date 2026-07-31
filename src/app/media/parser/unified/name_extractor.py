@@ -284,6 +284,15 @@ def _extract_free_text(ctx: ParseContext, text: str) -> None:
     text = re.sub(r"\s+-\s*\d+\s*$", "", text)
     text = re.sub(r"-[^-]{1,10}-(?=\s|$)", "", text).strip()
 
+    # ~...~ 为日文副标题标记 → 提取为 episode_title，不参与名称
+    sub_match = re.search(r"~([^~]+)~", text)
+    if sub_match:
+        ctx.episode_title = sub_match.group(1).strip() or ctx.episode_title
+        text = text.replace(sub_match.group(0), " ").strip()
+
+    # 【...】CJK 全角方括号标签（生/附日字/字幕/内嵌等）→ 元数据，移除
+    text = re.sub(r"【[^】]*(?:生|附日字|字幕|熟肉|生肉|内嵌|内封|外挂|日字|简繁|多语|双语)[^】]*】", " ", text).strip()
+
     # 提取发布组后缀 (空格-Name 格式)
     team_match = re.search(r"\s-\s*([A-Za-z][A-Za-z0-9]*)\s*$", text)
     if team_match:
@@ -316,7 +325,13 @@ def _extract_free_text(ctx: ParseContext, text: str) -> None:
         m = re.search(r"([A-Za-z0-9_]+)[!?。，,;；：:\s]*$", text)
         if not m or _is_likely_title_word(m.group(1)):
             break
-        text = text[: m.start()].strip()
+        stripped = text[: m.start()].strip()
+        if not stripped:
+            break
+        # 只剩 1-2 个词时视为标题，不再剥离
+        if len(stripped.split()) <= 2:
+            break
+        text = stripped
 
     # 再次清理残留的点号
     text = re.sub(r"(?<!\d)\.(?!\d)|(?<=\d)\.(?!\d)", " ", text)

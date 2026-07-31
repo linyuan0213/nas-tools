@@ -77,10 +77,14 @@ def meta_info(title: str, subtitle: str | None = None, mtype: MediaType | None =
                     media_info.year = year_match.group(1)
                     break
 
-    # 音频文件识别：无季集 + 标题含音频特征 → 非影视内容，不参与匹配
+    # 音频文件识别：无季集 + 标题含音频特征且无视频编码 → 非影视内容，不参与匹配
     if (
         not media_info.begin_episode
         and not media_info.begin_season
+        and not re.search(
+            r"(?i)\b(?:h\.?26[45]|x\.?26[45]|hevc|av1|mpeg|theora|wmv)",
+            org_title,
+        )
         and re.search(
             r"(?i)\b(?:flac|wav|mp3|aac|ape|dsd|dts|alac|ogg|wma|opus)\b"
             r"|(?:Hi[-\s]?Res|24\s*bit|96\s*kHz|192\s*kHz|lossless|无损|音频|音乐专辑)"

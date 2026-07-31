@@ -27,7 +27,7 @@ class TestEpisodeRemapper:
         r = self._remapper({97699: {4: 2}})
         r._mapper.map_auto.return_value = (1, 46)  # type: ignore[union-attr]
         assert r.remap(97699, 2, 46) == (1, 46)
-        r._mapper.map_auto.assert_called_once_with(97699, 2, 46)  # type: ignore[union-attr]
+        r._mapper.map_auto.assert_called_once_with(97699, 2, 46, None)  # type: ignore[union-attr]
 
     def test_no_tmdb_id(self):
         r = self._remapper({97699: {4: 2}})

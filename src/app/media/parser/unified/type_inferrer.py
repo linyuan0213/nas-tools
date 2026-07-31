@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from app.domain.mediatypes import MediaType
 
 from .types import ParseContext
@@ -51,6 +53,9 @@ def _is_anime_pattern(ctx: ParseContext) -> bool:
         return True
     # 日文假名标题存在 → 动漫
     if ctx.jp_title:
+        return True
+    # 片假名/平假名标题（如 ブラックトリック）→ 动漫
+    if ctx.en_name and re.search(r"[ぁ-ヿ]", ctx.en_name):
         return True
     return False
 
