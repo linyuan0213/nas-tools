@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
 from app.plugin_framework.context import PluginContext
-from app.utils.browser_mode import build_browser_mode
 from app.utils.config_tools import get_proxies
 
 
@@ -110,15 +109,9 @@ class SiteSigninHandler(ABC):
     def signin(self, ctx: SiteSigninContext) -> SigninResult: ...
 
     def _http_client(self, ctx: SiteSigninContext, **kwargs) -> HttpClient:
+        # 浏览器自动化站点统一走 BrowserSigninHandler（签到完关闭页面），
+        # 不再在 HTTP 客户端挂 ChromeTransport，避免残留持久会话
         config = HttpClientConfig(proxy_url=ctx.proxy_url, **kwargs)
-        if ctx.is_browser:
-            browser_config = build_browser_mode(
-                {"chrome": True, "ua": ctx.ua, "browser_render": True},
-                site_key=ctx.site_id,
-                proxy_url=ctx.proxy_url,
-            )
-            if browser_config:
-                config.browser = browser_config
         return HttpClient(
             config=config,
             rate_limiter=self._rate_limiter,

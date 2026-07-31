@@ -3,13 +3,19 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
+from app.plugin_framework.builtin_plugins.autosignin.backend.handlers._browser import BrowserSigninHandler
 from app.plugin_framework.builtin_plugins.autosignin.backend.handlers.base import SiteSigninContext
 from app.plugin_framework.builtin_plugins.autosignin.backend.registry import HandlerRegistry
 from app.utils.browser_mode import get_chrome_server_url
 
+_BROWSER_FALLBACK_RE = re.compile(
+    r"slg-bg|slg-box|雷池|安全拦截|challenge|cf-browser|Checking your browser|验证您不是机器人|DDoS",
+    re.IGNORECASE,
+)
+
 
 def _should_browser_fallback(msg: str) -> bool:
-    """判断 HTTP 签到失败是否需要回退到浏览器模式（HTML/403/468）"""
+    """判断 HTTP 签到失败是否需要回退到浏览器模式（HTML/403/468/雷池 WAF）"""
     if not msg:
         return False
     if "403 Forbidden" in msg or "403" in msg and "Forbidden" in msg:
@@ -17,6 +23,8 @@ def _should_browser_fallback(msg: str) -> bool:
     if "468" in msg:
         return True
     if any(tag in msg for tag in ["<!DOCTYPE", "<html", "<HTML"]):
+        return True
+    if _BROWSER_FALLBACK_RE.search(msg):
         return True
     return False
 
@@ -100,30 +108,33 @@ class SigninEngine:
             f"解析site_id={site_ctx.site_id}, url={site_ctx.site_url}, "
             f"browser={site_ctx.is_browser})"
         )
-        factory = self._registry.get(site_ctx.site_id)
-        handler_name = factory.__name__ if factory else "无"
+        dedicated = self._registry.get(site_ctx.site_id)
+        handler_name = dedicated.__name__ if dedicated else "无"
         self.ctx.debug(f"站点 {site_ctx.site} 命中 handler: {handler_name}")
-        if not factory:
-            self.ctx.debug(f"站点 {site_ctx.site} 未找到专用 handler，使用通用 HTTP 兜底")
 
         handler = None
-        if factory:
-            handler = factory()
-
-        if not handler:
-            factory = self._registry.get_fallback(site_ctx.site_id)
-            if factory:
+        if dedicated:
+            handler = dedicated()
+        elif site_ctx.is_browser:
+            # 配置了浏览器自动化且无专用 handler → 直接走浏览器自动化，
+            # 避免 HTTP 过盾失败返回 WAF 页面而误报签到失败
+            self.ctx.debug(f"站点 {site_ctx.site} 配置浏览器自动化，直接使用浏览器签到")
+            handler = self._registry.get_browser()()
+        else:
+            fallback = self._registry.get_fallback(site_ctx.site_id)
+            if fallback:
                 self.ctx.debug(f"站点 {site_ctx.site} 未命中专用配置，使用通用 HTTP 兜底")
-                handler = factory()
+                handler = fallback()
+            if not handler:
+                handler = self._registry.get_generic()()
 
-        if not handler:
-            handler = self._registry.get_generic()()
+        used_browser = getattr(handler, "site_id", "") == BrowserSigninHandler.site_id
 
         try:
             result = handler.signin(site_ctx)
             self.ctx.debug(f"站点 {site_ctx.site} 结果: {result.msg}")
             msg = result.msg or ""
-            if not site_ctx.is_browser and _should_browser_fallback(msg) and get_chrome_server_url():
+            if not used_browser and _should_browser_fallback(msg) and get_chrome_server_url():
                 self.ctx.info(f"站点 {site_ctx.site} HTTP 签到疑似需要浏览器，自动回退")
                 br_ctx = SiteSigninContext.from_site_info(site_info, self._site_engine)
                 br_ctx.is_browser = True
@@ -132,7 +143,7 @@ class SigninEngine:
         except Exception as e:
             self.ctx.warn(f"站点 {site_ctx.site} 签到异常: {e}")
             # 异常也可能是浏览器相关（403/Cloudflare），尝试回退
-            if not site_ctx.is_browser and _should_browser_fallback(str(e)) and get_chrome_server_url():
+            if not used_browser and _should_browser_fallback(str(e)) and get_chrome_server_url():
                 self.ctx.info(f"站点 {site_ctx.site} 异常疑似需要浏览器，自动回退")
                 br_ctx = SiteSigninContext.from_site_info(site_info, self._site_engine)
                 br_ctx.is_browser = True

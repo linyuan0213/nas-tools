@@ -12,6 +12,35 @@ from .types import ParseContext
 
 _CHINESE_META_CLEAN = frozenset("粤日英简繁国台港双多单语字幕音轨频内嵌封挂压效硬软中外体转载自搬运")
 
+# 集标题区域内的元数据词（拒绝将此类词作为集标题）
+_EP_TITLE_META_RE = re.compile(
+    r"(?i)\b(?:mkv|mp4|avi|ts|m2ts|1080p|2160p|720p|480p|web-?dl|webrip|bluray|bdrip|hdtv|"
+    r"h\.?26[45]|x\.?26[45]|hevc|avc|av1|aac|ac3|ddp?\d*\.?\d*|dts|flac|atmos|truehd|hdr\d*|"
+    r"dv|sdr|hlg|remux|repack|proper|internal|extended|uncut|theatrical|unrated|rerelease|"
+    r"remastered|upscaled|ep\d*|s\d{1,2})\b"
+)
+
+
+def _split_episode_title(ctx: ParseContext) -> str | None:
+    """季集号（SxxExx）后的内容切分为集标题，返回季集号之前的主标题剩余文本。
+
+    例: Medalist.S02E09.It.Begins.1080p → 标题 Medalist，集标题 It Begins
+    """
+    sxx = next((e for e in ctx.elements if e.rule_name == "sxxexx"), None)
+    if not sxx:
+        return None
+    bound = len(ctx.text)
+    for e in ctx.elements:
+        if e.span[0] >= sxx.span[1] and e.span[0] < bound:
+            bound = e.span[0]
+    ep_raw = ctx.text[sxx.span[1] : bound]
+    ep_title = re.sub(r"\.(?:mkv|mp4|avi|ts|m2ts)$", "", ep_raw, flags=re.IGNORECASE)
+    ep_title = re.sub(r"[._\-]+", " ", ep_title).strip()
+    if ep_title and not _EP_TITLE_META_RE.search(ep_title):
+        ctx.episode_title = ep_title
+    return ctx.remaining_text_until(sxx.span[0])
+
+
 # ---- PT/BT 站点常见元数据 token ----
 # 这些 token 出现在英文标题的单词位置时不应被视为片名的一部分
 # 格式: 全部小写，使用 (?i) 模式匹配，^...$ 全词匹配
@@ -70,7 +99,7 @@ _META_TOKEN_RE = re.compile(
     r"|bbc|itv|channel\s*[45]|cnn|fox|abc|nbc|cbs|hbo|starz|showtime|amc|tnt|tbs|fx|syfy"
     # --- 附加片段 ---
     r"|plus|extra|bonus|deleted|featurette|behind[-]?the[-]?scenes|making[-]?of|gag[-]?reel|trailer|teaser"
-    r"|shot|watch|game|interview|preview|sneak[-]?peek|recap|highlights"
+    r"|shot|game|interview|preview|sneak[-]?peek|recap|highlights"
     # --- 容器 ---
     r"|mp4|mkv|avi|ts|m2ts|mov|wmv|flv|rmvb|iso|img"
     # --- 其他 ---
@@ -105,6 +134,12 @@ def extract_name(ctx: ParseContext, original_text: str) -> None:
     remaining = _clean_metadata_brackets(remaining)
     if not remaining.strip():
         return
+
+    # 切分季集号后的集标题（Medalist.S02E09.It.Begins → 标题 Medalist + 集标题 It Begins）
+    if not ctx.episode_title:
+        _title_remaining = _split_episode_title(ctx)
+        if _title_remaining:
+            remaining = _title_remaining
 
     # 剩余文本中的点号为文件名分隔符 → 转空格以便名称提取
     remaining = remaining.replace(".", " ")

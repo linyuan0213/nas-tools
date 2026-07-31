@@ -394,8 +394,20 @@ class FileTransferService:
 
     def _lookup_download_record(self, in_path):
         download_info = self._history.download_repo.get_download_history_by_path(in_path)
+        if download_info and os.path.isdir(in_path):
+            # 目录路径命中多条下载记录（聚合目录）时不可靠，跳过避免错误套用
+            count = self._history.download_repo.count_download_history_by_path(in_path)
+            if count and count > 1:
+                log.debug(f"[Rmt]{in_path} 命中 {count} 条下载记录，目录聚合，跳过")
+                return None, None
         if not download_info and os.path.isfile(in_path):
-            download_info = self._history.download_repo.get_download_history_by_path(os.path.dirname(in_path))
+            parent = os.path.dirname(in_path)
+            # 文件回退父目录时，父目录若是聚合目录（多条下载记录）同样不可靠，跳过
+            parent_count = self._history.download_repo.count_download_history_by_path(parent)
+            if parent_count and parent_count > 1:
+                log.debug(f"[Rmt]{in_path} 父目录 {parent} 命中 {parent_count} 条下载记录，聚合，跳过")
+                return None, None
+            download_info = self._history.download_repo.get_download_history_by_path(parent)
         if download_info and str(download_info.TMDBID or ""):
             log.info(f"[Rmt]{in_path} 找到下载记录，TMDBID：{download_info.TMDBID}")
             parsed_type = MediaType.from_string(download_info.TYPE)
@@ -540,7 +552,14 @@ class FileTransferService:
 
                 reg_path = bluray_disk_dir if bluray_disk_dir else file_item
 
-                if not media or not media.tmdb_info or not media.get_title_string():
+                if (
+                    not media
+                    or not media.tmdb_info
+                    or not media.get_title_string()
+                    or media.get_title_string().strip().isdigit()
+                    or len(media.get_title_string().strip()) < 2
+                    or not int(media.tmdb_id or 0)
+                ):
                     fc, ac, am = self._handle_unrecognized_file(
                         file_item, reg_path, in_path, unknown_dir, operation, target_dir, udf_flag, alert_messages
                     )
@@ -625,8 +644,8 @@ class FileTransferService:
                     dst_backend=dst_backend.id if hasattr(dst_backend, "id") else (dst_backend or "local"),
                 )
 
-                if isinstance(episode[1], bool) and episode[1]:
-                    self._history.update_transfer_unknown_state(file_item)
+                # 转移成功：若该文件曾进入未识别列表，标记为已识别（不再依赖手动指定季集标志）
+                self._history.update_transfer_unknown_state(reg_path)
 
                 if media.type == MediaType.MOVIE:
                     self.message.send_transfer_movie_message(
@@ -777,22 +796,18 @@ class FileTransferService:
                 return 1, 0, alert_messages, 0, new_file, ret_file_path, ret_dir_path
             if file_exist_flag and ret_file_path:
                 exist_filenum = 1
-                if operation != "softlink":
-                    original_size = os.path.getsize(ret_file_path)
-                    if (media.size > original_size and self._filesize_cover) or udf_flag:
-                        old = ret_file_path
-                        base, _ = os.path.splitext(ret_file_path)
-                        new_file = f"{base}{file_ext}"
-                        log.info(f"[Rmt]文件 {old} 已存在，覆盖为 {new_file} ...")
-                        self._engine.transfer(
-                            file_item, new_file, operation, over_flag=True, old_file=old, dst_backend=dst_backend
-                        )
-                        return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
-                    else:
-                        log.warn(f"[Rmt]文件 {ret_file_path} 已存在")
-                        return 1, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
+                if udf_flag:
+                    # 仅手动转移允许覆盖已存在文件；自动同步（监控/目录同步）跳过
+                    old = ret_file_path
+                    base, _ = os.path.splitext(ret_file_path)
+                    new_file = f"{base}{file_ext}"
+                    log.info(f"[Rmt]文件 {old} 已存在，覆盖为 {new_file} ...")
+                    self._engine.transfer(
+                        file_item, new_file, operation, over_flag=True, old_file=old, dst_backend=dst_backend
+                    )
+                    return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
                 else:
-                    log.warn(f"[Rmt]文件 {ret_file_path} 已存在")
+                    log.warn(f"[Rmt]文件 {ret_file_path} 已存在，跳过")
                     return 1, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
         else:
             if not ret_dir_path:
