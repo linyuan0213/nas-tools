@@ -60,22 +60,22 @@ class TMDBCache(TypedCache):
         """构建缓存键"""
         return f"{prefix}:{':'.join(str(p) for p in parts)}"
 
-    def get_tmdb_info(self, mtype: Any, tmdbid: str, language: str | None = None) -> Any | None:
+    def get_tmdb_info(self, mtype: Any, tmdbid: str, language: str | None = None, extra: str = "") -> Any | None:
         """获取TMDB信息缓存"""
 
         if mtype == MediaType.ANIME:
             mtype = MediaType.TV
-        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default")
+        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default", extra)
         return self.get(key)
 
     def set_tmdb_info(
-        self, mtype: Any, tmdbid: str, info: Any, language: str | None = None, ttl: int | None = None
+        self, mtype: Any, tmdbid: str, info: Any, language: str | None = None, ttl: int | None = None, extra: str = ""
     ) -> bool:
         """设置TMDB信息缓存"""
 
         if mtype == MediaType.ANIME:
             mtype = MediaType.TV
-        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default")
+        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default", extra)
         ttl = ttl or self.TTL_TMDB_INFO
         log.debug(f"[TMDBCache]缓存信息: {key}, TTL={ttl}秒")
         return self.set(key, info, ttl)

@@ -42,7 +42,8 @@ _ADULT_PATTERNS = re.compile(
 
 # 垃圾模式：纯网址类、无意义组合
 _GARBAGE_PATTERNS = re.compile(
-    r"^(?:www\s+\w+|\w+\s+(?:com|net|org|tv|cc|me|io)\b|"
+    r"^(?:www\s+\w+|\w+\s+(?:com|net|org|tv|cc|io)\b(?!\.?\w)|"
+    r"\w+\s+\.(?:me)\b|"
     r"(?:pthdtv|qqhdtv|hdtv|hd|4k|1080p|720p)\s*$|"
     r"^\w{1,3}\s+(?:hd|tv|com)$)"
     r"|\b(?:pthdtv|qqhdtv)\b",

@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import random
 import re
+from typing import overload
 from urllib import parse
 
 import cn2an
@@ -145,6 +146,12 @@ class StringUtils:
             ExceptionUtils.exception_traceback(e)
         return float_val
 
+    @overload
+    @staticmethod
+    def handler_special_chars(text: str, replace_word: str = "", allow_space: bool = False) -> str: ...
+    @overload
+    @staticmethod
+    def handler_special_chars(text: list, replace_word: str = "", allow_space: bool = False) -> list: ...
     @staticmethod
     def handler_special_chars(text, replace_word="", allow_space=False):
         """

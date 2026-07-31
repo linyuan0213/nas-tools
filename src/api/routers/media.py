@@ -548,11 +548,13 @@ def get_recommend(
 
 @router.post("/search/results", response_model=CommonResponse, summary="获取搜索结果")
 def get_search_result(
+    req: dict | None = None,
     current_user=Depends(require_any_permission("library:view", "library:manage")),
     svc: Searcher = Depends(get_searcher_service),
     result_svc: SearchResultService = Depends(get_search_result_service),
 ):
-    session_id = TokenCache.get(f"search_session:{current_user.user_id}")
+    req = req or {}
+    session_id = req.get("session_id") or TokenCache.get(f"search_session:{current_user.user_id}")
     search_results = svc.get_search_results(session_id)
     result = result_svc.group_search_results(search_results)
     return success(data={"total": result.total, "result": result.result})

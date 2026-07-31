@@ -223,3 +223,101 @@ MATCH_CASES = [
 @pytest.mark.parametrize("title,label", MATCH_CASES)
 def test_accept_valid(expected, title, label):
     _check(expected, title, should_match=True)
+
+
+# ---- 描述提取 cn_name 清洗（cn_name 经 get_keyword_from_string 去季数后缀后匹配） ----
+
+DESC_CLEAN_REJECT_CASES = [
+    (
+        "Ghost in the Shell: Stand Alone Complex S03 BluRay REMUX AVC 1080p TrueHD Atmos 7.1-FraMeSToR",
+        "攻壳机动队第三季",
+        "SAC S03 cn_name 清洗后 en_name 含 SAC 不匹配",
+    ),
+    (
+        "Ghost in the Shell Stand Alone Complex S01 1080p BluRay Remux AVC DTS-HD MA 5.1-TRiToN",
+        "攻壳机动队第一季",
+        "SAC S01 cn_name 清洗后 en_name 含 SAC 不匹配",
+    ),
+]
+
+DESC_CLEAN_MATCH_CASES = [
+    (
+        "THE GHOST IN THE SHELL S01E03 1080p AMZN WEB-DL DUAL DDP2.0 H.264-VARYG",
+        "攻壳机动队第一季",
+        "2026 S01E03 cn_name 清洗为 攻壳机动队 后正常匹配",
+    ),
+    (
+        "[LoliHouse] 攻壳机动队 / The Ghost in the Shell - 03 [WebRip 1080p]",
+        "攻壳机动队第一季",
+        "cn_name 清洗后 en_name 和 cn_name 都在 match 中",
+    ),
+]
+
+
+def _check_with_cn(expected, title, cn_name, should_match):
+    """解析种子，手动设置 cn_name（模拟描述提取+清洗），再验证 quick_name_match"""
+    from app.utils import StringUtils
+
+    mi = meta_info(title=title)
+    if cn_name:
+        _, cleaned, _, _, _, _ = StringUtils.get_keyword_from_string(cn_name)
+        mi.cn_name = cleaned or cn_name
+    result = ResultFilter.quick_name_match(mi, expected)
+    cn = mi.cn_name or "-"
+    en = mi.en_name or "-"
+    yr = mi.year or "-"
+    label = "MATCH" if should_match else "REJECT"
+    assert result == should_match, (
+        f"[{title[:60]}] cn_desc={cn_name}\n"
+        f"  期望={label} 实际={'MATCH' if result else 'REJECT'}\n"
+        f"  解析: cn={cn}, en={en}, year={yr}"
+    )
+
+
+@pytest.mark.parametrize("title,cn_name,label", DESC_CLEAN_REJECT_CASES)
+def test_desc_clean_reject(expected, title, cn_name, label):
+    _check_with_cn(expected, title, cn_name, should_match=False)
+
+
+@pytest.mark.parametrize("title,cn_name,label", DESC_CLEAN_MATCH_CASES)
+def test_desc_clean_match(expected, title, cn_name, label):
+    _check_with_cn(expected, title, cn_name, should_match=True)
+
+
+# ---- 字幕标签前缀污染（"中字攻壳机动队" 来自 description 提取） ----
+
+TAG_PREFIX_CASES = [
+    ("中字攻壳机动队", False, "中字前缀 → 剥除后等同 攻壳机动队，en 含 SAC 应拒绝"),
+    ("官方中字攻壳机动队", False, "官方中字前缀"),
+    ("中文字幕攻壳机动队", False, "中文字幕前缀"),
+    ("中文字攻壳机动队", False, "中文字前缀"),
+]
+
+
+@pytest.mark.parametrize("cn_name,should_match,label", TAG_PREFIX_CASES)
+def test_tag_prefix_contamination(expected, cn_name, should_match, label):
+    """description 提取的中文名带字幕标签前缀时不得直通"""
+    from types import SimpleNamespace
+
+    meta = SimpleNamespace(
+        title=None,
+        cn_name=cn_name,
+        en_name="Ghost in the Shell Stand Alone Complex",
+        year=None,
+        type=MediaType.TV,
+        org_string="Ghost in the Shell Stand Alone Complex S04 1080p NF WEB-DL",
+        rev_string=None,
+    )
+    result = ResultFilter.quick_name_match(meta, expected)
+    assert result == should_match, f"{label}: cn={cn_name}, 期望={'MATCH' if should_match else 'REJECT'}"
+
+
+def test_strip_cn_tag_prefix():
+    from app.indexer.core.result_filter import _strip_cn_tag_prefix
+
+    assert _strip_cn_tag_prefix("中字攻壳机动队") == "攻壳机动队"
+    assert _strip_cn_tag_prefix("官方中字攻壳机动队") == "攻壳机动队"
+    assert _strip_cn_tag_prefix("中文字幕攻壳机动队") == "攻壳机动队"
+    assert _strip_cn_tag_prefix("攻壳机动队") == "攻壳机动队"
+    # 合法剧名不被误剥
+    assert _strip_cn_tag_prefix("中华小当家") == "中华小当家"

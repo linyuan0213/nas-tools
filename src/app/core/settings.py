@@ -142,6 +142,10 @@ class LaboratoryConfig(BaseModel):
     search_multi_language: bool = True
     chrome_enabled: bool = True
     chrome_server_host: str = ""
+    # ADR-014 身份解析体系灰度开关
+    identity_index: bool = False  # P1 别名索引（get_all_names 走索引）
+    identity_resolver: bool = False  # P2 统一识别决策流（BatchIdentifier → IdentityResolver）
+    target_matcher: bool = False  # P3 TargetMatcher 统一判等
 
 
 class AgentProviderConfig(BaseModel):

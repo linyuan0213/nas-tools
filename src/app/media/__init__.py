@@ -25,7 +25,6 @@ from .lookup import (
 )
 from .models import MediaInfo
 from .parser import (
-    AnitopyAdapter,
     BaseParser,
     ParserResult,
     RegexParser,
@@ -45,7 +44,6 @@ __all__ = [
     "BaseParser",
     "ParserResult",
     "RegexParser",
-    "AnitopyAdapter",
     "TokenAdapter",
     "BaseLookup",
     "LookupResult",

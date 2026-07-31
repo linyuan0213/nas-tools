@@ -9,6 +9,7 @@ from app.core.constants import (
 )
 from app.core.exceptions import RepositoryError, ServiceError
 from app.core.settings import settings
+from app.indexer.core.miss_collector import weekly_miss_review
 from app.infrastructure.image_proxy import clean_old_cache
 from app.infrastructure.temp import TempCleanup
 
@@ -145,6 +146,15 @@ def load_default_jobs(
         func=TempCleanup.do_cleanup,
         seconds=6 * 3600,
         next_run_time=datetime.datetime.now(),
+        jobstore=_jobstore,
+    )
+
+    # 识别失败样本周报（ADR-014 P4，每周一 03:30 聚合摘要并轮转）
+    scheduler.register_cron(
+        job_id="IdentifyMiss.weekly_review",
+        name="识别失败样本周报",
+        func=weekly_miss_review,
+        cron="30 3 * * 1",
         jobstore=_jobstore,
     )
 
