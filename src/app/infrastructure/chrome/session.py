@@ -121,7 +121,7 @@ class BrowserSession(_BaseBrowserSession):
             try:
                 self._client.delete(self._session_url(f"/sessions/{self.session_id}"))
             except Exception as e:
-                log.debug(f"[BrowserSession] close session failed: {e}")
+                log.warn(f"[BrowserSession] 关闭会话 {self.session_id} 失败: {e}")
         self._client.close()
 
 
@@ -202,5 +202,5 @@ class AsyncBrowserSession(_BaseBrowserSession):
             try:
                 await self._client.delete(self._session_url(f"/sessions/{self.session_id}"))
             except Exception as e:
-                log.debug(f"[AsyncBrowserSession] close session failed: {e}")
+                log.warn(f"[AsyncBrowserSession] 关闭会话 {self.session_id} 失败: {e}")
         await self._client.aclose()
