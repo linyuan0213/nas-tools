@@ -22,7 +22,7 @@ from app.db.repositories.subscribe_repo_adapter import (
 )
 from app.db.repositories.subscribe_repository import SubscribeRepository
 from app.domain.entities.rss import SubscribeState
-from app.domain.enums import SearchType
+from app.domain.enums import SearchType, SystemConfigKey
 from app.domain.interfaces.rss_repo import (
     ISubscribeMovieRepository,
     ISubscribeTvEpisodeRepository,
@@ -62,8 +62,10 @@ class BaseSearchStrategy:
         tv_repo: ISubscribeTvRepository | None = None,
         tv_episode_repo: ISubscribeTvEpisodeRepository | None = None,
         coordinator: DownloadCoordinator | None = None,
+        system_config=None,
     ):
         self._service = service
+        self._system_config = system_config
         self._rss_repo = rss_repo or SubscribeRepository()
         if movie_repo is None:
             movie_repo = SubscribeMovieRepositoryAdapter(self._rss_repo)
@@ -99,6 +101,26 @@ class BaseSearchStrategy:
         """重试 ERROR 状态的订阅."""
         self._search_movies(state=SubscribeState.ERROR.value)
         self._search_tvs(state=SubscribeState.ERROR.value)
+
+    def _get_effective_search_sites(self, rss_info: dict, mtype: MediaType) -> list:
+        """订阅未配置搜索站点时，回退到默认订阅设置的 search_sites（空则不搜索）"""
+        sites = rss_info.get("search_sites") or []
+        if sites:
+            return sites
+        if not self._system_config:
+            return []
+        try:
+            default_setting = self._system_config.get(
+                SystemConfigKey.DefaultSubscribeSettingTV
+                if mtype in (MediaType.TV, MediaType.ANIME)
+                else SystemConfigKey.DefaultSubscribeSettingMOV
+            )
+            if not isinstance(default_setting, dict):
+                return []
+            return default_setting.get("search_sites") or []
+        except Exception as e:
+            log.debug(f"[Subscribe]读取默认订阅设置站点失败: {e}")
+            return []
 
     @contextmanager
     def _lock_context(self, media_info):
@@ -198,7 +220,7 @@ class BaseSearchStrategy:
                             media_info=media_info,
                             in_from=SearchType.SUBSCRIBE,
                             no_exists=no_exists,
-                            sites=rss_info.get("search_sites"),
+                            sites=self._get_effective_search_sites(rss_info, MediaType.MOVIE),
                             filters=filters,
                         )
                         if search_result:
@@ -366,7 +388,7 @@ class BaseSearchStrategy:
                         media_info=media_info,
                         in_from=SearchType.SUBSCRIBE,
                         no_exists=rss_no_exists_local,
-                        sites=rss_info.get("search_sites"),
+                        sites=self._get_effective_search_sites(rss_info, MediaType.TV),
                         filters=filters_tv,
                     )
                     if over_edition:

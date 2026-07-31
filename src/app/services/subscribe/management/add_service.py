@@ -118,9 +118,9 @@ class SubscribeAddService:
                         if str(default_download_setting).replace("-", "").isdigit()
                         else None
                     )
-                if rss_sites is None and default_rss_sites:
+                if not rss_sites and default_rss_sites:
                     rss_sites = default_rss_sites
-                if search_sites is None and default_search_sites:
+                if not search_sites and default_search_sites:
                     search_sites = default_search_sites
 
         rss_sites = rss_sites or []

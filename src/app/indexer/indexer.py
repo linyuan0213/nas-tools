@@ -234,7 +234,9 @@ class Indexer:
         if client.get_client_id() != "builtin":
             enabled_names = set(self._site_config_repo.list_enabled_names(source=client.get_client_id()))
             indexers = [i for i in indexers if i.name in enabled_names]
-        if filter_args and filter_args.get("site"):
+        if filter_args and filter_args.get("site") is not None:
+            # site 为 None → 不限制（WEB 搜索默认全部）
+            # site 为空列表 → 订阅未配置站点，搜索零站点（不搜全站）
             site_filter = filter_args.get("site")
             indexers = [i for i in indexers if i.name in site_filter]
         return indexers
