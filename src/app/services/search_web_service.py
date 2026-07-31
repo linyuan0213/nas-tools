@@ -11,7 +11,7 @@ import log
 from app.agent.agents.search_intent import SearchIntentAgent
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.core.settings import settings
-from app.domain.enums import ProgressKey, SearchType
+from app.domain.enums import ProgressKey, SearchType, SystemConfigKey
 from app.domain.mediatypes import MediaType
 from app.infrastructure.progress import ProgressTracker
 from app.media.service import MediaService
@@ -50,6 +50,7 @@ def search_medias_for_web(
     tmdbid=None,
     media_type=None,
     session_id: str | None = None,
+    system_config=None,
 ):
     """
     WEB资源搜索
@@ -184,6 +185,21 @@ def search_medias_for_web(
 
     if filters:
         filter_args.update(filters)
+
+    # WEB 搜索未显式指定站点时，应用默认订阅设置的 search_sites
+    # （默认设置为空 → site=[] → 不搜索任何站点）
+    if "site" not in filter_args and system_config:
+        try:
+            default_setting = system_config.get(
+                SystemConfigKey.DefaultSubscribeSettingTV
+                if mtype == MediaType.TV
+                else SystemConfigKey.DefaultSubscribeSettingMOV
+            )
+            if not isinstance(default_setting, dict):
+                default_setting = {}
+            filter_args["site"] = default_setting.get("search_sites") or []
+        except Exception as e:
+            log.warn(f"[Web]读取默认订阅设置站点失败: {e}")
 
     log.info(f"[Web]开始通过 {search_name_list} 搜索 ...")
 

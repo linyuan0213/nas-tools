@@ -293,6 +293,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         progress_helper=ProgressTracker(),
         media_service=media_service,
         intent_agent=facades.search_intent_agent,
+        system_config=SystemConfigService(),
     )
     backup_restore_service = BackupRestoreService()
     rbac_service = RBACService()

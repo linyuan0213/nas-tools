@@ -153,6 +153,7 @@ class WebSearchService:
         media_service: MediaService | None = None,
         intent_agent: SearchIntentAgent | None = None,
         search_fn=None,
+        system_config=None,
     ):
         if search_fn is not None:
             self._search_fn = search_fn
@@ -166,6 +167,7 @@ class WebSearchService:
                 progress_helper=progress_helper,
                 media_service=media_service,
                 intent_agent=intent_agent,
+                system_config=system_config,
             )
 
     def search(
