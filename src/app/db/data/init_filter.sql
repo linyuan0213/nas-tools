@@ -97,4 +97,13 @@ remux','[Hx].?26[45]','20,99',NULL),
  (10024,'1001','典藏-1080p-REMUX','8','1080[pi]
 remux','[Hx].?26[45]','20,99',NULL);
 INSERT OR IGNORE INTO "CONFIG_FILTER_GROUP" ("ID","GROUP_NAME","IS_DEFAULT","NOTE") VALUES
+ (1002,'中字','N',NULL);
+INSERT OR IGNORE INTO "CONFIG_FILTER_RULES" ("ID","GROUP_ID","ROLE_NAME","PRIORITY","INCLUDE","EXCLUDE","SIZE_LIMIT","NOTE") VALUES
+ (10034,'1002','4k中字','1','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+4k|2160p','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','1,30',NULL),
+ (10035,'1002','1080p中字','2','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+1080[pi]','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','1,30',NULL),
+ (10036,'1002','高清中字','3','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+720p','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','30',NULL);
+INSERT OR IGNORE INTO "CONFIG_FILTER_GROUP" ("ID","GROUP_NAME","IS_DEFAULT","NOTE") VALUES
  (9999,'不过滤','Y',NULL);

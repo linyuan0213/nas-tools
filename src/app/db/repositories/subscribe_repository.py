@@ -304,32 +304,13 @@ class SubscribeRepository(BaseRepository):
             "note": "NOTE",
             "keyword": "KEYWORD",
         }
-        defaults = {
-            "year": "",
-            "keyword": "",
-            "tmdbid": "",
-            "image": "",
-            "rss_sites": "",
-            "search_sites": "",
-            "filter_restype": "",
-            "filter_pix": "",
-            "filter_rule": 0,
-            "filter_team": "",
-            "filter_include": "",
-            "filter_exclude": "",
-            "save_path": "",
-            "desc": "",
-            "note": "",
-            "over_edition": 0,
-            "download_setting": -1,
-            "fuzzy_match": 0,
-        }
         for k, v in kwargs.items():
             col = field_map.get(k)
             if col is None:
                 continue
-            if v is None and k in defaults:
-                v = defaults[k]
+            if v is None:
+                # None = 不更新该字段，保留原值
+                continue
             if k in ("rss_sites", "search_sites") and isinstance(v, list):
                 update_fields[col] = JsonUtils.dumps(v)
             elif k == "filter_free":
@@ -611,37 +592,13 @@ class SubscribeRepository(BaseRepository):
             "note": "NOTE",
             "keyword": "KEYWORD",
         }
-        defaults = {
-            "year": "",
-            "season": "",
-            "keyword": "",
-            "tmdbid": "",
-            "image": "",
-            "rss_sites": "",
-            "search_sites": "",
-            "filter_restype": "",
-            "filter_pix": "",
-            "filter_rule": 0,
-            "filter_team": "",
-            "filter_include": "",
-            "filter_exclude": "",
-            "save_path": "",
-            "desc": "",
-            "note": "",
-            "over_edition": 0,
-            "download_setting": -1,
-            "fuzzy_match": 0,
-            "total_ep": 0,
-            "current_ep": 0,
-            "total": 0,
-            "lack": 0,
-        }
         for k, v in kwargs.items():
             col = field_map.get(k)
             if col is None:
                 continue
-            if v is None and k in defaults:
-                v = defaults[k]
+            if v is None:
+                # None = 不更新该字段，保留原值（避免编辑时意外清空站点/集数等配置）
+                continue
             if k in ("rss_sites", "search_sites") and isinstance(v, list):
                 update_fields[col] = JsonUtils.dumps(v)
             elif k == "filter_free":
