@@ -9,7 +9,8 @@ class TestSubscribeRepositoryUpdateDefaults:
     """Test suite for update_rss_movie/update_rss_tv None handling."""
 
     @patch("app.db.repositories.subscribe_repository.JsonUtils.dumps", return_value='"[]"')
-    def test_update_rss_movie_replaces_none_with_defaults(self, _mock_dumps):
+    def test_update_rss_movie_skips_none_fields(self, _mock_dumps):
+        """None 字段不更新（保留原值），仅更新显式提供的字段"""
         repo = SubscribeRepository()
         mock_session = MagicMock()
         mock_query = MagicMock()
@@ -28,15 +29,16 @@ class TestSubscribeRepositoryUpdateDefaults:
             )
 
         update_fields = mock_query.filter.return_value.update.call_args[0][0]
-        assert update_fields["SAVE_PATH"] == ""
-        assert update_fields["FILTER_RULE"] == 0
-        assert update_fields["DOWNLOAD_SETTING"] == -1
-        assert update_fields["FUZZY_MATCH"] == 0
-        assert update_fields["OVER_EDITION"] == 0
         assert update_fields["NAME"] == "Test"
+        assert "SAVE_PATH" not in update_fields
+        assert "FILTER_RULE" not in update_fields
+        assert "DOWNLOAD_SETTING" not in update_fields
+        assert "FUZZY_MATCH" not in update_fields
+        assert "OVER_EDITION" not in update_fields
 
     @patch("app.db.repositories.subscribe_repository.JsonUtils.dumps", return_value='"[]"')
-    def test_update_rss_tv_replaces_none_with_defaults(self, _mock_dumps):
+    def test_update_rss_tv_skips_none_fields(self, _mock_dumps):
+        """None 字段不更新（保留原值），仅更新显式提供的字段"""
         repo = SubscribeRepository()
         mock_session = MagicMock()
         mock_query = MagicMock()
@@ -57,12 +59,13 @@ class TestSubscribeRepositoryUpdateDefaults:
             )
 
         update_fields = mock_query.filter.return_value.update.call_args[0][0]
-        assert update_fields["SEASON"] == ""
-        assert update_fields["SAVE_PATH"] == ""
-        assert update_fields["FILTER_RULE"] == 0
-        assert update_fields["DOWNLOAD_SETTING"] == -1
-        assert update_fields["TOTAL_EP"] == 0
-        assert update_fields["CURRENT_EP"] == 0
-        assert update_fields["TOTAL"] == 0
-        assert update_fields["LACK"] == 0
+        assert update_fields["NAME"] == "Test"
+        assert "SEASON" not in update_fields
+        assert "SAVE_PATH" not in update_fields
+        assert "FILTER_RULE" not in update_fields
+        assert "DOWNLOAD_SETTING" not in update_fields
+        assert "TOTAL_EP" not in update_fields
+        assert "CURRENT_EP" not in update_fields
+        assert "TOTAL" not in update_fields
+        assert "LACK" not in update_fields
         assert update_fields["NAME"] == "Test"

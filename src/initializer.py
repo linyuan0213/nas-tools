@@ -18,15 +18,12 @@ from app.utils import ExceptionUtils
 
 
 def init_default_filters():
-    """首次启动时从 init_filter.sql 导入默认过滤规则"""
+    """启动时从 init_filter.sql 导入/补齐默认过滤规则（幂等：INSERT OR IGNORE 仅补新规则，不覆盖已有）"""
     sql_file = os.path.join(get_script_path(), "init_filter.sql")
     if not os.path.exists(sql_file):
         return
     try:
         repo = FilterGroupRepositoryAdapter()
-        groups = repo.get_config_filter_group()
-        if groups:
-            return
         with open(sql_file, encoding="utf-8") as f:
             for stmt in f.read().split(";\n"):
                 stmt = stmt.strip()
