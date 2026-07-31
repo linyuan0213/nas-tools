@@ -819,7 +819,7 @@ class MediaService:
             if not parsed:
                 continue
             key = (
-                f"{parsed.title_en or parsed.title_cn or '':}"
+                f"{parsed.title_en or parsed.title_cn or ''}:"
                 f"{parsed.year or ''}:"
                 f"{parsed.type.value if parsed.type else ''}"
             )

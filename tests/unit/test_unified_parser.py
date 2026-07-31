@@ -73,6 +73,29 @@ class TestTvFormat:
         assert result.episode == 5
         assert result.type == MediaType.TV
 
+    def test_episode_title_after_sxxexx_not_merged_into_title(self, parser):
+        """集标题不应并入主标题（Medalist.S02E09.It.Begins → Medalist）"""
+        result = parser.parse("Medalist.S02E09.It.Begins.1080p.DSNP.WEB-DL.AAC2.0.H.264-VARYG.mkv")
+        assert result is not None
+        assert result.title_en == "Medalist"
+        assert result.season == 2
+        assert result.episode == 9
+        assert result.type == MediaType.TV
+
+    def test_episode_title_with_words_after_sxxexx(self, parser):
+        result = parser.parse("Golden.Kamuy.S05E01.Town.of.Reunions.1080p.CR.WEB-DL.DUAL.DDP2.0.H.264-Kitsune.mkv")
+        assert result is not None
+        assert result.title_en == "Golden Kamuy"
+        assert result.season == 5
+        assert result.episode == 1
+
+    def test_no_episode_title_when_none_present(self, parser):
+        result = parser.parse("Witch.Watch.S01E16.1080p.KKTV.WEB-DL.AAC2.0.H.264-CHDWEB.mkv")
+        assert result is not None
+        assert result.title_en == "Witch Watch"
+        assert result.season == 1
+        assert result.episode == 16
+
 
 class TestMovieFormat:
     """电影格式测试"""

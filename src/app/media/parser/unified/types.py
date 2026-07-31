@@ -64,6 +64,23 @@ class ParseContext:
             parts.append(self.text[prev_end:])
         return " ".join(p for p in parts if p.strip())
 
+    def remaining_text_until(self, position: int) -> str:
+        """返回 position 之前未消耗的剩余文本（用于季集号前的主标题切分）"""
+        if position <= 0:
+            return ""
+        if not self.consumed_spans:
+            return self.text[:position]
+        spans = sorted(s for s in self.consumed_spans if s[0] < position)
+        parts: list[str] = []
+        prev_end = 0
+        for start, end in spans:
+            if start > prev_end:
+                parts.append(self.text[prev_end:start])
+            prev_end = max(prev_end, end)
+        if prev_end < position:
+            parts.append(self.text[prev_end:position])
+        return " ".join(p for p in parts if p.strip())
+
 
 @dataclass
 class ExtractionResult:
