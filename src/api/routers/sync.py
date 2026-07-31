@@ -63,6 +63,7 @@ class CheckSyncPathRequest(BaseModel):
 
 class DelUnknownPathRequest(BaseModel):
     id: int | list[int] | None = None
+    ids: list[int] | None = None
 
 
 class DeleteFilesRequest(BaseModel):
@@ -194,7 +195,7 @@ def del_unknown_path(
     user: str = Depends(require_permission("setting:update")),
     ft: FileTransfer = Depends(get_filetransfer_service),
 ):
-    tid = req.id
+    tid = req.id if req.id is not None else req.ids
     if isinstance(tid, list):
         valid_tids = [t for t in tid if t]
         if valid_tids:

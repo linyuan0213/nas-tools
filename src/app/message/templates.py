@@ -16,7 +16,13 @@ DEFAULT_MESSAGE_TEMPLATES = {
         ),
     },
     "transfer_finished": {
-        "title": "✅ {{ media_info.get_title_string() }} 已入库",
+        "title": (
+            "✅ {% if total_episodes and total_episodes > 1 %}"
+            "{{ media_info.get_title_string() }} {{ media_info.get_season_string() }} "
+            "共{{ total_episodes }}集"
+            "{% else %}{{ media_info.get_title_string() }} "
+            "{{ media_info.get_season_episode_string() }}{% endif %} 已入库"
+        ),
         "text": (
             "{% if media_info.vote_average %}⭐ {{ media_info.get_vote_string() }}\n"
             "{% endif %}📺 类型：{{ media_info.type.value }}\n"

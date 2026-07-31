@@ -228,6 +228,10 @@ class DownloadRepository(BaseRepository):
                 .first()
             )
 
+    def count_download_history_by_path(self, path: str) -> int:
+        with self.session() as db:
+            return db.query(DOWNLOADHISTORY).filter(os.path.normpath(path) == DOWNLOADHISTORY.SAVE_PATH).count()
+
     def get_download_history_by_downloader(self, downloader: str, download_id: str) -> DOWNLOADHISTORY | None:
         """
         根据下载器查找下载历史
