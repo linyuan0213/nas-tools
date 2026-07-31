@@ -17,6 +17,7 @@ from app.services.subscribe.monitor import SubscriptionMonitor
 from app.services.subscribe.strategies.indexer_search import IndexerSearchStrategy
 from app.services.subscribe.strategies.queue_search import QueueSearchStrategy
 from app.services.subscribe.strategies.rss_feed import RssFeedStrategy
+from app.services.system.config import SystemConfigService
 from app.services.system.lifecycle import SystemLifecycleService
 from app.sites import SiteConf
 
@@ -60,6 +61,7 @@ def build_coordinators(
         downloader=downloader_core,
         filter_service=filter_service,
         message=message,
+        system_config=SystemConfigService(),
     )
     rsshelper = RssHelper(site_engine=site_engine)
     rss_strategy = RssFeedStrategy(
@@ -82,6 +84,7 @@ def build_coordinators(
         downloader=downloader_core,
         filter_service=filter_service,
         message=message,
+        system_config=SystemConfigService(),
     )
     subscription_monitor = SubscriptionMonitor(
         subscribe_service=subscribe_service,
