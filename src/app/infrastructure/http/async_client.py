@@ -13,7 +13,7 @@ import log
 from app.infrastructure.http.browser_transport import AsyncChromeTransport
 from app.infrastructure.http.cache import HttpCacheConfig
 from app.infrastructure.http.config import HttpClientConfig
-from app.infrastructure.http.exceptions import HttpClientError, HttpSSLError
+from app.infrastructure.http.exceptions import HttpClientError, HttpRateLimitError, HttpSSLError
 from app.infrastructure.http.middleware import HttpMiddleware
 from app.infrastructure.http.retry import HttpRetryConfig
 from app.infrastructure.rate_limiter import RateLimitEngine
@@ -188,6 +188,7 @@ class AsyncHttpClient:
         """执行异步 HTTP 请求，tenacity 自动重试 + 异常转换."""
         rate_limit_key = kwargs.pop("rate_limit_key", None)
         rate_limit_rate = kwargs.pop("rate_limit_rate", None)
+        rate_limit_timeout = kwargs.pop("rate_limit_timeout", None)
         raise_for_status = kwargs.pop("raise_for_status", True)
         raise_exception = kwargs.pop("raise_exception", False)
         raise_on_error = raise_for_status or raise_exception
@@ -198,10 +199,10 @@ class AsyncHttpClient:
             acquired = self._rate_limiter.acquire(
                 key=rate_limit_key,
                 rate=rate_limit_rate,
-                timeout=None,
+                timeout=rate_limit_timeout,
             )
             if not acquired:
-                raise HttpClientError(f"Rate limit exceeded: {rate_limit_key}")
+                raise HttpRateLimitError(f"Rate limit exceeded: {rate_limit_key}")
 
         if self._cache and not cache_bypass:
             cache_key = self._build_cache_key(method, url, kwargs)

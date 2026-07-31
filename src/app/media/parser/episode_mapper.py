@@ -102,7 +102,11 @@ class EpisodeMapper:
                     gap = (curr_date - prev_date).days
 
                 should_split = False
-                if gap:
+                # TMDB finale/mid_season 标记 → 强制分季
+                prev_type = prev.get("episode_type", "")
+                if prev_type in ("finale", "mid_season", "mid_season_finale"):
+                    should_split = True
+                elif gap:
                     if gap > EPISODE_MAPPER_SEASON_GAP_FORCE_DAYS:
                         should_split = True
                     elif gap > EPISODE_MAPPER_SEASON_GAP_DAYS:
@@ -118,9 +122,29 @@ class EpisodeMapper:
 
             blocks.append((cur_season, start_ep, all_eps[-1].get("episode_number", start_ep)))
 
-            # 如果推断出的季数 <= TMDB 实际季数，说明不是合并季
+            # 如果推断出的季数 <= TMDB 实际季数，验证边界对齐
             if len(blocks) <= max_tmdb_season:
-                return None
+                # 对比每个 block 的起始集号是否与 TMDB 季累计一致
+                tmdb_cumulative = 1
+                aligned = True
+                for i, s in enumerate(normal_seasons):
+                    count = s.get("episode_count", 0)
+                    if count <= 0:
+                        continue
+                    if i < len(blocks) and blocks[i][1] != tmdb_cumulative:
+                        aligned = False
+                        log.info(
+                            f"[EpisodeMapper]TMDB {tmdb_id} S{i + 1}: "
+                            f"推断起始E{blocks[i][1]} ≠ TMDB起始E{tmdb_cumulative}，需要映射"
+                        )
+                        break
+                    tmdb_cumulative += count
+                if aligned:
+                    return None
+                # 边界不一致 — 作为合并季处理
+                self._blocks[tmdb_id] = blocks
+                log.info(f"[EpisodeMapper]TMDB {tmdb_id} 推断季结构(边界不一致): {blocks}")
+                return blocks
 
             self._blocks[tmdb_id] = blocks
             log.info(f"[EpisodeMapper]TMDB {tmdb_id} 推断季结构: {blocks}")
@@ -145,7 +169,7 @@ class EpisodeMapper:
             return None
 
         if source_season > len(blocks):
-            log.warn(f"[EpisodeMapper]源季号 {source_season} > 推断季数 {len(blocks)}")
+            log.warn(f"[EpisodeMapper]源季号 {source_season} > 推断季数 {len(blocks)}，跳过避免误映射")
             return None
 
         _, start_ep, end_ep = blocks[source_season - 1]
@@ -157,38 +181,90 @@ class EpisodeMapper:
         log.info(f"[EpisodeMapper]TMDB:{tmdb_id} S{source_season:02d}E{source_episode:02d} → S01E{target_ep:02d}")
         return 1, target_ep
 
-    def map_auto(self, tmdb_id: int, source_season: int | None, source_episode: int | None) -> tuple[int, int] | None:
+    def map_auto(
+        self,
+        tmdb_id: int,
+        source_season: int | None,
+        source_episode: int | None,
+        source_end_ep: int | None = None,
+    ) -> tuple[int, int] | None | tuple[int, int, int, int]:
         """
         自动选择映射策略
 
-        - season > 1: 合并季映射（如 Re:Zero S04E04）
-        - season is None: 绝对集号映射（如 Slime E72）
-        - season == 1: 无需映射
-
-        合并季映射失败时，仅当失败原因是 episode 超出推断 block 范围
-        才回退到绝对集号映射（如 S02 - 46 中的 46 是绝对集号）。
-        如果 TMDB 已有该季（无需映射），直接返回 None。
+        - 高集号(>26)/无季号/season=1: 绝对集号映射
+        - season>1: 合并季 / 部分错位映射（→ _fetch_blocks）
+        - 返回 None = 无需映射
         """
         if not source_episode or source_episode < 1:
+            # 季节包（无集号）：先检查 TMDB 是否有该季
+            if source_season and source_season > 1 and self._tmdb:
+                cache_key2 = f"seasons:{tmdb_id}"
+                seasons = self._blocks.get(cache_key2)
+                if not seasons:
+                    try:
+                        tv_info = self._tmdb.get_tmdb_info(MediaType.TV, tmdb_id)
+                        if tv_info:
+                            raw = [s for s in tv_info.get("seasons", []) if s.get("season_number", 0) > 0]
+                            seasons = sorted(raw, key=lambda s: s.get("season_number", 0))
+                            self._blocks[cache_key2] = seasons
+                    except Exception:
+                        seasons = None
+                if seasons:
+                    for s in seasons:
+                        if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
+                            return None  # TMDB 已有该季，不需要映射
+                # TMDB 没有该季 → 推断 blocks，范围内才映射
+                blocks = self._fetch_blocks(tmdb_id)
+                if blocks and source_season <= len(blocks):
+                    return 1, 0
             return None
-        if source_season and source_season > 1:
-            result = self.map(tmdb_id, source_season, source_episode)
-            if result:
-                return result
-            # map 返回 None，需要判断是"无需映射"还是"episode 超出范围"
-            # 如果 _blocks 缓存存在且 source_season 在 block 范围内，
-            # 说明是 episode 超出范围，回退到绝对集号
-            blocks = self._blocks.get(tmdb_id)
-            if blocks and source_season <= len(blocks):
-                log.info(f"[EpisodeMapper]合并季映射失败（episode 超出范围），回退到绝对集号映射: E{source_episode}")
-                return self.map_absolute(tmdb_id, source_episode)
-            # TMDB 已有该季，无需映射
-            return None
-        if not source_season:
-            return self.map_absolute(tmdb_id, source_episode)
+
+        # 高集号 / 无季号 / season=1 → 先查 TMDB 是否有该季
+        if (not source_season or source_season == 1 or source_episode > 26) and self._tmdb:
+            cache_key = f"abs:{tmdb_id}"
+            seasons = self._blocks.get(cache_key)
+            if not seasons:
+                try:
+                    tv_info = self._tmdb.get_tmdb_info(MediaType.TV, tmdb_id)
+                    if tv_info:
+                        raw = [s for s in tv_info.get("seasons", []) if s.get("season_number", 0) > 0]
+                        seasons = sorted(raw, key=lambda s: s.get("season_number", 0))
+                        self._blocks[cache_key] = seasons
+                except Exception:
+                    seasons = None
+            if seasons and source_season:
+                for s in seasons:
+                    if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
+                        if 1 <= (source_episode or 1) <= s.get("episode_count", 0):  # type: ignore[reportAttributeAccessIssue]
+                            return None  # TMDB 已有该季且集号在范围内
+                        break
+            return self.map_absolute(tmdb_id, source_episode, source_end_ep)
+
+        # season>1 + ep≤26 → 先快速检查 TMDB 是否已有该季
+        if self._tmdb:
+            cache_key = f"abs:{tmdb_id}"
+            seasons = self._blocks.get(cache_key)
+            if not seasons:
+                try:
+                    tv_info = self._tmdb.get_tmdb_info(MediaType.TV, tmdb_id)
+                    if tv_info:
+                        raw = [s for s in tv_info.get("seasons", []) if s.get("season_number", 0) > 0]
+                        seasons = sorted(raw, key=lambda s: s.get("season_number", 0))
+                        self._blocks[cache_key] = seasons
+                except Exception:
+                    seasons = None
+            if seasons:
+                for s in seasons:
+                    if s.get("season_number") == source_season:  # type: ignore[reportAttributeAccessIssue]
+                        count = s.get("episode_count", 0)  # type: ignore[reportAttributeAccessIssue]
+                        if 1 <= source_episode <= count:
+                            return None
+                        break
+
+        # 快速检查未命中 → 无可靠映射，不猜测
         return None
 
-    def map_batch(self, items: list[dict]) -> list[tuple[int, int] | None]:
+    def map_batch(self, items: list[dict]) -> list[tuple[int, int] | tuple[int, int, int, int] | None]:
         """
         批量映射 — 相同 tmdb_id 共享缓存，不同 tmdb_id 并发查询
 
@@ -209,10 +285,13 @@ class EpisodeMapper:
         }
 
         # 按 tmdb_id 去重，只查未缓存的（绝对集号缓存）
+        # season=None / season=1 / episode>26 都会走 map_absolute
         tmdb_ids_abs = {
             item["tmdb_id"]
             for item in items
-            if item.get("tmdb_id") and f"abs:{item['tmdb_id']}" not in self._blocks and not item.get("season")
+            if item.get("tmdb_id")
+            and f"abs:{item['tmdb_id']}" not in self._blocks
+            and (not item.get("season") or item.get("season") == 1 or (item.get("episode", 0) or 0) > 26)
         }
 
         # 并发查询多个不同 tmdb_id
@@ -227,19 +306,27 @@ class EpisodeMapper:
         # 批量计算映射结果
         results = []
         for item in items:
-            result = self.map_auto(int(item.get("tmdb_id") or 0), item.get("season"), item.get("episode"))
+            result = self.map_auto(
+                int(item.get("tmdb_id") or 0),
+                item.get("season"),
+                item.get("episode"),
+                item.get("end_episode"),
+            )
             results.append(result)
         return results
 
-    def map_absolute(self, tmdb_id: int, absolute_episode: int) -> tuple[int, int] | None:
+    def map_absolute(
+        self,
+        tmdb_id: int,
+        absolute_episode: int,
+        end_episode: int | None = None,
+    ) -> tuple[int, int] | tuple[int, int, int, int] | None:
         """
         将绝对集号映射到 TMDB 标准季集
 
-        适用场景：标题中只有绝对集号（如 "Title - 72"），无季号信息
-        TMDB 有多季时，按各季 episode_count 累加计算归属
-
         Returns:
-            (target_season, target_episode) 或 None（失败/超出范围）
+            单集: (target_season, target_episode)
+            范围: (sn, ep_start, end_sn, end_ep) 或 None
         """
         if not absolute_episode or absolute_episode < 1:
             return None
@@ -260,20 +347,41 @@ class EpisodeMapper:
                 seasons = sorted(raw, key=lambda s: s.get("season_number", 0))
                 self._blocks[cache_key] = seasons
 
-            total = 0
-            for season in seasons:
-                sn: int = season.get("season_number")  # type: ignore[assignment]
-                count: int = season.get("episode_count", 0)  # type: ignore[assignment]
-                start = total + 1
-                end = total + count
-                total += count
-                if start <= absolute_episode <= end:
-                    mapped = absolute_episode - start + 1
-                    log.info(f"[EpisodeMapper]TMDB:{tmdb_id} 绝对E{absolute_episode} → S{sn:02d}E{mapped:02d}")
-                    return sn, mapped
+            def _find(abs_ep: int) -> tuple[int, int] | None:
+                cum = 0
+                for season in seasons:
+                    sn = season.get("season_number")  # type: ignore[assignment]
+                    count = season.get("episode_count", 0)  # type: ignore[assignment]
+                    start = cum + 1
+                    end_ep_num = cum + count
+                    cum += count
+                    if start <= abs_ep <= end_ep_num:
+                        return sn, abs_ep - start + 1
+                return None
 
-            log.warn(f"[EpisodeMapper]绝对集号 {absolute_episode} 超出范围 (1-{total})")
-            return None
+            start_result = _find(absolute_episode)
+            if not start_result:
+                log.warn(f"[EpisodeMapper]绝对集号 {absolute_episode} 超出范围")
+                return None
+
+            if not end_episode or end_episode == absolute_episode:
+                sn, ep = start_result
+                log.info(f"[EpisodeMapper]TMDB:{tmdb_id} 绝对E{absolute_episode} → S{sn:02d}E{ep:02d}")
+                return sn, ep
+
+            end_result = _find(end_episode)
+            if not end_result:
+                log.warn(f"[EpisodeMapper]结束集号 {end_episode} 超出范围，仅映射起始集")
+                sn, ep = start_result
+                return sn, ep
+
+            sn, ep_s = start_result
+            end_sn, ep_e = end_result
+            log.info(
+                f"[EpisodeMapper]TMDB:{tmdb_id} "
+                f"绝对E{absolute_episode}-E{end_episode} → S{sn:02d}E{ep_s:02d}-S{end_sn:02d}E{ep_e:02d}"
+            )
+            return sn, ep_s, end_sn, ep_e
 
         except Exception as e:
             log.warn(f"[EpisodeMapper]绝对集号映射失败: {e}")

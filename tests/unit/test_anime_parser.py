@@ -1,12 +1,12 @@
 """测试动漫标题预处理和日文标题提取"""
 
-from app.media.parser.anime.prepare import extract_japanese_title, prepare_title
+from app.media.parser.unified.preprocessor import extract_japanese_title, prepare_title
 
 
 class TestPrepareTitle:
     def test_empty_title(self):
         assert prepare_title("") == ""
-        assert prepare_title(None) is None
+        assert prepare_title(None) is None  # type: ignore[reportArgumentType]
 
     def test_mikan_march_tag(self):
         result = prepare_title("[喵萌奶茶屋][鬼灭之刃 柱训练篇][1080p][简日双语]")
@@ -64,3 +64,44 @@ class TestExtractJapaneseTitle:
     def test_multiple_slashes(self):
         result = extract_japanese_title("Chinese Name / Kantai Collection / Kancolle [1080p]")
         assert result and "a" in result.lower()
+
+
+class TestFansubCnNameRecovery:
+    """字幕组标题中文名提取回归 — 穹庐下的魔女案例"""
+
+    def test_cn_romaji_bracket_episode(self):
+        """[字幕组] 中文 / 罗马字 [04] 格式：中文名不被 prepare 丢弃"""
+        from app.media import meta_info
+
+        mi = meta_info(title="[绿茶字幕组] 穹庐下的魔女 / Tenmaku no Jaadugar [04][WebRip][1080p][繁日内嵌]")
+        assert mi.cn_name == "穹庐下的魔女"
+        assert mi.en_name == "Tenmaku No Jaadugar"
+        assert mi.get_episode_list() == [4]
+
+    def test_release_group_not_cn_name(self):
+        """字幕组名不得被误识别为中文名"""
+        from app.media import meta_info
+
+        mi = meta_info(title="[北宇治字幕组] 穹庐下的魔女 / Tenmaku no Jaadugar [03][WebRip][HEVC_AAC][简日内嵌]")
+        assert mi.cn_name == "穹庐下的魔女"
+        assert "字幕组" not in (mi.cn_name or "")
+
+    def test_en_cn_order(self):
+        """英文在前中文在后（ANi 格式）：中文名不丢失"""
+        from app.media import meta_info
+
+        mi = meta_info(title="[ANi] Tenmaku no Jādūgar /  穹庐下的魔女 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]")
+        assert mi.cn_name == "穹庐下的魔女"
+        assert "Baha" not in (mi.en_name or "")
+        assert "Mp4" not in (mi.en_name or "")
+
+    def test_dash_episode_format_kept(self):
+        """既有 '- 04' 格式不受影响"""
+        from app.media import meta_info
+
+        mi = meta_info(
+            title="[绿茶字幕组&LoliHouse] 穹庐下的魔女 / Tenmaku no Jaadugar - 04 "
+            "[WebRip 1080p HEVC-10bit AAC][简繁日内封字幕]"
+        )
+        assert mi.cn_name == "穹庐下的魔女"
+        assert mi.en_name == "Tenmaku No Jaadugar"

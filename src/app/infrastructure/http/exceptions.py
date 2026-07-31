@@ -56,3 +56,7 @@ class HttpSSLError(HttpClientError):
 
 class HttpAuthError(HttpClientError):
     """认证失败（401/403）."""
+
+
+class HttpRateLimitError(HttpClientError):
+    """本地限流器拒绝（等待超时仍无令牌）."""

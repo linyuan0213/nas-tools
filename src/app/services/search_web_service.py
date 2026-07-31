@@ -189,7 +189,7 @@ def search_medias_for_web(
 
     media_list = []
     if search_name_list:
-        _process.update(ptype=ProgressKey.Search, value=5, text=f"准备搜索 {content} ...")
+        _process.update_max(ptype=ProgressKey.Search, value=5, text=f"准备搜索 {content} ...")
         with _web_search_executor(max_workers) as executor:
             all_task = []
             for search_name in search_name_list:
@@ -201,7 +201,7 @@ def search_medias_for_web(
                 result = future.result()
                 # 关键词搜索占 5-70%，去重排序占 70-90%，入库占 90-100%
                 pct = 5 + round(65 * (finish_count / len(all_task)))
-                _process.update(
+                _process.update_max(
                     ptype=ProgressKey.Search,
                     value=pct,
                     text=f"关键词 {finish_count}/{len(all_task)} 完成 ({pct}%)",
@@ -210,7 +210,7 @@ def search_medias_for_web(
                     media_list.extend(result)
 
     # 去重：与 DB 唯一键 (PAGEURL, SITE, SEARCH_SESSION_ID) 对齐
-    _process.update(ptype=ProgressKey.Search, value=70, text="去重排序中...")
+    _process.update_max(ptype=ProgressKey.Search, value=70, text="去重排序中...")
     unique_media_list = []
     media_seen = set()
     for d in media_list:
@@ -228,7 +228,7 @@ def search_medias_for_web(
         return 1, f"{content} 未搜索到任何资源"
     else:
         log.info(f"[Web]共搜索到 {len(media_list)} 个有效资源")
-        _process.update(ptype=ProgressKey.Search, value=90, text=f"共 {len(media_list)} 个有效资源，入库中...")
+        _process.update_max(ptype=ProgressKey.Search, value=90, text=f"共 {len(media_list)} 个有效资源，入库中...")
         media_list = sorted(
             media_list,
             key=lambda x: "{}{}{}".format(
@@ -258,6 +258,6 @@ def search_medias_for_web(
         _searcher.insert_search_results(
             media_items=media_list, ident_flag=ident_flag, title=content, session_id=session_id
         )
-        _process.update(ptype=ProgressKey.Search, value=100, text=f"搜索完成，共 {len(media_list)} 个资源")
+        _process.update_max(ptype=ProgressKey.Search, value=100, text=f"搜索完成，共 {len(media_list)} 个资源")
         _process.end(ProgressKey.Search)
         return 0, ""

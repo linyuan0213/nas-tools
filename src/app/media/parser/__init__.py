@@ -1,7 +1,6 @@
 from app.media.parser._customization import CustomizationMatcher
 from app.media.parser._metainfo import meta_info
 from app.media.parser._release_groups import ReleaseGroupsMatcher
-from app.media.parser.anitopy_adapter import AnitopyAdapter
 from app.media.parser.base import BaseParser, ParserResult
 from app.media.parser.llm import LLMParser
 from app.media.parser.regex import RegexParser
@@ -12,7 +11,6 @@ __all__ = [
     "ParserResult",
     "RegexParser",
     "LLMParser",
-    "AnitopyAdapter",
     "TokenAdapter",
     "meta_info",
     "ReleaseGroupsMatcher",

@@ -392,7 +392,6 @@ class HtmlSiteSearcher:
                 except Exception:
                     els = []
 
-            log.debug(f"[HtmlSearcher]selector={selector} xpath={xpath} els_count={len(els)}")
             if els:
                 attr = fcfg.get("attribute", "")
                 contents = fcfg.get("contents", 0)

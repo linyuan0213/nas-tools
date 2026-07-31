@@ -16,7 +16,7 @@ class TmdbDetail:
             mtype = MediaType.UNKNOWN
         if language:
             self.client.set_language(language)
-        cached = self.client.redis_cache.get_tmdb_info(mtype, tmdbid, language)
+        cached = self.client.redis_cache.get_tmdb_info(mtype, tmdbid, language, extra=append_to_response or "")
         if cached:
             log.debug(f"[Meta]从缓存获取TMDB信息: {mtype.value}/{tmdbid}")
             if language:
@@ -40,7 +40,7 @@ class TmdbDetail:
             if info:
                 info["genre_ids"] = get_genre_ids_from_detail(info.get("genres"))
                 info = update_tmdbinfo_cn_title(info, self.client._default_language)
-            self.client.redis_cache.set_tmdb_info(mtype, tmdbid, info, language)
+            self.client.redis_cache.set_tmdb_info(mtype, tmdbid, info, language, extra=append_to_response or "")
             return info
 
         result = deduper.execute(cache_key, _fetch)

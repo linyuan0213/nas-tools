@@ -1,15 +1,21 @@
+import copy
 import difflib
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from types import SimpleNamespace
 
 import log
 from app.core.settings import settings
-from app.domain.enums import MatchMode
+from app.domain.enums import IdentifyStatus, MatchMode
 from app.domain.mediatypes import MediaType
 from app.domain.validators.media_title import is_valid_media_title
 from app.infrastructure.cache_system import cacheman
+from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.image_proxy import ImageProxy
+from app.media.identity import get_identity_builder
+from app.media.identity.remapper import EpisodeRemapper
+from app.media.lookup.base import LookupResult
 from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
 from app.media.parser.base import BaseParser
@@ -32,6 +38,7 @@ class MediaService:
         self._parser = self._build_parser()
         self._lookup = tmdb_lookup
         self._episode_mapper = EpisodeMapper(self._lookup)
+        self._episode_remapper = EpisodeRemapper(episode_mapper=self._episode_mapper)
         self._init_config()
 
     def _init_config(self):
@@ -79,7 +86,24 @@ class MediaService:
             self._lookup.client.set_language(language)
 
         # 1. Parser: 文件名解析（Regex 失败时 fallback 到 LLM）
+        # 全路径 → 提取文件名，父目录作为兜底上下文
+        if isinstance(title, str) and ("/" in title or "\\" in title):
+            parent = os.path.basename(os.path.dirname(title)).strip()
+            title = os.path.basename(title)
+            if parent and parent not in (".", "/", "") and not subtitle:
+                subtitle = parent
         parsed = self._parser.parse(title, subtitle)
+        # 集名粘连修复：S05E10 后的短语剥离，从搜索名中分离
+        if parsed and parsed.title_en and not parsed.title_cn and parsed.season:
+            se_text = f"S{parsed.season:02d}E{parsed.episode:02d}" if parsed.episode else f"S{parsed.season:02d}"
+            idx = title.upper().find(se_text.upper())
+            if idx < 0 and parsed.episode:
+                se_text = f"S{parsed.season}E{parsed.episode}"
+                idx = title.upper().find(se_text.upper())
+            if idx >= 0:
+                prefix = title[:idx].replace(".", " ").strip()
+                if prefix and len(prefix) >= 3:
+                    parsed.title_en = prefix
         if not parsed and not isinstance(self._parser, LLMParser):
             # Fallback: 默认是 RegexParser 时，用 LLM Parser 兜底
             llm_parser = self._llm_parser
@@ -93,6 +117,13 @@ class MediaService:
             return None
 
         # 领域规则：标题质量过滤，排除纯网站名/垃圾词
+        # 标题无中文名且副标题含中文 → 从副标题补提中文名
+        if not parsed.title_cn and subtitle:
+            sub_parsed = self._parser.parse(subtitle, "")
+            if sub_parsed and sub_parsed.title_cn:
+                parsed.title_cn = sub_parsed.title_cn
+            elif sub_parsed and sub_parsed.title_en:
+                parsed.title_en = sub_parsed.title_en
         search_name = parsed.title_en or parsed.title_cn or ""
         if not is_valid_media_title(search_name):
             log.debug(f"[MediaService]标题质量不合格，跳过识别: {title} -> {search_name}")
@@ -173,6 +204,57 @@ class MediaService:
         # 5. 组装
         info = MediaInfo.from_parser(parsed)
         info.org_string = title
+        original_year = info.year  # 保存解析器原始年份
+        if result:
+            # TMDB 识别年份与种子原始年份偏差>1 → 尝试下一个结果
+            if (
+                original_year
+                and result.year
+                and str(original_year).isdigit()
+                and str(result.year).isdigit()
+                # 文件年份早于 TMDB 首播 5 年以上 → 可能错配，拒绝
+                and int(original_year) < int(result.year) - 5
+            ):
+                log.info(f"[service]年份冲突 种子={original_year} TMDB={result.year} → 尝试补充搜索")
+                if parsed.title_en:
+                    combined = f"{parsed.title_cn or ''} {parsed.title_en}".strip()
+                    if combined != (parsed.title_cn or ""):
+                        if language:
+                            self._lookup.client.set_language(language or "")
+                        try:
+                            retry_parsed = copy.copy(parsed)
+                            retry_parsed.title_cn = combined
+                            retry_result = self._lookup.lookup(
+                                retry_parsed, hint_type=mtype, strict=use_strict, language=language or ""
+                            )
+                            if retry_result:
+                                # 重试结果也要年份校验
+                                r_year = retry_result.year or ""
+                                if (
+                                    original_year
+                                    and r_year
+                                    and str(original_year).isdigit()
+                                    and str(r_year).isdigit()
+                                    and abs(int(original_year) - int(r_year)) <= 1
+                                ):
+                                    result = retry_result
+                                else:
+                                    result = None
+                            else:
+                                result = None
+                        except Exception:
+                            result = None
+                    else:
+                        result = None
+                else:
+                    result = None
+        # 全名搜索失败 → 中文名去掉 "剧场版/劇場版/映画" 前缀重试
+        if not result and parsed.title_cn:
+            short_cn = re.sub(r"^(剧场版|劇場版|映画|电影版)\s*", "", parsed.title_cn)
+            if short_cn and short_cn != parsed.title_cn:
+                retry = copy.copy(parsed)
+                retry.title_cn = short_cn
+                result = self._lookup.lookup(retry, hint_type=mtype, strict=use_strict, language=language or "")
         if result:
             info.tmdb_id = result.tmdb_id
             info.title = result.title
@@ -236,20 +318,8 @@ class MediaService:
                 log.debug(f"[service]忽略异常: {e}")
 
         # 7. 集数映射（动漫合并季 / 绝对集号）
-        if self._episode_mapping_enabled and info.type != MediaType.MOVIE and info.tmdb_id and info.begin_episode:
-            log.info(
-                f"[EpisodeMapper]尝试映射: {info.get_name()} "
-                f"S{info.begin_season}E{info.begin_episode} (tmdb_id={info.tmdb_id})"
-            )
-            mapped = self._episode_mapper.map_auto(int(info.tmdb_id), info.begin_season, info.begin_episode)
-            if mapped:
-                log.info(
-                    f"[EpisodeMapper]映射成功: S{info.begin_season}E{info.begin_episode} -> S{mapped[0]}E{mapped[1]}"
-                )
-                info.begin_season = mapped[0]
-                info.begin_episode = mapped[1]
-            else:
-                log.info("[EpisodeMapper]无需映射或映射失败")
+        if info.begin_episode:
+            self._remap_season_episode(info)
 
         # 保存到缓存
         if cache:
@@ -279,6 +349,10 @@ class MediaService:
 
     def identify_batch(self, items: list[dict], language: str | None = None) -> list:
         """批量识别 — Parser batch + 去重后并发 Lookup"""
+
+        def _norm_name(name: str) -> str:
+            return re.sub(r"[^\w\u4e00-\u9fff]", "", name.lower()).strip()
+
         if not items:
             return []
 
@@ -320,7 +394,7 @@ class MediaService:
                 parsed_list[idx] = None
                 continue
             key = (
-                f"{parsed.title_en or parsed.title_cn or ''}:"
+                f"{_norm_name(parsed.title_en or parsed.title_cn or '')}:"
                 f"{parsed.year or ''}:"
                 f"{parsed.type.value if parsed.type else ''}"
             )
@@ -333,7 +407,7 @@ class MediaService:
         lookup_results = {}
         if unique_keys:
             log.info(f"[MediaService]批量识别 {len(items)} 条，去重后 {len(unique_keys)} 条需查 TMDB")
-            max_workers = min(len(unique_keys), 8)
+            max_workers = min(len(unique_keys), 2)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key
@@ -346,6 +420,44 @@ class MediaService:
                     except Exception as e:
                         log.error(f"[MediaService]TMDB 查询出错: {key}, {e}")
                         lookup_results[key] = None
+
+                # 失败重试：用另一语言名再搜一次
+                _retry_items = []
+                _retry_keys = {}
+                for key, parsed in unique_keys.items():
+                    if lookup_results.get(key) and lookup_results[key].tmdb_id != 0:
+                        continue
+                    alt_name = parsed.title_cn if parsed.title_en else parsed.title_en
+                    if not alt_name or alt_name == (parsed.title_en or parsed.title_cn):
+                        continue
+                    alt_parsed = copy.copy(parsed)
+                    alt_parsed.title_en, alt_parsed.title_cn = alt_name, parsed.title_en or parsed.title_cn
+                    alt_key = (
+                        f"{alt_parsed.title_en or alt_parsed.title_cn or ''}:"
+                        f"{alt_parsed.year or ''}:"
+                        f"{alt_parsed.type.value if alt_parsed.type else ''}"
+                    )
+                    if alt_key in unique_keys or alt_key in _retry_keys:
+                        continue
+                    _retry_keys[alt_key] = key
+                    _retry_items.append((alt_key, alt_parsed))
+
+                if _retry_items:
+                    with ThreadPoolExecutor(max_workers=min(len(_retry_items), 2)) as executor:
+                        _retry_futures = {
+                            executor.submit(self._lookup.lookup, parsed, language=language or ""): alt_key
+                            for alt_key, parsed in _retry_items
+                        }
+                        for future in as_completed(_retry_futures):
+                            alt_key = _retry_futures[future]
+                            try:
+                                result = future.result()
+                                if result and result.tmdb_id and result.tmdb_id != 0:
+                                    orig_key = _retry_keys[alt_key]
+                                    lookup_results[orig_key] = result
+                                    lookup_results[alt_key] = result
+                            except Exception as e:
+                                log.debug(f"[MediaService]TMDB 重试查询出错: {alt_key}, {e}")
 
         # 4. 组装: 将结果映射回原始列表
         results = [MediaInfo() for _ in items]
@@ -400,6 +512,7 @@ class MediaService:
                             "tmdb_id": info.tmdb_id,
                             "season": info.begin_season,
                             "episode": info.begin_episode,
+                            "end_episode": info.end_episode,
                         }
                     )
                     map_indices.append(idx)
@@ -408,15 +521,171 @@ class MediaService:
                 mapped = self._episode_mapper.map_batch(map_items)
                 mapped_count = 0
                 for i, mapped_result in enumerate(mapped):
-                    if mapped_result:
+                    if isinstance(mapped_result, tuple):
                         idx = map_indices[i]
-                        results[idx].begin_season = mapped_result[0]
-                        results[idx].begin_episode = mapped_result[1]
+                        old_season = results[idx].begin_season
+                        old_episode = results[idx].begin_episode
+                        if old_season != mapped_result[0] or old_episode != mapped_result[1]:
+                            results[idx].seeds_season = old_season
+                            results[idx].seeds_episode = old_episode
+                            results[idx].seeds_end_episode = results[idx].end_episode
+                        if len(mapped_result) == 4:
+                            (
+                                results[idx].begin_season,
+                                results[idx].begin_episode,
+                                results[idx].end_season,
+                                results[idx].end_episode,
+                            ) = mapped_result
+                        else:
+                            results[idx].begin_season, results[idx].begin_episode = mapped_result
                         mapped_count += 1
                 if mapped_count > 0:
                     log.info(f"[EpisodeMapper]批量映射完成: {mapped_count}/{len(map_items)} 条已映射")
 
         return results
+
+    # ---------- 分组识别（名称候选驱动） ----------
+
+    def identify_groups(self, groups: list[dict], language: str | None = None) -> dict:
+        """
+        按组识别 — 组内聚合名称候选，中文优先，逐名尝试直到命中。
+
+        :param groups: [{_cache_key, names, cn_name, en_name, year, type,
+                         seasons, episodes, title, site, enclosure, size, seeders}]
+        :return: {cache_key: (IdentifyStatus, MediaInfo)}
+        """
+        results: dict = {}
+        if not groups:
+            return results
+
+        max_workers = min(len(groups), 2)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {
+                executor.submit(self._identify_group, group, language): group["_cache_key"] for group in groups
+            }
+            for future in as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    results[key] = future.result()
+                except Exception as e:
+                    log.error(f"[MediaService]组识别执行出错: {key}, {e}")
+                    results[key] = (IdentifyStatus.ERROR, MediaInfo(org_string=key))
+
+        # 集数映射（动漫合并季 / 绝对集号），仅处理命中项
+        if self._episode_mapping_enabled:
+            hit_infos = [
+                info
+                for status, info in results.values()
+                if status == IdentifyStatus.HIT and info.type != MediaType.MOVIE and info.tmdb_id and info.begin_episode
+            ]
+            if hit_infos:
+                map_items = [
+                    {
+                        "tmdb_id": info.tmdb_id,
+                        "season": info.begin_season,
+                        "episode": info.begin_episode,
+                        "end_episode": info.end_episode,
+                    }
+                    for info in hit_infos
+                ]
+                log.info(f"[EpisodeMapper]批量映射 {len(map_items)} 条记录")
+                mapped = self._episode_mapper.map_batch(map_items)
+                mapped_count = 0
+                for info, mapped_result in zip(hit_infos, mapped, strict=False):
+                    if isinstance(mapped_result, tuple):
+                        # 保存种子原始值
+                        info.seeds_season = info.begin_season
+                        info.seeds_episode = info.begin_episode
+                        info.seeds_end_episode = info.end_episode
+                        if len(mapped_result) == 4:
+                            info.begin_season, info.begin_episode, info.end_season, info.end_episode = mapped_result
+                        else:
+                            info.begin_season, info.begin_episode = mapped_result
+                        mapped_count += 1
+                if mapped_count > 0:
+                    log.info(f"[EpisodeMapper]批量映射完成: {mapped_count}/{len(map_items)} 条已映射")
+
+        return results
+
+    def _identify_group(self, group: dict, language: str | None) -> tuple:
+        """单组识别：按序尝试名称候选，返回 (IdentifyStatus, MediaInfo)"""
+        seasons = group.get("seasons") or []
+        episodes = group.get("episodes") or []
+        info = MediaInfo(
+            cn_name=group.get("cn_name"),
+            en_name=group.get("en_name"),
+            year=group.get("year"),
+            begin_season=seasons[0] if seasons else None,
+            end_season=seasons[-1] if len(seasons) > 1 else None,
+            begin_episode=episodes[0] if episodes else None,
+            end_episode=episodes[-1] if len(episodes) > 1 else None,
+            type=group.get("type"),
+        )
+        info.site = group.get("site")
+        info.enclosure = group.get("enclosure")
+        info.size = group.get("size", 0)
+        info.seeders = group.get("seeders", 0)
+        info.org_string = group.get("title", "")
+
+        hits: list[tuple[str, LookupResult]] = []
+        for name in group.get("names") or []:
+            is_cn = bool(StringUtils.is_chinese(name))
+            query = SimpleNamespace(
+                title_cn=name if is_cn else None,
+                title_en=None if is_cn else name,
+                year=group.get("year"),
+                season=seasons[0] if seasons else None,
+                episode=episodes[0] if episodes else None,
+                type=group.get("type"),
+                org_string=group.get("title") or "",
+            )
+            try:
+                looked_up = self._lookup.lookup(query, language=language or "")
+            except HttpRateLimitError as err:
+                log.warn(f"[MediaService]组识别被限流: {group.get('cn_name') or name}, {err}")
+                return IdentifyStatus.ERROR, info
+            except Exception as err:
+                log.error(f"[MediaService]组识别出错: {name}, {err}")
+                return IdentifyStatus.ERROR, info
+            if looked_up and looked_up.tmdb_id:
+                hits.append((name, looked_up))
+
+        if not hits:
+            return IdentifyStatus.NOT_FOUND, info
+        # 多名共识：全部名称指向同一 TMDB 条目才可信；
+        # 冲突时采信最具体（最长）名称 —— 短名往往是系列通称（如 攻壳机动队 vs ...Stand Alone Complex）
+        chosen_name, looked_up = hits[0]
+        distinct = {r.tmdb_id for _, r in hits}
+        if len(distinct) > 1:
+            chosen_name, looked_up = max(hits, key=lambda h: len(h[0]))
+            log.warn(
+                f"[MediaService]组内名称识别冲突: {[(n, r.tmdb_id) for n, r in hits]}，"
+                f"采信最具体名称 '{chosen_name}' -> TMDBID={looked_up.tmdb_id}"
+            )
+        if looked_up and looked_up.tmdb_id:
+            info.tmdb_id = looked_up.tmdb_id
+            info.title = looked_up.title
+            info.original_title = looked_up.original_title
+            info.year = looked_up.year or info.year
+            info.overview = looked_up.overview
+            info.vote_average = looked_up.vote_average
+            info.poster_path = looked_up.poster_path
+            info.backdrop_path = looked_up.backdrop_path
+            info.tmdb_info = {
+                "id": looked_up.tmdb_id,
+                "title": looked_up.title,
+                "original_title": looked_up.original_title,
+                "media_type": looked_up.media_type.value if looked_up.media_type else None,
+                "year": looked_up.year,
+                "overview": looked_up.overview,
+                "vote_average": looked_up.vote_average,
+                "poster_path": looked_up.poster_path,
+                "backdrop_path": looked_up.backdrop_path,
+                "genres": looked_up.genres,
+                "external_ids": looked_up.external_ids,
+            }
+            return IdentifyStatus.HIT, info
+        return IdentifyStatus.NOT_FOUND, info
 
     # ---------- 文件列表识别 ----------
 
@@ -481,6 +750,7 @@ class MediaService:
                                 "tmdb_id": info.tmdb_id,
                                 "season": info.begin_season,
                                 "episode": info.begin_episode,
+                                "end_episode": info.end_episode,
                             }
                         )
                         map_paths.append(file_path)
@@ -489,10 +759,16 @@ class MediaService:
                     mapped = self._episode_mapper.map_batch(map_items)
                     mapped_count = 0
                     for i, mapped_result in enumerate(mapped):
-                        if mapped_result:
+                        if isinstance(mapped_result, tuple):
                             file_path = map_paths[i]
-                            return_media_infos[file_path].begin_season = mapped_result[0]
-                            return_media_infos[file_path].begin_episode = mapped_result[1]
+                            info = return_media_infos[file_path]
+                            info.seeds_season = info.begin_season
+                            info.seeds_episode = info.begin_episode
+                            info.seeds_end_episode = info.end_episode
+                            if len(mapped_result) == 4:
+                                info.begin_season, info.begin_episode, info.end_season, info.end_episode = mapped_result
+                            else:
+                                info.begin_season, info.begin_episode = mapped_result
                             mapped_count += 1
                     if mapped_count > 0:
                         log.info(f"[EpisodeMapper]文件批量映射完成: {mapped_count}/{len(map_items)} 条已映射")
@@ -552,7 +828,7 @@ class MediaService:
 
         lookup_results = {}
         if unique_keys:
-            max_workers = min(len(unique_keys), 8)
+            max_workers = min(len(unique_keys), 2)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key
@@ -616,6 +892,7 @@ class MediaService:
                             "tmdb_id": info.tmdb_id,
                             "season": info.begin_season,
                             "episode": info.begin_episode,
+                            "end_episode": info.end_episode,
                         }
                     )
                     map_paths.append(file_path)
@@ -624,10 +901,16 @@ class MediaService:
                 mapped = self._episode_mapper.map_batch(map_items)
                 mapped_count = 0
                 for i, mapped_result in enumerate(mapped):
-                    if mapped_result:
+                    if isinstance(mapped_result, tuple):
                         file_path = map_paths[i]
-                        return_media_infos[file_path].begin_season = mapped_result[0]
-                        return_media_infos[file_path].begin_episode = mapped_result[1]
+                        info = return_media_infos[file_path]
+                        info.seeds_season = info.begin_season
+                        info.seeds_episode = info.begin_episode
+                        info.seeds_end_episode = info.end_episode
+                        if len(mapped_result) == 4:
+                            info.begin_season, info.begin_episode, info.end_season, info.end_episode = mapped_result
+                        else:
+                            info.begin_season, info.begin_episode = mapped_result
                         mapped_count += 1
                 if mapped_count > 0:
                     log.info(f"[EpisodeMapper]文件识别后映射完成: {mapped_count}/{len(map_items)} 条已映射")
@@ -828,8 +1111,60 @@ class MediaService:
     def get_person_medias(self, personid, mtype=None, page=1):
         return self._lookup.get_person_medias(personid, mtype, page)
 
+    def get_all_names(self, tmdb_id, mtype) -> list[str]:
+        """获取 TMDB 条目全部名称（正名/原名/别名/译名）
+
+        开启 laboratory.identity_index 后走别名索引（热路径零网络），失败回退旧路径。
+        """
+        if settings.get("laboratory").get("identity_index"):
+            try:
+                names = get_identity_builder().get_work_names("tmdb", int(tmdb_id), mtype)
+                if names:
+                    return names
+            except Exception as e:
+                log.warn(f"[MediaService]身份索引获取别名失败，回退旧路径: {e}")
+        return self._lookup.all_names(tmdb_id, mtype)
+
+    def _remap_season_episode(self, info):
+        """发布组季/集重映射（种子编号 → TMDB 规范编号）"""
+        if not self._episode_mapping_enabled:
+            return
+        if not info or not info.tmdb_id or info.type == MediaType.MOVIE or info.begin_season is None:
+            return
+        # 已映射成功则跳过（begin_season != seeds_season 说明 remap 已生效）
+        if info.seeds_season and info.begin_season != info.seeds_season:
+            return
+        mapped = self._episode_remapper.remap(
+            int(info.tmdb_id), info.begin_season, info.begin_episode, info.end_episode
+        )
+        if isinstance(mapped, tuple):
+            new_season = mapped[0]
+            new_episode = mapped[1]
+            if len(mapped) == 4:
+                if (
+                    new_season != info.begin_season
+                    or new_episode != info.begin_episode
+                    or mapped[2] != info.end_season
+                    or mapped[3] != info.end_episode
+                ):
+                    info.seeds_season = info.begin_season
+                    info.seeds_episode = info.begin_episode
+                    info.seeds_end_episode = info.end_episode
+                info.begin_season, info.begin_episode, info.end_season, info.end_episode = mapped
+            else:
+                if new_season != info.begin_season or new_episode != info.begin_episode:
+                    info.seeds_season = info.begin_season
+                    info.seeds_episode = info.begin_episode
+                    info.seeds_end_episode = info.end_episode
+                info.begin_season, info.begin_episode = mapped
+                # episode=0 表示仅映射季号，保留原 begin_episode 状态
+                if info.begin_episode == 0:
+                    info.begin_episode = None
+
     def merge_media_info(self, target, source):
-        return self._lookup.merge_media_info(target, source)
+        result = self._lookup.merge_media_info(target, source)
+        self._remap_season_episode(result)
+        return result
 
     def get_detail_url(self, mtype, tmdbid):
         return self._lookup.get_detail_url(mtype, tmdbid)

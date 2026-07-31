@@ -23,7 +23,7 @@ class TMDBRateLimiter:
         :return: True=获得许可
         """
         key = f"tmdb:{api_key or 'default'}"
-        return self._engine.acquire(key, rate="2.5/s", burst=5, timeout=timeout)
+        return self._engine.acquire(key, rate="10/s", burst=10, timeout=timeout)
 
     def try_acquire(self, api_key: str | None = None) -> bool:
         """尝试获取许可，不等待."""
