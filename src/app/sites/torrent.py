@@ -90,9 +90,10 @@ class Torrent:
 
         # 预签名下载链接自带认证(如 M-Team RSS dlv2 的 sign 参数)，
         # 不能再附加站点 API Key，否则站点会当作 API 认证并返回 JSON 错误。
-        # 优先读站点配置 download.presigned，回退到 sign 参数启发式判断。
+        # 优先读站点配置 download.presigned；仅对 API 站点回退到 sign 参数启发式判断。
+        # HTML 站点即使 URL 带 sign（防盗链 token）仍需要登录 cookie，不能跳过。
         is_presigned = bool(site_def and site_def.download and site_def.download.presigned)
-        if not is_presigned:
+        if not is_presigned and site_def and site_def.api:
             is_presigned = bool(parse_qs(urlparse(url).query).get("sign"))
 
         if site_def and site_def.api and not is_presigned:

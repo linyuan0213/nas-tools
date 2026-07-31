@@ -69,10 +69,8 @@ class SubscribeUpdateService:
             return -1, "缺少订阅ID", None
 
         year = int(str(year)) if str(year).isdigit() else ""
-        rss_sites = rss_sites or []
         if isinstance(rss_sites, str):
             rss_sites = rss_sites.split(",")
-        search_sites = search_sites or []
         if isinstance(search_sites, str):
             search_sites = search_sites.split(",")
         over_edition = 1 if over_edition else 0
