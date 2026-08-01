@@ -401,9 +401,10 @@ def _extract_free_text(ctx: ParseContext, text: str) -> None:
         else:
             en_parts.append(word)
 
-    if cn_parts:
+    # 仅填充缺失的名称，避免覆盖方括号层已提取的更可靠 cn/en 名
+    if cn_parts and not ctx.cn_name:
         ctx.cn_name = " ".join(cn_parts)
-    if en_parts:
+    if en_parts and not ctx.en_name:
         ctx.en_name = " ".join(en_parts)
 
 

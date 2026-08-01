@@ -117,6 +117,22 @@ class TestMovieFormat:
         assert result.resource_team == "FRDS"
         assert "Muhd" not in (result.title_en or "")
 
+    def test_multi_bracket_title_not_overwritten_by_release_note(self, parser):
+        """多括号标题（中/英/日 + 发布注释）应取真实标题，而非尾部发布注释"""
+        result = parser.parse(
+            "[剧场版 鬼灭之刃 无限城篇 第一章 猗窝座再袭]"
+            "[Gekijouban Kimetsu no Yaiba Mugen-jou Hen Daiisshou Akaza Sairai]"
+            "[劇場版 鬼滅の刃 無限城編 第一章 猗窩座再来]"
+            "[BDRip][1920x1080][Movie+SP]"
+            "[H264 FLACx2 TrueHD MKV][自壓(付相關專輯)]"
+        )
+        assert result is not None
+        assert result.title_cn is not None
+        assert "鬼灭之刃" in result.title_cn
+        assert "自压" not in result.title_cn
+        assert "相关专辑" not in (result.title_cn or "")
+        assert result.resource_pix == "1080p"
+
 
 class TestAnimeFormats:
     """动漫格式测试"""
