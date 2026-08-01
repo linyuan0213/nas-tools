@@ -99,11 +99,11 @@ remux','[Hx].?26[45]','20,99',NULL);
 INSERT OR IGNORE INTO "CONFIG_FILTER_GROUP" ("ID","GROUP_NAME","IS_DEFAULT","NOTE") VALUES
  (1002,'中字','N',NULL);
 INSERT OR IGNORE INTO "CONFIG_FILTER_RULES" ("ID","GROUP_ID","ROLE_NAME","PRIORITY","INCLUDE","EXCLUDE","SIZE_LIMIT","NOTE") VALUES
- (10034,'1002','4k中字','1','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+ (10034,'1002','4k中字','1','(?:简体|繁體|繁体|中字|中文|国语|國語|国配|國配|简繁|繁简|简中|繁中|双语|雙語|中英|英中|简日|繁日|日简|日繁|CHS|CHT|中文字幕|内封中字|简体内嵌|繁体内嵌|简日内嵌|繁日内嵌)
 4k|2160p','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','1,30',NULL),
- (10035,'1002','1080p中字','2','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+ (10035,'1002','1080p中字','2','(?:简体|繁體|繁体|中字|中文|国语|國語|国配|國配|简繁|繁简|简中|繁中|双语|雙語|中英|英中|简日|繁日|日简|日繁|CHS|CHT|中文字幕|内封中字|简体内嵌|繁体内嵌|简日内嵌|繁日内嵌)
 1080[pi]','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','1,30',NULL),
- (10036,'1002','高清中字','3','[中国國繁简](/|\s|\\|\|)?[繁简英粤]|[英简繁](/|\s|\\|\|)?[中繁简]|繁體|简体|[中国國][字配]|国语|國語|中文
+ (10036,'1002','高清中字','3','(?:简体|繁體|繁体|中字|中文|国语|國語|国配|國配|简繁|繁简|简中|繁中|双语|雙語|中英|英中|简日|繁日|日简|日繁|CHS|CHT|中文字幕|内封中字|简体内嵌|繁体内嵌|简日内嵌|繁日内嵌)
 720p','Blu-?Ray.+VC-?1|Blu-?Ray.+AVC|UHD.+blu-?ray.+HEVC|\Wsdr\W|minibd|[\W_]diy[\W_]|[\W_]3d[\W_]|REMUX','30',NULL);
 INSERT OR IGNORE INTO "CONFIG_FILTER_GROUP" ("ID","GROUP_NAME","IS_DEFAULT","NOTE") VALUES
  (9999,'不过滤','Y',NULL);

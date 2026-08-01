@@ -1,6 +1,7 @@
 """浏览器自动化通用签到处理器。"""
 
 import re
+import threading
 import time
 
 from lxml import etree
@@ -13,11 +14,15 @@ from app.utils.browser_mode import get_chrome_server_url
 
 from .base import SigninResult, SiteSigninContext, SiteSigninHandler
 
+# 串行化浏览器签到：并发启动多个浏览器会话会让 nexus-chrome 资源竞争，
+# 导致 WAF/雷池挑战长时间无法通过（如我堡超时 120s），也减少同时打开的标签页
+_BROWSER_SIGNIN_LOCK = threading.Lock()
+
 _CHALLENGE_INDICATORS = re.compile(
     r"challenge|cf-browser|Checking your browser|DDoS|正在检查|请等待|验证您不是机器人|slg-bg|slg-box|雷池|安全拦截",
     re.IGNORECASE,
 )
-_PAGE_WAIT_TIMEOUT = 120
+_PAGE_WAIT_TIMEOUT = 180
 _PAGE_POLL_INTERVAL = 3
 
 
@@ -41,19 +46,40 @@ class BrowserSigninHandler(SiteSigninHandler):
 
         self._plugin_ctx.info(f"开始浏览器签到：{site}")
         try:
+            with _BROWSER_SIGNIN_LOCK:
+                return self._do_signin(ctx, site, site_def, home_url, server_url)
+        except Exception as e:
+            ExceptionUtils.exception_traceback(e)
+            return SigninResult.fail(site, str(e))
+
+    def _do_signin(self, ctx, site, site_def, home_url, server_url) -> SigninResult:
+        try:
             with BrowserSession(site_key=site, server_url=server_url) as session:
-                result = session.navigate(home_url, cookie=ctx.cookie)
-                html_text = result.get("html", "")
+                # 优先直接访问签到页：GET attendance 即完成签到，无需首页查找+点击，
+                # 且等待签到页自身的 WAF/雷池挑战清除后再判定，避免误报失败
+                attendance_url = self._resolve_attendance_url(home_url)
+                result = session.navigate(attendance_url, cookie=ctx.cookie)
+                html_text = result.get("html", "") or ""
                 if not html_text:
                     return SigninResult.fail(site, "无法打开网站")
-
                 html_text = self._wait_cloudflare(session, post_navigate=html_text)
                 if _CHALLENGE_INDICATORS.search(html_text):
                     return SigninResult.fail(site, f"挑战未通过: {html_text[:100]}")
 
                 if self._already_signed(html_text):
                     return SigninResult.already(site)
+                if self._success(html_text):
+                    return SigninResult.custom(True, f"[{site}]浏览器签到成功")
+                if not is_logged_in(html_text):
+                    return SigninResult.fail(site, "登录状态异常")
 
+                # 直接访问未生效（可能需要表单/按钮提交），回退首页查找签到按钮
+                self._plugin_ctx.info(f"{site} 直接访问签到页未生效，回退首页查找签到按钮")
+                result = session.navigate(home_url, cookie=ctx.cookie)
+                html_text = result.get("html", "") or ""
+                if not html_text:
+                    return SigninResult.fail(site, "无法打开网站")
+                html_text = self._wait_cloudflare(session, post_navigate=html_text)
                 if not is_logged_in(html_text):
                     return SigninResult.fail(site, "登录状态异常")
 
@@ -67,6 +93,8 @@ class BrowserSigninHandler(SiteSigninHandler):
                 self._plugin_ctx.debug(f"{site} 点击签到按钮: {xpath}")
                 session.click(f"xpath:{xpath}")
                 html_text = self._wait_page_stable(session)
+                # 点击后可能跳转至签到页并触发 WAF/雷池挑战，需等待挑战清除再判定
+                html_text = self._wait_cloudflare(session, post_navigate=html_text)
 
                 if self._success(html_text):
                     return SigninResult.custom(True, f"[{site}]浏览器签到成功")
@@ -80,6 +108,12 @@ class BrowserSigninHandler(SiteSigninHandler):
         except Exception as e:
             ExceptionUtils.exception_traceback(e)
             return SigninResult.fail(site, str(e))
+
+    @staticmethod
+    def _resolve_attendance_url(home_url: str) -> str:
+        """构造签到页 URL（NexusPHP 系站点为 /attendance.php）."""
+        base = home_url.rstrip("/")
+        return f"{base}/attendance.php"
 
     @staticmethod
     def _wait_cloudflare(session: BrowserSession, post_navigate: str) -> str:

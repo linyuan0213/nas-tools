@@ -70,6 +70,13 @@ class _ChromeServerClient:
                 return {}
             raise
 
+    def delete_session(self, session_key: str) -> None:
+        """删除会话，关闭对应浏览器标签页；不存在时忽略."""
+        try:
+            self._request("DELETE", f"/sessions/{session_key}", raise_for_status=False)
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[ChromeServer] 删除会话 {session_key} 失败: {e}")
+
     def request(
         self,
         session_key: str,
@@ -176,6 +183,11 @@ class _BaseChromeTransport:
         return self._build_response(request, payload)
 
     def close(self) -> None:
+        # 关闭时删除 chrome 会话，释放对应浏览器标签页，避免会话长时间残留
+        try:
+            self._server.delete_session(self._session_key)
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[ChromeTransport] 关闭会话 {self._session_key} 失败: {e}")
         self._server.close()
 
 
