@@ -48,7 +48,7 @@ _META_TOKEN_RE = re.compile(
     r"(?i)^("
     # --- 分辨率 ---
     r"\d+p|\d{3,4}x\d{3,4}|[uU]?[hH][dD]|[fF][hH][dD]|[qQ][hH][dD]|[sS][dD]"
-    r"|4[Kk]|8[Kk]|uhd|2160p|1440p|1080[ipIP]|720p|480p|360p"
+    r"|4[Kk]|8[Kk]|uhd|muhd|2160p|1440p|1080[ipIP]|720p|480p|360p"
     # --- 视频编码 ---
     r"|hevc[-\d]*|[hH]\.?265|x\.?265|h265|x265"
     r"|avc|[hH]\.?264|x\.?264|h264|x264"

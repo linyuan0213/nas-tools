@@ -9,7 +9,7 @@ from .base import ExtractionRule
 RULES: list[ExtractionRule] = [
     ExtractionRule(
         name="4k_uhd",
-        pattern=re.compile(r"\b(2160[pP]|4[Kk]|UHD|Ultra\s?HD)\b", re.IGNORECASE),
+        pattern=re.compile(r"\b(2160[pP]|4[Kk]|UHD|mUHD|Ultra\s?HD)\b", re.IGNORECASE),
         category="resolution",
         priority=90,
         confidence=0.95,

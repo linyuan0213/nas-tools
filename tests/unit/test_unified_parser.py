@@ -107,6 +107,16 @@ class TestMovieFormat:
         assert result.resource_pix == "1080p"
         assert result.type == MediaType.MOVIE
 
+    def test_muhd_source_token_not_glued_into_name(self, parser):
+        """FRDS 的 mUHD 标记不应粘进片名（Green Book → 而非 Green Book Muhd）"""
+        result = parser.parse("Green.Book.2018.BluRay.2160p.x265.10bit.HDR.3Audio.mUHD-FRDS.mkv")
+        assert result is not None
+        assert result.title_en == "Green Book"
+        assert result.year == "2018"
+        assert result.resource_pix == "2160p"
+        assert result.resource_team == "FRDS"
+        assert "Muhd" not in (result.title_en or "")
+
 
 class TestAnimeFormats:
     """动漫格式测试"""
