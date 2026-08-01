@@ -444,6 +444,9 @@ class BaseSearchStrategy:
             media_info = meta_info(title=("%s %s" % (name, year)).strip())
             tmdb_info = self._media_cache.get_tmdb_info(mtype=mtype, tmdbid=tmdbid)
             media_info.set_tmdb_info(tmdb_info)
+            # en_name 为空或非拉丁时补全英文名，避免日语原名导致英文标题匹配失败
+            if self._media_service:
+                self._media_service.enrich_en_name(media_info)
             if not (hasattr(media_info, "get_poster_image") and media_info.get_poster_image()):
                 log.debug(f"[BaseSearchStrategy] 缓存缺少海报，重新识别: {name} ({year})")
                 identified = self._media_service.identify(title=f"{name} {year}".strip(), mtype=mtype)

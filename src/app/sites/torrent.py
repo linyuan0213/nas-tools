@@ -315,24 +315,24 @@ class Torrent:
                 collection_priority = 0
             season_len = str(len(x.get_season_list())).rjust(2, "0")
             episode_len = str(len(episode_list)).rjust(4, "0")
-            # 排序：合集、标题、资源类型、站点、做种、季集
+            # 排序：合集、资源规则、做种/站点（按下载顺序设置）、季集、标题（标题仅作平局决胜）
             if download_order == "seeder":
                 return "{}{}{}{}{}{}".format(
                     str(collection_priority).rjust(1, "0"),
-                    str(x.title).ljust(100, " "),
                     str(x.res_order).rjust(3, "0"),
                     str(x.seeders).rjust(10, "0"),
                     str(x.site_order).rjust(3, "0"),
                     f"{season_len}{episode_len}",
+                    str(x.title).ljust(100, " "),
                 )
             else:
                 return "{}{}{}{}{}{}".format(
                     str(collection_priority).rjust(1, "0"),
-                    str(x.title).ljust(100, " "),
                     str(x.res_order).rjust(3, "0"),
                     str(x.site_order).rjust(3, "0"),
                     str(x.seeders).rjust(10, "0"),
                     f"{season_len}{episode_len}",
+                    str(x.title).ljust(100, " "),
                 )
 
         # 匹配的资源中排序分组选最好的一个下载

@@ -48,6 +48,15 @@ def _strict_match(name: str, target_names: list) -> bool:
     return False
 
 
+def _is_latin_name(name: str) -> bool:
+    """名称是否含拉丁字母（英文名）。
+
+    拉丁名精确匹配到目标即可信（短中文名/前缀只是不完整，不是冲突；
+    而同名不同作的拉丁名通常带 SAC_2045 等后缀，不会与基础名严格相等）。
+    """
+    return bool(re.search(r"[A-Za-z]", str(name or "")))
+
+
 class BatchIdentifier:
     """
     批量媒体识别器
@@ -204,7 +213,9 @@ class BatchIdentifier:
             base_matched = [_strict_match(n, base_target_names) for n in g["names"]]
             enriched_matched = [_strict_match(n, target_names) for n in g["names"]] if enrichment_ok else base_matched
             if enrichment_ok:
-                if all(enriched_matched):
+                # 拉丁名严格匹配到目标即可直通（短中文名/前缀只是不完整，不是冲突）
+                latin_matched = [m for n, m in zip(g["names"], enriched_matched) if _is_latin_name(n)]
+                if all(enriched_matched) or any(latin_matched):
                     info = self._build_direct_media_info(g, match_media)
                     self._media_ident_cache.set(key, info)
                     log.info(f"[BatchIdentifier]{g['title'][:50]} 先验直通")

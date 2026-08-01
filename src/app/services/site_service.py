@@ -9,6 +9,7 @@ from app.db.repositories.site_repository import SiteRepository
 from app.domain.entities.site import SiteEntity
 from app.domain.enums import SiteUseType
 from app.domain.interfaces.site_repo import ISiteRepository
+from app.media import meta_info
 from app.schemas.site import (
     SiteActivityDTO,
     SiteAttrDTO,
@@ -457,7 +458,33 @@ class SiteService:
     # ------------------------------------------------------------------
     def list_site_resources(self, index_id: str, page: int, keyword: str) -> SiteResourcesResultDTO:
         result = self._indexer_service.list_resources(index_id=index_id, page=page, keyword=keyword)
-        return SiteResourcesResultDTO(success=result.success, data=result.data, msg=result.msg)
+        data = result.data
+        if result.success and isinstance(data, list):
+            for item in data:
+                self._attach_media_ident(item)
+        return SiteResourcesResultDTO(success=result.success, data=data, msg=result.msg)
+
+    @staticmethod
+    def _attach_media_ident(item: Any) -> None:
+        """为资源列表项附加解析级识别信息（标题离线解析，不走 TMDB）"""
+        if not isinstance(item, dict):
+            return
+        title = item.get("title") or ""
+        if not title:
+            return
+        try:
+            mi = meta_info(title=title, subtitle=item.get("description") or "")
+        except Exception:  # noqa: BLE001
+            return
+        item["media"] = {
+            "name": mi.get_name() or "",
+            "cn_name": mi.cn_name or "",
+            "en_name": mi.en_name or "",
+            "season_episode": mi.get_season_episode_string(),
+            "year": mi.year or "",
+            "type": mi.type.value if mi.type else "",
+            "resource_type": mi.get_resource_type_string(),
+        }
 
     def get_site_download_setting(self, site_name: str | None = None) -> Any:
         """获取站点下载设置（代理到 Sites）"""

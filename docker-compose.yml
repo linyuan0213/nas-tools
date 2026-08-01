@@ -228,6 +228,8 @@ services:
     shm_size: 2g
     environment:
       - VNC_PASSWORD=password
+      - SESSION_TTL=1800
+      - SESSION_CLEANUP_INTERVAL=60
     volumes:
       - ./data:/var/lib/chromium/user_data
     ports:
