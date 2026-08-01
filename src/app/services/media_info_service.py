@@ -200,7 +200,9 @@ class MediaInfoService:
 
     def name_test(self, name, subtitle) -> dict:
         """名称识别测试"""
-        media_info = self._media.get_media_info(title=name, subtitle=subtitle)
+        # cache=False：避免命中媒体缓存而返回首次缓存的资源信息，
+        # 应始终反映当前输入的资源解析（org_string/发布组/音视频等）
+        media_info = self._media.get_media_info(title=name, subtitle=subtitle, cache=False)
         if not media_info:
             return {"name": "无法识别"}
         return mediainfo_dict(media_info)
