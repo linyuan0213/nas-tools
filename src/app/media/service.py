@@ -306,10 +306,8 @@ class MediaService:
         # 6.1 获取英文 / 中文标题用于匹配
         if info.tmdb_id:
             try:
-                if not info.en_name:
-                    en_title = self._lookup.get_tmdb_en_title(info)
-                    if en_title and en_title != info.title and en_title != info.original_title:
-                        info.en_name = en_title
+                # en_name 为空或非拉丁（日/韩/中文原名）时补取 TMDB 英文标题用于搜索
+                self.enrich_en_name(info)
                 if not info.cn_name:
                     cn_title = self._lookup.get_tmdb_zh_title(info)
                     if cn_title and StringUtils.is_chinese(cn_title):
@@ -1047,6 +1045,18 @@ class MediaService:
 
     def get_tmdb_en_title(self, media_info):
         return self._lookup.get_tmdb_en_title(media_info)
+
+    def enrich_en_name(self, media_info) -> None:
+        """补全英文名：en_name 为空或非拉丁（日/韩/中文原名）时取 TMDB 英文标题用于搜索与匹配."""
+        if not media_info or not getattr(media_info, "tmdb_id", None):
+            return
+        if not media_info.en_name or not re.search(r"[A-Za-z]", str(media_info.en_name or "")):
+            try:
+                en_title = self.get_tmdb_en_title(media_info)
+                if en_title and en_title != media_info.title and en_title != media_info.original_title:
+                    media_info.en_name = en_title
+            except Exception as e:  # noqa: BLE001
+                log.debug(f"[service]补全英文名失败: {e}")
 
     def get_tmdb_zhtw_title(self, media_info):
         return self._lookup.get_tmdb_zhtw_title(media_info)

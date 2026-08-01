@@ -487,11 +487,12 @@ class MediaInfo(BaseModel):
             title_val = info.get("title") or ""
             self.cn_name = title_val if StringUtils.is_chinese(title_val) else None
             en_val = info.get("original_title") or ""
-            self.en_name = (
-                en_val
-                if StringUtils.is_chinese(en_val)
-                else (title_val if not StringUtils.is_chinese(title_val) else None)
-            )
+            # en_name 仅存真正的英文/拉丁名；中日韩原名不存（交给上层取 TMDB 英文标题），避免日语名污染英文名
+            self.en_name = None
+            if not StringUtils.is_chinese(title_val) and not StringUtils.is_japanese(title_val):
+                self.en_name = title_val
+            elif not StringUtils.is_chinese(en_val) and not StringUtils.is_japanese(en_val):
+                self.en_name = en_val
             if self.release_date:
                 self.year = self.release_date[0:4]
             self.category = get_category(rule_map.get("movie"), info)
@@ -512,11 +513,12 @@ class MediaInfo(BaseModel):
             name_val = info.get("name") or ""
             self.cn_name = name_val if StringUtils.is_chinese(name_val) else None
             en_val = info.get("original_name") or ""
-            self.en_name = (
-                en_val
-                if StringUtils.is_chinese(en_val)
-                else (name_val if not StringUtils.is_chinese(name_val) else None)
-            )
+            # en_name 仅存真正的英文/拉丁名；中日韩原名不存（交给上层取 TMDB 英文标题），避免日语名污染英文名
+            self.en_name = None
+            if not StringUtils.is_chinese(name_val) and not StringUtils.is_japanese(name_val):
+                self.en_name = name_val
+            elif not StringUtils.is_chinese(en_val) and not StringUtils.is_japanese(en_val):
+                self.en_name = en_val
             if self.release_date:
                 self.year = self.release_date[0:4]
             if self.type == MediaType.TV:

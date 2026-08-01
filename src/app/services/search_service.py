@@ -379,7 +379,8 @@ class Searcher:
             # 排序并入库
             media_list = processor.sort_results(media_list)
             processor.persist_results(media_list)
-            if not self._search_auto:
+            # 订阅始终自动下载；手动/WEB 搜索按"搜索后自动下载"开关决定
+            if in_from != SearchType.SUBSCRIBE and not self._search_auto:
                 return None, no_exists, len(media_list), 0
 
         # 4. 过滤已下载

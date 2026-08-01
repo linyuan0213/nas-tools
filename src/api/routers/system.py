@@ -3,6 +3,7 @@ System Router — FastAPI 迁移
 对应原 web/controllers/system.py，复用 app/services/system_service.py
 """
 
+import asyncio
 import json
 import os
 import uuid
@@ -45,6 +46,7 @@ from app.core.system_config import SystemConfig
 from app.domain.enums import SystemConfigKey
 from app.indexer.registry import get_all_clients as get_all_indexers
 from app.infrastructure.cache_system import TokenCache
+from app.infrastructure.progress import ProgressTracker
 from app.infrastructure.security import generate_password_hash
 from app.infrastructure.temp import temp_manager
 from app.mediaserver.registry import get_all_clients as get_all_mediaservers
@@ -557,6 +559,31 @@ def search(
         session_id=session_id,
     )
     return success(data={"session_id": session_id})
+
+
+@router.get("/search/progress/{session_id}", summary="SSE 搜索进度")
+async def search_progress(session_id: str):
+    """以 SSE 流推送搜索进度（per-session + 全局详细进度）"""
+
+    async def event_stream():
+        tracker = ProgressTracker()
+        last_val = -1
+        deadline = asyncio.get_running_loop().time() + 600
+        while asyncio.get_running_loop().time() < deadline:
+            detail = tracker.get_process(f"search:{session_id}")
+            if not detail:
+                await asyncio.sleep(0.3)
+                continue
+            val = detail.get("value", 0)
+            if val != last_val:
+                last_val = val
+                yield f"data: {json.dumps(detail, ensure_ascii=False)}\n\n"
+            # 已结束（enable=False 且 value>=100）→ 关闭流
+            if not detail.get("enable") and val >= 100:
+                break
+            await asyncio.sleep(0.3)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 def _flatten_config(cfg: dict, prefix: str = "") -> dict:

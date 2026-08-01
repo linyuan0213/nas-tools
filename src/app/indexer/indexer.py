@@ -317,7 +317,10 @@ class Indexer:
         if not key_word:
             return []
 
-        progress_key = ProgressKey.SubscribeSearch if in_from == SearchType.SUBSCRIBE else ProgressKey.Search
+        # 优先使用调用方传入的 per-session progress key（WEB 搜索按会话隔离进度）
+        progress_key = filter_args.get("progress_key") or (
+            ProgressKey.SubscribeSearch if in_from == SearchType.SUBSCRIBE else ProgressKey.Search
+        )
         self._ensure_clients()
         if not self._clients:
             log.error("没有配置索引器，无法搜索！")
