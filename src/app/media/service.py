@@ -165,7 +165,29 @@ class MediaService:
                     log.info(f"[MediaService]从缓存获取媒体信息: {search_name}")
                     if language:
                         self._lookup.client.set_language()
-                    return cached
+                    # 缓存只提供 TMDB 身份；资源字段（org_string/发布组/分辨率/音视频等）
+                    # 是种子专属的，必须来自当前解析，避免返回首次缓存种子的过期资源字段
+                    info = MediaInfo.from_parser(parsed)
+                    info.org_string = title
+                    for _field in (
+                        "tmdb_id",
+                        "title",
+                        "original_title",
+                        "year",
+                        "overview",
+                        "vote_average",
+                        "poster_path",
+                        "backdrop_path",
+                        "fanart_poster",
+                        "fanart_backdrop",
+                        "tmdb_info",
+                        "cn_name",
+                        "en_name",
+                        "type",
+                    ):
+                        setattr(info, _field, getattr(cached, _field))
+                    self.enrich_en_name(info)
+                    return info
                 log.debug(
                     f"[MediaService]缓存季集不匹配，跳过缓存: "
                     f"cached=S{cached.begin_season}E{cached.begin_episode}-"
