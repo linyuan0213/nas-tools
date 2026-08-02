@@ -202,6 +202,110 @@ services:
 
 若不设置环境变量，或需要动态切换后端，可在前端页面 **Settings** → **Backend URL** 中输入后端完整地址（如 `http://192.168.1.100:3000`）。此时前端直连后端，需确保后端允许 CORS。
 
+## 反向代理部署
+
+通过 Nginx 将 Nexus Media 挂到域名下对外访问时，只需代理**前端端口**（compose 示例中为宿主机 `3000`），前端容器内嵌的 nginx 会继续将 `/api`、`/ws` 转发到后端。
+
+!!! warning
+    必须配置 WebSocket 转发头，否则日志、进度等实时推送功能不可用。
+
+```nginx
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name media.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+
+        # WebSocket 支持（必须）
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 大文件上传（备份恢复等场景）
+        client_max_body_size 100m;
+        proxy_read_timeout 300s;
+    }
+}
+
+server {
+    listen 80;
+    server_name media.example.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+配合设置：
+
+1. 在 **系统设置 → 基础设置 → 系统** 中将「外网访问地址」填为 `https://media.example.com`，消息通知中的链接才能正确跳转
+2. 子路径部署（如 `/nexus`）暂不支持，请使用独立域名或端口
+3. 使用**企业微信交互功能**时，还需把 `/wechat` 直接转发到后端端口（前端 nginx 不转发该路径），详见 [通知渠道配置](notifications.md#交互功能可选)
+
+## 可选组件：nexus-verify 与 nexus-chrome
+
+两个增强组件，仅在 `full-mysql` / `full-postgresql` profile 下默认启动，也可单独部署：
+
+| 组件 | 镜像 | 端口 | 用途 |
+|------|------|------|------|
+| nexus-verify | `linyuan0213/nexus-verify` | 9300 | 验证码识别（OCR），用于站点签到、浏览器登录时的验证码自动识别 |
+| nexus-chrome | `linyuan0213/nexus-chrome` | 9850 / 6080 | 浏览器内核，用于 Cloudflare 防护站点签到、自动登录更新 Cookie |
+
+### nexus-verify（验证码识别）
+
+```yaml
+nexus-verify:
+  image: linyuan0213/nexus-verify:latest
+  container_name: nexus-verify
+  ports:
+    - 9300:9300
+  restart: always
+```
+
+无额外环境变量。部署后在 **系统设置 → 基础设置 → 实验室** 中：
+
+1. 开启「启用验证码识别服务器」
+2. 「验证码识别服务器」填写 `http://<宿主机IP>:9300`（compose 同网络内可用 `http://nexus-verify:9300`）
+
+### nexus-chrome（浏览器内核）
+
+```yaml
+nexus-chrome:
+  image: linyuan0213/nexus-chrome:latest
+  container_name: nexus-chrome
+  shm_size: 2g
+  environment:
+    - VNC_PASSWORD=password      # noVNC 访问密码，务必修改
+    - SESSION_TTL=1800           # 浏览器会话空闲回收时间（秒）
+    - SESSION_CLEANUP_INTERVAL=60  # 会话清理检查间隔（秒）
+  volumes:
+    - ./data:/var/lib/chromium/user_data   # 持久化浏览器用户数据（登录态等）
+  ports:
+    - 9850:9850   # DrissionPage 服务，供后端调用
+    - 6080:6080   # noVNC 网页版远程桌面，可观察自动化过程
+  restart: always
+```
+
+!!! warning
+    `shm_size: 2g` 必须配置，共享内存不足会导致 Chrome 崩溃；`VNC_PASSWORD` 务必修改为强密码，6080 端口不要直接暴露公网。
+
+部署后在 **系统设置 → 基础设置 → 实验室** 中：
+
+1. 开启「启用网页自动化」
+2. 「网页自动化服务器」填写 `http://<宿主机IP>:9850`（compose 同网络内可用 `http://nexus-chrome:9850`）
+
+配置生效后：
+
+- 站点签到遇到验证码时自动 OCR 识别（成功率约 90%）
+- Cloudflare / 雷池防护站点可在 [自动签到插件](plugins.md) 中标记为「浏览器站点」，使用真实浏览器签到
+- 站点维护中「更新 Cookie」可用浏览器模拟登录自动获取 Cookie 和 UA
+- 访问 `http://<宿主机IP>:6080` 打开 noVNC 可实时观察浏览器操作过程
+
 ## 环境变量
 
 环境变量优先级：`环境变量 > .env > config.yaml`。除 Docker 镜像专用变量外，其余变量对应 `src/app/core/settings.py` 中的配置节点，使用 `__` 作为嵌套分隔符，例如 `APP__WEB_HOST`、`DATABASE__TYPE`、`REDIS__HOST`。

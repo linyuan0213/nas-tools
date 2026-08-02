@@ -1,10 +1,8 @@
----
-title: 消息通知模板使用指南
-description: Nexus Media 消息通知模板配置和使用说明
-date: 2026-03-26
----
-
 # 消息通知模板使用指南
+
+入口：**系统设置 → 通知设置**（`/system/notification`）。渠道添加与参数说明见 [通知渠道配置](notifications.md)。
+
+![通知设置](assets/images/system/notification.png){ .screenshot }
 
 ## 概述
 
@@ -21,14 +19,12 @@ Nexus Media 的消息通知系统支持自定义模板功能，允许用户为�
 
 ## 配置方法
 
-配置路径：`/system/notification`
-
 ### 1. 进入消息通知设置
 
 1. 打开 Nexus Media 网页界面
-2. 点击导航栏的"系统设置"
-3. 选择"消息通知"选项卡
-4. 点击"新增消息通知"或编辑现有的消息通知客户端
+2. 点击导航栏的「系统设置」
+3. 选择「通知设置」
+4. 点击「新增消息通知」或编辑现有的消息通知客户端
 
 ### 2. 配置模板
 

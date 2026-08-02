@@ -53,3 +53,11 @@ clean:
     find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
     find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
     find . -type f -name '*.pyc' -delete 2>/dev/null || true
+
+# 本地预览文档站点
+docs:
+    uv run mkdocs serve
+
+# 构建文档站点
+docs-build:
+    uv run mkdocs build

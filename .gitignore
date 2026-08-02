@@ -63,3 +63,6 @@ static/avatars/*
 # Environment
 .env
 config/*.pid
+
+# MkDocs 构建输出
+/site/

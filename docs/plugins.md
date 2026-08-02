@@ -2,8 +2,11 @@
 
 Nexus Media 提供了丰富的插件系统，可以扩展系统的功能。本章将详细介绍各个插件的使用方法。
 
-插件市场路径：`/plugin/market`
-已安装插件路径：`/plugin/installed`
+入口：**插件中心 → 插件市场**（`/plugin/market`）安装插件，**插件中心 → 已安装插件**（`/plugin/installed`）管理插件。
+
+![插件市场](assets/images/plugin/market.png){ .screenshot }
+
+![已安装插件](assets/images/plugin/installed.png){ .screenshot }
 
 ## 插件列表
 
@@ -19,42 +22,17 @@ Nexus Media 提供了丰富的插件系统，可以扩展系统的功能。本�
 
 #### 前置准备
 
-##### 1. 安装Nexus Media Chrome容器
+##### 1. 安装 nexus-chrome 容器
 
-自动签到需要浏览器自动化功能，需要安装Nexus Media Chrome容器：
-
-1. 在docker-compose.yml中添加chrome服务配置：
-   ```yaml
-   chrome:
-     image: linyuan0213/Nexus Media Chrome:latest
-     container_name: Nexus Media Chrome
-     shm_size: 2g # 共享内存大小
-     volumes:
-       - ./data:/var/lib/chromium/user_data
-     ports:
-       - 9850:9850
-       - 6080:6080
-     restart: always
-   ```
-
-2. 启动chrome容器：
-   ```bash
-   docker-compose up -d chrome
-   ```
-
-3. 验证容器运行状态：
-   ```bash
-   docker ps | grep Nexus Media Chrome
-   ```
+自动签到的浏览器自动化功能依赖 nexus-chrome 组件，安装与参数说明见 [安装指南 → 可选组件](installation.md#可选组件nexus-verify-与-nexus-chrome)。
 
 ##### 2. 配置网页自动化服务器
 
 在 Nexus Media 中配置网页自动化服务器：
 
-1. 进入 **基础设置**（`/system/basic`） → **实验室** → **网页自动化服务器**
-2. 填写配置参数：
-   - **服务器地址**: 填写Nexus Media Chrome容器的访问地址，如 `http://192.168.1.151:9850`
-   - 确保地址可访问，端口9850是DrissionPage服务的默认端口
+1. 进入 **基础设置**（`/system/basic`） → **实验室**，开启「启用网页自动化」
+2. 「网页自动化服务器」填写 nexus-chrome 容器的访问地址，如 `http://192.168.1.151:9850`
+3. 确保地址可访问，端口 9850 是 DrissionPage 服务的默认端口
 
 ##### 3. 安装CookieCloud浏览器插件
 
@@ -72,10 +50,8 @@ Nexus Media 提供了丰富的插件系统，可以扩展系统的功能。本�
 1. 打开CookieCloud插件设置
 2. 设置服务器地址（可使用公共服务器或自建服务器）
 3. 生成用户KEY和端对端加密密码
-4. **重要：设置是否同步Local Storage选"是"**
-5. 设置同步域名关键词（需要同步的PT站点域名）
-
-![CookieCloud配置界面](../img/cookiecloud.png)
+4. **重要：设置是否同步 Local Storage 选「是」**
+5. 设置同步域名关键词（需要同步的 PT 站点域名）
 
 ##### 5. 手动登录网站
 
