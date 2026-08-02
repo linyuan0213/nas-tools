@@ -175,7 +175,7 @@ class WebUtils:
             for tmdbinfo in tmdbinfos:
                 tmp_info = meta_info(title=keyword)
                 tmp_info.set_tmdb_info(tmdbinfo)
-                if mi.type != MediaType.MOVIE and tmp_info.type == MediaType.MOVIE:
+                if tmp_info.type == MediaType.MOVIE and (season_num or episode_num):
                     continue
                 if tmp_info.begin_season:
                     tmp_info.title = "{} 第{}季".format(tmp_info.title, cn2an.an2cn(mi.begin_season or 0, mode="low"))
