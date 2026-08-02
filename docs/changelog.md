@@ -1,5 +1,29 @@
 # 版本历史
 
+## v4.4.2 (2026-08-02)
+
+### 修复
+- 匹配：识别缓存命中时用当前解析重建资源字段（org_string/发布组/分辨率/音视频），不再返回首次缓存种子的过期资源字段。TMDB 身份（tmdb_id/名称/年份/海报）仍来自缓存避免重复查 TMDB
+- 识别：名称识别测试 `name_test` 用 `cache=False`，始终返回当前输入的资源字段，避免展示首次缓存的错误资源信息
+- 解析：剥离 FRDS `mUHD` 源标记（`name_extractor._META_TOKEN_RE` 新增 `muhd`），修复 `Green.Book...mUHD-FRDS.mkv` 识别为 `Green Book Muhd`（名称残留 → TMDB 搜不到）
+- 解析：多括号标题（中/英/日 + 发布注释）的方括号层提取不再被自由文本层覆盖（`_extract_free_text` 仅填充缺失名称），修复 `[剧场版 鬼灭之刃...][自壓(付相關專輯)]` 取成发行注释
+- 前端：服务面板 → 新增缓存管理弹窗（`GET/POST /system/caches`），列出各缓存键数/占用/命中率统计，支持单个或全部清理
+- 前端：缓存管理弹窗改为内联面板 NModal `v-model:show`（修复子组件 `:show` 导致弹窗内联渲染在页面底部）
+- 前端：服务面板整体重构，使用 `tabler-theme.css` 颜色系统（统计卡片加图标 + 服务卡片彩色标记 + Tabler 阴影/圆角/过渡）
+- 前端：名称识别测试 `nameTestApi` 支持 `subtitle` 参数，传 description 提高多语言标题命中率
+- 前端：未识别列表识别弹窗先打开再请求（加载动画可见），修复加载期间无动画
+- 前端：`discovery/index.vue` 推荐项跳转搜索页字段 `mediaType` → `media_type`，修复类型字段引用错误
+- 前端：订阅（影视/剧集）页面移除未使用的 `startSearchSSE` 解构，修复 typecheck 报错
+- 签到：浏览器签到直接访问签到页 `attendance.php`（不再首页+点击）；等待签到页 WAF/雷池挑战清除后判定；串行化浏览器签到（消除并发竞争）
+- 签到：`browser_transport` 关闭时删除对应 chrome 会话；docker-compose 缩短 chrome SESSION_TTL 为 30 分钟
+
+### 特性
+- 搜索：新增 `GET /search/progress/{session_id}` SSE 进度流，WEB 搜索进度按会话隔离推送
+- 系统：新增 `GET /system/caches`（缓存列表与统计）、`POST /system/caches/clear`（按名或全部清理缓存）
+
+### 测试
+- 全量测试通过（2116 passed）；新增 mUHD 剥离、多括号标题不覆盖、批量识别拉丁名直通回归测试
+
 ## v4.4.1 (2026-08-01)
 
 ### 修复

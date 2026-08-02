@@ -46,6 +46,7 @@ from app.core.system_config import SystemConfig
 from app.domain.enums import SystemConfigKey
 from app.indexer.registry import get_all_clients as get_all_indexers
 from app.infrastructure.cache_system import TokenCache
+from app.infrastructure.cache_system.manager import get_cache_manager
 from app.infrastructure.progress import ProgressTracker
 from app.infrastructure.security import generate_password_hash
 from app.infrastructure.temp import temp_manager
@@ -584,6 +585,44 @@ async def search_progress(session_id: str):
             await asyncio.sleep(0.3)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.get("/caches", response_model=CommonResponse, summary="获取缓存列表与统计")
+def list_caches(
+    current_user: UserContext = Depends(require_permission("setting:view")),
+):
+    """列出所有缓存及其键数/占用统计"""
+    manager = get_cache_manager()
+    stats = manager.get_stats()
+    names = manager.get_all_cache_names()
+    data = []
+    for name in names:
+        stat = stats.get(name) or {}
+        if isinstance(stat, dict) and "error" in stat:
+            data.append({"name": name, "keys": 0, "error": stat["error"]})
+        else:
+            data.append({"name": name, **stat})
+    return success(data=data)
+
+
+class CacheClearRequest(BaseModel):
+    name: str | None = None
+
+
+@router.post("/caches/clear", response_model=CommonResponse, summary="清理缓存（按名或全部）")
+def clear_cache(
+    req: CacheClearRequest,
+    current_user: UserContext = Depends(require_permission("setting:update")),
+):
+    """按缓存名清理，未指定则清空全部缓存"""
+    manager = get_cache_manager()
+    if req.name:
+        cleared = manager.cache_clear(req.name)
+        if not cleared:
+            return fail(msg=f"缓存不存在: {req.name}")
+        return success(msg=f"已清理缓存: {req.name}")
+    manager.clear_all()
+    return success(msg="已清理全部缓存")
 
 
 def _flatten_config(cfg: dict, prefix: str = "") -> dict:
