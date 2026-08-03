@@ -49,6 +49,10 @@ class IDownloadHistoryRepository(Protocol):
         """根据路径查找下载历史（兼容旧方法名）"""
         ...
 
+    def get_download_history_list_by_path(self, path: str):
+        """按路径返回全部下载记录（聚合目录多条）"""
+        ...
+
     def count_download_history_by_path(self, path: str) -> int:
         """统计同一路径下的下载记录数（判断是否为聚合目录）"""
         ...

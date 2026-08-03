@@ -112,6 +112,9 @@ class TransferHistoryRepositoryAdapter:
     def get_transfer_unknown_paths(self) -> list[TRANSFERUNKNOWN]:
         return self._repo.get_transfer_unknown_paths()
 
+    def is_transfer_unknown_exists(self, path: str) -> bool:
+        return self._repo.is_transfer_unknown_exists(path)
+
     # 兼容旧Repository方法名 - 委托给Unknown子适配器
     def get_transfer_unknown_paths_by_page(
         self, search: str | None, page: int, rownum: int

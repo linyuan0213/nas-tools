@@ -89,7 +89,8 @@ _META_TOKEN_RE = re.compile(
     # --- 音轨/字幕 ---
     r"|dual[-]?audio|multi[-]?audio|multi[-]?subs?|2[-]?audio|3[-]?audio|dual|multi"
     r"|dub(bed)?|sub(bed)?|hard[-]?sub|soft[-]?sub|eng[-]?sub"
-    r"|ch[st]|chs|cht|gb|big5"
+    r"|ch[st]|chs|cht|jpsc|jptc|jps|jpt|srt|ass|ssa|idx|sup|pgs"
+    r"|gb|big5"
     # --- 剧集标记 ---
     r"|complete|season|batch|collection|pack|trilogy|quadrilogy"
     r"|mini[-]?series|mini|ova\d*|special|ova|ond[ae]s?|sp\d*"
@@ -256,6 +257,9 @@ def _extract_bracket_name(ctx: ParseContext, prepared_text: str, original_text: 
         if not bc_clean or len(bc_clean) < 2:
             continue
         if _is_metadata(bc_clean):
+            continue
+        if re.fullmatch(r"\d{1,3}", bc_clean):
+            # 纯数字括号是集号/文件号标记（如 [13]、[01]），不是标题
             continue
         if release_group and bc_clean.upper() == release_group.upper():
             continue

@@ -84,6 +84,9 @@ class DownloadHistoryRepositoryAdapter(IDownloadHistoryRepository):
     def get_download_history_by_path(self, path: str) -> Any:
         return self._repo.get_download_history_by_path(path)
 
+    def get_download_history_list_by_path(self, path: str) -> Any:
+        return self._repo.get_download_history_list_by_path(path)
+
     def count_download_history_by_path(self, path: str) -> int:
         return self._repo.count_download_history_by_path(path)
 

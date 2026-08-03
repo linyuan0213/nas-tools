@@ -133,6 +133,34 @@ class TestMovieFormat:
         assert "相关专辑" not in (result.title_cn or "")
         assert result.resource_pix == "1080p"
 
+    def test_subtitle_tags_not_treated_as_title(self, parser):
+        """[JPSC_JPTC] / [SRT] 等字幕标签不应被当成片名"""
+        result = parser.parse(
+            "[NEST] Mushoku Tensei Jobless Reincarnation S03 - 05 [CR WEB-DL 1080p AVC AAC][JPSC_JPTC].mkv"
+        )
+        assert result is not None
+        assert result.title_en is not None
+        assert "Jpsc" not in result.title_en
+        assert "Jptc" not in result.title_en
+        assert "Mushoku" in result.title_en
+
+        result2 = parser.parse("[Skymoon-Raws] Mushoku Tensei Ⅲ Isekai Ittara Honki Dasu - 06")
+        assert result2 is not None
+        assert result2.title_en is not None
+        assert "srt" not in result2.title_en.lower()
+        assert "Mushoku" in result2.title_en
+
+    def test_roman_numeral_season(self, parser):
+        """动漫标题中的罗马数字季标（Ⅲ/III）应解析为对应季数"""
+        result = parser.parse("[Skymoon-Raws] Mushoku Tensei Ⅲ Isekai Ittara Honki Dasu - 06")
+        assert result is not None
+        assert result.season == 3
+        assert result.episode == 6
+
+        result2 = parser.parse("Mushoku Tensei II Isekai Ittara Honki Dasu - 01")
+        assert result2 is not None
+        assert result2.season == 2
+
 
 class TestAnimeFormats:
     """动漫格式测试"""

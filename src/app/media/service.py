@@ -880,18 +880,32 @@ class MediaService:
                     info.year = looked_up.year
                     info.poster_path = looked_up.poster_path
                     info.backdrop_path = looked_up.backdrop_path
-                    info.tmdb_info = {
-                        "id": looked_up.tmdb_id,
-                        "title": looked_up.title,
-                        "media_type": looked_up.media_type.value if looked_up.media_type else None,
-                        "year": looked_up.year,
-                        "overview": looked_up.overview,
-                        "vote_average": looked_up.vote_average,
-                        "poster_path": looked_up.poster_path,
-                        "backdrop_path": looked_up.backdrop_path,
-                        "genres": looked_up.genres,
-                        "external_ids": looked_up.external_ids,
-                    }
+                    # 取完整 TMDB detail（含 origin_country/genre_ids 等），
+                    # 确保 set_tmdb_info 的类型与分类判定正确，避免落到"未分类"
+                    detail = self.get_tmdb_info(
+                        mtype=looked_up.media_type or parsed.type,
+                        tmdbid=looked_up.tmdb_id,
+                    )
+                    if detail:
+                        info.tmdb_info = detail
+                        info.set_tmdb_info(detail)
+                    else:
+                        info.tmdb_info = {
+                            "id": looked_up.tmdb_id,
+                            "title": looked_up.title,
+                            "name": looked_up.title,
+                            "media_type": (
+                                MediaType.from_string(looked_up.media_type.value) if looked_up.media_type else None
+                            ),
+                            "year": looked_up.year,
+                            "overview": looked_up.overview,
+                            "vote_average": looked_up.vote_average,
+                            "poster_path": looked_up.poster_path,
+                            "backdrop_path": looked_up.backdrop_path,
+                            "genres": looked_up.genres,
+                            "external_ids": looked_up.external_ids,
+                        }
+                        info.set_tmdb_info(info.tmdb_info)
                 if episode_format:
                     begin_ep, end_ep, part = episode_format.split_episode(item["title"])
                     if begin_ep is not None:
@@ -899,6 +913,13 @@ class MediaService:
                         info.part = part
                     if end_ep is not None:
                         info.end_episode = end_ep
+                # 根据识别出的季集数设置 total_episodes（单集=1，范围=差+1），
+                # 供转移完成消息聚合"共N集"使用
+                if info.begin_episode is not None:
+                    if info.end_episode is not None and info.end_episode != info.begin_episode:
+                        info.total_episodes = (info.end_episode - info.begin_episode) + 1
+                    else:
+                        info.total_episodes = 1
             return_media_infos[file_path] = info
 
         # 3. 集数映射（动漫合并季 / 绝对集号）

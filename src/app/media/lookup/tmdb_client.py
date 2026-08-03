@@ -105,7 +105,8 @@ def compare_tmdb_names(file_name, tmdb_names):
             continue
         is_substring = file_name in tmdb_name or tmdb_name in file_name or file_name_simplified in tmdb_name
         ratio = difflib.SequenceMatcher(None, file_name_simplified, tmdb_name).ratio()
-        threshold = 0.95 if is_substring else 0.75
+        # 子串匹配阈值放宽：动漫罗马音标题常带 -kun/-chan/-san 等后缀，0.95 过严
+        threshold = 0.85 if is_substring else 0.75
         if ratio >= threshold:
             return True
     return False

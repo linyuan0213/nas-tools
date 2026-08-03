@@ -123,7 +123,7 @@ class TransferRepository(BaseRepository):
                     TITLE=title,
                     YEAR=media_info.year,
                     SEASON_EPISODE=season_episode,
-                    SOURCE=str(in_from.value),
+                    SOURCE=str(in_from.value) if hasattr(in_from, "value") else str(in_from),
                     SOURCE_PATH=source_path,
                     SOURCE_FILENAME=source_filename,
                     DEST=dest,
@@ -427,8 +427,12 @@ class TransferRepository(BaseRepository):
 
     def insert_transfer_blacklist(self, path: str) -> None:
         """
-        插入黑名单记录
+        插入黑名单记录（先去重，避免定时转移每分钟重复插入导致表膨胀）
         """
+        if not path:
+            return
+        if self.is_transfer_in_blacklist(path):
+            return
         with self.session() as db:
             db.add(TRANSFERBLACKLIST(PATH=os.path.normpath(path)))
 

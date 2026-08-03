@@ -83,6 +83,9 @@ class TransferHistoryManager:
     def get_transfer_unknown_paths(self):
         return self.transfer_repo.get_transfer_unknown_paths()
 
+    def is_transfer_unknown_exists(self, reg_path):
+        return self.transfer_repo.is_transfer_unknown_exists(reg_path)
+
     def get_transfer_unknown_paths_by_page(self, search, page, rownum):
         return self.transfer_repo.get_transfer_unknown_paths_by_page(search=search, page=page, rownum=rownum)
 

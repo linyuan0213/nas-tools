@@ -340,7 +340,14 @@ class TransferPathResolver:
                 return os.path.join(dest, dir_name)
         else:
             dir_name, season_name, _ = self.get_tv_dest_path(meta_info, media_service)
+            if meta_info.type == MediaType.TV:
+                if self._tv_category_flag:
+                    return os.path.join(dest, meta_info.category, dir_name, season_name)
+                return os.path.join(dest, dir_name, season_name)
+            # 动漫：专用动漫目录时不加分类子目录；回退 TV 目录时按分类进子目录
+            is_dedicated_anime = any(PathUtils.is_path_in_path(p, dest) for p in self._anime_path)
+            if is_dedicated_anime:
+                return os.path.join(dest, dir_name, season_name)
             if self._tv_category_flag:
                 return os.path.join(dest, meta_info.category, dir_name, season_name)
-            else:
-                return os.path.join(dest, dir_name, season_name)
+            return os.path.join(dest, dir_name, season_name)

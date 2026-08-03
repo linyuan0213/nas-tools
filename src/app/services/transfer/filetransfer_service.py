@@ -395,11 +395,17 @@ class FileTransferService:
     def _lookup_download_record(self, in_path):
         download_info = self._history.download_repo.get_download_history_by_path(in_path)
         if download_info and os.path.isdir(in_path):
-            # 目录路径命中多条下载记录（聚合目录）时不可靠，跳过避免错误套用
+            # 目录路径命中多条下载记录（聚合目录）：若都指向同一部剧则用其 tmdb 提示，
+            # 否则不可靠，跳过避免错误套用
             count = self._history.download_repo.count_download_history_by_path(in_path)
             if count and count > 1:
-                log.debug(f"[Rmt]{in_path} 命中 {count} 条下载记录，目录聚合，跳过")
-                return None, None
+                records = self._history.download_repo.get_download_history_list_by_path(in_path) or []
+                tmdb_ids = {str(r.TMDBID) for r in records if getattr(r, "TMDBID", None)}
+                if records and len(tmdb_ids) == 1:
+                    download_info = records[0]
+                else:
+                    log.debug(f"[Rmt]{in_path} 命中 {count} 条下载记录，聚合目录多部剧，跳过")
+                    return None, None
         if not download_info and os.path.isfile(in_path):
             parent = os.path.dirname(in_path)
             # 文件回退父目录时，父目录若是聚合目录（多条下载记录）同样不可靠，跳过
@@ -616,7 +622,8 @@ class FileTransferService:
                 alert_count += ac
                 alert_messages = am
                 total_exist_filenum += exist_filenum
-                if fc > 0:
+                # 失败或已存在（转移历史/目标文件已存在）都不进入成功处理与消息聚合
+                if fc > 0 or exist_filenum > 0:
                     continue
 
                 file_ext = os.path.splitext(file_item)[-1]
@@ -749,12 +756,16 @@ class FileTransferService:
     ):
         file_name = os.path.basename(file_item)
         error = "无法识别媒体信息"
+        # 已在未识别列表：跳过（无论 STATE），避免每周期重复识别报错/重复通知
+        if self._history.is_transfer_unknown_exists(reg_path):
+            return 1, 0, alert_messages
+        insert = self._history.is_need_insert_transfer_unknown(reg_path)
+        if not insert:
+            return 1, 0, alert_messages
         log.warn(f"[Rmt]{file_name} {error}！")
         self.progress.update(ptype=ProgressKey.FileTransfer, text=error)
-        insert = self._history.is_need_insert_transfer_unknown(reg_path)
-        if insert:
-            self._history.insert_transfer_unknown(reg_path, target_dir, operation)
-        if error not in alert_messages and insert:
+        self._history.insert_transfer_unknown(reg_path, target_dir, operation)
+        if error not in alert_messages:
             alert_messages = alert_messages + [error]
         if unknown_dir:
             log.warn(f"[Rmt]{file_name} 按原文件名转移到未识别目录：{unknown_dir}")
@@ -768,7 +779,24 @@ class FileTransferService:
                 self._engine.transfer(file_item, new_file, operation)
         else:
             log.error(f"[Rmt]{file_name} {error}！")
-        return 1, 1 if insert else 0, alert_messages
+        return 1, 1, alert_messages
+
+    @staticmethod
+    def _episode_in_history(history, episode) -> bool:
+        """判断某集是否已存在于转移历史（支持 S01E01 与 S01E01-E05 格式）."""
+        for h in history or []:
+            se = getattr(h, "season_episode", None) or ""
+            try:
+                ep_part = str(se).split("E")[-1].strip()
+                if "-" in ep_part:
+                    a, b = ep_part.split("-")
+                    if int(a) <= int(episode) <= int(b):
+                        return True
+                elif ep_part.isdigit() and int(ep_part) == int(episode):
+                    return True
+            except Exception:
+                continue
+        return False
 
     def _do_transfer_file(
         self,
@@ -790,6 +818,21 @@ class FileTransferService:
         new_file = ret_file_path
         exist_filenum = 0
 
+        # 结合转移历史去重：该 tmdb+季+集已转移过则跳过，
+        # 避免目标路径规则变化（如分类子目录调整）导致重复入库
+        if media.type != MediaType.MOVIE and media.tmdb_id and media.begin_season and media.begin_episode is not None:
+            try:
+                season_str = f"S{media.begin_season:02d}"
+                history = self._history.get_transfer_info_by(tmdbid=media.tmdb_id, season=season_str) or []
+                if history and self._episode_in_history(history, media.begin_episode):
+                    log.warn(
+                        f"[Rmt]剧集已在转移历史中（{media.get_season_episode_string()}），跳过："
+                        f"{ret_file_path or file_item}"
+                    )
+                    return 0, 0, alert_messages, 1, new_file, ret_file_path, ret_dir_path
+            except Exception as e:  # noqa: BLE001
+                log.debug(f"[Rmt]转移历史去重查询失败: {e}")
+
         if dir_exist_flag:
             if bluray_disk_dir:
                 log.warn(f"[Rmt]蓝光原盘目录已存在：{ret_dir_path}")
@@ -808,7 +851,7 @@ class FileTransferService:
                     return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
                 else:
                     log.warn(f"[Rmt]文件 {ret_file_path} 已存在，跳过")
-                    return 1, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
+                    return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
         else:
             if not ret_dir_path:
                 return self._record_fail(

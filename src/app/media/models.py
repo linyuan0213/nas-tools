@@ -443,7 +443,10 @@ class MediaInfo(BaseModel):
 
         media_type = info.get("media_type")
         if media_type == MediaType.TV:
-            genre_ids = info.get("genre_ids", [])
+            genre_ids = info.get("genre_ids") or []
+            # TMDB detail 返回 genres（数组）而非 genre_ids，需兼容提取
+            if not genre_ids:
+                genre_ids = [g.get("id") for g in (info.get("genres") or []) if g.get("id")]
             if isinstance(genre_ids, list):
                 genre_ids = [str(val).upper() for val in genre_ids]
             else:
@@ -521,7 +524,9 @@ class MediaInfo(BaseModel):
                 self.en_name = en_val
             if self.release_date:
                 self.year = self.release_date[0:4]
-            if self.type == MediaType.TV:
+            if self.type == MediaType.MOVIE:
+                self.category = get_category(rule_map.get("movie"), info)
+            elif self.type == MediaType.TV:
                 self.category = get_category(rule_map.get("tv"), info)
             else:
                 self.category = get_category(rule_map.get("anime"), info)

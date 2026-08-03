@@ -91,6 +91,24 @@ class TmdbLookup(BaseLookup):
         self._lookup_cache.set(cache_key, final)
         return final
 
+    def _match_tmdb_candidate(self, name: str, item: dict, mtype) -> bool:
+        """判断种子标题是否匹配 TMDB 候选：中文名/原名/全部别名/英文名."""
+        names = [item.get("name") or item.get("title", ""), item.get("original_name") or item.get("original_title", "")]
+        if any(compare_tmdb_names(name, n) for n in names if n):
+            return True
+        try:
+            _, allnames = self.search._fetch_allnames(mtype, item.get("id"))
+            if any(compare_tmdb_names(name, n) for n in allnames):
+                return True
+            # 再比对英文名（语言覆盖为 zh 时中文名/原名均不含英文标题）
+            en_detail = self.detail.get_detail(item.get("id"), mtype, language="en")
+            en_name = (en_detail or {}).get("name") or (en_detail or {}).get("title", "")
+            if en_name and compare_tmdb_names(name, en_name):
+                return True
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[Meta]比对TMDB别名失败: {e}")
+        return False
+
     def _lookup_tmdb(
         self,
         name,
@@ -217,7 +235,10 @@ class TmdbLookup(BaseLookup):
                             if not compare_tmdb_names(name, item_name) and not compare_tmdb_names(
                                 name, item.get("original_name") or item.get("original_title", "")
                             ):
-                                continue
+                                # 中文/原名均不匹配时，比对 TMDB 全部别名（含英文名），
+                                # 兼容英文标题（如 The King of Devil Beasts → Clevatess）
+                                if not self._match_tmdb_candidate(name, item, search_type):
+                                    continue
                             detail = self.search._get_detail(item.get("id"), search_type)
                             if detail:
                                 detail["media_type"] = search_type

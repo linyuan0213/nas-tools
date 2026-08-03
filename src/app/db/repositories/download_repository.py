@@ -228,6 +228,16 @@ class DownloadRepository(BaseRepository):
                 .first()
             )
 
+    def get_download_history_list_by_path(self, path: str) -> list[DOWNLOADHISTORY]:
+        """按路径返回全部下载记录（聚合目录多条）."""
+        with self.session() as db:
+            return (
+                db.query(DOWNLOADHISTORY)
+                .filter(os.path.normpath(path) == DOWNLOADHISTORY.SAVE_PATH)
+                .order_by(DOWNLOADHISTORY.DATE.desc())
+                .all()
+            )
+
     def count_download_history_by_path(self, path: str) -> int:
         with self.session() as db:
             return db.query(DOWNLOADHISTORY).filter(os.path.normpath(path) == DOWNLOADHISTORY.SAVE_PATH).count()
