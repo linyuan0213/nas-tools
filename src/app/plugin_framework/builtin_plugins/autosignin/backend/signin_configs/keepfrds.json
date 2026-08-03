@@ -1,0 +1,10 @@
+{
+  "site_id": "keepfrds",
+  "type": "http",
+  "method": "get",
+  "path": "index.php",
+  "auth": "cookie_raw",
+  "success_markers": ["欢迎回来", "退出", "魔力值", "上传量"],
+  "already_markers": ["已签到", "今日已签", "今日已签到"],
+  "success_absent_markers": ["请登录", "您还未登录", "用户名或密码"]
+}
