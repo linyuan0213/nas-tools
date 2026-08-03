@@ -35,7 +35,7 @@ uv run python run.py
 
 后端在 http://localhost:3000 启动，API 文档在 http://localhost:3000/docs。
 
-Docker Compose 部署时外部映射为 3001:3000（前端占用宿主 3000）。
+Docker Compose 部署时后端外部映射为 3000:8080（容器内 nginx 8080），前端占用宿主 8080。
 
 ### 4. 代码检查
 
@@ -75,8 +75,8 @@ pnpm install
 pnpm dev
 ```
 
-前端代理默认将 `/api` 转发到 `http://127.0.0.1:3001`。
-本地开发时，可将代理目标改为 `http://127.0.0.1:3000`。
+前端代理默认将 `/api` 转发到 `http://127.0.0.1:3000`（Docker Compose 部署时后端宿主机映射端口）。
+本地开发时，代理目标为后端本地端口 3000。
 
 ## 项目结构
 

@@ -151,7 +151,7 @@ server {
 
     ```nginx
     location /wechat {
-        proxy_pass http://127.0.0.1:3001;   # 后端端口
+        proxy_pass http://127.0.0.1:3000;   # 后端宿主机映射端口
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
