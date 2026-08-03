@@ -17,7 +17,7 @@
     "permissions": [],
     "hooks": [
       "plugin.config_changed",
-      "media.transfered",
+      "media.transfer_finished",
       "media.library_synced"
     ],
     "supports_run": false

@@ -22,7 +22,7 @@
       "plugin.uninstall",
       "plugin.config_changed",
       "media.scraped",
-      "media.transfered",
+      "media.transfer_finished",
       "media.library_synced",
       "media.source_deleted",
       "download.started",

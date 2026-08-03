@@ -39,7 +39,7 @@ class LibraryRefreshPlugin:
                 self.ctx.info("配置已变更，重载服务")
                 self.on_disable()
                 self.on_enable()
-        elif event in ("media.transfered", "media.library_synced"):
+        elif event in ("media.transfer_finished", "media.library_synced"):
             self._handle_refresh(data)
 
     def _handle_refresh(self, event_data: dict):
