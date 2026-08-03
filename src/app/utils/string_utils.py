@@ -257,6 +257,19 @@ class StringUtils:
         return netloc[0]
 
     @staticmethod
+    def get_site_domain(url):
+        """
+        获取种子站点可展示域名：去除常见 tracker 子域，保留注册域名（如 tracker.xxx -> xxx）
+        """
+        domain = StringUtils.get_url_domain(url)
+        if not domain:
+            return ""
+        parts = domain.split(".")
+        if len(parts) > 2 and parts[0].lower() in ("t", "tracker", "opentracker", "tr", "share", "tr2"):
+            parts = parts[1:]
+        return ".".join(parts)
+
+    @staticmethod
     def get_base_url(url):
         """
         获取URL根地址

@@ -8,7 +8,6 @@ from typing import Any
 
 import log
 from app.plugin_framework.context import PluginContext
-from app.schemas.download import Torrent
 
 
 class TorrentMarkPlugin:
@@ -91,7 +90,8 @@ class TorrentMarkPlugin:
 
                 hash_str = torrent.id
                 torrent_tags = set(torrent.labels)
-                pt_flag = self._is_pt(torrent)
+                trackers = self._downloader.get_torrent_trackers(hash_str, downloader_id=downloader_id) or []
+                pt_flag = self._is_pt(trackers)
                 torrent_tags.discard("")
 
                 if pt_flag:
@@ -106,10 +106,8 @@ class TorrentMarkPlugin:
         self.ctx.info("标记任务执行完成")
 
     @staticmethod
-    def _is_pt(torrent: Torrent):
-        tracker_list = torrent.trackers
-        if len(tracker_list) <= 5:
-            keywords = ["secure=", "passkey=", "totheglory", "credential=", "tracker.zhuque.in", "announce?uid="]
-            if any(keyword in tracker_list[0] for keyword in keywords):
-                return True
-        return False
+    def _is_pt(trackers: list[str]):
+        if not trackers:
+            return False
+        keywords = ["secure=", "passkey=", "totheglory", "credential=", "tracker.zhuque.in", "announce?uid="]
+        return any(any(keyword in tracker for keyword in keywords) for tracker in trackers)

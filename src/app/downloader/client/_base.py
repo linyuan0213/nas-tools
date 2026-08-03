@@ -129,15 +129,15 @@ class _IDownloadClient(metaclass=ABCMeta):
         remove_torrents_ids: list[str] = []
 
         for torrent in torrents:
-            if strategy.ratio is not None and torrent.ratio <= strategy.ratio:
+            if strategy.ratio and torrent.ratio <= strategy.ratio:
                 continue
-            if strategy.seeding_time is not None and torrent.seeding_time <= strategy.seeding_time * 3600:
+            if strategy.seeding_time and torrent.seeding_time <= strategy.seeding_time * 3600:
                 continue
             if strategy.size_range is not None:
                 minsize, maxsize = strategy.size_range
                 if torrent.size >= maxsize or torrent.size <= minsize:
                     continue
-            if strategy.upload_avs is not None and torrent.avg_upload_speed >= strategy.upload_avs * 1024:
+            if strategy.upload_avs and torrent.avg_upload_speed >= strategy.upload_avs * 1024:
                 continue
             if strategy.savepath_key and not re.findall(strategy.savepath_key, torrent.save_path or "", re.I):
                 continue
@@ -154,7 +154,7 @@ class _IDownloadClient(metaclass=ABCMeta):
                 {
                     "id": torrent.id,
                     "name": torrent.name,
-                    "site": StringUtils.get_url_sld(torrent.trackers[0]) if torrent.trackers else "",
+                    "site": StringUtils.get_site_domain(torrent.trackers[0]) if torrent.trackers else "",
                     "size": torrent.size,
                 }
             )
@@ -171,7 +171,7 @@ class _IDownloadClient(metaclass=ABCMeta):
                             {
                                 "id": torrent.id,
                                 "name": torrent.name,
-                                "site": StringUtils.get_url_sld(torrent.trackers[0]) if torrent.trackers else "",
+                                "site": StringUtils.get_site_domain(torrent.trackers[0]) if torrent.trackers else "",
                                 "size": torrent.size,
                             }
                         )
