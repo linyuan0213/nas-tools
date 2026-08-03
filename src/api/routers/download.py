@@ -56,7 +56,7 @@ class EmptyRequest(BaseModel):
 
 
 class AutoRemoveTorrentsRequest(BaseModel):
-    tid: str | None = None
+    tid: str | int | None = None
 
 
 class CheckDownloaderRequest(BaseModel):
@@ -74,7 +74,7 @@ class DeleteDownloadSettingRequest(BaseModel):
 
 
 class DeleteTorrentRemoveTaskRequest(BaseModel):
-    tid: str | None = None
+    tid: str | int | None = None
 
 
 class DownloadRequest(BaseModel):
@@ -143,11 +143,11 @@ class SetDefaultDownloadSettingRequest(BaseModel):
 
 
 class GetRemoveTorrentsRequest(BaseModel):
-    tid: str | None = None
+    tid: str | int | None = None
 
 
 class GetTorrentRemoveTaskRequest(BaseModel):
-    tid: str | None = None
+    tid: str | int | None = None
 
 
 class PtInfoRequest(BaseModel):
@@ -214,7 +214,7 @@ def auto_remove_torrents(
     user: str = Depends(require_permission("download:manage")),
     svc: DownloadService = Depends(get_download_service),
 ):
-    svc.auto_remove_torrents(taskids=req.tid)
+    ThreadExecutor.named("torrent_remove").submit(svc.auto_remove_torrents, taskids=req.tid)
     return success()
 
 
@@ -523,9 +523,7 @@ def get_remove_torrents(
 ):
     try:
         torrents = svc.get_remove_torrents(taskid=req.tid)
-        if not torrents:
-            return fail(msg="未获取到符合处理条件种子")
-        return success(data=torrents)
+        return success(data=torrents or [])
     except (ResourceNotFoundError, ValidationError) as e:
         return fail(msg=e.message)
     except (ServiceError, DomainError) as e:

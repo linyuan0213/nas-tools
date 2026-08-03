@@ -12,7 +12,7 @@ from app.message import Message
 from app.schemas.download import TorrentStatus
 from app.services.downloader_core import DownloaderCore
 from app.services.scheduler.core import SchedulerCore
-from app.utils import ExceptionUtils
+from app.utils import ExceptionUtils, StringUtils
 from app.utils.json_utils import JsonUtils
 
 
@@ -27,6 +27,9 @@ class TorrentRemoverRepository:
 
     def delete_task(self, tid):
         self._config_repo.delete_torrent_remove_task(tid=tid)
+
+    def update_task(self, tid, **kwargs) -> bool:
+        return self._config_repo.update_torrent_remove_task(tid, **kwargs)
 
     def insert_task(self, **kwargs):
         self._config_repo.insert_torrent_remove_task(**kwargs)
@@ -46,33 +49,48 @@ class TorrentRemoverActionEngine:
         config["samedata"] = task.get("samedata")
         config["only_nexus_media"] = task.get("only_nexus_media")
         torrents = downloader.get_remove_torrents(downloader_id=downloader_id, config=config)
-        log.info(f"[TorrentRemover]自动删种任务：{task.get('name')} 获取符合处理条件种子数 {len(torrents)}")
+        count = len(torrents)
+        log.info(f"[TorrentRemover]自动删种任务：{task.get('name')} 获取符合处理条件种子数 {count}")
 
-        action = task.get("action")
-        text_items = []
-        for torrent in torrents:
-            name = torrent.get("name")
-            site = torrent.get("site")
-            size = round(torrent.get("size") / 1021 / 1024 / 1024, 3)
-            text_item = f"{name} 来自站点：{site} 大小：{size} GB"
-            text_items.append(text_item)
+        action = int(task.get("action") or 0)
+        action_label = {1: "暂停", 2: "删除", 3: "删除种子及文件"}.get(action, "处理")
+        if not count:
+            return 0, ""
 
+        text = TorrentRemoverActionEngine._build_message_text(action_label, torrents)
         if action == 1:
             for torrent in torrents:
                 log.info(f"[TorrentRemover]暂停种子：{torrent.get('name')}")
                 downloader.stop_torrents(downloader_id=downloader_id, ids=[torrent.get("id")])
-            return len(torrents), f"共暂停{len(torrents)}个种子\n" + "\n".join(text_items)
         elif action == 2:
             for torrent in torrents:
                 log.info(f"[TorrentRemover]删除种子：{torrent.get('name')}")
                 downloader.delete_torrents(downloader_id=downloader_id, delete_file=False, ids=[torrent.get("id")])
-            return len(torrents), f"共删除{len(torrents)}个种子\n" + "\n".join(text_items)
         elif action == 3:
             for torrent in torrents:
                 log.info(f"[TorrentRemover]删除种子及文件：{torrent.get('name')}")
                 downloader.delete_torrents(downloader_id=downloader_id, delete_file=True, ids=[torrent.get("id")])
-            return len(torrents), f"共删除{len(torrents)}个种子（及文件）\n" + "\n".join(text_items)
-        return len(torrents), ""
+        return count, text
+
+    @staticmethod
+    def _build_message_text(action_label: str, torrents: list[dict]) -> str:
+        """构建删种结果通知文本，控制长度便于推送."""
+        max_items = 10
+        name_limit = 42
+        count = len(torrents)
+        total = sum(torrent.get("size") or 0 for torrent in torrents)
+        lines = [f"共{action_label} {count} 个种子，总大小 {StringUtils.str_filesize(total)}"]
+        for idx, torrent in enumerate(torrents[:max_items], 1):
+            name = torrent.get("name") or "未知种子"
+            if len(name) > name_limit:
+                name = f"{name[:name_limit]}…"
+            size = StringUtils.str_filesize(torrent.get("size") or 0)
+            site = torrent.get("site")
+            suffix = f"（{site}）" if site else ""
+            lines.append(f"{idx}. {name}{suffix} {size}")
+        if count > max_items:
+            lines.append(f"…… 共 {count} 个，仅显示前 {max_items} 个")
+        return "\n".join(lines)
 
 
 class TorrentRemoverService:
@@ -240,18 +258,30 @@ class TorrentRemoverService:
             "tracker_key": tracker_key,
             "filter_status": filter_status,
         }
+        updated = False
         if tid:
-            self._repo.delete_task(tid=tid)
-        self._repo.insert_task(
-            name=name,
-            action=action,
-            interval=interval,
-            enabled=enabled,
-            samedata=samedata,
-            only_nexus_media=only_nexus_media,
-            downloader=downloader_id,
-            config=config,
-        )
+            updated = self._repo.update_task(
+                tid,
+                name=name,
+                action=action,
+                interval=interval,
+                enabled=enabled,
+                samedata=samedata,
+                only_nexus_media=only_nexus_media,
+                downloader=downloader_id,
+                config=config,
+            )
+        if not updated:
+            self._repo.insert_task(
+                name=name,
+                action=action,
+                interval=interval,
+                enabled=enabled,
+                samedata=samedata,
+                only_nexus_media=only_nexus_media,
+                downloader=downloader_id,
+                config=config,
+            )
         self._load_tasks()
         self._start_scheduler_jobs()
 
