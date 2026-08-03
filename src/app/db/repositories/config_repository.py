@@ -161,6 +161,51 @@ class ConfigRepository(BaseRepository):
                 return db.query(TORRENTREMOVETASK).filter(int(tid) == TORRENTREMOVETASK.ID).all()
             return db.query(TORRENTREMOVETASK).order_by(TORRENTREMOVETASK.NAME).all()
 
+    def update_torrent_remove_task(
+        self,
+        tid: int,
+        name: str,
+        action: int,
+        interval: int,
+        enabled: int,
+        samedata: int,
+        only_nexus_media: int,
+        downloader: str,
+        config: dict,
+        note: str | None = None,
+    ) -> bool:
+        """
+        更新自动删种策略
+
+        Args:
+            tid: 任务ID
+            其余参数同 insert_torrent_remove_task
+
+        Returns:
+            是否更新成功（任务不存在时返回 False）
+        """
+        if not tid:
+            return False
+        with self.session() as db:
+            count = (
+                db.query(TORRENTREMOVETASK)
+                .filter(int(tid) == TORRENTREMOVETASK.ID)
+                .update(
+                    {
+                        TORRENTREMOVETASK.NAME: name,
+                        TORRENTREMOVETASK.ACTION: int(action),
+                        TORRENTREMOVETASK.INTERVAL: int(interval),
+                        TORRENTREMOVETASK.ENABLED: int(enabled),
+                        TORRENTREMOVETASK.SAMEDATA: int(samedata),
+                        TORRENTREMOVETASK.ONLY_NEXUS_MEDIA: int(only_nexus_media),
+                        TORRENTREMOVETASK.DOWNLOADER: downloader,
+                        TORRENTREMOVETASK.CONFIG: JsonUtils.dumps(config),
+                        TORRENTREMOVETASK.NOTE: note,
+                    }
+                )
+            )
+            return count > 0
+
     def insert_torrent_remove_task(
         self,
         name: str,
@@ -815,9 +860,13 @@ class ConfigRepository(BaseRepository):
     # ==================== SQL Operations ====================
 
     def _execute_raw(self, sql: str) -> object:
-        """执行原始SQL语句（仅供初始化场景使用，禁止传入外部输入）。"""
+        """执行原始SQL语句（仅供初始化场景使用，禁止传入外部输入）。
+
+        使用 exec_driver_sql 原样下发，避免 text() 将正则中的 :xxx
+        （如非捕获分组 (?:简体|…)）误解析为绑定参数。
+        """
         with self.session() as db:
-            return db.execute(text(sql))
+            return db.connection().exec_driver_sql(sql)
 
     def drop_table(self, table_name: str) -> object:
         """

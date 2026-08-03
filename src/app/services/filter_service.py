@@ -3,6 +3,8 @@ import contextlib
 import os
 import re
 
+from sqlalchemy import Column, Integer, MetaData, Table, Text, create_engine, select
+
 import log
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.core.module_config import ModuleConf
@@ -457,31 +459,84 @@ class FilterService:
         """获取所有过滤规则及初始规则"""
         rule_groups = self.get_rule_infos()
         sql_file = os.path.join(script_path, "init_filter.sql")
-        init_rule_groups = []
-        if os.path.exists(sql_file):
-            with open(sql_file, encoding="utf-8") as f:
-                sql_list = f.read().split(";\n")
-                i = 0
-                while i < len(sql_list):
-                    rulegroup = {}
-                    rulegroup_info = re.findall(r"[0-9]+,'[^\"]+NULL", sql_list[i], re.I)[0].split(",")
-                    rulegroup["id"] = int(rulegroup_info[0])
-                    rulegroup["name"] = rulegroup_info[1][1:-1]
-                    rulegroup["rules"] = []
-                    rulegroup["sql"] = [sql_list[i]]
-                    if i + 1 < len(sql_list):
-                        rules = re.findall(r"[0-9]+,'[^\"]+NULL", sql_list[i + 1], re.I)[0].split("),\n (")
-                        for rule in rules:
-                            rule_info = {}
-                            rule = rule.split(",")
-                            rule_info["name"] = rule[2][1:-1]
-                            rule_info["include"] = rule[4][1:-1]
-                            rule_info["exclude"] = rule[5][1:-1]
-                            rulegroup["rules"].append(rule_info)
-                        rulegroup["sql"].append(sql_list[i + 1])
-                    init_rule_groups.append(rulegroup)
-                    i = i + 2
+        init_rule_groups = self._load_init_rule_groups(sql_file) if os.path.exists(sql_file) else []
         return rule_groups, init_rule_groups
+
+    @staticmethod
+    def _load_init_rule_groups(sql_file: str) -> list[dict]:
+        """解析内置过滤规则 SQL 文件.
+
+        数据在内存 SQLite 中实际执行后读回，避免文本解析受正则/换行/转义影响；
+        同时保留原始 SQL 语句块供「恢复规则组」直接执行。
+        """
+        with open(sql_file, encoding="utf-8") as f:
+            content = f.read()
+
+        entries: list[dict] = []
+        for stmt in content.split(";\n"):
+            stmt = stmt.strip()
+            if not stmt or "INSERT" not in stmt.upper():
+                continue
+            upper = stmt.upper()
+            if "CONFIG_FILTER_GROUP" in upper:
+                match = re.search(r"VALUES\s*\(\s*(\d+)", stmt, re.I)
+                if match:
+                    entries.append({"id": int(match.group(1)), "sql": [stmt]})
+            elif "CONFIG_FILTER_RULES" in upper and entries:
+                entries[-1]["sql"].append(stmt)
+
+        engine = create_engine("sqlite:///:memory:")
+        metadata = MetaData()
+        group_table = Table(
+            "CONFIG_FILTER_GROUP",
+            metadata,
+            Column("ID", Integer, primary_key=True),
+            Column("GROUP_NAME", Text),
+            Column("IS_DEFAULT", Text),
+            Column("NOTE", Text),
+        )
+        rule_table = Table(
+            "CONFIG_FILTER_RULES",
+            metadata,
+            Column("ID", Integer, primary_key=True),
+            Column("GROUP_ID", Integer),
+            Column("ROLE_NAME", Text),
+            Column("PRIORITY", Text),
+            Column("INCLUDE", Text),
+            Column("EXCLUDE", Text),
+            Column("SIZE_LIMIT", Text),
+            Column("NOTE", Text),
+        )
+        try:
+            with engine.begin() as conn:
+                metadata.create_all(conn)
+                for entry in entries:
+                    for stmt in entry["sql"]:
+                        conn.exec_driver_sql(stmt)
+                names = {row[0]: row[1] for row in conn.execute(select(group_table.c.ID, group_table.c.GROUP_NAME))}
+                rule_rows: dict[int, list] = {}
+                rows = conn.execute(
+                    select(
+                        rule_table.c.GROUP_ID,
+                        rule_table.c.ROLE_NAME,
+                        rule_table.c.INCLUDE,
+                        rule_table.c.EXCLUDE,
+                    ).order_by(rule_table.c.ID)
+                ).all()
+                for gid, name, include, exclude in rows:
+                    rule_rows.setdefault(gid, []).append({"name": name, "include": include, "exclude": exclude})
+        finally:
+            engine.dispose()
+
+        return [
+            {
+                "id": entry["id"],
+                "name": names.get(entry["id"], ""),
+                "rules": rule_rows.get(entry["id"], []),
+                "sql": entry["sql"],
+            }
+            for entry in entries
+        ]
 
     def share_filter_group(self, gid) -> str:
         """分享规则组（返回Base64编码的JSON字符串），失败时抛出异常"""
