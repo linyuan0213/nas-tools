@@ -52,6 +52,7 @@ _META_TOKEN_RE = re.compile(
     # --- 视频编码 ---
     r"|hevc[-\d]*|[hH]\.?265|x\.?265|h265|x265"
     r"|avc|[hH]\.?264|x\.?264|h264|x264"
+    r"|(?:hevc|avc|h\.?26[45]|x\.?26[45])[-\d]*bit?"
     r"|av1|vp[89]|mpeg[-]?2|vc[-]?1|wmv[hd]?|xvid|divx|realvideo"
     # --- 音频编码 ---
     r"|aac\d*|ac[-]?3|e[-]?ac[-]?3|ddp?\d*(\.\d+)?|dd\+"
@@ -89,7 +90,7 @@ _META_TOKEN_RE = re.compile(
     # --- 音轨/字幕 ---
     r"|dual[-]?audio|multi[-]?audio|multi[-]?subs?|2[-]?audio|3[-]?audio|dual|multi"
     r"|dub(bed)?|sub(bed)?|hard[-]?sub|soft[-]?sub|eng[-]?sub"
-    r"|ch[st]|chs|cht|jpsc|jptc|jps|jpt|srt|ass|ssa|idx|sup|pgs"
+    r"|ch[st]|chs|cht|jpsc|jptc|jps|jpt|srt|srtx?\d*|ass|ssa|idx|sup|pgs"
     r"|gb|big5"
     # --- 剧集标记 ---
     r"|complete|season|batch|collection|pack|trilogy|quadrilogy"

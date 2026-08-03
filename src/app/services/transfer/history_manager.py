@@ -97,6 +97,9 @@ class TransferHistoryManager:
 
     # ---------- 黑名单 ----------
 
+    def insert_transfer_blacklist(self, path):
+        return self.transfer_blacklist_repo.insert(path)
+
     def delete_transfer_blacklist(self, path):
         return self.transfer_repo.delete_transfer_blacklist(path=path)
 
