@@ -1,5 +1,30 @@
 # 版本历史
 
+## v4.4.3 (2026-08-03)
+
+### 修复
+- 识别：`name_extractor` 不再把字幕标签（`[JPSC_JPTC]`/`[SRT]` 等）当作片名，纯数字括号（集号）不再被当成标题
+- 识别：新增罗马数字季标解析（`Ⅲ`/`III` → 对应季数），修复 `Mushoku Tensei Ⅲ` 类命名识别为 S01 而非正确季
+- 识别：`compare_tmdb_names` 子串匹配阈值由 0.95 放宽至 0.85，兼容动漫罗马音标题的 `-kun/-chan/-san` 后缀
+- 识别：multi-search 降级新增英文名/全部别名比对（`_match_tmdb_candidate`），修复英文标题匹配不到中文 TMDB 名的问题（如 The King of Devil Beasts → 克雷瓦提斯）
+- 识别：`identify_files` 补全 `set_tmdb_info` 调用、改用完整 TMDB detail（含 origin_country/genres），修复动漫类型误判为 tv、剧集/电影分类落到根目录的问题
+- 识别：`set_tmdb_info` 兼容 TMDB `genres` 字段（原仅读 `genre_ids`），修复部分动漫因缺 genre_ids 被识别为 tv
+- 识别：电影分类改用 movie 规则（`rule_map.get("movie")`），修复电影被归入 anime 规则导致分类为空、入库到 Movie 根目录（现正确进动画/华语/外语电影子目录）
+- 转移：`_do_transfer_file` 结合转移历史去重（tmdb+季+集），修复目标路径规则变化导致已入库剧集重复入库
+- 转移：已存在（转移历史/目标文件已存在）不再计为失败，且不再进入消息聚合，修复「入库失败」误报与重复推送「已入库」消息
+- 转移：`total_episodes` 按识别季集数正确设置，修复多集转移消息显示单集（`S01 E04`）而非「共 N 集」
+- 转移：黑名单插入去重，避免定时转移每周期重复插入导致表膨胀
+- 转移：聚合目录多条下载记录同属一部剧时使用其 TMDB 提示，修复聚合目录无法识别
+- 目录同步：`_do_transfer` 支持处理文件夹内媒体文件（含真实媒体文件时），修复文件夹下载（如单集文件夹）不自动转移
+
+### 文档
+- 修正安装文档端口（前端 8080 / 后端 3000:8080）、Redis 配置（移除 redis.conf 挂载，改为实际命令）、数据库配置与迁移机制、目录挂载（NEXUS_MEDIA_DATA、/media）
+- 新增开箱即用的简单 docker-compose 示例（前后端+Redis+MySQL 推荐版 / 仅前后端 SQLite 体验版）
+- 同步修正 docker/readme.md、development.md、notifications.md、faq.md 中的端口引用
+
+### 测试
+- 全量测试通过（2118 passed）；新增字幕标签剥离、罗马数字季标、批量识别类型判定等回归测试
+
 ## v4.4.2 (2026-08-02)
 
 ### 修复
