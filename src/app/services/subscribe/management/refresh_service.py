@@ -42,7 +42,7 @@ class SubscribeRefreshService:
                     tmdbid=str(media_info.tmdb_id or ""),
                     title=media_info.title or "",
                     year=media_info.year or "",
-                    image=media_info.get_message_image(),
+                    image=media_info.get_poster_image(),
                     desc=media_info.overview or "",
                     note=gen_rss_note(media_info),
                 )
@@ -85,7 +85,7 @@ class SubscribeRefreshService:
                             year=media_info.year or "",
                             total=total_episode,
                             lack=lack_episode,
-                            image=media_info.get_message_image(),
+                            image=media_info.get_poster_image(),
                             desc=media_info.overview or "",
                             note=gen_rss_note(media_info),
                         )

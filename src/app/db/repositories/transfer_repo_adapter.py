@@ -121,6 +121,9 @@ class TransferHistoryRepositoryAdapter:
     ) -> tuple[int, list[TRANSFERUNKNOWN]]:
         return self._repo.get_transfer_unknown_paths_by_page(search, page, rownum)
 
+    def insert_transfer_blacklist(self, path: str) -> None:
+        self._repo.insert_transfer_blacklist(path)
+
     def delete_transfer_blacklist(self, path: str) -> None:
         self._repo.delete_transfer_blacklist(path)
 

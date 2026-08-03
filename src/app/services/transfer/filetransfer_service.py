@@ -829,6 +829,8 @@ class FileTransferService:
                         f"[Rmt]剧集已在转移历史中（{media.get_season_episode_string()}），跳过："
                         f"{ret_file_path or file_item}"
                     )
+                    # 已转移过则写入黑名单，避免目录同步每周期重复识别
+                    self._history.insert_transfer_blacklist(file_item)
                     return 0, 0, alert_messages, 1, new_file, ret_file_path, ret_dir_path
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[Rmt]转移历史去重查询失败: {e}")
