@@ -1,5 +1,28 @@
 # 版本历史
 
+## v4.4.5 (2026-08-04)
+
+### 特性
+- 文件管理器：新增目录创建（`POST /media/dir/mkdir`）、文件批量移动/复制（`/media/files/move`、`/media/files/copy`）、文件下载（`GET /media/file/download`）与上传（`POST /media/file/upload`）接口；`MediaFileService` 抽取 `_resolve_backend` 统一后端解析，新增文件名安全校验与批量操作部分失败聚合
+
+### 修复
+- 识别：`search_tv_by_season` 首轮命中校验目标季存在，修复同名真人剧抢占动漫条目（如《更衣人偶坠入爱河》S02 误识别为日韩剧）
+- 识别：multi search 降级由「取首个名称命中」改为按名称/季/体量评分选优，稳定区分同名条目
+- 识别：集名粘连修复剥离前缀中的发布组方括号与末尾年份，修复年份粘入片名导致 TMDB 查不到（如 `KAIJU.GIRL.CARAMELISE.2026`）
+- 识别：元数据 token 补充 `ASSx2/SSAx2` 字幕轨标记，修复 `[WebRip 1080p HEVC-10bit AAC ASSx2]` 整段被误作片名
+- 识别：前置发布组括号支持多组联合发布（`[Studio A&GroupB]`）及 fansub/raws/kissaten 特征词的带空格组名（如 `[Studio GreenTea&LoliHouse]`）
+- 转移：修复字幕语言正则字符类缺失闭括号导致 `PatternError` 中断字幕转移
+- 转移：目标字幕已存在且大小不一致时改用序号标签（`.1`/`.2`…），不再对已存在路径硬链接报 `File exists`；单条字幕失败不再中断主文件与其他字幕转移
+- 转移：字幕/音轨转移新增 `dst_backend` 参数，目标判断与写入均走 StorageBackend（远程存储 link 自动降级 copy），与主文件转移路径一致
+
+### 前端
+- 文件管理：页面对齐真实文件管理器交互重设计
+- 订阅：搜索页/详情页订阅确认弹窗「编辑」按钮无效修复，打开编辑弹窗前拉取默认订阅设置预填
+- 订阅：编辑弹窗先加载站点选项再填表单，修复默认订阅站点（rss_sites/search_sites）被空选项过滤清空
+
+### 测试
+- 新增字幕/音轨转移本地与远程后端用例 11 例、按季搜索季校验与四例解析回归用例；全量测试通过（2100+）
+
 ## v4.4.4 (2026-08-03)
 
 ### 修复
