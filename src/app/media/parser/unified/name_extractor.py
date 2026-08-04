@@ -90,7 +90,7 @@ _META_TOKEN_RE = re.compile(
     # --- 音轨/字幕 ---
     r"|dual[-]?audio|multi[-]?audio|multi[-]?subs?|2[-]?audio|3[-]?audio|dual|multi"
     r"|dub(bed)?|sub(bed)?|hard[-]?sub|soft[-]?sub|eng[-]?sub"
-    r"|ch[st]|chs|cht|jpsc|jptc|jps|jpt|srt|srtx?\d*|ass|ssa|idx|sup|pgs"
+    r"|ch[st]|chs|cht|jpsc|jptc|jps|jpt|srt|srtx?\d*|assx?\d*|ssax?\d*|idx|sup|pgs"
     r"|gb|big5"
     # --- 剧集标记 ---
     r"|complete|season|batch|collection|pack|trilogy|quadrilogy"

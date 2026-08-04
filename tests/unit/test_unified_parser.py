@@ -210,3 +210,32 @@ class TestEdgeCases:
         result = parser.parse("[Group] Anime [05][1080p HEVC AAC]")
         assert result is not None
         assert 0.0 < result.confidence <= 1.0
+
+
+class TestRegressionIdentify:
+    """识别回归 — 2026-08 报告的四例解析失败"""
+
+    def test_subtitle_multiplier_bracket_is_metadata(self, parser):
+        """[WebRip 1080p HEVC-10bit AAC ASSx2] 应整体识别为元数据括号"""
+        result = parser.parse("[LoliHouse] Clevatess S2 - 03 [WebRip 1080p HEVC-10bit AAC ASSx2].mkv")
+        assert result is not None
+        assert result.title_en == "Clevatess"
+        assert result.season == 2
+        assert result.episode == 3
+
+    def test_joint_release_group_bracket_removed(self, parser):
+        """多组联合发布 [Studio A&GroupB] 带空格也应作为发布组移除"""
+        result = parser.parse(
+            "[Studio GreenTea&LoliHouse] Tenmaku no Jaadugar - 05 [WebRip 1080p HEVC-10bit AAC ASSx2].mkv"
+        )
+        assert result is not None
+        assert result.title_en == "Tenmaku No Jaadugar"
+        assert result.episode == 5
+
+    def test_year_not_glued_into_name(self, parser):
+        """点分隔标题中年份不应并入片名"""
+        result = parser.parse("KAIJU.GIRL.CARAMELISE.2026.S01.1080p.FRIDAY.WEB-DL.AAC2.0.H.264-DepWeb")
+        assert result is not None
+        assert result.title_en == "Kaiju Girl Caramelise"
+        assert result.year == "2026"
+        assert result.season == 1

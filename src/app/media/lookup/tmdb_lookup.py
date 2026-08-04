@@ -229,25 +229,38 @@ class TmdbLookup(BaseLookup):
                 log.debug(f"[Meta]正在 multi_search {search_type.value}：{name} ...")
                 multi_results = self.search.search_multi_infos(name)
                 if multi_results:
-                    for item in multi_results:
-                        if item.get("media_type") == search_type:
-                            item_name = item.get("name") or item.get("title", "")
-                            if not compare_tmdb_names(name, item_name) and not compare_tmdb_names(
-                                name, item.get("original_name") or item.get("original_title", "")
-                            ):
-                                # 中文/原名均不匹配时，比对 TMDB 全部别名（含英文名），
-                                # 兼容英文标题（如 The King of Devil Beasts → Clevatess）
-                                if not self._match_tmdb_candidate(name, item, search_type):
-                                    continue
-                            detail = self.search._get_detail(item.get("id"), search_type)
-                            if detail:
-                                detail["media_type"] = search_type
-                                log.info(
-                                    "[Meta]{} 通过 multi search 识别到：TMDBID={}, 名称={}".format(
-                                        name, detail.get("id"), detail.get("name", detail.get("title", ""))
-                                    )
-                                )
-                                return detail
+                    # 多名候选按名称/季/体量评分，避免同名条目（如真人剧 vs 动漫）抢占
+                    scored_candidates = []
+                    for item in multi_results[:5]:
+                        if item.get("media_type") != search_type:
+                            continue
+                        item_name = item.get("name") or item.get("title", "")
+                        if not compare_tmdb_names(name, item_name) and not compare_tmdb_names(
+                            name, item.get("original_name") or item.get("original_title", "")
+                        ):
+                            # 中文/原名均不匹配时，比对 TMDB 全部别名（含英文名），
+                            # 兼容英文标题（如 The King of Devil Beasts → Clevatess）
+                            if not self._match_tmdb_candidate(name, item, search_type):
+                                continue
+                        detail = self.search._get_detail(item.get("id"), search_type)
+                        if not detail:
+                            continue
+                        detail["media_type"] = search_type
+                        _, alt_names = self.search._fetch_allnames(search_type, item.get("id"))
+                        score = _score_fuzzy_match(name, detail, alt_names or [item_name], season_number)
+                        scored_candidates.append((score, detail))
+                    if scored_candidates:
+                        scored_candidates.sort(key=lambda x: -x[0])
+                        best = scored_candidates[0][1]
+                        log.info(
+                            "[Meta]{} 通过 multi search 识别到：TMDBID={}, 名称={} (score={:.3f})".format(
+                                name,
+                                best.get("id"),
+                                best.get("name", best.get("title", "")),
+                                scored_candidates[0][0],
+                            )
+                        )
+                        return best
 
         # 2. Fallback: 多类型搜索
         if not info:

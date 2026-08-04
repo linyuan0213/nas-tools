@@ -1,8 +1,10 @@
 import contextlib
+import os
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 import log
@@ -169,6 +171,18 @@ class DirListRequest(BaseModel):
     path: str | None = None
     filter: str | None = None
     backend_id: str | None = None
+
+
+class MkdirRequest(BaseModel):
+    path: str
+    name: str
+    backend_id: str = "local"
+
+
+class FileBatchRequest(BaseModel):
+    files: list[str]
+    dest_dir: str
+    backend_id: str = "local"
 
 
 class TmdbBlacklistRequest(BaseModel):
@@ -671,6 +685,84 @@ def dir_list(
     try:
         result = svc.get_dir_list(req.path or "", req.backend_id or "")
         return success(data=result)
+    except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
+        return fail(msg=e.message)
+
+
+@router.post("/dir/mkdir", response_model=CommonResponse, summary="创建目录")
+def make_dir(
+    req: MkdirRequest,
+    current_user=Depends(require_permission("library:manage")),
+    svc: MediaFileService = Depends(get_media_file_service),
+):
+    try:
+        target = svc.make_dir(parent=req.path, name=req.name, backend_id=req.backend_id)
+        return success(data={"path": target}, msg="创建成功")
+    except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
+        return fail(msg=e.message)
+
+
+@router.post("/files/move", response_model=CommonResponse, summary="移动文件")
+def move_files(
+    req: FileBatchRequest,
+    current_user=Depends(require_permission("library:manage")),
+    svc: MediaFileService = Depends(get_media_file_service),
+):
+    try:
+        msg = svc.move_or_copy_files(req.files, req.dest_dir, backend_id=req.backend_id, move=True)
+        return success(msg=msg)
+    except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
+        return fail(msg=e.message)
+
+
+@router.post("/files/copy", response_model=CommonResponse, summary="复制文件")
+def copy_files(
+    req: FileBatchRequest,
+    current_user=Depends(require_permission("library:manage")),
+    svc: MediaFileService = Depends(get_media_file_service),
+):
+    try:
+        msg = svc.move_or_copy_files(req.files, req.dest_dir, backend_id=req.backend_id, move=False)
+        return success(msg=msg)
+    except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
+        return fail(msg=e.message)
+
+
+@router.get("/file/download", summary="下载文件")
+def download_file(
+    path: str = Query(..., min_length=1),
+    backend_id: str = Query("local"),
+    current_user=Depends(require_permission("library:manage")),
+    svc: MediaFileService = Depends(get_media_file_service),
+):
+    stream, _info = svc.open_download(path, backend_id)
+
+    def _iter():
+        try:
+            while chunk := stream.read(1024 * 1024):
+                yield chunk
+        finally:
+            stream.close()
+
+    quoted = urllib.parse.quote(os.path.basename(path))
+    return StreamingResponse(
+        _iter(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename*=utf-8''{quoted}"},
+    )
+
+
+@router.post("/file/upload", response_model=CommonResponse, summary="上传文件")
+async def upload_file(
+    file: UploadFile = File(...),
+    path: str = Form(...),
+    backend_id: str = Form("local"),
+    current_user=Depends(require_permission("library:manage")),
+    svc: MediaFileService = Depends(get_media_file_service),
+):
+    try:
+        target = svc.save_upload(dest_dir=path, name=file.filename or "", stream=file.file, backend_id=backend_id)
+        return success(data={"path": target}, msg="上传成功")
     except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
         return fail(msg=e.message)
 

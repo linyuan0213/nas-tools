@@ -1,4 +1,5 @@
 import os
+from typing import BinaryIO
 
 import log
 from app.core.exceptions import (
@@ -6,6 +7,7 @@ from app.core.exceptions import (
     RepositoryError,
     ResourceNotFoundError,
     ServiceError,
+    ValidationError,
 )
 from app.db.repositories.category_repo_adapter import CategoryConfigRepositoryAdapter
 from app.domain.enums import OsType
@@ -13,8 +15,8 @@ from app.domain.mediatypes import MediaType
 from app.events import Event
 from app.events.constants import SUBTITLE_DOWNLOAD
 from app.events.payloads import SubtitleDownloadPayload
-from app.storage import StorageBackendFactory
-from app.storage.backends.base import StorageType
+from app.storage import LocalStorageBackend, StorageBackendFactory
+from app.storage.backends.base import FileInfo, StorageBackend, StorageType
 from app.storage.config_models import LocalStorageConfig
 from app.utils import SystemUtils
 
@@ -38,23 +40,34 @@ class MediaFileService:
         self._thread_executor = thread_executor
         self._scraper = scraper
 
+    def _resolve_backend(self, backend_id: str) -> StorageBackend:
+        """按 backend_id 解析存储后端，空或 local 返回本地后端"""
+        if not backend_id or backend_id == "local":
+            return LocalStorageBackend(LocalStorageConfig(id="local", name="本地", type=StorageType.LOCAL))
+        entity = self._storage_backend_repo.get_by_id(int(backend_id))
+        if not entity:
+            raise ResourceNotFoundError(f"未找到存储后端: {backend_id}")
+        info = StorageBackendFactory.get_config_info(entity.type)
+        if info:
+            stype, cls = info
+        else:
+            stype, cls = StorageType.LOCAL, LocalStorageConfig
+        config = cls(id=str(entity.id), name=entity.name, type=stype, enabled=entity.enabled)
+        for k, v in entity.config.items():
+            if hasattr(config, k):
+                setattr(config, k, v)
+        return StorageBackendFactory.create(config)
+
+    @staticmethod
+    def _validate_file_name(name: str) -> None:
+        if not name or name in (".", "..") or "/" in name or "\\" in name:
+            raise ValidationError(f"非法文件名: {name!r}")
+
     def get_dir_list(self, in_dir: str, backend_id: str = "") -> list:
         """获取目录列表，支持本地和远程存储后端，失败时抛出异常"""
         result = []
         if backend_id and backend_id != "local":
-            entity = self._storage_backend_repo.get_by_id(int(backend_id))
-            if not entity:
-                raise ResourceNotFoundError(f"未找到存储后端: {backend_id}")
-            info = StorageBackendFactory.get_config_info(entity.type)
-            if info:
-                stype, cls = info
-            else:
-                stype, cls = StorageType.LOCAL, LocalStorageConfig
-            config = cls(id=str(entity.id), name=entity.name, type=stype, enabled=entity.enabled)
-            for k, v in entity.config.items():
-                if hasattr(config, k):
-                    setattr(config, k, v)
-            backend = StorageBackendFactory.create(config)
+            backend = self._resolve_backend(backend_id)
             for fi in backend.list_dir(in_dir or "/"):
                 item = {
                     "name": os.path.basename(fi.path),
@@ -243,20 +256,69 @@ class MediaFileService:
             return "请指定刮削路径"
         dst_backend = None
         if backend_id and backend_id != "local":
-            entity = self._storage_backend_repo.get_by_id(int(backend_id))
-            if entity:
-                info = StorageBackendFactory.get_config_info(entity.type)
-                if info:
-                    stype, cls = info
-                else:
-                    stype, cls = StorageType.LOCAL, LocalStorageConfig
-                config = cls(id=str(entity.id), name=entity.name, type=stype, enabled=entity.enabled)
-                for k, v in entity.config.items():
-                    if hasattr(config, k):
-                        setattr(config, k, v)
-                dst_backend = StorageBackendFactory.create(config)
+            dst_backend = self._resolve_backend(backend_id)
         self._thread_executor.submit(self._scraper.folder_scraper, path, None, "force_all", dst_backend)
         return "刮削任务已提交，正在后台运行。"
+
+    def make_dir(self, parent: str, name: str, backend_id: str = "local") -> str:
+        """在 parent 下创建目录，返回新目录路径"""
+        self._validate_file_name(name)
+        backend = self._resolve_backend(backend_id)
+        target = os.path.join(parent or "/", name).replace("\\", "/")
+        if backend.exists(target):
+            raise ValidationError(f"目录已存在: {name}")
+        backend.mkdir(target, parents=True)
+        return target
+
+    def move_or_copy_files(self, files: list[str], dest_dir: str, backend_id: str = "local", move: bool = True) -> str:
+        """批量移动/复制文件到目标目录（同后端），部分失败时抛 ServiceError"""
+        if not files:
+            raise ValidationError("未指定文件")
+        if not dest_dir:
+            raise ValidationError("未指定目标目录")
+        backend = self._resolve_backend(backend_id)
+        dest = dest_dir.rstrip("/")
+        info = backend.stat(dest)
+        if not info or not info.is_dir:
+            raise ResourceNotFoundError(f"目标目录不存在: {dest_dir}")
+        action = "移动" if move else "复制"
+        errors = []
+        for f in files:
+            try:
+                target = os.path.join(dest, os.path.basename(f)).replace("\\", "/")
+                if move:
+                    backend.move(f, target)
+                else:
+                    backend.copy(f, target)
+            except Exception as e:  # noqa: BLE001
+                log.error(f"[FileOps]{action}失败: {f} - {e}")
+                errors.append(os.path.basename(f))
+        if errors:
+            raise ServiceError(f"以下文件{action}失败: {', '.join(errors)}")
+        return f"{action}成功"
+
+    def open_download(self, path: str, backend_id: str = "local") -> tuple[BinaryIO, FileInfo]:
+        """打开文件下载流，调用方负责 close"""
+        if not path:
+            raise ValidationError("未指定文件")
+        backend = self._resolve_backend(backend_id)
+        info = backend.stat(path)
+        if not info or info.is_dir:
+            raise ResourceNotFoundError(f"文件不存在: {path}")
+        return backend.read_stream(path), info
+
+    def save_upload(self, dest_dir: str, name: str, stream: BinaryIO, backend_id: str = "local") -> str:
+        """保存上传文件到目标目录，返回文件路径"""
+        self._validate_file_name(name)
+        if not dest_dir:
+            raise ValidationError("未指定目标目录")
+        backend = self._resolve_backend(backend_id)
+        info = backend.stat(dest_dir)
+        if not info or not info.is_dir:
+            raise ResourceNotFoundError(f"目标目录不存在: {dest_dir}")
+        target = os.path.join(dest_dir, name).replace("\\", "/")
+        backend.write_stream(target, stream)
+        return target
 
     def get_category_config(self) -> list[dict]:
         """获取二级分类配置（数据库）"""
