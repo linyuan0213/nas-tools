@@ -259,14 +259,18 @@ class TmdbSearch:
             return scored[0][1]
         return {}
 
+    @staticmethod
+    def _detail_has_season(tv_info, season_number) -> bool:
+        """判断详情中是否存在指定季（且有集）"""
+        if not tv_info:
+            return False
+        seasons = tv_info.get("seasons") or []
+        return any(s.get("season_number") == int(season_number) and s.get("episode_count", 0) > 0 for s in seasons)
+
     def _tv_has_season(self, tmdb_id, season_number):
         """检查 TV 是否有指定的季"""
         try:
-            tv_info = self._get_detail(tmdb_id, MediaType.TV)
-            if not tv_info:
-                return False
-            seasons = tv_info.get("seasons") or []
-            return any(s.get("season_number") == int(season_number) and s.get("episode_count", 0) > 0 for s in seasons)
+            return self._detail_has_season(self._get_detail(tmdb_id, MediaType.TV), season_number)
         except Exception:
             return False
 
@@ -316,6 +320,9 @@ class TmdbSearch:
                 compare_tmdb_names(name, tv.get("name")) or compare_tmdb_names(name, tv.get("original_name"))
             ) and tv.get("first_air_date", "")[:4] == str(media_year):
                 detail = self._get_detail(tv.get("id"), MediaType.TV)
+                # 名称+首播年命中但无目标季（如同名真人剧），跳过避免抢占动漫条目
+                if season_number and not self._detail_has_season(detail, season_number):
+                    continue
                 if _episode_valid(detail):
                     return tv
         candidates = tvs[:5]

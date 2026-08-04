@@ -76,7 +76,14 @@ def prepare_title(title: str) -> str:
         is_short_group_name = (
             not has_cjk and " " not in inner and len(inner) < 30 and re.fullmatch(r"[A-Za-z0-9\-_@.&+³]+", inner)
         )
-        if looks_like_group or is_short_group_name:
+        # 多组联合发布（A&B）或含字幕组特征词的带空格组名（如 Studio GreenTea&LoliHouse、Nekomoe kissaten）
+        is_spaced_group_name = (
+            not has_cjk
+            and len(inner) < 40
+            and re.fullmatch(r"[A-Za-z0-9\-_@.&+³ ]+", inner)
+            and ("&" in inner or re.search(r"(?i)fansub|raws|kissaten", inner))
+        )
+        if looks_like_group or is_short_group_name or is_spaced_group_name:
             title = title[m.end() :]
             continue
         break
