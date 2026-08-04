@@ -51,22 +51,25 @@ class TransferEngine:
             else:
                 raise ValueError(f"不支持的操作: {operation}")
 
-    def transfer_subtitles(self, org_name: str, new_name: str, operation: str) -> None:
+    def transfer_subtitles(
+        self, org_name: str, new_name: str, operation: str, dst_backend: StorageBackend | None = None
+    ) -> None:
+        backend = dst_backend or self._local
         _zhcn_sub_re = (
-            r"([.\[\](((zh[-_])?(cn|ch[si]|sg|sc))|zho?"
+            r"([.\[\]](((zh[-_])?(cn|ch[si]|sg|sc))|zho?"
             r"|chinese|(cn|ch[si]|sg|zho?|eng)[-_&](cn|ch[si]|sg|zho?|eng)"
             r"|简[体中]?|JPSC)[.\]\)])"
-            r"|([\u4e00-\u9fa5]{0,3}[中双][\u4e00-\u9fa5]{0,2}[字文语][\u4e00-\u9fa5]{0,3})"
+            r"|([一-龥]{0,3}[中双][一-龥]{0,2}[字文语][一-龥]{0,3})"
             r"|简体|简中"
             r"|(?<![a-z0-9])gb(?![a-z0-9])"
         )
         _zhtw_sub_re = (
-            r"([.\[\](((zh[-_])?(hk|tw|cht|tc))"
+            r"([.\[\]](((zh[-_])?(hk|tw|cht|tc))"
             r"|繁[体中]?|JPTC)[.\]\)])"
             r"|繁体中[文字]|中[文字]繁体|繁体"
             r"|(?<![a-z0-9])big5(?![a-z0-9])"
         )
-        _eng_sub_re = r"[.\[\]eng[.\]\)]"
+        _eng_sub_re = r"[.\[\]]eng[.\]\)]"
 
         dir_name = os.path.dirname(org_name)
         file_name = os.path.basename(org_name)
@@ -89,34 +92,43 @@ class TransferEngine:
 
             new_file_type = self._detect_subtitle_type(file_item, _zhcn_sub_re, _zhtw_sub_re, _eng_sub_re)
             file_ext = os.path.splitext(file_item)[-1]
+            src_size = os.path.getsize(file_item)
             for tag in [new_file_type] + [f"{new_file_type}.{t}" for t in range(1, 6)]:
                 new_file = os.path.splitext(new_name)[0] + tag + file_ext
-                if os.path.exists(new_file) and os.path.getsize(new_file) == os.path.getsize(file_item):
-                    log.info(f"[Rmt]字幕 {new_file} 已存在")
-                    break
+                dst_stat = backend.stat(new_file)
+                if dst_stat:
+                    if dst_stat.size == src_size:
+                        log.info(f"[Rmt]字幕 {new_file} 已存在")
+                        break
+                    # 同名但内容不同 → 尝试下一个序号标签，避免覆盖/硬链接冲突
+                    continue
                 try:
                     log.debug(f"[Rmt]正在处理字幕：{os.path.basename(file_item)}")
-                    self._execute(file_item, new_file, operation)
+                    self._execute(file_item, new_file, operation, dst_backend)
                     log.info(f"[Rmt]字幕 {os.path.basename(file_item)} {operation}完成")
                     break
                 except Exception as e:
+                    # 单个字幕失败不阻断主文件与其他字幕的转移
                     log.error(f"[Rmt]字幕 {file_name} {operation}失败：{e}")
-                    raise
+                    break
 
-    def transfer_audio_tracks(self, org_name: str, new_name: str, operation: str, over_flag: bool) -> None:
+    def transfer_audio_tracks(
+        self, org_name: str, new_name: str, operation: str, over_flag: bool, dst_backend: StorageBackend | None = None
+    ) -> None:
+        backend = dst_backend or self._local
         dir_name = os.path.dirname(org_name)
         file_pre = os.path.splitext(os.path.basename(org_name))[0]
         for track_file in PathUtils.get_dir_level1_files(dir_name, RMT_AUDIO_TRACK_EXT):
             if os.path.splitext(os.path.basename(track_file))[0] != file_pre:
                 continue
             new_track = os.path.splitext(new_name)[0] + os.path.splitext(track_file)[1].lower()
-            if os.path.exists(new_track):
+            if backend.exists(new_track):
                 if not over_flag:
                     log.warn(f"[Rmt]音轨文件已存在：{new_track}")
                     continue
-                os.remove(new_track)
+                backend.remove(new_track)
             log.info(f"[Rmt]正在转移音轨文件：{track_file} 到 {new_track}")
-            self._execute(track_file, new_track, operation)
+            self._execute(track_file, new_track, operation, dst_backend)
             log.info(f"[Rmt]音轨文件 {os.path.basename(track_file)} {operation}完成")
 
     def transfer_dir(
@@ -170,8 +182,8 @@ class TransferEngine:
         log.info(f"[Rmt]文件 {os.path.basename(src)} {operation}完成")
         self._blacklist.insert(src)
 
-        self.transfer_subtitles(src, dst, operation)
-        self.transfer_audio_tracks(src, dst, operation, over_flag)
+        self.transfer_subtitles(src, dst, operation, dst_backend)
+        self.transfer_audio_tracks(src, dst, operation, over_flag, dst_backend)
 
     @staticmethod
     def _subtitle_match(file_name: str, sub_name: str, meta, sub_meta) -> bool:
