@@ -153,6 +153,35 @@ class TestWeChatWebhookRouter:
         _, kwargs = mock_handler_cls.return_value.handle_message_job.call_args
         assert kwargs.get("msg") == "/rss"
 
+    def test_wechat_click_menu_legacy_underscore_key(self):
+        """兼容旧版下划线前缀的菜单 key（_sta → /sta），修复双斜杠 //sta 被误识别为媒体搜索."""
+        mock_message, mock_client = _build_mock_message(
+            parse_message_return={
+                "FromUserName": "from_user",
+                "ToUserName": "to_user",
+                "Content": "",
+                "MsgType": "event",
+                "Event": "click",
+                "EventKey": "_sta",
+            }
+        )
+        app_context = MagicMock()
+        app = self._make_app(mock_message, app_context)
+
+        with (
+            patch("api.routers.message_webhook.MessageSearchService"),
+            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+        ):
+            with TestClient(app) as tc:
+                resp = tc.post(
+                    "/wechat?msg_signature=msg_sig&timestamp=123&nonce=abc",
+                    content="<xml></xml>",
+                )
+        assert resp.status_code == 200
+        mock_handler_cls.return_value.handle_message_job.assert_called_once()
+        _, kwargs = mock_handler_cls.return_value.handle_message_job.call_args
+        assert kwargs.get("msg") == "/sta"
+
     def test_wechat_client_not_configured(self):
         """未配置交互式微信客户端返回 404."""
         mock_message = MagicMock(spec=Message)

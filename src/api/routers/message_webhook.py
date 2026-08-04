@@ -216,10 +216,11 @@ async def wechat_webhook(
         "Event": msg.get("Event", ""),
         "EventKey": msg.get("EventKey", ""),
     }
-    # 企业微信 click 菜单事件：EventKey 为命令去掉斜杠后的 key，如 rss、ptt
+    # 企业微信 click 菜单事件：EventKey 为命令去掉斜杠后的 key（如 rss、sta、signin），
+    # 兼容旧版本下划线前缀的 key（如 _rss）与含下划线的多级 key
     text = update["Content"]
     if update["MsgType"] == "event" and update["Event"] == "click" and update["EventKey"]:
-        text = f"/{update['EventKey'].replace('_', '/')}"
+        text = f"/{update['EventKey'].lstrip('_').replace('_', '/')}"
         update["Content"] = text
     if text:
         await asyncio.to_thread(_handle_webhook, update, SearchType.WX, app_context, message)

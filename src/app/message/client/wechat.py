@@ -349,13 +349,13 @@ class WeChat(_IMessageClient):
                         name = commands.get(cmd, cmd)
                         if not name:
                             continue
-                        subs.append({"type": "click", "name": name, "key": cmd.replace("/", "_")})
+                        subs.append({"type": "click", "name": name, "key": cmd.lstrip("/")})
                     # 将插件命令追加到"管理"分组
                     if group["name"] == WECHAT_PLUGIN_GROUP and plugin_cmds:
                         for cmd, info in plugin_cmds.items():
                             if len(subs) >= 5:
                                 break
-                            subs.append({"type": "click", "name": info.get("desc", cmd), "key": cmd.replace("/", "_")})
+                            subs.append({"type": "click", "name": info.get("desc", cmd), "key": cmd.lstrip("/")})
                     if subs:
                         buttons.append({"name": group["name"], "sub_button": subs})
                 if not buttons:
