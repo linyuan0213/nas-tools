@@ -102,6 +102,11 @@ class MediaService:
                 idx = title.upper().find(se_text.upper())
             if idx >= 0:
                 prefix = title[:idx].replace(".", " ").strip()
+                # 剥离前缀中的发布组方括号与末尾年份，避免污染搜索名
+                prefix = re.sub(r"\[[^\]]*\]", " ", prefix)
+                if parsed.year:
+                    prefix = re.sub(rf"\s*{re.escape(str(parsed.year))}\s*$", "", prefix)
+                prefix = re.sub(r"\s+", " ", prefix).strip()
                 if prefix and len(prefix) >= 3:
                     parsed.title_en = prefix
         if not parsed and not isinstance(self._parser, LLMParser):

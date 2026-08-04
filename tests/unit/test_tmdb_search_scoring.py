@@ -118,3 +118,59 @@ class TestBatchKeywordsRE:
     def test_batch_keyword_detection(self, title, expected):
         result = bool(_BATCH_KEYWORDS_RE.search(title))
         assert result == expected, f"title={title!r}"
+
+
+class TestSearchTvBySeasonGuard:
+    """search_tv_by_season 首轮命中必须校验目标季存在（同名真人剧 vs 动漫回归）"""
+
+    def _make_search(self, tvs, details):
+        from unittest.mock import MagicMock
+
+        from app.media.lookup.tmdb_search import TmdbSearch
+
+        client = MagicMock()
+        client.search.tv_shows.return_value = tvs
+        client.get_blacklist.return_value = []
+        search = TmdbSearch(client)
+        search._get_detail = lambda tmdbid, mtype: details.get(tmdbid, {})
+        search._fetch_allnames = lambda mtype, tmdb_id: (details.get(tmdb_id, {}), [])
+        return search
+
+    def test_skip_candidate_without_requested_season(self):
+        live_action = {
+            "id": 263121,
+            "name": "更衣人偶坠入爱河",
+            "original_name": "その着せ替え人形は恋をする",
+            "first_air_date": "2024-10-09",
+        }
+        details = {
+            263121: {
+                "id": 263121,
+                "seasons": [{"season_number": 1, "air_date": "2024-10-09", "episode_count": 9}],
+                "number_of_episodes": 9,
+            }
+        }
+        search = self._make_search([live_action], details)
+        result = search.search_tv_by_season("更衣人偶坠入爱河", "2024", 2)
+        assert not result, "无 S2 的同名条目不应命中按季搜索"
+
+    def test_hit_candidate_with_requested_season(self):
+        anime = {
+            "id": 123249,
+            "name": "更衣人偶坠入爱河",
+            "original_name": "その着せ替え人形は恋をする",
+            "first_air_date": "2022-01-09",
+        }
+        details = {
+            123249: {
+                "id": 123249,
+                "seasons": [
+                    {"season_number": 1, "air_date": "2022-01-09", "episode_count": 12},
+                    {"season_number": 2, "air_date": "2024-07-01", "episode_count": 12},
+                ],
+                "number_of_episodes": 24,
+            }
+        }
+        search = self._make_search([anime], details)
+        result = search.search_tv_by_season("更衣人偶坠入爱河", "2022", 2)
+        assert result and result.get("id") == 123249
