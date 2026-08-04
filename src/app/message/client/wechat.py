@@ -155,10 +155,18 @@ class WeChat(_IMessageClient):
             decryptor = cipher.decryptor()
             unpadder = padding.PKCS7(128).unpadder()
             padded = decryptor.update(ciphertext) + decryptor.finalize()
-            plaintext = unpadder.update(padded) + unpadder.finalize()
+            try:
+                plaintext = unpadder.update(padded) + unpadder.finalize()
+            except ValueError:
+                # 兼容第三方代理重加密的非 PKCS7 填充（如空格填充）：
+                # 消息结构自带长度前缀（随机16字节 + 4字节长度 + 消息 + corpid），可直接按长度提取
+                plaintext = padded
             msg_len = struct.unpack(">I", plaintext[16:20])[0]
             msg = plaintext[20 : 20 + msg_len]
-            appid = plaintext[20 + msg_len :].decode("utf-8")
+            if not self.corpid:
+                return b""
+            # 按 corpid 固定长度精确截取，兼容任意非 PKCS7 填充字节（空格/ESC 等）
+            appid = plaintext[20 + msg_len : 20 + msg_len + len(self.corpid)].decode("utf-8", errors="ignore")
             if appid != self.corpid:
                 return b""
             return msg
@@ -342,7 +350,8 @@ class WeChat(_IMessageClient):
                 message = self._message
                 commands = message.get_commands() if message else {}
                 plugin_cmds = message.get_plugin_commands() if message else {}
-                buttons = []
+                # 先填内置命令
+                group_subs = {}
                 for group in WECHAT_MENU:
                     subs = []
                     for cmd in group["commands"]:
@@ -350,12 +359,22 @@ class WeChat(_IMessageClient):
                         if not name:
                             continue
                         subs.append({"type": "click", "name": name, "key": cmd.lstrip("/")})
-                    # 将插件命令追加到"管理"分组
-                    if group["name"] == WECHAT_PLUGIN_GROUP and plugin_cmds:
-                        for cmd, info in plugin_cmds.items():
-                            if len(subs) >= 5:
-                                break
-                            subs.append({"type": "click", "name": info.get("desc", cmd), "key": cmd.lstrip("/")})
+                    group_subs[group["name"]] = subs
+                # 插件命令按 管理 → 同步 → 下载 顺序填入各组空位（每组上限 5 个）
+                group_priority = [WECHAT_PLUGIN_GROUP] + [
+                    g["name"] for g in reversed(WECHAT_MENU) if g["name"] != WECHAT_PLUGIN_GROUP
+                ]
+                plugin_items = [
+                    {"type": "click", "name": info.get("desc", cmd), "key": cmd.lstrip("/")}
+                    for cmd, info in plugin_cmds.items()
+                ]
+                for group_name in group_priority:
+                    subs = group_subs.get(group_name, [])
+                    while plugin_items and len(subs) < 5:
+                        subs.append(plugin_items.pop(0))
+                buttons = []
+                for group in WECHAT_MENU:
+                    subs = group_subs.get(group["name"], [])
                     if subs:
                         buttons.append({"name": group["name"], "sub_button": subs})
                 if not buttons:

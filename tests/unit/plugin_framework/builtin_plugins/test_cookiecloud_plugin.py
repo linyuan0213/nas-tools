@@ -104,3 +104,19 @@ class TestVerifyCookieHtmlPath:
         with patch(f"{MODULE}.HttpClient") as mock_client_cls:
             mock_client_cls.return_value.get.side_effect = RuntimeError("网络异常")
             assert plugin._verify_cookie("www.hddolby.com", "uid=1") is False
+
+
+class TestCookieCloudCommand:
+    """CookieCloud 消息命令处理器测试（对齐 4 参数分发约定）"""
+
+    def test_command_triggers_manual_sync_and_feedback(self):
+        plugin = _make_plugin()
+        plugin._cookie_sync = MagicMock()
+
+        plugin._on_cookiecloud_cmd("/cookiecloud", "wx", "user1", "LinYuan")
+
+        plugin._cookie_sync.assert_called_once_with(manual=True)
+        plugin.ctx._message.send_channel_msg.assert_called_once()
+        _, kwargs = plugin.ctx._message.send_channel_msg.call_args
+        assert kwargs.get("channel") == "wx"
+        assert kwargs.get("user_id") == "user1"

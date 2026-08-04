@@ -55,9 +55,12 @@ class CookieCloudPlugin:
         self._stop_service()
         self.ctx.unregister_message_command("cookiecloud")
 
-    def _on_cookiecloud_cmd(self, client_type, user_id, text):
-        self.ctx.info(f"用户 {user_id} 通过 {client_type} 触发 CookieCloud 同步")
-        self._cookie_sync()
+    def _on_cookiecloud_cmd(self, msg, in_from, user_id, user_name):
+        self.ctx.info(f"收到 CookieCloud 同步命令: user={user_name}, msg={msg}")
+        self._cookie_sync(manual=True)
+        self.ctx._message.send_channel_msg(
+            channel=in_from, title="CookieCloud 同步", text="同步任务已触发，请稍后查看同步结果", user_id=user_id
+        )
 
     def on_hook(self, event, data):
         if event == "plugin.config_changed":

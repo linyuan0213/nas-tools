@@ -3,12 +3,21 @@
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.deps import get_app_context, get_message
 from api.routers import message_webhook as webhook_router
 from app.message import Message
+
+
+@pytest.fixture(autouse=True)
+def _reset_webhook_handlers():
+    """每个用例前重置处理器单例，避免跨用例污染."""
+    webhook_router._reset_handlers()
+    yield
+    webhook_router._reset_handlers()
 
 
 def _build_mock_message(verify_url_return: Any = b"plain_echostr", parse_message_return: Any = None):
@@ -181,6 +190,42 @@ class TestWeChatWebhookRouter:
         mock_handler_cls.return_value.handle_message_job.assert_called_once()
         _, kwargs = mock_handler_cls.return_value.handle_message_job.call_args
         assert kwargs.get("msg") == "/sta"
+
+    def test_handlers_reused_across_webhook_calls(self):
+        """搜索/命令处理器单例跨消息复用，保证交互式分页缓存存活."""
+        app_context = MagicMock()
+        mock_message, _ = _build_mock_message()
+
+        with (
+            patch("api.routers.message_webhook.MessageSearchService") as mock_search_cls,
+            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+        ):
+            h1 = webhook_router._get_handlers(app_context, mock_message)
+            h2 = webhook_router._get_handlers(app_context, mock_message)
+
+        assert h1 is h2
+        mock_search_cls.assert_called_once()
+        mock_handler_cls.assert_called_once()
+        _, kwargs = mock_handler_cls.call_args
+        assert kwargs.get("search_handler") is mock_search_cls.return_value
+
+    def test_reset_handlers_clears_singletons(self):
+        """重置后重新创建处理器单例."""
+        app_context = MagicMock()
+        mock_message, _ = _build_mock_message()
+
+        with (
+            patch("api.routers.message_webhook.MessageSearchService") as mock_search_cls,
+            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+        ):
+            webhook_router._get_handlers(app_context, mock_message)
+            assert mock_handler_cls.call_count == 1
+            assert mock_search_cls.call_count == 1
+
+            webhook_router._reset_handlers()
+            webhook_router._get_handlers(app_context, mock_message)
+            assert mock_handler_cls.call_count == 2
+            assert mock_search_cls.call_count == 2
 
     def test_wechat_client_not_configured(self):
         """未配置交互式微信客户端返回 404."""
