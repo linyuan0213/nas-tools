@@ -126,8 +126,13 @@ class TestSubscribeHandlers:
 
         mock_repo = MagicMock()
         mock_repo.get_id.return_value = 42
+        mock_ep_repo = MagicMock()
+        # 订阅当前缺失 1-10
+        mock_ep_repo.get.return_value = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-        with patch("app.services.subscribe.handlers.SubscribeTvRepositoryAdapter", return_value=mock_repo):
+        with patch("app.services.subscribe.handlers.SubscribeTvRepositoryAdapter", return_value=mock_repo), patch(
+            "app.services.subscribe.handlers.SubscribeTvEpisodeRepositoryAdapter", return_value=mock_ep_repo
+        ):
             event = Event(
                 event_type=MEDIA_EPISODE_TRANSFERRED,
                 payload={
@@ -151,8 +156,12 @@ class TestSubscribeHandlers:
 
         mock_repo = MagicMock()
         mock_repo.get_id.return_value = 42
+        mock_ep_repo = MagicMock()
+        mock_ep_repo.get.return_value = [1, 2, 3, 4, 5]
 
-        with patch("app.services.subscribe.handlers.SubscribeTvRepositoryAdapter", return_value=mock_repo):
+        with patch("app.services.subscribe.handlers.SubscribeTvRepositoryAdapter", return_value=mock_repo), patch(
+            "app.services.subscribe.handlers.SubscribeTvEpisodeRepositoryAdapter", return_value=mock_ep_repo
+        ):
             event = Event(
                 event_type=MEDIA_EPISODE_TRANSFERRED,
                 payload={
@@ -166,4 +175,7 @@ class TestSubscribeHandlers:
             handle_media_episode_transferred(event)
 
         mock_repo.update_state.assert_called_with(title=None, year=None, season=None, rssid=42, state="C")
-        mock_repo.update_lack.assert_not_called()
+        # 全部转移完成后清空缺失列表
+        mock_repo.update_lack.assert_called_once_with(
+            title=None, year=None, season=None, rssid=42, lack_episodes=[]
+        )

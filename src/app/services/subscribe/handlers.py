@@ -4,7 +4,10 @@
 """
 
 import log
-from app.db.repositories.subscribe_repo_adapter import SubscribeTvRepositoryAdapter
+from app.db.repositories.subscribe_repo_adapter import (
+    SubscribeTvEpisodeRepositoryAdapter,
+    SubscribeTvRepositoryAdapter,
+)
 from app.domain.entities.rss import SubscribeState
 from app.events import Event, on_event
 from app.events.constants import (
@@ -85,6 +88,7 @@ def handle_media_episode_transferred(event: Event) -> None:
         payload = MediaEpisodeTransferredPayload(**payload)
     try:
         tv_repo = SubscribeTvRepositoryAdapter()
+        ep_repo = SubscribeTvEpisodeRepositoryAdapter()
         raw_id = tv_repo.get_id(
             title=payload.title,
             season=payload.season,
@@ -95,13 +99,22 @@ def handle_media_episode_transferred(event: Event) -> None:
             log.info(f"[Event]未找到订阅: tmdb_id={payload.tmdb_id} season={payload.season}")
             return
 
-        total = payload.total_episodes
-        if total > 0:
-            all_episodes = set(range(1, total + 1))
-            downloaded = set(payload.episodes)
-            lack_episodes = sorted(list(all_episodes - downloaded))
-        else:
-            lack_episodes = []
+        downloaded = {int(e) for e in (payload.episodes or []) if str(e).isdigit()}
+        if not downloaded:
+            return
+
+        # 在「当前缺失集」基础上减去本次转移的集。
+        # 不能用「全集 - 本次转移集」重算，否则会把之前已入库的集误标回缺失，
+        # 导致订阅进度倒退并重复下载。
+        current_missing = ep_repo.get(rssid)
+        if current_missing is None:
+            # 缺失列表未初始化：以订阅的 current_ep（首个待下载集）推导初始范围
+            subs = tv_repo.get_all(rssid=rssid)
+            start = int(subs[0].current_ep) if subs and subs[0].current_ep else 1
+            total = int(payload.total_episodes or 0)
+            current_missing = list(range(start, total + 1)) if total > 0 else []
+
+        lack_episodes = sorted(set(int(e) for e in current_missing) - downloaded)
 
         if lack_episodes:
             log.info(f"[Subscribe]更新电视剧 {payload.title} S{payload.season} 缺失集数为 {len(lack_episodes)}")
@@ -110,6 +123,7 @@ def handle_media_episode_transferred(event: Event) -> None:
         else:
             log.info(f"[Subscribe]电视剧 {payload.title} S{payload.season} 全部集数已下载完成")
             tv_repo.update_state(title=None, year=None, season=None, rssid=rssid, state=SubscribeState.COMPLETED.value)
+            tv_repo.update_lack(title=None, year=None, season=None, rssid=rssid, lack_episodes=[])
     except Exception as e:
         log.error(f"[Event]更新订阅进度失败：{e!s}")
 
