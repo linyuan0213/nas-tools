@@ -286,11 +286,49 @@ class RssFeedStrategy:
                                 season = int(str(match_info.get("season")).replace("S", ""))
                             total_ep = match_info.get("total")
                             current_ep = match_info.get("current_ep")
+                            # 懒更新：TMDB 集数增加时自动同步，避免订阅停留在旧集数
+                            # 优先用季详情集数（12h 缓存，episode_count 常滞后），失败再退回主详情
+                            if match_info.get("id") and media_info.tmdb_id:
+                                try:
+                                    new_total = 0
+                                    try:
+                                        season_detail = self.media.get_tmdb_tv_season_detail(
+                                            media_info.tmdb_id, season
+                                        )
+                                        season_eps = (
+                                            season_detail.get("episodes") if isinstance(season_detail, dict) else None
+                                        )
+                                        if isinstance(season_eps, list):
+                                            new_total = len(season_eps)
+                                    except Exception:  # noqa: BLE001
+                                        new_total = 0
+                                    if new_total <= 0 and media_info.tmdb_info:
+                                        new_total = int(
+                                            self.media.get_tmdb_season_episodes_num(
+                                                tv_info=media_info.tmdb_info, season=season
+                                            )
+                                            or 0
+                                        )
+                                    if new_total > 0 and (total_ep is None or new_total > total_ep):
+                                        log.info(
+                                            f"[RssFeedStrategy] {media_info.get_title_string()} S{season} "
+                                            f"TMDB 总集数更新: {total_ep or 0} -> {new_total}"
+                                        )
+                                        old_total = int(total_ep or 0)
+                                        total_ep = int(new_total)
+                                        new_missing = list(range(old_total + 1, int(new_total) + 1))
+                                        self.subscribe._tv_repo.update_total(
+                                            rssid=match_info.get("id"),
+                                            total_ep=int(new_total),
+                                            lack_episodes=new_missing,
+                                        )
+                                except Exception as e:  # noqa: BLE001
+                                    log.debug(f"[RssFeedStrategy] TMDB 集数检查异常: {e}")
                             episodes = self.subscribe.get_subscribe_tv_episodes(match_info.get("id"))
                             if episodes is None:
                                 episodes = []
                                 if current_ep:
-                                    episodes = list(range(int(current_ep), int(total_ep) + 1))
+                                    episodes = list(range(int(current_ep), int(total_ep or 0) + 1))
                             if media_info.tmdb_id not in rss_no_exists:
                                 rss_no_exists[media_info.tmdb_id] = []
                             rss_no_exists[media_info.tmdb_id].append(
