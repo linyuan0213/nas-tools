@@ -40,15 +40,15 @@ def _transfer_row(tmdb: int, se: str):
 
 
 def test_download_contiguous_basic():
-    """下载记录：明确单集，中间缺口截断"""
+    """下载记录：明确单集（含空格格式），中间缺口截断"""
     s = _session()
     s.add_all(
         [
-            _download_row("80748", "S08E01"),
+            _download_row("80748", "S08 E01"),  # 真实 SE 带空格
             _download_row("80748", "S08E02"),
-            _download_row("80748", "S08E04"),  # 缺 E03 → 连续止于 2
+            _download_row("80748", "S08 E04"),  # 缺 E03 → 连续止于 2
             _download_row("80748", "S08E06"),
-            _download_row("80748", "S09E01"),
+            _download_row("80748", "S09 E01"),
         ]
     )
     s.commit()
