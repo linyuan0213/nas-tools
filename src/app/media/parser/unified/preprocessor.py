@@ -16,6 +16,18 @@ _RE_FILESIZE = re.compile(r"[0-9.]+\s*[MGT]i?B(?![A-Z]+)", re.IGNORECASE)
 _RE_TV_NUMBER = re.compile(r"\[TV\s+(\d{1,4})", re.IGNORECASE)
 _RE_4K = re.compile(r"\[4[Kk]]", re.IGNORECASE)
 _RE_KANA_TITLE = re.compile(r"[぀-ヿ]+")
+# 常见站点/发布站顶级域（用于识别裸域名水印，避开 mkv/mp4 等容器与 web.dl 等元数据）
+_SITE_TLDS = (
+    r"com|net|org|tv|cc|me|io|to|st|sx|la|ws|xyz|top|club|info|pw"
+    r"|co|in|biz|su|ru|eu|se|de|fr|it|pl|es|nl|be|at|ch|pt|cz|ua|ro"
+)
+# 站点/发布站标记：方括号域名、www 前缀、空白分隔的裸域名
+_RE_SITE_MARKER = re.compile(
+    rf"\[[\w.-]+\.(?:{_SITE_TLDS})\]"                      # [EZTVx.to] / [rarbg.to]
+    rf"|\bwww\.[\w-]+(?:\.[A-Za-z]{{2,6}})?"                # www.UIndex.org
+    rf"|(?:^|\s)[\w-]+\.(?:{_SITE_TLDS})(?=\s|$)",          # 裸站点域名（空白分隔）
+    re.IGNORECASE,
+)
 _RE_BRACKET_GROUP = re.compile(r"^\[[^\]]+]$")
 _RE_AUDIO_BITRATE = re.compile(r"\b\d{2,4}(\.\d+)?\s*(kHz|kbps|bit|bits)\b", re.IGNORECASE)
 _RE_AUDIO_FORMAT = re.compile(r"\b(FLAC|ALAC|APE|WAV|AIFF|DSD|DTS|MP3|AAC|OGG|WMA|M4A|Opus)\b", re.IGNORECASE)
@@ -38,6 +50,11 @@ def prepare_title(title: str) -> str:
     if not title:
         return title
     title = title.replace("[", "[").replace("]", "]").strip()
+    # 剥离站点/发布站标记（[EZTVx.to]、www.UIndex.org、裸域名水印）
+    title = _RE_SITE_MARKER.sub(" ", title)
+    title = re.sub(r"\s+", " ", title).strip()
+    # 剥掉水印后遗留的前导分隔符（如 "www.UIndex.org - FBI" → "FBI"）
+    title = re.sub(r"^\s*-\s+", "", title)
     title = _RE_FPS_HZ.sub("", title)
     title = _RE_SITE_TAG.sub("", title).strip()
     title = _RE_FILESIZE.sub("", title)

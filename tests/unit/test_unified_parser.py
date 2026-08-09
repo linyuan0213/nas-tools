@@ -239,3 +239,55 @@ class TestRegressionIdentify:
         assert result.title_en == "Kaiju Girl Caramelise"
         assert result.year == "2026"
         assert result.season == 1
+
+
+class TestSiteMarkerStripping:
+    """公开站种子中的站点/发布站标记不应抢占片名"""
+
+    def test_bracket_domain_marker(self, parser):
+        """[EZTVx.to] 应被剥离，片名为 The Boys"""
+        result = parser.parse("The.Boys.S04E08.1080p.HEVC.x265-MeGusta[EZTVx.to].mkv")
+        assert result is not None
+        assert result.title_en == "The Boys"
+        assert result.season == 4
+        assert result.episode == 8
+
+    def test_bracket_domain_marker_lowercase(self, parser):
+        result = parser.parse("the.boys.s04e02.1080p.web.h264-successfulcrab[EZTVx.to].mkv")
+        assert result is not None
+        assert result.title_en == "The Boys"
+        assert result.season == 4
+        assert result.episode == 2
+
+    def test_www_domain_prefix(self, parser):
+        """www.UIndex.org 水印应被剥离，片名为 FBI"""
+        result = parser.parse("www.UIndex.org    -    FBI.S08E16.1080p.WEB.h264-ETHEL")
+        assert result is not None
+        assert result.title_en == "Fbi"
+        assert result.season == 8
+        assert result.episode == 16
+
+    def test_other_domain_markers(self, parser):
+        """其他常见站点标记也应剥离"""
+        for title in (
+            "Game.of.Thrones.S01E01.1080p.WEB-DL[rarbg.to].mkv",
+            "House.of.the.Dragon.S02E01.1080p[rarbg.to].mkv",
+            "Breaking.Bad.S05E16.1080p.WEB-DL[x265.YIFY].mkv",
+        ):
+            result = parser.parse(title)
+            assert result is not None, title
+
+    def test_real_title_with_dot_not_stripped(self, parser):
+        """带点号的真实剧名不应被误剥（Parks.and.Recreation）"""
+        result = parser.parse("Parks.and.Recreation.S01E01.720p.WEB-DL.mkv")
+        assert result is not None
+        assert result.title_en == "Parks And Recreation"
+        assert result.season == 1
+        assert result.episode == 1
+
+    def test_movie_single_extension_not_stripped(self, parser):
+        """Avatar.mkv 不应因类域名形态被误剥（容器扩展名非站点 TLD）"""
+        result = parser.parse("Avatar.2010.mkv")
+        assert result is not None
+        assert result.title_en == "Avatar"
+        assert result.year == "2010"
