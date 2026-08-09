@@ -5,7 +5,6 @@ Handles transfer history and unrecognized transfer related database operations.
 
 import datetime
 import os.path
-import re
 import time
 from enum import Enum
 
@@ -13,6 +12,7 @@ from sqlalchemy import func
 
 from app.db.models import SYNCHISTORY, TRANSFERBLACKLIST, TRANSFERHISTORY, TRANSFERUNKNOWN
 from app.db.repositories.base_repository import BaseRepository
+from app.db.repositories.episode_progress import contiguous_episodes
 from app.schemas.media import TransferMediaDTO
 
 
@@ -203,33 +203,13 @@ class TransferRepository(BaseRepository):
         查询某剧集某季已成功转移的「从第 1 集起连续」的集数（重订阅续订用）。
 
         转移记录中的集数信息比下载记录可靠（下载记录 SE 可能为空）。
-        只按明确集号统计：单集 "S08 E07"、范围 "S08E01-E12"。
-        季包仅记季号 "S08" 时保守记为第 1 集已转移——不能假设整季已转移，
-        宁少勿多，缺失集交由去重层补齐。
+        解析逻辑见 episode_progress.contiguous_episodes。
         """
         if not tmdbid:
             return 0
         with self.session() as db:
             rows = db.query(TRANSFERHISTORY.SEASON_EPISODE).filter(int(tmdbid) == TRANSFERHISTORY.TMDBID).all()
-        season_num = int(season or 1)
-        transferred: set[int] = set()
-        for (se,) in rows:
-            if not se:
-                continue
-            sm = re.search(r"S(\d+)", se, flags=re.IGNORECASE)
-            if not sm or int(sm.group(1)) != season_num:
-                continue
-            em = re.search(r"E(\d+)(?:\s*[-~]\s*E?(\d+))?", se, flags=re.IGNORECASE)
-            if not em:
-                transferred.add(1)  # 季包，保守记为至少第 1 集已转移
-                continue
-            start = int(em.group(1))
-            end = int(em.group(2)) if em.group(2) else start
-            transferred.update(range(start, end + 1))
-        contiguous = 0
-        while (contiguous + 1) in transferred:
-            contiguous += 1
-        return contiguous
+        return contiguous_episodes((se for (se,) in rows), int(season or 1))
 
     def delete_transfer_history_by_source(self, source_path: str, source_filename: str) -> None:
         with self.session() as db:

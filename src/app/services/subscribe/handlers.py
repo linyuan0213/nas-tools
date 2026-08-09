@@ -122,8 +122,8 @@ def handle_media_episode_transferred(event: Event) -> None:
             tv_repo.update_lack(title=None, year=None, season=None, rssid=rssid, lack_episodes=lack_episodes)
         else:
             log.info(f"[Subscribe]电视剧 {payload.title} S{payload.season} 全部集数已下载完成")
+            # 完成态不参与后续轮询；不调用 update_lack([])，避免写入空串导致后续读取 int("") 抛 ValueError
             tv_repo.update_state(title=None, year=None, season=None, rssid=rssid, state=SubscribeState.COMPLETED.value)
-            tv_repo.update_lack(title=None, year=None, season=None, rssid=rssid, lack_episodes=[])
     except Exception as e:
         log.error(f"[Event]更新订阅进度失败：{e!s}")
 

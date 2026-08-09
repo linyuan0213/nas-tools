@@ -4,7 +4,6 @@ Handles download history, settings and indexer statistics related database opera
 """
 
 import os.path
-import re
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -13,6 +12,7 @@ from sqlalchemy import Integer, and_, case, cast, func, tuple_
 
 from app.db.models import DOWNLOADHISTORY, DOWNLOADSETTING, INDEXERSTATISTICS
 from app.db.repositories.base_repository import BaseRepository
+from app.db.repositories.episode_progress import contiguous_episodes
 
 
 class DownloadRepository(BaseRepository):
@@ -73,10 +73,7 @@ class DownloadRepository(BaseRepository):
     def get_contiguous_completed_episode_by_tmdb(self, tmdb_id: int | str | None, season: int | None) -> int:
         """
         查询某剧集某季已完成的下载历史中「从第 1 集起连续」的集数（重订阅续订用）。
-
-        只按明确集号统计：单集 "S08E07"、范围 "S08E01-E12"。
-        季包仅记季号 "S08" 时保守记为第 1 集已存在——不能假设整季已下载
-        （季包可能只包含一集），宁少勿多，缺失集交由去重层补齐。
+        解析逻辑见 episode_progress.contiguous_episodes。
         """
         if not tmdb_id:
             return 0
@@ -84,27 +81,9 @@ class DownloadRepository(BaseRepository):
             rows = db.query(DOWNLOADHISTORY.SE).filter(
                 DOWNLOADHISTORY.TMDBID != "",
                 DOWNLOADHISTORY.STATE == "completed",
-                cast(DOWNLOADHISTORY.TMDBID, Integer) == int(tmdb_id),
+                DOWNLOADHISTORY.TMDBID == str(tmdb_id),
             ).all()
-        season_num = int(season or 1)
-        completed: set[int] = set()
-        for (se,) in rows:
-            if not se:
-                continue
-            sm = re.search(r"S(\d+)", se, flags=re.IGNORECASE)
-            if not sm or int(sm.group(1)) != season_num:
-                continue
-            em = re.search(r"E(\d+)(?:\s*[-~]\s*E?(\d+))?", se, flags=re.IGNORECASE)
-            if not em:
-                completed.add(1)  # 季包，保守记为至少第 1 集已存在
-                continue
-            start = int(em.group(1))
-            end = int(em.group(2)) if em.group(2) else start
-            completed.update(range(start, end + 1))
-        contiguous = 0
-        while (contiguous + 1) in completed:
-            contiguous += 1
-        return contiguous
+        return contiguous_episodes((se for (se,) in rows), int(season or 1))
 
     def delete_download_history_by_tmdb(self, tmdb_id: int | str | None, season_prefix: str | None = None) -> int:
         """

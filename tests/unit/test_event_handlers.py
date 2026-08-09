@@ -175,7 +175,5 @@ class TestSubscribeHandlers:
             handle_media_episode_transferred(event)
 
         mock_repo.update_state.assert_called_with(title=None, year=None, season=None, rssid=42, state="C")
-        # 全部转移完成后清空缺失列表
-        mock_repo.update_lack.assert_called_once_with(
-            title=None, year=None, season=None, rssid=42, lack_episodes=[]
-        )
+        # 完成时不再调用 update_lack（避免写入空串导致后续 int("") 崩溃）
+        mock_repo.update_lack.assert_not_called()
