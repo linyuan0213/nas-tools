@@ -69,6 +69,10 @@ class TransferHistoryRepositoryAdapter:
             return None
         return [e for e in [TransferHistoryEntity.from_orm(r) for r in rows] if e is not None]
 
+    def get_contiguous_transferred_episode_by_tmdb(self, tmdbid, season: int | None = None) -> int:
+        """查询某季已成功转移的连续集数（重订阅续订用，季包保守记 1）."""
+        return self._repo.get_contiguous_transferred_episode_by_tmdb(tmdbid, season)
+
     # 兼容旧Repository方法名
     def get_transfer_info_by_id(self, logid: int | None) -> TransferHistoryEntity | None:
         row = self._repo.get_transfer_info_by_id(logid)

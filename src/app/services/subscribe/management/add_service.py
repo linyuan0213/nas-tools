@@ -3,6 +3,7 @@
 from dataclasses import asdict
 from typing import Any, cast
 
+import log
 from app.domain.entities.rss import SubscribeState
 from app.domain.enums import SubscribeType, SystemConfigKey
 from app.domain.mediatypes import MediaType
@@ -26,6 +27,8 @@ class SubscribeAddService:
         event_bus,
         system_config,
         web_utils: WebUtils,
+        download_repo=None,
+        transfer_history_manager=None,
     ):
         self._movie_repo = movie_repo
         self._tv_repo = tv_repo
@@ -34,6 +37,8 @@ class SubscribeAddService:
         self._event_bus = event_bus
         self._system_config = system_config
         self._web_utils = web_utils
+        self._download_repo = download_repo
+        self._transfer_history_manager = transfer_history_manager
 
     @property
     def default_subscribe_setting_tv(self) -> dict | None:
@@ -173,6 +178,35 @@ class SubscribeAddService:
                     total = total_ep
                 else:
                     total = media_info.total_episodes
+                # 重订阅续订：未显式指定开始集数时，从转移记录/下载历史推导断点，
+                # 避免重新订阅从头开始重复下载已下载的剧集
+                # 转移记录集数最可靠（下载记录 SE 可能为空）；取连续段长度，
+                # 而非最大集数，避免中间缺集时跳过缺失集。二者取较大值。
+                if current_ep is None and media_info.tmdb_id:
+                    continue_ep = 0
+                    if self._transfer_history_manager:
+                        try:
+                            continue_ep = self._transfer_history_manager.get_contiguous_transferred_episode_by_tmdb(
+                                media_info.tmdb_id, int(season or 1)
+                            )
+                        except Exception as e:  # noqa: BLE001
+                            log.debug(f"[SubscribeAdd] 查询转移历史失败: {e}")
+                    if self._download_repo:
+                        try:
+                            continue_ep = max(
+                                continue_ep,
+                                self._download_repo.get_contiguous_completed_episode_by_tmdb(
+                                    media_info.tmdb_id, int(season or 1)
+                                ),
+                            )
+                        except Exception as e:  # noqa: BLE001
+                            log.debug(f"[SubscribeAdd] 查询下载历史失败: {e}")
+                    if continue_ep > 0:
+                        current_ep = continue_ep
+                        log.info(
+                            f"[SubscribeAdd]{media_info.get_title_string()} S{season} "
+                            f"从历史记录续订，开始集数: {current_ep}"
+                        )
                 lack = max(0, total - (current_ep or 0))
                 rssid = self._tv_repo.insert(
                     media_info=media_info,
