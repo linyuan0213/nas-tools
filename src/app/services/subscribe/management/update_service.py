@@ -119,7 +119,7 @@ class SubscribeUpdateService:
                 else:
                     total = media_info.total_episodes
                 if current_ep:
-                    lack = total - current_ep - 1
+                    lack = max(0, total - current_ep)
                 else:
                     lack = total
                 season_str = media_info.get_season_string()

@@ -34,6 +34,7 @@ class SubscribeService:
         event_bus: Any,
         system_config: Any,
         download_repo: Any = None,
+        transfer_history_manager: Any = None,
     ):
         self._movie_repo = movie_repo
         self._tv_repo = tv_repo
@@ -49,6 +50,7 @@ class SubscribeService:
         self._event_bus = event_bus
         self._system_config = system_config
         self._download_repo = download_repo
+        self._transfer_history_manager = transfer_history_manager
 
         self._web_utils = WebUtils(media_service=media_service, douban=douban, bangumi=Bangumi())
 
@@ -69,6 +71,8 @@ class SubscribeService:
             self._event_bus,
             self._system_config,
             self._web_utils,
+            self._download_repo,
+            self._transfer_history_manager,
         )
         self._finish_svc = SubscribeFinishService(
             self._movie_repo, self._tv_repo, self._history_repo, self._message, self._event_bus, self._download_repo

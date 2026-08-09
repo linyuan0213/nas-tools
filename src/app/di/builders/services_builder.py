@@ -233,6 +233,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         event_bus=event_bus,
         system_config=SystemConfig(),
         download_repo=DownloadHistoryRepositoryAdapter(),
+        transfer_history_manager=history_manager,
     )
 
     searcher = Searcher(
