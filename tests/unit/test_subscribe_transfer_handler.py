@@ -11,9 +11,9 @@ from app.services.subscribe import handlers
 
 def _make_event(episodes, total=12):
     payload = MediaEpisodeTransferredPayload(
-        tmdb_id=258348,
+        tmdb_id="258348",
         title="克雷瓦提斯",
-        season=2,
+        season="2",
         episodes=episodes,
         total_episodes=total,
     )
