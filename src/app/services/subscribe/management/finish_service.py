@@ -26,6 +26,7 @@ class SubscribeFinishService:
         if not rssid or not media:
             return
         rtype = MediaTypeMapper.to_tmdb(media.type)
+        over_edition = False
         if media.type == MediaType.MOVIE:
             rss = self._movie_repo.get_all(rssid=rssid)
             if not rss:
@@ -45,6 +46,7 @@ class SubscribeFinishService:
             if not rss:
                 return
             total = rss[0].TOTAL_EP
+            over_edition = bool(rss[0].OVER_EDITION) if hasattr(rss[0], "OVER_EDITION") else False
             self._history_repo.upsert(
                 rssid=rssid,
                 rtype=rtype,
@@ -59,7 +61,9 @@ class SubscribeFinishService:
             )
             delete_subscribe_fn(mtype=MediaType.TV, rssid=rssid)
 
-        if self._download_repo and media.tmdb_id:
+        # 仅洗版订阅完成后清理下载历史（允许后续升级重下）；
+        # 普通订阅保留下载历史，避免重新订阅时重复下载已完成的剧集
+        if self._download_repo and media.tmdb_id and (media.type == MediaType.MOVIE or over_edition):
             season_prefix = media.get_season_string() if media.type != MediaType.MOVIE else None
             self._download_repo.delete_by_tmdb(media.tmdb_id, season_prefix)
 

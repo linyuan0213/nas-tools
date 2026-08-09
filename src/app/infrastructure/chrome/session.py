@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import httpx
+import httpx2
 
 import log
 
@@ -51,7 +51,7 @@ class BrowserSession(_BaseBrowserSession):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._client = httpx.Client(timeout=self.timeout, follow_redirects=True)
+        self._client = httpx2.Client(timeout=self.timeout, follow_redirects=True)
 
     def __enter__(self) -> BrowserSession:
         self._ensure_session()
@@ -63,7 +63,7 @@ class BrowserSession(_BaseBrowserSession):
     def _ensure_session(self) -> None:
         try:
             self._client.post(f"{self.server_url}/sessions", json=self._ensure_session_payload())
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code != 409:
                 raise
 
@@ -130,7 +130,7 @@ class AsyncBrowserSession(_BaseBrowserSession):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
+        self._client = httpx2.AsyncClient(timeout=self.timeout, follow_redirects=True)
 
     async def __aenter__(self) -> AsyncBrowserSession:
         await self._ensure_session()
@@ -142,7 +142,7 @@ class AsyncBrowserSession(_BaseBrowserSession):
     async def _ensure_session(self) -> None:
         try:
             await self._client.post(f"{self.server_url}/sessions", json=self._ensure_session_payload())
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code != 409:
                 raise
 

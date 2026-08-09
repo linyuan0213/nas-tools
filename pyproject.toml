@@ -1,16 +1,6 @@
-[build-system]
-requires = ["setuptools>=75.7.0", "wheel>=0.45.1"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.package-dir]
-"" = "src"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
 [project]
 name = "nexus-media"
-version = "4.4.5"
+version = "4.5.0"
 description = "Nexus Media"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +13,7 @@ dependencies = [
     "cryptography>=49.0.0",
     "dateparser>=1.2.0",
     "filelock>=3.16.1",
-    "httpx[socks,http2]>=0.28.1",
+    "httpx2[http2,socks]>=2.9.1",
     "jinja2>=3.1.5",
     "jsonpath>=0.82.2",
     "loguru>=0.7.3",
@@ -93,6 +83,13 @@ docs = [
     "mkdocs-glightbox>=0.5.2",
     "mkdocs-material>=9.7.7",
 ]
+
+[tool.uv]
+# 项目从源码运行（run.py 注入 src 到 sys.path），不作为包构建/安装
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
 
 [tool.ruff]
 target-version = "py311"

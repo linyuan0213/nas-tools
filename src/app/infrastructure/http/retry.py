@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
+import httpx2
 from tenacity import (
     AsyncRetrying,
     Retrying,
@@ -28,7 +28,7 @@ class HttpRetryConfig:
             stop=stop_after_attempt(self.max_attempts),
             wait=wait_exponential(multiplier=self.min_wait, exp_base=self.exp_base, max=self.max_wait),
             retry=retry_if_exception_type(
-                (httpx.ConnectError, httpx.TimeoutException, httpx.ReadError, httpx.WriteError)
+                (httpx2.ConnectError, httpx2.TimeoutException, httpx2.ReadError, httpx2.WriteError)
             ),
             reraise=True,
             **kwargs,
@@ -40,7 +40,7 @@ class HttpRetryConfig:
             stop=stop_after_attempt(self.max_attempts),
             wait=wait_exponential(multiplier=self.min_wait, exp_base=self.exp_base, max=self.max_wait),
             retry=retry_if_exception_type(
-                (httpx.ConnectError, httpx.TimeoutException, httpx.ReadError, httpx.WriteError)
+                (httpx2.ConnectError, httpx2.TimeoutException, httpx2.ReadError, httpx2.WriteError)
             ),
             reraise=True,
             **kwargs,

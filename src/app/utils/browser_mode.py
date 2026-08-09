@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import hashlib
 
-from lxml import etree
-
 from app.core.settings import settings
 from app.infrastructure.http.config import BrowserModeConfig
 
@@ -16,10 +14,10 @@ from app.infrastructure.http.config import BrowserModeConfig
 def make_session_key(site_key: str, browser: BrowserModeConfig) -> str:
     """会话隔离键包含站点标识与浏览器配置指纹.
 
-    配置变化(UA/代理/指纹/渲染模式)会自动换新 session.
+    配置变化(UA/代理/指纹画像/渲染模式)会自动换新 session.
     """
     config_hash = hashlib.md5(  # noqa: S303
-        f"{browser.fingerprint_profile}:{browser.user_agent}:{browser.proxy_url}:{browser.render_html}".encode()
+        f"{browser.fingerprint_profile}:{browser.fp_profile_id}:{browser.user_agent}:{browser.proxy_url}:{browser.render_html}".encode()
     ).hexdigest()[:8]
     return f"{site_key}:{config_hash}"
 
@@ -40,11 +38,14 @@ def build_browser_mode(
     proxy_url: str | None = None,
     render_html: bool | None = None,
     server_url: str | None = None,
+    fp_profile_id: str | None = None,
 ) -> BrowserModeConfig | None:
     """从站点运行时配置构造浏览器模式配置.
 
     开关来自 site_info["chrome"], 是用户在站点管理中维护的运行时配置,
-    不是静态站点 JSON.
+    不是静态站点 JSON. fp_profile_id 为该用户的指纹画像（前端采集注入）;
+    未显式传入时回退到系统配置的默认指纹（实验室 chrome_fp_profile_id），
+    供全局后台流程（站点定时刷新 / RSS 自动化等无用户上下文场景）使用.
     """
     host = server_url
     if not host:
@@ -52,12 +53,16 @@ def build_browser_mode(
     if not host or not site_info.get("chrome"):
         return None
 
+    if not fp_profile_id:
+        fp_profile_id = str(settings.get("laboratory").get("chrome_fp_profile_id") or "") or None
+
     browser = BrowserModeConfig(
         enabled=True,
         server_url=host.rstrip("/"),
         session_key=site_key,
         site_key=site_key,
         fingerprint_profile="stealth",
+        fp_profile_id=fp_profile_id,
         user_agent=site_info.get("ua"),
         proxy_url=proxy_url,
         render_html=render_html if render_html is not None else bool(site_info.get("browser_render")),
@@ -66,28 +71,3 @@ def build_browser_mode(
     return browser
 
 
-def normalize_rendered_html(html: str) -> str:
-    """将浏览器渲染后的 HTML 归一化到与服务端原始 HTML 同构.
-
-    主要处理浏览器自动插入的 <tbody>, 使现有的 `table > tr` 直接子选择器继续命中.
-    """
-    try:
-        doc = etree.HTML(html)
-        if doc is None:
-            return html
-        for tb in doc.xpath("//tbody"):  # type: ignore[union-attr]
-            parent = tb.getparent()
-            if parent is None:
-                continue
-            idx = list(parent).index(tb)
-            for child in reversed(list(tb)):
-                parent.insert(idx, child)
-            parent.remove(tb)
-        # 保留 body 内容; lxml 的 HTML 方法会输出完整文档, 需提取 body 内部
-        body = doc.find("body")
-        if body is not None:
-            inner = "".join(etree.tostring(child, encoding="unicode") for child in body)
-            return inner
-        return etree.tostring(doc, encoding="unicode")
-    except Exception:
-        return html

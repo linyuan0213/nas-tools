@@ -7,7 +7,7 @@ from app.domain.enums import SearchType
 from app.events import Event
 from app.events.constants import MESSAGE_INCOMING
 from app.events.payloads import MessageIncomingPayload
-from app.infrastructure.cache_system import TokenCache
+from app.infrastructure.cache_system import TokenCache, get_cache_manager
 from app.message import Message
 from app.message.commands import COMMANDS
 from app.schemas.system import SendMessageResultDTO
@@ -113,57 +113,74 @@ class MessageCommandHandler:
     def __init__(
         self,
         search_handler=None,
-        torrent_remover=None,
-        downloader=None,
-        sync_svc=None,
-        filetransfer=None,
+        torrent_remover_service=None,
+        downloader_core=None,
+        sync_service=None,
+        filetransfer_service=None,
         event_bus=None,
         thread_executor=None,
         message=None,
         subscription_monitor=None,
-        rss_helper=None,
+        rss_task_service=None,
         subscribe_service=None,
-        site_userinfo=None,
-        sync_service=None,
+        site_service=None,
+        system_lifecycle=None,
     ):
         self._search_handler = search_handler
-        self._torrent_remover = torrent_remover
-        self._downloader = downloader
-        self._sync_svc = sync_svc
-        self._filetransfer = filetransfer
+        self._torrent_remover_service = torrent_remover_service
+        self._downloader_core = downloader_core
+        self._sync_service = sync_service
+        self._filetransfer_service = filetransfer_service
         self._event_bus = event_bus
         self._thread_executor = thread_executor
         self._message = message
         self._subscription_monitor = subscription_monitor
-        self._rss_helper = rss_helper
+        self._rss_task_service = rss_task_service
         self._subscribe_service = subscribe_service
-        self._site_userinfo = site_userinfo
-        self._sync_service = sync_service
+        self._site_service = site_service
+        self._system_lifecycle = system_lifecycle
         self._commands = None
+
+    @staticmethod
+    def _func(service, method):
+        """依赖缺失时返回空操作，避免菜单点击报错"""
+        return getattr(service, method) if service else (lambda: None)
 
     @property
     def _command_map(self):
         if self._commands is None:
             self._commands = {
                 "/ptr": {
-                    "func": (self._torrent_remover.auto_remove_torrents if self._torrent_remover else lambda: None),
+                    "func": self._func(self._torrent_remover_service, "auto_remove_torrents"),
                     "desc": COMMANDS["/ptr"],
                 },
                 "/ptt": {
-                    "func": self._downloader.transfer if self._downloader else lambda: None,
+                    "func": self._func(self._downloader_core, "transfer"),
                     "desc": COMMANDS["/ptt"],
                 },
                 "/rst": {
-                    "func": self._sync_svc.transfer_sync if self._sync_svc else lambda: None,
+                    "func": self._func(self._sync_service, "transfer_sync"),
                     "desc": COMMANDS["/rst"],
                 },
                 "/sub": {
-                    "func": self._subscription_monitor.run if self._subscription_monitor else lambda: None,
+                    "func": self._func(self._subscription_monitor, "run"),
                     "desc": COMMANDS.get("/sub", "订阅监控"),
                 },
-                "/tbl": {
-                    "func": self._filetransfer.truncate_transfer_blacklist if self._filetransfer else lambda: None,
-                    "desc": COMMANDS.get("/tbl", "清理转移黑名单"),
+                "/clr": {
+                    "func": self._clear_caches,
+                    "desc": COMMANDS["/clr"],
+                },
+                "/utf": {
+                    "func": self._unidentification,
+                    "desc": COMMANDS["/utf"],
+                },
+                "/udt": {
+                    "func": self._func(self._system_lifecycle, "restart_server"),
+                    "desc": COMMANDS["/udt"],
+                },
+                "/sta": {
+                    "func": self._user_statistics,
+                    "desc": COMMANDS["/sta"],
                 },
             }
         return self._commands
@@ -231,23 +248,28 @@ class MessageCommandHandler:
                 self._message.send_channel_msg(channel=in_from, title="正在处理，请稍候...", user_id=user_id or "")
 
     def _truncate_rsshistory(self):
-        if self._rss_helper:
-            self._rss_helper.truncate_rss_history()
+        rsshelper = getattr(self._rss_task_service, "rsshelper", None)
+        if rsshelper:
+            rsshelper.truncate_rss_history()
         if self._subscribe_service:
             self._subscribe_service.truncate_rss_episodes()
 
+    def _clear_caches(self):
+        """清理缓存系统全部缓存（Redis/内存）"""
+        get_cache_manager().clear_all()
+
     def _user_statistics(self):
         TokenCache.delete("statistics")
-        if self._site_userinfo:
-            self._site_userinfo.refresh_site_data_now()
+        if self._site_service:
+            self._site_service.refresh_site_data_now()
 
     def _unidentification(self):
-        item_ids = []
-        if not self._filetransfer:
+        if not self._filetransfer_service:
             return
-        records = self._filetransfer.get_transfer_unknown_paths()
+        records = self._filetransfer_service.get_transfer_unknown_paths()
         if not records:
             return
+        item_ids = []
         for rec in records:
             if not cast(str, rec.PATH):
                 continue

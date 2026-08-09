@@ -45,6 +45,7 @@ from app.services.media_service import (
     TransferHistoryService,
 )
 from app.services.search_service import Searcher
+from app.services.transfer.name_format import FIELD_CATALOG, field_groups, render_path, validate
 from app.utils.response import fail, success
 
 router = APIRouter()
@@ -911,3 +912,46 @@ def update_media_library_path(
     """更新媒体库路径"""
     svc.update_path(req.path_type, req.old_path, req.new_path, req.backend)
     return success()
+
+
+# ---------- 重命名格式：字段目录 / 校验 / 预览 ----------
+
+
+class NameFormatPreviewRequest(BaseModel):
+    format: str
+    media_type: str = "tv"
+    values: dict = {}
+
+
+class NameFormatValidateRequest(BaseModel):
+    format: str
+
+
+@router.get("/name_format/fields", response_model=CommonResponse, summary="重命名格式字段目录")
+def name_format_fields(
+    current_user=Depends(require_any_permission("setting:view", "setting:update")),
+):
+    """返回可按分组插入的占位符字段目录。"""
+    return success(data={"groups": field_groups(), "fields": FIELD_CATALOG})
+
+
+@router.post("/name_format/validate", response_model=CommonResponse, summary="校验重命名格式")
+def name_format_validate(
+    req: NameFormatValidateRequest,
+    current_user=Depends(require_any_permission("setting:view", "setting:update")),
+):
+    return success(data=validate(req.format))
+
+
+@router.post("/name_format/preview", response_model=CommonResponse, summary="预览重命名格式")
+def name_format_preview(
+    req: NameFormatPreviewRequest,
+    current_user=Depends(require_any_permission("setting:view", "setting:update")),
+):
+    mtype = "movie" if str(req.media_type).lower() in ("movie", "电影") else "tv"
+    return success(
+        data={
+            "segments": render_path(req.format, mtype, req.values),
+            "validate": validate(req.format),
+        }
+    )

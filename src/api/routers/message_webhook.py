@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import threading
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
@@ -98,6 +99,58 @@ def _get_text_from_update(update: dict, channel: SearchType) -> str:
     return ""
 
 
+_handlers_lock = threading.Lock()
+_search_service: MessageSearchService | None = None
+_command_handler: MessageCommandHandler | None = None
+
+
+def _get_handlers(app_context: AppContext, message: Message) -> MessageCommandHandler:
+    """搜索/命令处理器单例。
+
+    交互式搜索的分页缓存随实例存活，必须跨消息复用同一实例，
+    否则列表消息发出后回复序号时缓存已随实例销毁。
+    """
+    global _search_service, _command_handler
+    with _handlers_lock:
+        if _search_service is None:
+            _search_service = MessageSearchService(
+                downloader=app_context.downloader_core,
+                searcher=app_context.searcher,
+                indexer=app_context.indexer_service,
+                site_cache=app_context.site_cache,
+                site_engine=app_context.site_engine,
+                subscribe_service=app_context.subscribe_service,
+                media_service=app_context.media_service,
+                agent_service=app_context.agent_service,
+                message=message,
+            )
+        if _command_handler is None:
+            _command_handler = MessageCommandHandler(
+                search_handler=_search_service,
+                torrent_remover_service=app_context.torrent_remover_service,
+                downloader_core=app_context.downloader_core,
+                sync_service=app_context.sync_service,
+                filetransfer_service=app_context.filetransfer_service,
+                event_bus=app_context.event_bus,
+                thread_executor=app_context.thread_executor,
+                message=message,
+                subscription_monitor=app_context.subscription_monitor,
+                rss_task_service=app_context.rss_task_service,
+                subscribe_service=app_context.subscribe_service,
+                site_service=app_context.site_service,
+                system_lifecycle=app_context.system_lifecycle,
+            )
+    return _command_handler
+
+
+def _reset_handlers() -> None:
+    """重置处理器单例（测试用）"""
+    global _search_service, _command_handler
+    with _handlers_lock:
+        _search_service = None
+        _command_handler = None
+
+
 def _handle_webhook(update: dict, channel: SearchType, app_context: AppContext, message: Message):
     """统一处理各平台 webhook"""
     _ensure_message_initialized(message)
@@ -109,20 +162,7 @@ def _handle_webhook(update: dict, channel: SearchType, app_context: AppContext, 
 
     log.info(f"[Webhook]{channel.value} 收到消息: user={user_id}, text={text[:60]}...")
 
-    search_handler = MessageSearchService(
-        downloader=app_context.downloader_core,
-        searcher=app_context.searcher,
-        indexer=app_context.indexer_service,
-        site_cache=app_context.site_cache,
-        site_engine=app_context.site_engine,
-        subscribe_service=app_context.subscribe_service,
-        media_service=app_context.media_service,
-        agent_service=app_context.agent_service,
-        message=message,
-    )
-    handler = MessageCommandHandler(
-        search_handler=search_handler, message=message, thread_executor=app_context.thread_executor
-    )
+    handler = _get_handlers(app_context, message)
     handler.handle_message_job(msg=text, in_from=channel, user_id=user_id)
     return {"ok": True}
 
@@ -216,10 +256,11 @@ async def wechat_webhook(
         "Event": msg.get("Event", ""),
         "EventKey": msg.get("EventKey", ""),
     }
-    # 企业微信 click 菜单事件：EventKey 为命令去掉斜杠后的 key，如 rss、ptt
+    # 企业微信 click 菜单事件：EventKey 为命令去掉斜杠后的 key（如 rss、sta、signin），
+    # 兼容旧版本下划线前缀的 key（如 _rss）与含下划线的多级 key
     text = update["Content"]
     if update["MsgType"] == "event" and update["Event"] == "click" and update["EventKey"]:
-        text = f"/{update['EventKey'].replace('_', '/')}"
+        text = f"/{update['EventKey'].lstrip('_').replace('_', '/')}"
         update["Content"] = text
     if text:
         await asyncio.to_thread(_handle_webhook, update, SearchType.WX, app_context, message)

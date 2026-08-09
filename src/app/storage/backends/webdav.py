@@ -5,7 +5,7 @@ from email.utils import parsedate_to_datetime
 from typing import BinaryIO
 
 import defusedxml.ElementTree as ET  # type: ignore[import-untyped]
-import httpx
+import httpx2
 
 import log
 from app.infrastructure.http.client import HttpClient
@@ -22,7 +22,7 @@ class WebDAVStorageBackend(StorageBackend):
         self._client = HttpClient(
             config=HttpClientConfig(
                 verify_ssl=getattr(config, "ssl_verify", True),
-                auth=httpx.BasicAuth(
+                auth=httpx2.BasicAuth(
                     getattr(config, "username", ""),
                     getattr(config, "password", ""),
                 ),

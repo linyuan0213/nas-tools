@@ -337,14 +337,15 @@ class TestMessageCommandHandler:
     def test_commands_dict(self):
         handler = MessageCommandHandler(
             MagicMock(),
-            torrent_remover=MagicMock(),
-            downloader=MagicMock(),
-            sync_svc=MagicMock(),
-            filetransfer=MagicMock(),
+            torrent_remover_service=MagicMock(),
+            downloader_core=MagicMock(),
+            sync_service=MagicMock(),
+            filetransfer_service=MagicMock(),
         )
         assert "/ptr" in handler._command_map
         assert "/ptt" in handler._command_map
         assert "/sub" in handler._command_map
+        assert "/clr" in handler._command_map
 
 
 class TestUtilityFunctions:
