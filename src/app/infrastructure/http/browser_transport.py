@@ -1,7 +1,7 @@
 """HTTP Transport 实现浏览器自动化透明集成.
 
-将 httpx.Request 转发给 nexus-chrome 服务器的 /sessions/{id}/request 端点,
-并把响应重新组装成 httpx.Response, 使上层 HttpClient 调用无感知.
+将 httpx2.Request 转发给 nexus-chrome 服务器的 /sessions/{id}/request 端点,
+并把响应重新组装成 httpx2.Response, 使上层 HttpClient 调用无感知.
 """
 
 from __future__ import annotations
@@ -9,11 +9,11 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-import httpx
+import httpx2
 
 import log
 from app.infrastructure.http.config import BrowserModeConfig
-from app.utils.browser_mode import normalize_rendered_html
+from app.utils.render_normalize import normalize_rendered_html
 
 
 def _make_session_key(site_key: str, browser: BrowserModeConfig) -> str:
@@ -23,7 +23,7 @@ def _make_session_key(site_key: str, browser: BrowserModeConfig) -> str:
     这样 ``render_html=False`` 过盾后产生的 Cookie 可以被 ``render_html=True`` 复用。
     """
     config_hash = hashlib.md5(
-        f"{browser.fingerprint_profile}:{browser.user_agent}:{browser.proxy_url}".encode()
+        f"{browser.fingerprint_profile}:{browser.fp_profile_id}:{browser.user_agent}:{browser.proxy_url}".encode()
     ).hexdigest()[:8]
     return f"{site_key}:{config_hash}"
 
@@ -34,7 +34,7 @@ class _ChromeServerClient:
     def __init__(self, server_url: str, timeout: float = 60.0):
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
-        self._client = httpx.Client(timeout=timeout, follow_redirects=True)
+        self._client = httpx2.Client(timeout=timeout, follow_redirects=True)
 
     def _request(
         self,
@@ -49,7 +49,7 @@ class _ChromeServerClient:
         if raise_for_status:
             try:
                 response.raise_for_status()
-            except httpx.HTTPError as e:
+            except httpx2.HTTPError as e:
                 log.error(f"[ChromeServer] {method} {path} failed: {e}")
                 raise
         return response.json()
@@ -59,12 +59,13 @@ class _ChromeServerClient:
         payload = {
             "session_id": session_key,
             "fingerprint_profile": browser.fingerprint_profile,
+            "fp_profile_id": browser.fp_profile_id,
             "user_agent": browser.user_agent,
             "proxy": browser.proxy_url,
         }
         try:
             return self._request("POST", "/sessions", json=payload)
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code == 409:
                 # 已存在，直接返回空数据，无需额外请求
                 return {}
@@ -109,14 +110,14 @@ class _ChromeServerClient:
 class _BaseChromeTransport:
     """Transport 公共逻辑."""
 
-    def __init__(self, browser: BrowserModeConfig, limits: httpx.Limits | None = None):
+    def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):
         self._browser = browser
         self._session_key = browser.session_key or _make_session_key(browser.site_key, browser)
         self._server = _ChromeServerClient(browser.server_url, timeout=max(60.0, browser.navigate_timeout + 10))
         self._limits = limits
 
-    def _build_response(self, request: httpx.Request, payload: dict[str, Any]) -> httpx.Response:
-        """把 Chrome 服务器返回的 JSON 组装成 httpx.Response."""
+    def _build_response(self, request: httpx2.Request, payload: dict[str, Any]) -> httpx2.Response:
+        """把 Chrome 服务器返回的 JSON 组装成 httpx2.Response."""
         data = payload.get("data", payload)
         status_code = int(data.get("status_code", 0))
         headers = dict(data.get("headers", {}))
@@ -137,7 +138,7 @@ class _BaseChromeTransport:
                 content = body.encode(encoding)
 
         headers.setdefault("content-length", str(len(content)))
-        return httpx.Response(
+        return httpx2.Response(
             status_code=status_code,
             headers=headers,
             content=content,
@@ -147,14 +148,14 @@ class _BaseChromeTransport:
     def _ensure_session(self) -> None:
         self._server.ensure_session(self._session_key, self._browser)
 
-    def _extract_cookie_header(self, request: httpx.Request) -> str | None:
+    def _extract_cookie_header(self, request: httpx2.Request) -> str | None:
         cookie = request.headers.get("cookie")
         if cookie:
             return cookie
         # httpx 把 cookies 参数放在 Cookie 头里, 如果不在 headers 中, 也可能在 request extensions
         return None
 
-    def _handle(self, request: httpx.Request) -> httpx.Response:
+    def _handle(self, request: httpx2.Request) -> httpx2.Response:
         self._ensure_session()
         method = request.method
         url = str(request.url)
@@ -191,23 +192,23 @@ class _BaseChromeTransport:
         self._server.close()
 
 
-class ChromeTransport(httpx.BaseTransport, _BaseChromeTransport):
+class ChromeTransport(httpx2.BaseTransport, _BaseChromeTransport):
     """同步 Chrome Transport."""
 
-    def __init__(self, browser: BrowserModeConfig, limits: httpx.Limits | None = None):
-        httpx.BaseTransport.__init__(self)
+    def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):
+        httpx2.BaseTransport.__init__(self)
         _BaseChromeTransport.__init__(self, browser, limits)
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         return self._handle(request)
 
 
-class AsyncChromeTransport(httpx.AsyncBaseTransport, _BaseChromeTransport):
+class AsyncChromeTransport(httpx2.AsyncBaseTransport, _BaseChromeTransport):
     """异步 Chrome Transport."""
 
-    def __init__(self, browser: BrowserModeConfig, limits: httpx.Limits | None = None):
-        httpx.AsyncBaseTransport.__init__(self)
+    def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):
+        httpx2.AsyncBaseTransport.__init__(self)
         _BaseChromeTransport.__init__(self, browser, limits)
 
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         return self._handle(request)

@@ -142,6 +142,9 @@ class LaboratoryConfig(BaseModel):
     search_multi_language: bool = True
     chrome_enabled: bool = True
     chrome_server_host: str = ""
+    # 浏览器自动化默认指纹画像：用户登录同步真实浏览器指纹后写入，
+    # 全局后台流程（站点定时刷新 / RSS 自动化等无用户上下文场景）使用该指纹。
+    chrome_fp_profile_id: str = ""
     # ADR-014 身份解析体系灰度开关
     identity_index: bool = False  # P1 别名索引（get_all_names 走索引）
     identity_resolver: bool = False  # P2 统一识别决策流（BatchIdentifier → IdentityResolver）
