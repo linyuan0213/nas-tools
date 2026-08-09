@@ -180,8 +180,8 @@ class SubscribeAddService:
                     total = media_info.total_episodes
                 # 重订阅续订：未显式指定开始集数时，从转移记录/下载历史推导断点，
                 # 避免重新订阅从头开始重复下载已下载的剧集
-                # 转移记录集数最可靠（下载记录 SE 可能为空）；取连续段长度，
-                # 而非最大集数，避免中间缺集时跳过缺失集。二者取较大值。
+                # current_ep 语义 = 首个待下载集（与 RSS 兜底 range(current_ep, total+1) 一致）；
+                # 已获得连续 N 集 → 首个待下载 = N+1。转移记录集数最可靠，二者取较大值。
                 if current_ep is None and media_info.tmdb_id:
                     continue_ep = 0
                     if self._transfer_history_manager:
@@ -202,12 +202,16 @@ class SubscribeAddService:
                         except Exception as e:  # noqa: BLE001
                             log.debug(f"[SubscribeAdd] 查询下载历史失败: {e}")
                     if continue_ep > 0:
-                        current_ep = continue_ep
+                        current_ep = continue_ep + 1
                         log.info(
                             f"[SubscribeAdd]{media_info.get_title_string()} S{season} "
-                            f"从历史记录续订，开始集数: {current_ep}"
+                            f"历史记录已有 {continue_ep} 集，从第 {current_ep} 集开始续订"
                         )
-                lack = max(0, total - (current_ep or 0))
+                if current_ep:
+                    # 首个待下载集为 current_ep → 缺失集数 = total - current_ep + 1
+                    lack = max(0, total - current_ep + 1)
+                else:
+                    lack = total
                 rssid = self._tv_repo.insert(
                     media_info=media_info,
                     total=total,
