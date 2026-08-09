@@ -5,7 +5,8 @@ from unittest.mock import patch
 from lxml import etree
 
 from app.infrastructure.http.config import BrowserModeConfig, HttpClientConfig
-from app.utils.browser_mode import build_browser_mode, get_chrome_server_url, normalize_rendered_html
+from app.utils.browser_mode import build_browser_mode, get_chrome_server_url
+from app.utils.render_normalize import normalize_rendered_html
 
 
 def test_browser_mode_config_defaults():

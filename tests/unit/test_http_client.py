@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import httpx
+import httpx2
 import pytest
 
 from app.infrastructure.http import (
@@ -196,7 +196,7 @@ def test_logging_middleware_no_error(mock_httpx_client):
 
 def test_bearer_auth():
     auth = BearerAuth("token123")
-    req = httpx.Request("GET", "https://example.com")
+    req = httpx2.Request("GET", "https://example.com")
     for r in auth.auth_flow(req):
         pass
     assert req.headers["Authorization"] == "Bearer token123"
@@ -204,7 +204,7 @@ def test_bearer_auth():
 
 def test_api_key_auth_header():
     auth = ApiKeyAuth("X-API-Key", "secret", location="header")
-    req = httpx.Request("GET", "https://example.com")
+    req = httpx2.Request("GET", "https://example.com")
     for r in auth.auth_flow(req):
         pass
     assert req.headers["X-API-Key"] == "secret"
@@ -212,7 +212,7 @@ def test_api_key_auth_header():
 
 def test_api_key_auth_query():
     auth = ApiKeyAuth("key", "val", location="query")
-    req = httpx.Request("GET", "https://example.com")
+    req = httpx2.Request("GET", "https://example.com")
     for r in auth.auth_flow(req):
         pass
     assert "key=val" in str(req.url)
@@ -220,7 +220,7 @@ def test_api_key_auth_query():
 
 def test_cookie_auth_from_dict():
     auth = CookieAuth({"session": "abc", "token": "xyz"})
-    req = httpx.Request("GET", "https://example.com")
+    req = httpx2.Request("GET", "https://example.com")
     for r in auth.auth_flow(req):
         pass
     assert "session=abc" in req.headers["Cookie"]
@@ -229,7 +229,7 @@ def test_cookie_auth_from_dict():
 
 def test_cookie_auth_from_string():
     auth = CookieAuth("session=abc; token=xyz")
-    req = httpx.Request("GET", "https://example.com")
+    req = httpx2.Request("GET", "https://example.com")
     for r in auth.auth_flow(req):
         pass
     assert "session=abc" in req.headers["Cookie"]
@@ -256,7 +256,7 @@ def test_retry_connect_error():
     def failing():
         call_count[0] += 1
         if call_count[0] < 2:
-            raise httpx.ConnectError("try again")
+            raise httpx2.ConnectError("try again")
         return "ok"
 
     result = retrying(failing)
@@ -273,7 +273,7 @@ def test_retry_timeout():
     def failing():
         call_count[0] += 1
         if call_count[0] < 2:
-            raise httpx.TimeoutException("try again")
+            raise httpx2.TimeoutException("try again")
         return "ok"
 
     result = retrying(failing)
@@ -307,7 +307,7 @@ def test_http_client_config_custom():
 
 
 def test_http_client_error_from_httpx():
-    from httpx import HTTPStatusError, Request, Response
+    from httpx2 import HTTPStatusError, Request, Response
 
     req = Request("GET", "https://example.com")
     resp = Response(500, request=req, content=b"internal error")
@@ -318,7 +318,7 @@ def test_http_client_error_from_httpx():
 
 
 def test_http_client_error_from_connect_error():
-    exc = httpx.ConnectError("connection refused")
+    exc = httpx2.ConnectError("connection refused")
     converted = HttpClientError.from_httpx(exc)
     assert converted.status_code is None
 
@@ -369,7 +369,7 @@ async def test_async_http_client_raise_for_status_false(mock_async_status_error)
 
 
 def test_http_client_connection_pool_reuse(mock_httpx_client):
-    """相同配置的 HttpClient 应复用底层 httpx.Client."""
+    """相同配置的 HttpClient 应复用底层 httpx2.Client."""
     config = HttpClientConfig(timeout=10.0)
     client1 = HttpClient(config=config)
     client2 = HttpClient(config=config)
@@ -403,7 +403,7 @@ def test_http_client_different_config_different_pool(mock_httpx_client):
 
 @pytest.mark.asyncio
 async def test_async_http_client_connection_pool_reuse(mock_async_client):
-    """相同配置的 AsyncHttpClient 应复用底层 httpx.AsyncClient."""
+    """相同配置的 AsyncHttpClient 应复用底层 httpx2.AsyncClient."""
     config = HttpClientConfig(timeout=10.0, enable_http2=False)
     client1 = AsyncHttpClient(config=config)
     client2 = AsyncHttpClient(config=config)
@@ -429,21 +429,21 @@ async def test_async_http_client_connection_pool_release(mock_async_client):
 
 @pytest.fixture
 def mock_httpx_client():
-    with patch.object(httpx.Client, "request") as mock_req:
-        mock_req.return_value = httpx.Response(
-            200, content=b"mock body", request=httpx.Request("GET", "https://example.com")
+    with patch.object(httpx2.Client, "request") as mock_req:
+        mock_req.return_value = httpx2.Response(
+            200, content=b"mock body", request=httpx2.Request("GET", "https://example.com")
         )
         yield mock_req
 
 
 @pytest.fixture
 def mock_httpx_error():
-    with patch.object(httpx.Client, "request") as mock_req:
-        mock_req.side_effect = httpx.HTTPStatusError(
+    with patch.object(httpx2.Client, "request") as mock_req:
+        mock_req.side_effect = httpx2.HTTPStatusError(
             "error",
-            request=httpx.Request("GET", "https://example.com"),
-            response=httpx.Response(
-                500, request=httpx.Request("GET", "https://example.com"), content=b"internal error"
+            request=httpx2.Request("GET", "https://example.com"),
+            response=httpx2.Response(
+                500, request=httpx2.Request("GET", "https://example.com"), content=b"internal error"
             ),
         )
         yield mock_req
@@ -451,9 +451,9 @@ def mock_httpx_error():
 
 @pytest.fixture
 def mock_httpx_status_error():
-    with patch.object(httpx.Client, "request") as mock_req:
-        mock_req.return_value = httpx.Response(
-            418, content=b"teapot", request=httpx.Request("GET", "https://example.com")
+    with patch.object(httpx2.Client, "request") as mock_req:
+        mock_req.return_value = httpx2.Response(
+            418, content=b"teapot", request=httpx2.Request("GET", "https://example.com")
         )
         yield mock_req
 
@@ -461,11 +461,11 @@ def mock_httpx_status_error():
 @pytest.fixture
 def mock_async_client():
     with (
-        patch.object(httpx.AsyncClient, "request") as mock_req,
-        patch.object(httpx.AsyncClient, "aclose", return_value=None),
+        patch.object(httpx2.AsyncClient, "request") as mock_req,
+        patch.object(httpx2.AsyncClient, "aclose", return_value=None),
     ):
-        mock_req.return_value = httpx.Response(
-            200, content=b"async mock", request=httpx.Request("GET", "https://example.com")
+        mock_req.return_value = httpx2.Response(
+            200, content=b"async mock", request=httpx2.Request("GET", "https://example.com")
         )
         yield mock_req
 
@@ -473,13 +473,13 @@ def mock_async_client():
 @pytest.fixture
 def mock_async_error():
     with (
-        patch.object(httpx.AsyncClient, "request") as mock_req,
-        patch.object(httpx.AsyncClient, "aclose", return_value=None),
+        patch.object(httpx2.AsyncClient, "request") as mock_req,
+        patch.object(httpx2.AsyncClient, "aclose", return_value=None),
     ):
-        mock_req.side_effect = httpx.HTTPStatusError(
+        mock_req.side_effect = httpx2.HTTPStatusError(
             "error",
-            request=httpx.Request("GET", "https://example.com"),
-            response=httpx.Response(500, request=httpx.Request("GET", "https://example.com"), content=b"error"),
+            request=httpx2.Request("GET", "https://example.com"),
+            response=httpx2.Response(500, request=httpx2.Request("GET", "https://example.com"), content=b"error"),
         )
         yield mock_req
 
@@ -487,10 +487,10 @@ def mock_async_error():
 @pytest.fixture
 def mock_async_status_error():
     with (
-        patch.object(httpx.AsyncClient, "request") as mock_req,
-        patch.object(httpx.AsyncClient, "aclose", return_value=None),
+        patch.object(httpx2.AsyncClient, "request") as mock_req,
+        patch.object(httpx2.AsyncClient, "aclose", return_value=None),
     ):
-        mock_req.return_value = httpx.Response(
-            418, content=b"teapot", request=httpx.Request("GET", "https://example.com")
+        mock_req.return_value = httpx2.Response(
+            418, content=b"teapot", request=httpx2.Request("GET", "https://example.com")
         )
         yield mock_req

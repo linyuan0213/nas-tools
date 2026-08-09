@@ -4,7 +4,7 @@ import os
 import re
 from typing import Any
 
-import httpx
+import httpx2
 from lxml import etree
 
 import log
@@ -15,7 +15,7 @@ from app.utils.config_tools import get_proxies
 from app.utils.json_utils import JsonUtils
 
 
-def _build_auth(engine: Any, site: Any, user_config: dict) -> tuple[dict, httpx.Auth | None]:
+def _build_auth(engine: Any, site: Any, user_config: dict) -> tuple[dict, httpx2.Auth | None]:
     """构建全局认证（每个请求通用），返回 (headers, auth)。
 
     认证信息同时写入 headers（向后兼容）并返回 auth 对象（供 httpx 使用）。

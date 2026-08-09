@@ -26,9 +26,15 @@ def meta_info(title: str, subtitle: str | None = None, mtype: MediaType | None =
             elif parent and parent not in (".", "/", ""):
                 subtitle = subtitle or parent
         title = re.sub(r"\|\d+(\|\d+)?$", "", title)
+        # 剥离站点/发布站标记（www 前缀、[domain.tld]、裸域名水印）
         cleaned = re.sub(
-            r"(?i)\b(?:www\s+\w+|\w+\.(?:com|net|org|tv|cc|me|io)\b|pthdtv|qqhdtv|剧集网发布)\b",
-            "",
+            r"(?i)(?:"
+            r"www[\s.][\w-]+(?:\.[a-z]{2,6})?"
+            r"|\[[\w.-]+\.[a-z]{2,6}\]"
+            r"|(?:^|[\s-])[\w-]+\.(?:com|net|org|tv|cc|me|io|to|st|sx|la|ws|xyz|top|club|info|pw)\b"
+            r"|pthdtv|qqhdtv|剧集网发布"
+            r")",
+            " ",
             title,
         )
         cleaned = re.sub(r"\s+", " ", cleaned).strip()

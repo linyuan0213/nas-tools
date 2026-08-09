@@ -11,6 +11,7 @@ from app.db.repositories.category_repo_adapter import CategoryConfigRepositoryAd
 from app.db.repositories.storage_backend_repo_adapter import StorageBackendRepositoryAdapter
 from app.domain.mediatypes import MediaType
 from app.services.media_config_service import MediaConfigService
+from app.services.transfer.name_format import render
 from app.storage import StorageBackendFactory
 from app.storage.backends.base import StorageConfig, StorageType
 from app.storage.backends.local import LocalStorageBackend
@@ -283,6 +284,22 @@ class TransferPathResolver:
         """根据媒体信息，返回 Format 字典."""
         if not media:
             return {}
+        if media_service is None and re.search(
+            r"\{en_title\}|\{episode_title\}",
+            "".join(
+                (
+                    self._movie_dir_rmt_format,
+                    self._movie_file_rmt_format,
+                    self._tv_dir_rmt_format,
+                    self._tv_season_rmt_format,
+                    self._tv_file_rmt_format,
+                )
+            ),
+        ):
+            log.warn(
+                "[TransferPathResolver]重命名格式使用了 {en_title} / {episode_title}，"
+                "但未传入 media_service，这两项将渲染为空，请检查 DI 配置"
+            )
         episode_title = media_service.get_episode_title(media) if media_service else ""
         en_title = media_service.get_tmdb_en_title(media) if media_service else ""
         media_format_dict = {
@@ -295,6 +312,7 @@ class TransferPathResolver:
             "year": media.year,
             "edition": media.get_edtion_string() or None,
             "videoFormat": media.resource_pix,
+            "source": media.resource_type,
             "releaseGroup": media.resource_team,
             "customization": media.customization,
             "effect": media.resource_effect,
@@ -302,6 +320,8 @@ class TransferPathResolver:
             "audioCodec": media.audio_encode,
             "tmdbid": media.tmdb_id,
             "imdbid": media.imdb_id,
+            "media_type": media.type.value if media.type else None,
+            "category": media.category,
             "season": media.get_season_seq(),
             "episode": media.get_episode_seqs(),
             "episode_title": StringUtils.clear_file_name(episode_title),
@@ -316,16 +336,16 @@ class TransferPathResolver:
     def get_movie_dest_path(self, media_info, media_service=None):
         """计算电影文件路径."""
         format_dict = self.get_format_dict(media_info, media_service)
-        dir_name = re.sub(r"[-_\s.]*\t", "", self._movie_dir_rmt_format.format(**format_dict))
-        file_name = re.sub(r"[-_\s.]*\t", "", self._movie_file_rmt_format.format(**format_dict))
+        dir_name = render(self._movie_dir_rmt_format, format_dict)
+        file_name = render(self._movie_file_rmt_format, format_dict)
         return dir_name, file_name
 
     def get_tv_dest_path(self, media_info, media_service=None):
         """计算电视剧文件路径."""
         format_dict = self.get_format_dict(media_info, media_service)
-        dir_name = re.sub(r"[-_\s.]*\t", "", self._tv_dir_rmt_format.format(**format_dict))
-        season_name = re.sub(r"[-_\s.]*\t", "", self._tv_season_rmt_format.format(**format_dict))
-        file_name = re.sub(r"[-_\s.]*\t", "", self._tv_file_rmt_format.format(**format_dict))
+        dir_name = render(self._tv_dir_rmt_format, format_dict)
+        season_name = render(self._tv_season_rmt_format, format_dict)
+        file_name = render(self._tv_file_rmt_format, format_dict)
         return dir_name, season_name, file_name
 
     def get_dest_path_by_info(self, dest, meta_info, media_service):

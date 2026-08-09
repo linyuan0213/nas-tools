@@ -10,6 +10,7 @@ from app.core.settings import settings
 from app.domain.enums import IdentifyStatus, MatchMode
 from app.domain.mediatypes import MediaType
 from app.domain.validators.media_title import is_valid_media_title
+from app.domain.word_processor import get_words_info, process_title
 from app.infrastructure.cache_system import cacheman
 from app.infrastructure.http.exceptions import HttpRateLimitError
 from app.infrastructure.image_proxy import ImageProxy
@@ -65,6 +66,24 @@ class MediaService:
                 return self._llm_parser
         return RegexParser()
 
+    @staticmethod
+    def _apply_words(title: str, subtitle: str | None = None) -> tuple[str, str]:
+        """套用识别词（屏蔽 / 替换 / 集偏移），与 meta_info() 的前置清洗保持一致."""
+        words = get_words_info()
+        if not words:
+            return title, subtitle or ""
+        rev_title, msg, used_info = process_title(words, title)
+        for msg_item in msg:
+            log.warn(f"[MediaService]{msg_item}")
+        if used_info and any(used_info.values()):
+            log.info(
+                f"[MediaService]识别词生效: 屏蔽={used_info.get('ignored')} "
+                f"替换={used_info.get('replaced')} 集偏移={used_info.get('offset')}"
+            )
+        if subtitle:
+            subtitle, _, _ = process_title(words, subtitle)
+        return rev_title, subtitle or ""
+
     # ---------- 单条识别 ----------
 
     def identify(
@@ -92,6 +111,7 @@ class MediaService:
             title = os.path.basename(title)
             if parent and parent not in (".", "/", "") and not subtitle:
                 subtitle = parent
+        title, subtitle = self._apply_words(title, subtitle)
         parsed = self._parser.parse(title, subtitle)
         # 集名粘连修复：S05E10 后的短语剥离，从搜索名中分离
         if parsed and parsed.title_en and not parsed.title_cn and parsed.season:
@@ -383,6 +403,10 @@ class MediaService:
 
         titles = [i.get("title", "") for i in items]
         subtitles = [i.get("subtitle", "") for i in items]
+
+        # 0. 套用识别词（屏蔽 / 替换 / 集偏移）
+        for idx, t in enumerate(titles):
+            titles[idx], subtitles[idx] = self._apply_words(t, subtitles[idx])
 
         # 1. Parser: 批量解析所有文件名
         parsed_list = self._parser.parse_batch(titles)
@@ -748,6 +772,7 @@ class MediaService:
                     file_name = os.path.basename(file_path)
                     if not _path_isdir(file_path) and PathUtils.get_bluray_dir(file_path):
                         continue
+                    file_name, _ = self._apply_words(file_name)
                     parsed = self._parser.parse(file_name)
                     info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
                     info.set_tmdb_info(tmdb_info)
@@ -810,6 +835,7 @@ class MediaService:
                 file_name = os.path.basename(file_path)
                 if not _path_isdir(file_path) and PathUtils.get_bluray_dir(file_path):
                     continue
+                file_name, _ = self._apply_words(file_name)
                 parent_name = os.path.basename(os.path.dirname(file_path))
                 parent_parent_name = os.path.basename(PathUtils.get_parent_paths(file_path, 2))
                 items.append(

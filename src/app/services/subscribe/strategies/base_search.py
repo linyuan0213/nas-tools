@@ -304,18 +304,34 @@ class BaseSearchStrategy:
                 total_ep = rss_info.get("total")
                 current_ep = rss_info.get("current_ep")
 
-                # 懒更新：TMDB 总集数增加时自动同步
-                if media_info.tmdb_info and rid:
+                # 懒更新：TMDB 集数增加时自动同步（优先季详情集数，episode_count 常滞后）
+                if rid:
                     try:
-                        new_total = self._media_service.get_tmdb_season_episodes_num(
-                            tv_info=media_info.tmdb_info, season=season
-                        )
+                        new_total = 0
+                        try:
+                            season_detail = self._media_service.get_tmdb_tv_season_detail(
+                                media_info.tmdb_id, season
+                            )
+                            season_eps = (
+                                season_detail.get("episodes") if isinstance(season_detail, dict) else None
+                            )
+                            if isinstance(season_eps, list):
+                                new_total = len(season_eps)
+                        except Exception:  # noqa: BLE001
+                            new_total = 0
+                        if new_total <= 0 and media_info.tmdb_info:
+                            new_total = int(
+                                self._media_service.get_tmdb_season_episodes_num(
+                                    tv_info=media_info.tmdb_info, season=season
+                                )
+                                or 0
+                            )
                         if new_total > 0 and (total_ep is None or new_total > total_ep):
                             log.info(f"[Subscribe]{name_val} S{season} TMDB 总集数更新: {total_ep or 0} -> {new_total}")
-                            old_total = total_ep or 0
-                            total_ep = new_total
-                            new_missing = list(range(old_total + 1, new_total + 1))
-                            self._tv_repo.update_total(rssid=rid, total_ep=new_total, lack_episodes=new_missing)
+                            old_total = int(total_ep or 0)
+                            total_ep = int(new_total)
+                            new_missing = list(range(old_total + 1, int(new_total) + 1))
+                            self._tv_repo.update_total(rssid=rid, total_ep=int(new_total), lack_episodes=new_missing)
                     except Exception as e:  # noqa: BLE001
                         log.debug(f"[Subscribe]{name_val} TMDB 集数检查异常: {e}")
                 media_info.keyword = keyword

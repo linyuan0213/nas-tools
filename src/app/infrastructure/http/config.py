@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-import httpx
+import httpx2
 
 
 @dataclass
@@ -14,6 +14,7 @@ class BrowserModeConfig:
     session_key: str = "default"
     site_key: str = "default"
     fingerprint_profile: str = "stealth"
+    fp_profile_id: str | None = None
     user_agent: str | None = None
     proxy_url: str | None = None
     navigate_timeout: int = 90
@@ -45,8 +46,8 @@ class HttpClientConfig:
     # 默认请求头
     default_headers: dict[str, str] | None = None
 
-    # 认证（httpx.Auth 子类）
-    auth: httpx.Auth | None = field(default=None, repr=False)
+    # 认证（httpx2.Auth 子类）
+    auth: httpx2.Auth | None = field(default=None, repr=False)
 
     # DNS 映射（主机名 → IP 地址），用于替代 /etc/hosts 修改
     host_mapping: dict[str, str] | None = None

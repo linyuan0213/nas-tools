@@ -213,6 +213,7 @@ class RedisCacheAdapter(CacheAdapter):
 
     def __init__(self, name: str = "redis", default_ttl: int | None = None, fallback_maxsize: int = 2000):
         self._name = name
+        self._key_prefix = f"cache:{name}:"
         self._default_ttl = default_ttl
         self._redis = None
         self._fallback = MemoryCacheAdapter(maxsize=fallback_maxsize, name=f"{name}_fallback", default_ttl=default_ttl)
@@ -257,11 +258,15 @@ class RedisCacheAdapter(CacheAdapter):
         self._init_redis()
         return self._redis is not None
 
+    def _redis_key(self, key: str) -> str:
+        """Redis 键加缓存命名空间前缀，避免清缓存误删消息队列/调度器等公共数据"""
+        return f"{self._key_prefix}{key}"
+
     def get(self, key: str) -> Any | None:
         """获取缓存值 - 先查Redis，失败回退到内存"""
         if self._ensure_connection() and self._redis is not None:
             try:
-                data = self._redis.get(key)
+                data = self._redis.get(self._redis_key(key))
                 if data is not None:
                     try:
                         value = pickle.loads(data)  # nosec B301
@@ -299,7 +304,7 @@ class RedisCacheAdapter(CacheAdapter):
         if self._ensure_connection() and self._redis is not None:
             try:
                 data = pickle.dumps(value)
-                self._redis.set(key, data, ex=ttl)
+                self._redis.set(self._redis_key(key), data, ex=ttl)
                 with self._lock:
                     self._stats["sets"] += 1
                 redis_ok = True
@@ -326,7 +331,7 @@ class RedisCacheAdapter(CacheAdapter):
         redis_ok = False
         if self._ensure_connection() and self._redis is not None:
             try:
-                self._redis.delete(key)
+                self._redis.delete(self._redis_key(key))
                 with self._lock:
                     self._stats["deletes"] += 1
                 redis_ok = True
@@ -344,16 +349,16 @@ class RedisCacheAdapter(CacheAdapter):
         """检查键是否存在 - 先查Redis，再查内存回退"""
         if self._ensure_connection() and self._redis is not None:
             try:
-                return self._redis.exists(key)
+                return self._redis.exists(self._redis_key(key))
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[adapters]忽略异常: {e}")
         return self._fallback.exists(key)
 
     def clear(self) -> bool:
-        """清空所有缓存"""
+        """清空本缓存命名空间下的键，不影响消息队列/调度器等其他 Redis 数据"""
         if self._ensure_connection() and self._redis is not None:
             try:
-                keys = self._redis.keys("*")
+                keys = self._redis.keys(f"{self._key_prefix}*")
                 if keys:
                     self._redis.delete(*keys)
             except Exception as e:
@@ -369,7 +374,9 @@ class RedisCacheAdapter(CacheAdapter):
         redis_keys = []
         if self._ensure_connection() and self._redis is not None:
             try:
-                redis_keys = self._redis.keys(pattern)
+                redis_keys = self._redis.keys(f"{self._key_prefix}{pattern}")
+                # 去掉前缀返回原始键名
+                redis_keys = [k[len(self._key_prefix) :] for k in redis_keys]
             except Exception as e:
                 log.debug(f"[Cache]Redis keys 失败: {e}")
 
@@ -381,7 +388,7 @@ class RedisCacheAdapter(CacheAdapter):
         """获取键的剩余生存时间"""
         if self._ensure_connection() and self._redis is not None:
             try:
-                return self._redis.ttl(key)
+                return self._redis.ttl(self._redis_key(key))
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[adapters]忽略异常: {e}")
         return self._fallback.ttl(key)
@@ -391,7 +398,7 @@ class RedisCacheAdapter(CacheAdapter):
         redis_ok = False
         if self._ensure_connection() and self._redis is not None:
             try:
-                self._redis.expire(key, seconds)
+                self._redis.expire(self._redis_key(key), seconds)
                 redis_ok = True
             except Exception as e:
                 log.debug(f"[Cache]Redis expire 失败 {key}: {e}")
