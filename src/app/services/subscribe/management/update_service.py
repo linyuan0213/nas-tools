@@ -119,7 +119,8 @@ class SubscribeUpdateService:
                 else:
                     total = media_info.total_episodes
                 if current_ep:
-                    lack = max(0, total - current_ep)
+                    # 首个待下载集为 current_ep → 缺失集数 = total - current_ep + 1
+                    lack = max(0, total - current_ep + 1)
                 else:
                     lack = total
                 season_str = media_info.get_season_string()
