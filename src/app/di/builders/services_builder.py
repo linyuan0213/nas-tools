@@ -122,7 +122,10 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
     media_config_service = MediaConfigService(repo=MediaConfigRepositoryAdapter())
 
     path_resolver = TransferPathResolver.from_settings(media_config_service=media_config_service)
-    existence_checker = MediaExistenceChecker(path_resolver=path_resolver)
+    existence_checker = MediaExistenceChecker(
+        path_resolver=path_resolver,
+        media_service=media_service,
+    )
     history_manager = TransferHistoryManager()
     cleanup_service = TransferCleanupService(
         history_manager=history_manager,

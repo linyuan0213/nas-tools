@@ -210,6 +210,57 @@ class TestMediaExistenceChecker:
         assert dir_path is not None
         assert "Season 1" in dir_path
 
+    def test_is_media_exists_tv_passes_media_service(self):
+        """{en_title} / {episode_title} 依赖 media_service，必须透传给 path_resolver"""
+        resolver = MagicMock()
+        resolver.get_tv_dest_path.return_value = ("FBI (2018)", "Season 8", "FBI S08E07")
+        resolver.tv_category_flag = False
+        resolver.anime_category_flag = False
+
+        media_service = MagicMock()
+        checker = MediaExistenceChecker(resolver, media_service=media_service)
+        media = MagicMock()
+        media.type = MediaType.TV
+        media.get_season_list.return_value = [8]
+        media.get_episode_list.return_value = [7]
+
+        with patch("os.path.exists", return_value=False):
+            checker.is_media_exists("/tv", media)
+
+        resolver.get_tv_dest_path.assert_called_once_with(media, media_service)
+
+    def test_is_media_exists_movie_passes_media_service(self):
+        resolver = MagicMock()
+        resolver.get_movie_dest_path.return_value = ("Inception (2010)", "Inception (2010)")
+        resolver.movie_category_flag = False
+
+        media_service = MagicMock()
+        checker = MediaExistenceChecker(resolver, media_service=media_service)
+        media = MagicMock()
+        media.type = MediaType.MOVIE
+
+        with patch("os.path.exists", return_value=False):
+            checker.is_media_exists("/movies", media)
+
+        resolver.get_movie_dest_path.assert_called_once_with(media, media_service)
+
+    def test_get_no_exists_medias_tv_passes_media_service(self):
+        resolver = MagicMock()
+        resolver.get_tv_dest_path.return_value = ("FBI (2018)", "Season 8", "")
+        resolver.anime_category_flag = False
+        resolver.tv_category_flag = False
+        resolver.tv_path = []
+        resolver.anime_path = []
+
+        media_service = MagicMock()
+        checker = MediaExistenceChecker(resolver, media_service=media_service)
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        checker.get_no_exists_medias(media, meta_info_fn=MagicMock(), season=8, total_num=1)
+
+        resolver.get_tv_dest_path.assert_called_once_with(media, media_service)
+
 
 class TestTransferHistoryManager:
     """Test suite for TransferHistoryManager."""
