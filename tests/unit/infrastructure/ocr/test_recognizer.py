@@ -3,7 +3,7 @@
 from typing import Any
 from unittest.mock import patch
 
-import httpx
+import httpx2
 import pytest
 
 from app.infrastructure.ocr.core import (
@@ -34,7 +34,7 @@ class FakeResponse:
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
-            raise httpx.HTTPError(f"HTTP {self.status_code}")
+            raise httpx2.HTTPError(f"HTTP {self.status_code}")
 
 
 class DummyProvider(Provider):

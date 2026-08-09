@@ -7,7 +7,7 @@ import threading
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2
 
 import log
 from app.infrastructure.http.browser_transport import AsyncChromeTransport
@@ -31,11 +31,11 @@ def register_global_host_mapping(mapping: dict[str, str]) -> None:
 
 
 class _AsyncClientPool:
-    """按 HttpClientConfig 复用底层 httpx.AsyncClient，减少连接池创建开销."""
+    """按 HttpClientConfig 复用底层 httpx2.AsyncClient，减少连接池创建开销."""
 
     def __init__(self):
         self._lock = threading.RLock()
-        self._clients: dict[tuple, tuple[httpx.AsyncClient, int]] = {}
+        self._clients: dict[tuple, tuple[httpx2.AsyncClient, int]] = {}
 
     def _make_key(self, config: HttpClientConfig) -> tuple:
         headers = tuple(sorted((config.default_headers or {}).items()))
@@ -70,7 +70,7 @@ class _AsyncClientPool:
             config.enable_http2,
         ) + browser_key
 
-    def acquire(self, config: HttpClientConfig, builder: Callable[[], httpx.AsyncClient]) -> httpx.AsyncClient:
+    def acquire(self, config: HttpClientConfig, builder: Callable[[], httpx2.AsyncClient]) -> httpx2.AsyncClient:
         key = self._make_key(config)
         with self._lock:
             client, count = self._clients.get(key, (None, 0))
@@ -112,7 +112,7 @@ _pool = _AsyncClientPool()
 class AsyncHttpClient:
     """异步 HTTP 客户端 Facade.
 
-    封装 httpx.AsyncClient，支持 HTTP/2，内置 tenacity 异步重试、RateLimitEngine 限流、HttpCacheConfig 缓存。
+    封装 httpx2.AsyncClient，支持 HTTP/2，内置 tenacity 异步重试、RateLimitEngine 限流、HttpCacheConfig 缓存。
     相同配置的底层 AsyncClient 会被复用，避免每次请求创建/销毁连接池。
 
     按需实例化，由调用方管理生命周期。
@@ -134,8 +134,8 @@ class AsyncHttpClient:
         self._client = _pool.acquire(self._config, self._build_client)
         self._closed = False
 
-    def _build_client(self) -> httpx.AsyncClient:
-        limits = httpx.Limits(
+    def _build_client(self) -> httpx2.AsyncClient:
+        limits = httpx2.Limits(
             max_connections=self._config.max_connections,
             max_keepalive_connections=self._config.max_keepalive,
         )
@@ -143,11 +143,11 @@ class AsyncHttpClient:
 
         if self._config.browser and self._config.browser.enabled:
             transport = AsyncChromeTransport(self._config.browser, limits=limits)
-            timeout = httpx.Timeout(
+            timeout = httpx2.Timeout(
                 self._config.timeout,
                 connect=self._config.connect_timeout,
             )
-            return httpx.AsyncClient(
+            return httpx2.AsyncClient(
                 transport=transport,
                 timeout=timeout,
                 follow_redirects=self._config.follow_redirects,
@@ -158,7 +158,7 @@ class AsyncHttpClient:
                 headers=self._config.default_headers,
             )
 
-        class _MappedAsyncTransport(httpx.AsyncHTTPTransport):
+        class _MappedAsyncTransport(httpx2.AsyncHTTPTransport):
             async def handle_async_request(self, request):
                 host = request.url.host
                 mapping = {**_global_host_mapping, **config_map}
@@ -169,11 +169,11 @@ class AsyncHttpClient:
                 return await super().handle_async_request(request)
 
         transport = _MappedAsyncTransport(limits=limits, retries=0)
-        timeout = httpx.Timeout(
+        timeout = httpx2.Timeout(
             self._config.timeout,
             connect=self._config.connect_timeout,
         )
-        return httpx.AsyncClient(
+        return httpx2.AsyncClient(
             transport=transport,
             timeout=timeout,
             follow_redirects=self._config.follow_redirects,
@@ -184,7 +184,7 @@ class AsyncHttpClient:
             headers=self._config.default_headers,
         )
 
-    async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+    async def request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
         """执行异步 HTTP 请求，tenacity 自动重试 + 异常转换."""
         rate_limit_key = kwargs.pop("rate_limit_key", None)
         rate_limit_rate = kwargs.pop("rate_limit_rate", None)
@@ -210,14 +210,14 @@ class AsyncHttpClient:
             if cached is not None:
                 return cached
 
-        async def _do_request() -> httpx.Response:
+        async def _do_request() -> httpx2.Response:
             response = await self._client.request(method, url, **kwargs)
             if raise_on_error:
                 response.raise_for_status()
             return response
 
         if self._middlewares:
-            tmp_request = httpx.Request(
+            tmp_request = httpx2.Request(
                 method, url, **{k: v for k, v in kwargs.items() if k in ("headers", "params", "cookies")}
             )
             for mw in self._middlewares:
@@ -225,7 +225,7 @@ class AsyncHttpClient:
 
         try:
             result = await self._retry(_do_request)
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             err = HttpClientError.from_httpx(e)
             if isinstance(err, HttpSSLError):
                 log.warn(f"[AsyncHttpClient]SSL/TLS 请求失败: {method} {url} - {err}")
@@ -254,16 +254,16 @@ class AsyncHttpClient:
             return f"http:{method}:{url}?{sorted_params}"
         return f"http:{method}:{url}"
 
-    async def get(self, url: str, **kwargs: Any) -> httpx.Response:
+    async def get(self, url: str, **kwargs: Any) -> httpx2.Response:
         return await self.request("GET", url, **kwargs)
 
-    async def post(self, url: str, **kwargs: Any) -> httpx.Response:
+    async def post(self, url: str, **kwargs: Any) -> httpx2.Response:
         return await self.request("POST", url, **kwargs)
 
-    async def put(self, url: str, **kwargs: Any) -> httpx.Response:
+    async def put(self, url: str, **kwargs: Any) -> httpx2.Response:
         return await self.request("PUT", url, **kwargs)
 
-    async def delete(self, url: str, **kwargs: Any) -> httpx.Response:
+    async def delete(self, url: str, **kwargs: Any) -> httpx2.Response:
         return await self.request("DELETE", url, **kwargs)
 
     async def close(self) -> None:

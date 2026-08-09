@@ -8,7 +8,7 @@ import os
 from collections.abc import Iterator
 from typing import BinaryIO
 
-import httpx
+import httpx2
 
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
@@ -32,7 +32,7 @@ class RcloneStorageBackend(StorageBackend):
         self._remote = getattr(config, "remote_name", "NEXUS_MEDIA")
         username = getattr(config, "rc_user", "")
         password = getattr(config, "rc_pass", "")
-        auth = httpx.BasicAuth(username, password) if username else None
+        auth = httpx2.BasicAuth(username, password) if username else None
         http_config = HttpClientConfig(auth=auth)
         self._client = HttpClient(config=http_config)
 
