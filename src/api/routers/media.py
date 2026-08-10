@@ -422,6 +422,7 @@ def get_downloaded(
                     "image": item.POSTER,
                     "overview": item.TORRENT,
                     "enclosure": item.ENCLOSURE,
+                    "season_episode": item.SE or "",
                     "date": item.DATE,
                     "site": item.SITE,
                 }
