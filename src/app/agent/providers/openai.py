@@ -5,7 +5,7 @@ from typing import Any
 from openai import APIStatusError, OpenAI
 
 import log
-from app.agent.providers.base import BaseProvider, ProviderConfig
+from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
 
 
 class OpenAIProvider(BaseProvider):
@@ -80,3 +80,32 @@ class OpenAIProvider(BaseProvider):
         except Exception as e:
             log.warn(f"[OpenAIProvider]查询模型列表失败: {e}")
             return []
+
+
+class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
+    """OpenAI 兼容 Embedding 提供商（text-embedding-3 系列 / bge 等）"""
+
+    def __init__(self, config: ProviderConfig, model: str):
+        super().__init__(config, model)
+        self._client = OpenAI(
+            base_url=config.api_url,
+            api_key=config.api_key,
+            timeout=config.timeout,
+        )
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        resp = self._client.embeddings.create(model=self._model, input=texts)
+        vectors = [list(map(float, item.embedding)) for item in resp.data]
+        if vectors and self._dimension is None:
+            self._dimension = len(vectors[0])
+        return vectors
+
+    def is_available(self) -> bool:
+        try:
+            self.embed(["health check"])
+            return True
+        except Exception as e:
+            log.warn(f"[OpenAIEmbeddingProvider]不可用: {e}")
+            return False

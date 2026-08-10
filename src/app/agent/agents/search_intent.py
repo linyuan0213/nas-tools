@@ -1,27 +1,12 @@
-"""搜索意图理解 Agent"""
-
-from pydantic import BaseModel
+"""搜索意图理解 Agent — 实现 domain 层 IntentResolver 端口（LLM 增强）"""
 
 import log
 from app.agent.prompts.search import SEARCH_INTENT_PROMPT
-
-
-class SearchIntent(BaseModel):
-    """搜索意图解析结果"""
-
-    keywords: str = ""  # 核心搜索关键词
-    media_type: str | None = None  # movie / tv / anime
-    year: int | None = None  # 指定年份
-    season: int | None = None  # 指定季
-    episode: int | None = None  # 指定集
-    quality: str | None = None  # 质量要求
-    language: str | None = None  # 语言偏好
-    source: str | None = None  # 来源偏好
-    is_specific: bool = False  # 是否明确指定了具体作品
+from app.domain.interfaces.intent import SearchIntent
 
 
 class SearchIntentAgent:
-    """搜索意图理解 Agent"""
+    """搜索意图理解 Agent — LLM 实现 IntentResolver 端口"""
 
     def __init__(self, svc):
 
@@ -31,23 +16,29 @@ class SearchIntentAgent:
     def ready(self) -> bool:
         return self._svc.ready
 
-    def parse(self, query: str) -> SearchIntent | None:
-        """解析用户搜索意图"""
+    def resolve(self, text: str) -> SearchIntent:
+        """LLM 意图解析（IntentResolver 端口实现）；失败返回空意图"""
         if not self.ready:
-            return None
-        log.info(f"[SearchIntentAgent]解析意图: {query[:80]}...")
+            return SearchIntent(raw_text=text)
+        log.info(f"[SearchIntentAgent]解析意图: {text[:80]}...")
         result = self._svc.structured_chat(
-            messages=[{"role": "user", "content": query}],
+            messages=[{"role": "user", "content": text}],
             system_prompt=SEARCH_INTENT_PROMPT,
             response_model=SearchIntent,
         )
-        if result and result.is_specific:
+        if result is None:
+            log.warn("[SearchIntentAgent]解析失败")
+            return SearchIntent(raw_text=text)
+        result.raw_text = text
+        if result.is_specific:
             log.info(
                 f"[SearchIntentAgent]解析成功: keywords={result.keywords}, type={result.media_type}, "
                 f"season={result.season}, ep={result.episode}, year={result.year}"
             )
-        elif result:
-            log.info(f"[SearchIntentAgent]意图不明确: keywords={result.keywords}")
         else:
-            log.warn("[SearchIntentAgent]解析失败")
+            log.info(f"[SearchIntentAgent]意图不明确: keywords={result.keywords}")
         return result
+
+    def parse(self, query: str) -> SearchIntent:
+        """兼容旧接口（parse → resolve）"""
+        return self.resolve(query)

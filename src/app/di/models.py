@@ -107,6 +107,7 @@ class ServiceObjects:
     net_test_service: Any
     progress_service: Any
     web_search_service: Any
+    search_orchestrator: Any
     backup_restore_service: Any
     user_manage_service: Any
     tmdb_blacklist_service: Any

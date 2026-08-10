@@ -25,6 +25,7 @@ def test_app_context_fields():
         media_recognizer=MagicMock(),
         search_intent_agent=MagicMock(),
         tool_executor=MagicMock(),
+        search_orchestrator=MagicMock(),
         downloader_core=MagicMock(),
         download_monitor=MagicMock(),
         filetransfer_service=MagicMock(),

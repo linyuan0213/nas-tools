@@ -7,10 +7,10 @@ import os
 import re
 
 import log
-from app.agent.service import AgentService
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.core.settings import settings
 from app.domain.enums import SearchType
+from app.domain.interfaces.chat import ChatPort
 from app.domain.mediatypes import MediaType
 from app.media import meta_info
 from app.media.service import MediaService
@@ -39,7 +39,7 @@ class MessageSearchService:
         site_engine: SiteEngine,
         subscribe_service: SubscribeService,
         media_service: MediaService,
-        agent_service: AgentService,
+        agent_service: ChatPort,
         message: Message,
     ):
         self._downloader = downloader
@@ -49,7 +49,7 @@ class MessageSearchService:
         self._site_engine = site_engine
         self._subscribe_service = subscribe_service
         self._media_service = media_service
-        self._agent_service = agent_service
+        self._chat_port = agent_service
         self._message = message
         self._pagination = SearchPaginationManager(message=message)
 
@@ -179,7 +179,7 @@ class MessageSearchService:
         """解析用户意图"""
         if input_str.startswith(("http", "magnet")):
             return "DOWNLOAD"
-        if self._agent_service.chat_agent.ready:
+        if self._chat_port.ready:
             return "ASK"
         if input_str.startswith("订阅"):
             return "SUBSCRIBE"
@@ -212,7 +212,7 @@ class MessageSearchService:
     def _chat(self, question: str, in_from: SearchType, user_id: str):
         """AI 对话（支持工具调用）"""
         try:
-            answer = self._agent_service.chat_agent.chat_with_tools(question=question, session_id=str(user_id))
+            answer = self._chat_port.chat_with_tools(question=question, session_id=str(user_id))
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:

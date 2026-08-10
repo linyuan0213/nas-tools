@@ -1,13 +1,15 @@
-"""
-Agent 工具包
+"""Agent 工具集
+
+Schema 与 handler 的映射集中在 catalog.py（显式登记，无导入副作用注册）。
 """
 
-from app.agent.tools.base import BaseTool, ToolRegistry, ToolResult
-from app.agent.tools.media_download import MediaDownloadTool
-from app.agent.tools.media_search import MediaSearchTool
-from app.agent.tools.media_subscribe import MediaSubscribeTool
-from app.agent.tools.message_template import MessageTemplateTool
-from app.agent.tools.resource_filter import ResourceFilterTool
-from app.agent.tools.system_command import SystemCommandTool
+from app.agent.tools.base import BaseTool, ToolLevel, ToolRegistry, ToolResult
+from app.agent.tools.context import ToolContext
 
-__all__ = ["ToolRegistry", "BaseTool", "ToolResult"]
+__all__ = [
+    "BaseTool",
+    "ToolLevel",
+    "ToolRegistry",
+    "ToolResult",
+    "ToolContext",
+]

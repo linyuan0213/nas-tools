@@ -1,9 +1,11 @@
 """协调器 Builder — 创建 Layer 5 对象。"""
 
 from app.agent.tool_executor import ToolExecutor
+from app.agent.tools.context import ToolContext
 from app.core.system_config import SystemConfig
 from app.db.repositories.download_repo_adapter import DownloadHistoryRepositoryAdapter
 from app.db.repositories.subscribe_repo_adapter import SubscribeHistoryRepositoryAdapter
+from app.di.builders.agent_builder import AgentRagObjects
 from app.di.models import BusinessFacades, CoordinatorObjects, InfrastructureObjects, ServiceObjects
 from app.media import MediaCache
 from app.services.rss_processor import RssHelper
@@ -26,6 +28,7 @@ def build_coordinators(
     infra: InfrastructureObjects,
     facades: BusinessFacades,
     services: ServiceObjects,
+    agent_rag: AgentRagObjects,
 ) -> CoordinatorObjects:
     """创建 Layer 5 协调器。"""
     downloader_core = services.downloader_core
@@ -114,33 +117,24 @@ def build_coordinators(
         event_bus=infra.event_bus,
     )
 
-    # 创建 ToolExecutor 并注入 AgentService（解决循环依赖）
-    tool_executor = ToolExecutor(
-        message=message,
-        thread_executor=thread_executor,
-        scheduler_core=scheduler_core,
-        event_bus=infra.event_bus,
-        download_monitor=download_monitor,
-        filetransfer_service=services.filetransfer_service,
-        rss_helper=RssHelper(site_engine=site_engine),
-        search_intent_agent=facades.search_intent_agent,
-        site_userinfo=site_userinfo,
-        scheduler_service=services.scheduler_service,
-        message_client_service=services.message_client_service,
-        sync_service=services.sync_service,
-        subscription_monitor=subscription_monitor,
-        torrentremover_service=torrent_remover,
-        subscribe_service=subscribe_service,
-        system_lifecycle_service=system_lifecycle,
-        brush_service=services.brush_service,
-        site_service=services.site_service,
-        rss_task_service=rss_task_service,
-        media_service=media_service,
-        indexer_service=services.indexer_service,
-        downloader_core=downloader_core,
+    # 工具层：ToolContext 类型化注入 + 显式初始化 ChatAgent（替代旧 23 参数构造与 set_tool_executor 后门）
+    tool_context = ToolContext(
+        search_orchestrator=services.search_orchestrator,
         searcher=searcher,
+        download_service=services.download_service,
+        downloader_core=downloader_core,
+        subscribe_service=subscribe_service,
+        media_service=media_service,
+        media_info_service=services.media_info_service,
+        filetransfer_service=services.filetransfer_service,
+        scheduler_service=services.scheduler_service,
+        system_info_service=services.system_info_service,
+        event_bus=infra.event_bus,
+        retriever=agent_rag.retriever,
+        conversation_store=agent_rag.conversation_store,
     )
-    facades.agent_service.set_tool_executor(tool_executor)
+    tool_executor = ToolExecutor(ctx=tool_context)
+    facades.agent_service.init_chat_agent(tool_executor, agent_rag.conversation_store)
 
     # 注册 RSS 自动订阅事件处理器
     build_rss_auto_subscribe_handler(subscribe_service)

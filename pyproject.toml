@@ -64,6 +64,8 @@ dependencies = [
     "fast-bencode>=1.1.7",
     "uvloop>=0.22.1",
     "orjson>=3.11.9",
+    "lancedb>=0.36.0",
+    "sqlite-vec>=0.1.9",
 ]
 
 [dependency-groups]

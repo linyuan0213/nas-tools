@@ -95,6 +95,7 @@ class AppContext:
     net_test_service: Any
     progress_service: Any
     web_search_service: Any
+    search_orchestrator: Any
     backup_restore_service: Any
     user_manage_service: Any
     tmdb_blacklist_service: Any
@@ -111,3 +112,10 @@ class AppContext:
     # 协调器层
     subscription_monitor: Any
     system_lifecycle: SystemLifecycleService
+
+    # Agent RAG（未启用时为 None，带默认值便于最小构造）
+    embedding_service: Any = None
+    vector_store: Any = None
+    retriever: Any = None
+    knowledge_ingestor: Any = None
+    conversation_store: Any = None

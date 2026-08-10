@@ -2,12 +2,11 @@
 
 import datetime
 import platform
-from functools import partial
 
 import psutil
 
-from app.agent.agents.search_intent import SearchIntentAgent
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
+from app.core.settings import settings
 from app.domain.engine.brush_rule_engine import BrushRuleEngine
 from app.domain.enums import ProgressKey
 from app.domain.mediatypes import MediaType
@@ -15,7 +14,6 @@ from app.infrastructure.external.doubanapi import DoubanApi
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
 from app.infrastructure.progress import ProgressTracker
-from app.media.service import MediaService
 from app.message import Message
 from app.message.commands import COMMANDS
 from app.schemas.system import (
@@ -27,8 +25,6 @@ from app.schemas.system import (
     WebSearchResultDTO,
 )
 from app.services.rbac.service import RBACService
-from app.services.search_service import Searcher
-from app.services.search_web_service import search_medias_for_web
 from app.services.web import WebUtils
 from app.utils.config_tools import get_proxies
 from version import APP_VERSION
@@ -112,13 +108,34 @@ class NetTestService:
     """
 
     def test(self, target: str) -> NetTestResultDTO:
-        """测试指定目标的网络连通性"""
+        """测试指定目标的网络连通性.
+
+        语义：仅 HTTP 2xx 视为连通成功；401/404/403 等非 2xx 及连接层错误
+        （超时 / SSL / 拒绝 / DNS）均判为失败。
+        需要 api_key 的目标（TMDB / LLM）会带上已配置的 key 做真实请求。
+        """
         proxies = get_proxies()
         proxy_url = proxies.get("http") if proxies else None
         start_time = datetime.datetime.now()
         try:
             if target == "frodo.douban.com":
                 DoubanApi().movie_showing(count=1)
+            elif target == "api.themoviedb.org":
+                # TMDB API：用已配置的 key 做真实请求
+                tmdb_host = settings.get("app").get("tmdb_domain") or "api.themoviedb.org"
+                tmdb_key = settings.get("app").get("rmt_tmdbkey") or ""
+                HttpClient(config=HttpClientConfig(proxy_url=proxy_url, timeout=5)).get(
+                    f"https://{tmdb_host}/3/configuration",
+                    params={"api_key": tmdb_key},
+                )
+            elif target == "api.openai.com":
+                # LLM API：用已配置的 provider（api_url + api_key）做真实请求
+                prov = self._get_llm_provider()
+                base = (prov.get("api_url") or "https://api.openai.com").rstrip("/")
+                headers = {}
+                if prov.get("api_key"):
+                    headers["Authorization"] = f"Bearer {prov['api_key']}"
+                HttpClient(config=HttpClientConfig(timeout=5)).get(f"{base}/models", headers=headers)
             else:
                 if target == "image.tmdb.org":
                     target = target + "/t/p/w500/wwemzKWzjKYJFfCeiB57q3r4Bcm.png"
@@ -140,35 +157,27 @@ class NetTestService:
         elapsed_ms = int((datetime.datetime.now() - start_time).total_seconds() * 1000)
         return NetTestResultDTO(success=success, time_ms=elapsed_ms)
 
+    @staticmethod
+    def _get_llm_provider() -> dict:
+        """读取当前默认 LLM 提供商配置（含 api_url / api_key）。"""
+        agent_cfg = settings.get("agent") or {}
+        providers = agent_cfg.get("providers") or {}
+        default_provider = agent_cfg.get("default_provider") or ""
+        if default_provider and default_provider in providers:
+            return providers[default_provider] or {}
+        if providers:
+            return next(iter(providers.values())) or {}
+        return {}
+
 
 class WebSearchService:
     """
     WEB资源搜索业务服务
     """
 
-    def __init__(
-        self,
-        searcher: Searcher | None = None,
-        progress_helper: ProgressTracker | None = None,
-        media_service: MediaService | None = None,
-        intent_agent: SearchIntentAgent | None = None,
-        search_fn=None,
-        system_config=None,
-    ):
-        if search_fn is not None:
-            self._search_fn = search_fn
-        else:
-            assert searcher is not None, "searcher is required"
-            assert progress_helper is not None, "progress_helper is required"
-            assert media_service is not None, "media_service is required"
-            self._search_fn = partial(
-                search_medias_for_web,
-                searcher=searcher,
-                progress_helper=progress_helper,
-                media_service=media_service,
-                intent_agent=intent_agent,
-                system_config=system_config,
-            )
+    def __init__(self, search_fn):
+        # search_fn 由 DI 组装（search_web_entry.make_web_search_fn），统一走 SearchOrchestrator
+        self._search_fn = search_fn
 
     def search(
         self,

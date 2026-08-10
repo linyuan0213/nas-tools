@@ -13,9 +13,42 @@ from typing import Any
 import ruamel.yaml
 from filelock import FileLock
 from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from app.core.root_path import get_project_root
+
+
+def _drop_scalar_overrides(settings_cls: type, data: dict[str, Any]) -> dict[str, Any]:
+    """剔除与嵌套模型字段同名的标量值（如环境变量 AGENT=1），防止其覆盖整个嵌套配置段"""
+    for key in list(data.keys()):
+        field_info = settings_cls.model_fields.get(key)
+        if field_info is None:
+            continue
+        annotation = field_info.annotation
+        if isinstance(annotation, type) and issubclass(annotation, BaseModel) and not isinstance(data[key], dict):
+            del data[key]
+    return data
+
+
+class _NestedSafeEnvSource(EnvSettingsSource):
+    """env 源包装：标量同名环境变量不覆盖嵌套模型字段"""
+
+    def __call__(self) -> dict[str, Any]:
+        return _drop_scalar_overrides(self.settings_cls, super().__call__())
+
+
+class _NestedSafeDotEnvSource(DotEnvSettingsSource):
+    """dotenv 源包装：同上"""
+
+    def __call__(self) -> dict[str, Any]:
+        return _drop_scalar_overrides(self.settings_cls, super().__call__())
+
 
 _PROJECT_ROOT = get_project_root()
 
@@ -159,6 +192,48 @@ class AgentProviderConfig(BaseModel):
     model: str = ""
 
 
+class AgentEmbeddingConfig(BaseModel):
+    """Embedding 配置（api_key/api_url 留空继承对应 provider）"""
+
+    provider: str = ""
+    model: str = ""
+    api_key: str = ""
+    api_url: str = ""
+    proxy: str | None = None
+    timeout: int = 60
+
+
+class AgentStoreConfig(BaseModel):
+    """向量库存储路径（留空/相对路径基于数据目录解析）"""
+
+    path: str = ""
+
+
+class AgentRagConfig(BaseModel):
+    """RAG 检索参数"""
+
+    chunk_size: int = 800
+    chunk_overlap: int = 100
+    top_k: int = 6
+    rerank_top_k: int = 3
+    namespaces: list[str] = Field(default_factory=lambda: ["media_library", "messages", "faq", "operations"])
+
+
+class AgentShortTermMemoryConfig(BaseModel):
+    """短程记忆配置"""
+
+    store: str = "db"
+    max_tokens: int = 4000
+    ttl_days: int = 30
+
+
+class AgentMemoryConfig(BaseModel):
+    """记忆配置"""
+
+    max_steps: int = 8
+    short_term: AgentShortTermMemoryConfig = Field(default_factory=AgentShortTermMemoryConfig)
+
+
 class AgentConfig(BaseModel):
     """Agent 配置"""
 
@@ -167,6 +242,13 @@ class AgentConfig(BaseModel):
     media_recognizer_enabled: bool = False
     batch_size: int = 100
     providers: dict[str, AgentProviderConfig] = Field(default_factory=dict)
+    fallback: list[str] = Field(default_factory=list)
+    embedding: AgentEmbeddingConfig = Field(default_factory=AgentEmbeddingConfig)
+    vector_store: str = "sqlite"
+    sqlite: AgentStoreConfig = Field(default_factory=AgentStoreConfig)
+    lancedb: AgentStoreConfig = Field(default_factory=AgentStoreConfig)
+    rag: AgentRagConfig = Field(default_factory=AgentRagConfig)
+    memory: AgentMemoryConfig = Field(default_factory=AgentMemoryConfig)
 
 
 class DatabaseConfig(BaseModel):
@@ -290,8 +372,8 @@ class AppSettings(BaseSettings):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (
             init_settings,
-            env_settings,
-            dotenv_settings,
+            _NestedSafeEnvSource(settings_cls),
+            _NestedSafeDotEnvSource(settings_cls),
             YamlConfigSettingsSource(settings_cls),
         )
 

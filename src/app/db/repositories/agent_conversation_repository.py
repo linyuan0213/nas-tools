@@ -1,0 +1,97 @@
+"""Agent 会话/消息仓储 — 短程记忆持久化"""
+
+from datetime import datetime
+
+from app.db.models.agent_memory import AGENTCONVERSATION, AGENTMESSAGE
+from app.db.repositories.base_repository import BaseRepository
+
+
+class AgentConversationRepository(BaseRepository):
+    """Agent 会话仓储"""
+
+    def get_or_create(self, user_id: str, channel: str, session_id: str) -> AGENTCONVERSATION:
+        with self.session() as db:
+            conv = (
+                db.query(AGENTCONVERSATION)
+                .filter(
+                    AGENTCONVERSATION.USER_ID == user_id,
+                    AGENTCONVERSATION.CHANNEL == channel,
+                    AGENTCONVERSATION.SESSION_ID == session_id,
+                )
+                .first()
+            )
+            if conv:
+                return conv
+            conv = AGENTCONVERSATION(USER_ID=user_id, CHANNEL=channel, SESSION_ID=session_id)
+            db.add(conv)
+            db.commit()
+            db.refresh(conv)
+            return conv
+
+    def get(self, user_id: str, channel: str, session_id: str) -> AGENTCONVERSATION | None:
+        with self.session() as db:
+            return (
+                db.query(AGENTCONVERSATION)
+                .filter(
+                    AGENTCONVERSATION.USER_ID == user_id,
+                    AGENTCONVERSATION.CHANNEL == channel,
+                    AGENTCONVERSATION.SESSION_ID == session_id,
+                )
+                .first()
+            )
+
+    def get_messages(self, conversation_id: int, limit: int = 50) -> list[AGENTMESSAGE]:
+        with self.session() as db:
+            return (
+                db.query(AGENTMESSAGE)
+                .filter(AGENTMESSAGE.CONVERSATION_ID == conversation_id)
+                .order_by(AGENTMESSAGE.ID.asc())
+                .limit(limit)
+                .all()
+            )
+
+    def append_message(
+        self, conversation_id: int, role: str, content: str, tokens: int = 0, tool_calls: dict | None = None
+    ) -> None:
+        with self.session() as db:
+            db.add(
+                AGENTMESSAGE(
+                    CONVERSATION_ID=conversation_id, ROLE=role, CONTENT=content, TOKENS=tokens, TOOL_CALLS=tool_calls
+                )
+            )
+            db.query(AGENTCONVERSATION).filter(AGENTCONVERSATION.ID == conversation_id).update(
+                {"UPDATED_AT": datetime.now()}
+            )
+            db.commit()
+
+    def update_summary(self, conversation_id: int, summary: str, token_usage: int) -> None:
+        with self.session() as db:
+            db.query(AGENTCONVERSATION).filter(AGENTCONVERSATION.ID == conversation_id).update(
+                {"SUMMARY": summary, "TOKEN_USAGE": token_usage, "UPDATED_AT": datetime.now()}
+            )
+            db.commit()
+
+    def delete_messages_before(self, conversation_id: int, message_id: int) -> None:
+        """摘要归档后删除已并入摘要的旧消息"""
+        with self.session() as db:
+            db.query(AGENTMESSAGE).filter(
+                AGENTMESSAGE.CONVERSATION_ID == conversation_id, AGENTMESSAGE.ID <= message_id
+            ).delete()
+            db.commit()
+
+    def delete_conversation(self, user_id: str, channel: str, session_id: str) -> None:
+        with self.session() as db:
+            conv = (
+                db.query(AGENTCONVERSATION)
+                .filter(
+                    AGENTCONVERSATION.USER_ID == user_id,
+                    AGENTCONVERSATION.CHANNEL == channel,
+                    AGENTCONVERSATION.SESSION_ID == session_id,
+                )
+                .first()
+            )
+            if not conv:
+                return
+            db.query(AGENTMESSAGE).filter(AGENTMESSAGE.CONVERSATION_ID == conv.ID).delete()
+            db.delete(conv)
+            db.commit()

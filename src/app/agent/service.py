@@ -6,7 +6,7 @@ import log
 from app.agent.agents.chat_agent import ChatAgent
 from app.agent.agents.media_recognizer import MediaRecognizer
 from app.agent.agents.search_intent import SearchIntentAgent
-from app.agent.config import get_provider
+from app.agent.config import get_memory_config, get_provider
 from app.agent.providers.base import ProviderConfig
 from app.agent.providers.gemini import GeminiProvider
 from app.agent.providers.ollama import OllamaProvider
@@ -19,8 +19,7 @@ from app.utils.json_utils import JsonUtils
 class AgentService:
     """LLM Agent 服务门面 — 管理提供商连接、缓存、重试"""
 
-    def __init__(self, tool_executor: Any | None = None):
-        self._tool_executor = tool_executor
+    def __init__(self):
         self._media_recognizer: MediaRecognizer | None = None
         self._search_intent_agent: SearchIntentAgent | None = None
         self._chat_agent: ChatAgent | None = None
@@ -29,9 +28,14 @@ class AgentService:
         self._enabled = False
         self._refresh_config()
 
-    def set_tool_executor(self, tool_executor: Any) -> None:
-        """注入工具执行器（解决与 Service 层的循环依赖）。"""
-        self._tool_executor = tool_executor
+    def init_chat_agent(self, tool_executor: Any, conversation_store: Any = None) -> None:
+        """由 DI 在 ToolExecutor 构建后调用（显式一次性初始化，替代旧 set_tool_executor 后门）。"""
+        self._chat_agent = ChatAgent(
+            svc=self,
+            tool_executor=tool_executor,
+            memory=conversation_store,
+            max_steps=get_memory_config()["max_steps"],
+        )
 
     @property
     def media_recognizer(self) -> MediaRecognizer:
@@ -48,7 +52,7 @@ class AgentService:
     @property
     def chat_agent(self) -> ChatAgent:
         if self._chat_agent is None:
-            self._chat_agent = ChatAgent(svc=self, tool_executor=self._tool_executor)
+            raise RuntimeError("ChatAgent 未初始化（需 DI 调用 init_chat_agent）")
         return self._chat_agent
 
     @property
@@ -157,6 +161,10 @@ class AgentService:
         except Exception as e:
             log.warn(f"[AgentService]查询模型列表失败: {e}")
             return []
+
+    def chat_with_tools(self, question: str, session_id: str = "") -> str:
+        """ChatPort 实现 — 委托 ChatAgent（惰性解析，保证 tool_executor 已注入）"""
+        return self.chat_agent.chat_with_tools(question=question, session_id=session_id)
 
     def is_available(self) -> bool:
         """检查当前提供商是否可用"""

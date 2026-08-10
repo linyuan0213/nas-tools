@@ -5,7 +5,7 @@ from typing import Any
 from ollama import Client
 
 import log
-from app.agent.providers.base import BaseProvider, ProviderConfig
+from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
 
 
 class OllamaProvider(BaseProvider):
@@ -47,3 +47,31 @@ class OllamaProvider(BaseProvider):
         except Exception as e:
             log.warn(f"[OllamaProvider]查询模型列表失败: {e}")
             return []
+
+
+class OllamaEmbeddingProvider(BaseEmbeddingProvider):
+    """Ollama Embedding 提供商（如 nomic-embed-text / bge-m3）"""
+
+    def __init__(self, config: ProviderConfig, model: str):
+        super().__init__(config, model)
+        # chat 预设 api_url 常带 /v1 后缀，ollama SDK host 不带
+        host = config.api_url.removesuffix("/v1").rstrip("/")
+        self._client = Client(host=host)
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        resp = self._client.embed(model=self._model, input=texts)
+        embeddings = resp.embeddings if hasattr(resp, "embeddings") else resp["embeddings"]
+        vectors = [list(map(float, e)) for e in embeddings]
+        if vectors and self._dimension is None:
+            self._dimension = len(vectors[0])
+        return vectors
+
+    def is_available(self) -> bool:
+        try:
+            self.embed(["health check"])
+            return True
+        except Exception as e:
+            log.warn(f"[OllamaEmbeddingProvider]不可用: {e}")
+            return False

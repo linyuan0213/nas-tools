@@ -9,7 +9,7 @@ with warnings.catch_warnings():
     from google.genai import types
 
 import log
-from app.agent.providers.base import BaseProvider, ProviderConfig
+from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
 
 
 class GeminiProvider(BaseProvider):
@@ -57,3 +57,29 @@ class GeminiProvider(BaseProvider):
         except Exception as e:
             log.warn(f"[GeminiProvider]查询模型列表失败: {e}")
             return []
+
+
+class GeminiEmbeddingProvider(BaseEmbeddingProvider):
+    """Google Gemini Embedding 提供商（gemini-embedding 系列）"""
+
+    def __init__(self, config: ProviderConfig, model: str):
+        super().__init__(config, model)
+        self._client = genai.Client(api_key=config.api_key)
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        contents: list[Any] = [types.Part.from_text(text=t) for t in texts]
+        resp = self._client.models.embed_content(model=self._model, contents=contents)
+        vectors = [list(map(float, e.values)) for e in resp.embeddings or [] if e.values]
+        if vectors and self._dimension is None:
+            self._dimension = len(vectors[0])
+        return vectors
+
+    def is_available(self) -> bool:
+        try:
+            self.embed(["health check"])
+            return True
+        except Exception as e:
+            log.warn(f"[GeminiEmbeddingProvider]不可用: {e}")
+            return False

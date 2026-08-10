@@ -13,6 +13,7 @@ import log
 from app.core.settings import settings
 from app.domain.enums import ProgressKey, SearchType
 from app.domain.interfaces.download_repo import IDownloadHistoryRepository
+from app.domain.interfaces.intent import IntentResolver
 from app.domain.interfaces.search_repo import ISearchRepository
 from app.domain.mediatypes import MediaType
 from app.events import Event
@@ -25,7 +26,7 @@ from app.media.service import MediaService
 from app.message import Message
 from app.services.downloader_core import DownloaderCore as Downloader
 from app.services.search_context import SearchContext
-from app.services.search_service import SearchQueryBuilder, SearchResultDeduplicator
+from app.services.search_service import SearchQueryBuilder, SearchResultDeduplicator, SearchResultProcessor
 from app.utils import StringUtils
 
 
@@ -40,6 +41,7 @@ class SearchOrchestrator:
         message: Message,
         progress_helper: ProgressTracker,
         event_bus: EventBus,
+        intent_resolver: IntentResolver | None = None,
     ):
         self._searcher = searcher
         self._search_repo = search_repo
@@ -49,6 +51,7 @@ class SearchOrchestrator:
         self._message = message
         self._progress = progress_helper
         self._event_bus = event_bus
+        self._intent_resolver = intent_resolver
         self._search_auto = settings.get("pt").get("search_auto", True)
 
     def orchestrate(self, ctx: SearchContext) -> tuple[Any | None, dict | None, int, int]:
@@ -72,9 +75,9 @@ class SearchOrchestrator:
             self._progress.end(progress_key)
             return None, ctx.no_exists or {}, 0, 0
 
-        # 4. 排序
+        # 4. 排序（复用 SearchResultProcessor，全系统统一排序键）
         self._progress.update(value=85, text=f"排序 {len(media_list)} 条结果...", ptype=progress_key)
-        media_list = self._sort_results(media_list)
+        media_list = SearchResultProcessor.sort_results(media_list)
 
         # 5. 入库
         if ctx.persist:
@@ -136,10 +139,23 @@ class SearchOrchestrator:
 
     def _identify_media(self, ctx: SearchContext) -> Any:
         try:
-            mtype, key_word, season_num, episode_num, year, content = StringUtils.get_keyword_from_string(ctx.keyword)
+            if self._intent_resolver:
+                intent = self._intent_resolver.resolve(ctx.keyword)
+                mtype = MediaType.from_string(intent.media_type) if intent.media_type else None
+                # TMDB 无动漫类型，识别按电视剧处理（与旧 Web 流水线一致）
+                if mtype == MediaType.ANIME:
+                    mtype = MediaType.TV
+                season_num = intent.season
+                episode_num = intent.episode
+                keyword = intent.keywords or ctx.keyword
+            else:
+                mtype, key_word, season_num, episode_num, _year, content = StringUtils.get_keyword_from_string(
+                    ctx.keyword
+                )
+                keyword = content or key_word or ctx.keyword
             if ctx.media_type:
                 mtype = ctx.media_type
-            ident = self._media.get_media_info(mtype=mtype, title=content or ctx.keyword)
+            ident = self._media.get_media_info(mtype=mtype, title=keyword)
             if ident and ident.tmdb_info:
                 if season_num:
                     ident.begin_season = int(season_num)
@@ -204,29 +220,8 @@ class SearchOrchestrator:
 
     @staticmethod
     def _sort_results(media_list: list) -> list:
-        def _sort_key(x):
-            episode_list = x.get_episode_list() if hasattr(x, "get_episode_list") else []
-            episode_count = max(len(episode_list), getattr(x, "total_episodes", 0))
-            if episode_count > 1:
-                collection_priority = 2
-            elif (
-                getattr(x, "type", None) in (MediaType.TV, MediaType.ANIME)
-                and getattr(x, "begin_season", None) is not None
-                and getattr(x, "begin_episode", None) is None
-            ):
-                collection_priority = 1
-            else:
-                collection_priority = 0
-            return "{}{}{}{}{}{}".format(
-                str(collection_priority).rjust(1, "0"),
-                str(episode_count).rjust(3, "0"),
-                str(x.res_order).rjust(3, "0"),
-                str(x.site_order).rjust(3, "0"),
-                str(x.seeders).rjust(10, "0"),
-                str(getattr(x, "title", "")).ljust(100, " "),
-            )
-
-        return sorted(media_list, key=_sort_key, reverse=True)
+        """已归并到 SearchResultProcessor.sort_results，保留以兼容外部调用"""
+        return SearchResultProcessor.sort_results(media_list)
 
     def _filter_downloaded(self, media_list: list) -> list:
         filtered = []

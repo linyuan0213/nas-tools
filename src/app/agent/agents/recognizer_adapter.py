@@ -1,10 +1,18 @@
-from app.agent.agents.media_recognizer import MediaRecognizer
+"""MediaRecognizer → BaseParser 适配器
+
+agent 层实现 media 层定义的 BaseParser 端口（依赖倒置）：
+media 层不再 import agent 层，由 Builder 注入本适配器。
+"""
+
+from app.agent.agents.media_recognizer import MediaRecognizer, MediaResult
 from app.domain.mediatypes import MediaType
 from app.media.parser.base import BaseParser, ParserResult
 
 
-class LLMParser(BaseParser):
-    """基于 LLM 的解析器 — 包装 MediaRecognizer"""
+class MediaRecognizerParser(BaseParser):
+    """基于 LLM 的解析器 — 包装 MediaRecognizer 并实现 BaseParser 端口"""
+
+    is_llm: bool = True
 
     def __init__(self, recognizer: MediaRecognizer):
         self._recognizer = recognizer
@@ -23,7 +31,7 @@ class LLMParser(BaseParser):
         results = self._recognizer.recognize_batch(titles)
         return [self._convert(r, t) for r, t in zip(results, titles, strict=False)]
 
-    def _convert(self, result, org_title: str = "") -> ParserResult | None:
+    def _convert(self, result: MediaResult | None, org_title: str = "") -> ParserResult | None:
         if not result:
             return None
         return ParserResult(

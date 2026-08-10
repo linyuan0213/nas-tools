@@ -1,11 +1,11 @@
 """业务 Facade Builder — 创建 Layer 3 对象。"""
 
+from app.agent.agents.recognizer_adapter import MediaRecognizerParser
 from app.agent.service import AgentService
 from app.di.models import BusinessFacades, InfrastructureObjects
 from app.downloader.client_factory import DownloadClientFactory
 from app.media.lookup.tmdb_client import TmdbClient
 from app.media.lookup.tmdb_lookup import TmdbLookup
-from app.media.parser.llm import LLMParser
 from app.media.service import MediaService
 from app.mediaserver.media_server import MediaServer
 from app.services.download_monitor import DownloadMonitor
@@ -21,7 +21,7 @@ def build_business_facades(infra: InfrastructureObjects) -> BusinessFacades:
 
     media_service = MediaService(
         tmdb_lookup=TmdbLookup(client=tmdb_client),
-        llm_parser=LLMParser(recognizer=media_recognizer),
+        llm_parser=MediaRecognizerParser(recognizer=media_recognizer),
     )
 
     # 回填 plugin_sandbox 的媒体服务引用

@@ -171,3 +171,44 @@ laboratory:
   chrome_enabled: true
   # 网页自动化服务器
   chrome_server_host: http://127.0.0.1:9850
+# 【AI Agent】：智能助手（对话/知识库问答），默认关闭
+agent:
+  # 是否启用
+  enabled: false
+  # 默认对话模型提供商
+  default_provider: ollama
+  # 故障转移链（主 provider 失败时依次尝试），空 = 不启用
+  fallback: []
+  providers:
+    ollama:
+      api_url: http://localhost:11434
+      model: qwen2.5:32b
+    openai:
+      api_key:
+      api_url:
+      model: gpt-4o
+  # embedding 配置（RAG 知识库向量化）；api_key/api_url 留空则继承对应 provider 的连接参数
+  embedding:
+    provider: ollama
+    model: nomic-embed-text
+  # 向量库类型：sqlite（默认，全平台）| lancedb（需 AVX2 CPU）
+  vector_store: sqlite
+  sqlite:
+    # 留空 = {数据目录}/vectordb/kb.sqlite；相对路径基于数据目录解析
+    path:
+  lancedb:
+    path:
+  rag:
+    chunk_size: 800
+    chunk_overlap: 100
+    top_k: 6
+    rerank_top_k: 3
+    namespaces: [media_library, messages, faq, operations]
+  memory:
+    # 工具循环步数上限
+    max_steps: 8
+    short_term:
+      store: db
+      # 会话 token 预算，超出触发滚动摘要
+      max_tokens: 4000
+      ttl_days: 30

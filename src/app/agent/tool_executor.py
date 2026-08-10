@@ -1,133 +1,71 @@
-"""Agent 工具执行器 — 按领域拆分为独立 handler 模块后的入口."""
+"""工具执行器 — 校验 → 分级/确认 → 调度 handler
+
+依赖经 ToolContext 类型化注入（替代旧 23 个位置参数 + deps dict）。
+"""
+
+import inspect
+from collections.abc import Callable
 
 import log
-from app.agent.tools.base import ToolResult
-from app.agent.tools.handlers_media import (
-    media_download,
-    media_search,
-    media_subscribe,
-    resource_filter,
-)
-from app.agent.tools.handlers_message_template import message_template
-from app.agent.tools.handlers_system_command import system_command
-from app.media.service import MediaService
-from app.services.brush_service import BrushService
-from app.services.downloader_core import DownloaderCore
-from app.services.indexer_service import IndexerService
-from app.services.rss_automation.task_service import RssTaskService
-from app.services.search_service import Searcher
-from app.services.site_service import SiteService
-from app.services.subscribe.monitor import SubscriptionMonitor
-from app.services.subscribe_service import SubscribeService
-from app.services.sync_service import SyncService
-from app.services.system.lifecycle import SystemLifecycleService
-from app.services.torrentremover_core import TorrentRemoverService
+from app.agent.tools.base import ToolLevel, ToolRegistry, ToolResult
+from app.agent.tools.catalog import BUILTIN_TOOLS, HANDLERS
+from app.agent.tools.context import ToolContext
 
 
 class ToolExecutor:
-    """工具执行器 — 桥接 Agent Tools 与业务 Service"""
+    """工具执行器 — Agent 工具调用的唯一入口"""
 
-    def __init__(
+    def __init__(self, ctx: ToolContext, registry: ToolRegistry | None = None):
+        self._ctx = ctx
+        self._registry = registry or ToolRegistry(BUILTIN_TOOLS)
+        self._handlers: dict[str, Callable] = dict(HANDLERS)
+
+    def list_tools(self) -> list[dict]:
+        return self._registry.list_tools()
+
+    def get_schema(self, name: str) -> dict | None:
+        return self._registry.get_schema(name)
+
+    def tool_names(self) -> list[str]:
+        return self._registry.tool_names()
+
+    def execute(
         self,
-        message,
-        thread_executor,
-        scheduler_core,
-        event_bus,
-        download_monitor,
-        filetransfer_service,
-        rss_helper,
-        search_intent_agent,
-        site_userinfo,
-        scheduler_service,
-        message_client_service,
-        sync_service: SyncService,
-        subscription_monitor: SubscriptionMonitor,
-        torrentremover_service: TorrentRemoverService,
-        subscribe_service: SubscribeService,
-        system_lifecycle_service: SystemLifecycleService,
-        brush_service: BrushService,
-        site_service: SiteService,
-        rss_task_service: RssTaskService,
-        media_service: MediaService,
-        indexer_service: IndexerService,
-        downloader_core: DownloaderCore,
-        searcher: Searcher,
-    ):
-        self._message = message
-        self._thread_executor = thread_executor
-        self._scheduler_core = scheduler_core
-        self._event_bus = event_bus
-        self._download_monitor = download_monitor
-        self._filetransfer_service = filetransfer_service
-        self._rss_helper = rss_helper
-        self._search_intent_agent = search_intent_agent
-        self._site_userinfo = site_userinfo
-        self._scheduler_service = scheduler_service
-        self._message_client_service = message_client_service
-        self._sync_service = sync_service
-        self._subscription_monitor = subscription_monitor
-        self._torrentremover_service = torrentremover_service
-        self._subscribe_service = subscribe_service
-        self._system_lifecycle_service = system_lifecycle_service
-        self._brush_service = brush_service
-        self._site_service = site_service
-        self._rss_task_service = rss_task_service
-        self._media_service = media_service
-        self._indexer_service = indexer_service
-        self._downloader_core = downloader_core
-        self._searcher = searcher
-        self._deps = {
-            "message": message,
-            "thread_executor": thread_executor,
-            "scheduler_core": scheduler_core,
-            "event_bus": event_bus,
-            "download_monitor": download_monitor,
-            "filetransfer_service": filetransfer_service,
-            "rss_helper": rss_helper,
-            "search_intent_agent": search_intent_agent,
-            "site_userinfo": site_userinfo,
-            "scheduler_service": scheduler_service,
-            "message_client_service": message_client_service,
-            "sync_service": sync_service,
-            "subscription_monitor": subscription_monitor,
-            "torrentremover_service": torrentremover_service,
-            "subscribe_service": subscribe_service,
-            "system_lifecycle_service": system_lifecycle_service,
-            "brush_service": brush_service,
-            "site_service": site_service,
-            "rss_task_service": rss_task_service,
-            "media_service": media_service,
-            "indexer_service": indexer_service,
-            "downloader_core": downloader_core,
-            "searcher": searcher,
-        }
-
-    def execute(self, tool_name: str, **kwargs) -> ToolResult:
-        """执行指定工具"""
-        log.info(f"[ToolExecutor]执行工具: {tool_name}, 参数: {kwargs}")
-        handler = getattr(self, f"_{tool_name}", None)
-        if not handler:
-            return ToolResult(success=False, error=f"未实现工具: {tool_name}")
+        tool_name: str,
+        arguments: dict | str,
+        *,
+        confirmed: bool = False,
+        session_id: str = "",
+        user_id: str = "",
+    ) -> ToolResult:
+        check = self._registry.validate(tool_name, arguments)
+        if not check.success:
+            return check
+        args = check.data if isinstance(check.data, dict) else {}
+        tool = self._registry.get_tool(tool_name)
+        handler = self._handlers.get(tool_name)
+        if not tool or not handler:
+            return ToolResult(success=False, error=f"工具未实现: {tool_name}")
+        if tool.level == ToolLevel.DANGEROUS and not confirmed:
+            return ToolResult(
+                success=True,
+                need_confirm=True,
+                data={"tool": tool_name, "arguments": args, "message": f"危险操作需确认：{tool.description}"},
+            )
+        kwargs = self._build_kwargs(handler, args, confirmed, session_id, user_id)
         try:
-            return handler(**kwargs)
+            log.info(f"[ToolExecutor]执行工具: {tool_name}({args})")
+            return handler(self._ctx, **kwargs)
         except Exception as e:
-            log.error(f"[ToolExecutor]{tool_name} 执行失败: {e}")
-            return ToolResult(success=False, error=str(e))
+            log.error(f"[ToolExecutor]工具 {tool_name} 执行失败: {e}")
+            return ToolResult(success=False, error=f"执行失败: {e}")
 
-    def _system_command(self, **kwargs) -> ToolResult:
-        return system_command(self._deps, **kwargs)
-
-    def _message_template(self, **kwargs) -> ToolResult:
-        return message_template(self._deps, **kwargs)
-
-    def _media_search(self, **kwargs) -> ToolResult:
-        return media_search(self._deps, **kwargs)
-
-    def _resource_filter(self, **kwargs) -> ToolResult:
-        return resource_filter(**kwargs)
-
-    def _media_download(self, **kwargs) -> ToolResult:
-        return media_download(self._deps, **kwargs)
-
-    def _media_subscribe(self, **kwargs) -> ToolResult:
-        return media_subscribe(self._deps, **kwargs)
+    @staticmethod
+    def _build_kwargs(handler: Callable, args: dict, confirmed: bool, session_id: str, user_id: str) -> dict:
+        """按 handler 签名注入保留参数（confirmed/session_id/user_id）"""
+        kwargs = dict(args)
+        params = inspect.signature(handler).parameters
+        for key, value in {"confirmed": confirmed, "session_id": session_id, "user_id": user_id}.items():
+            if key in params:
+                kwargs[key] = value
+        return kwargs

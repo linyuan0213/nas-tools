@@ -63,8 +63,11 @@ from app.services.rss_automation.task_service import RssTaskService
 from app.services.rss_automation.userrss_service import UserRssService
 from app.services.rss_processor import RssHelper
 from app.services.scheduler_service import SchedulerService
+from app.services.search_intent_resolver import IntentResolverChain
+from app.services.search_orchestrator import SearchOrchestrator
 from app.services.search_result_service import SearchResultService
 from app.services.search_service import Searcher
+from app.services.search_web_entry import make_web_search_fn
 from app.services.site_service import SiteService
 from app.services.storage_backend_service import StorageBackendService
 from app.services.subscribe.management.calendar_service import SubscribeCalendarService
@@ -292,12 +295,22 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
     system_info_service = SystemInfoService(message=message)
     net_test_service = NetTestService()
     progress_service = ProgressService()
-    web_search_service = WebSearchService(
+
+    # 搜索/意图统一：规则+LLM 意图解析链 + 唯一搜索编排入口
+    intent_resolver = IntentResolverChain(llm_resolver=facades.search_intent_agent)
+    search_orchestrator = SearchOrchestrator(
         searcher=searcher,
-        progress_helper=ProgressTracker(),
+        search_repo=SearchRepositoryAdapter(),
+        download_repo=DownloadHistoryRepositoryAdapter(),
+        downloader=downloader_core,
         media_service=media_service,
-        intent_agent=facades.search_intent_agent,
-        system_config=SystemConfigService(),
+        message=message,
+        progress_helper=ProgressTracker(),
+        event_bus=event_bus,
+        intent_resolver=intent_resolver,
+    )
+    web_search_service = WebSearchService(
+        search_fn=make_web_search_fn(search_orchestrator, SystemConfigService()),
     )
     backup_restore_service = BackupRestoreService()
     rbac_service = RBACService()
@@ -505,6 +518,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         net_test_service=net_test_service,
         progress_service=progress_service,
         web_search_service=web_search_service,
+        search_orchestrator=search_orchestrator,
         backup_restore_service=backup_restore_service,
         user_manage_service=user_manage_service,
         tmdb_blacklist_service=tmdb_blacklist_service,

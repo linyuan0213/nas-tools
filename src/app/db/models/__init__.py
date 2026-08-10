@@ -6,6 +6,11 @@
 
 # 基础定义
 # API Key 模型
+# Agent 记忆模型
+from app.db.models.agent_memory import (
+    AGENTCONVERSATION,
+    AGENTMESSAGE,
+)
 from app.db.models.apikey import (
     APIKEY,
     APIKEYLOG,
@@ -214,6 +219,8 @@ __all__ = [
     "RBACOperationLog",
     # API Key
     "APIKEY",
+    "AGENTCONVERSATION",
+    "AGENTMESSAGE",
     "APIKEYLOG",
     # 分布式锁
     "DISTRIBUTEDLOCK",

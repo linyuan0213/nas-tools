@@ -20,9 +20,11 @@ from api.routers import (
     auth,
     browser_fingerprint,
     brush,
+    chat,
     download,
     filter,
     image,
+    kb,
     media,
     message_webhook,
     plugin_framework,
@@ -210,6 +212,8 @@ app.include_router(browser_fingerprint.router, prefix="/api", tags=["browser-fin
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 app.include_router(image.router, prefix="/img", tags=["image"])
 app.include_router(apikey.router, prefix="/api/apikey", tags=["apikey"])
+app.include_router(kb.router, prefix="/api/agent", tags=["agent"])
+app.include_router(chat.router, prefix="/api/agent", tags=["agent"])
 # 消息客户端 webhook（不需要 /api 前缀）
 app.include_router(message_webhook.router, tags=["message-webhook"])
 

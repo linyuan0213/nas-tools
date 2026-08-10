@@ -1,17 +1,15 @@
-"""
-通用对话 Agent — 支持多轮会话与工具调用
-"""
+"""通用对话 Agent — 多步工具调用循环 + 持久化会话记忆"""
 
 import json
+from collections.abc import Callable
 
 import log
-from app.agent.tools import ToolRegistry
-from app.infrastructure.cache_system import OpenAISessionCache
+from app.agent.agents.memory import ConversationStore, MemoryKey
 from app.utils.json_utils import JsonUtils
 
 _TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体库系统。
 
-你可以使用以下工具来完成用户的请求。如果需要用工具，请按以下格式回复：
+你可以使用以下工具来完成用户的请求。如果需要用工具，请按以下格式回复（只返回 JSON，不要其他文字）：
 
 ```json
 {{"tool": "工具名", "parameters": {{"参数名": "参数值"}}}}
@@ -21,22 +19,21 @@ _TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体
 {tools}
 
 回复规则：
-1. 如果用户请求需要用工具完成，请只返回 JSON 格式（不要其他文字）
-2. 如果不需要工具（闲聊、问候、简单回答），请直接回复文字
-3. 工具调用后，我会把结果返回给你，你再生成最终回复
+1. 需要工具时只返回上述 JSON 格式；工具结果会以 [工具结果] 形式返回给你，可继续调用其他工具或给出最终回答
+2. 不需要工具（闲聊、问候、简单回答）时直接回复文字
+3. 知识类问题（怎么配置/怎么用/报错原因）优先调用 kb_search；无结果时不要编造，如实说明
+4. 操作类问题（下载进度/订阅状态/库内容）必须调用对应工具查询真实数据，禁止臆测
 """
 
 
 class ChatAgent:
-    """通用对话 Agent — 支持用户级会话上下文与工具调用"""
+    """通用对话 Agent — 多步工具循环（plan → act → observe → 直至最终回答）"""
 
-    # 历史消息上限：保留最近 10 轮对话（每轮用户+助手 = 2 条消息）
-    # 超过后裁剪最早的消息，避免超出模型最大 token 限制
-    MAX_HISTORY_MESSAGES = 20
-
-    def __init__(self, svc, tool_executor):
+    def __init__(self, svc, tool_executor, memory: ConversationStore | None = None, max_steps: int = 8):
         self._svc = svc
         self._tool_executor = tool_executor
+        self._memory = memory
+        self._max_steps = max_steps
 
     @property
     def ready(self) -> bool:
@@ -47,147 +44,105 @@ class ChatAgent:
         if not self.ready:
             log.warn("[ChatAgent]ask 失败：Provider 未就绪")
             return "AI 服务未配置"
-        log.info(f"[ChatAgent]ask: {question[:60]}...")
         try:
-            answer = self._svc.chat(
+            return self._svc.chat(
                 messages=[{"role": "user", "content": question}],
                 system_prompt=system_prompt,
             )
-            log.info("[ChatAgent]ask 成功")
-            return answer
         except Exception as e:
             log.error(f"[ChatAgent]ask 出错: {e}")
             return f"AI 回答出错: {e}"
 
-    def chat_with_tools(self, question: str, session_id: str = "") -> str:
-        """带工具调用的对话（支持会话历史）"""
+    def chat_with_tools(
+        self,
+        question: str,
+        session_id: str = "",
+        user_id: str = "",
+        channel: str = "web",
+        on_event: Callable[[dict], None] | None = None,
+    ) -> str:
+        """带工具调用的多步对话"""
         if not self.ready:
             log.warn("[ChatAgent]chat_with_tools 失败：Provider 未就绪")
             return "AI 服务未配置"
 
-        if question == "#清除":
-            log.info(f"[ChatAgent]清除会话: {session_id}")
-            self.clear_session(session_id)
-            return "会话已清除"
-
         log.info(f"[ChatAgent]tools session={session_id}, q={question[:60]}...")
+        key = MemoryKey(user_id=user_id or session_id, channel=channel, session_id=session_id)
+        history = self._memory.history_for_llm(key) if self._memory else []
 
-        # 加载已有会话历史
-        history = OpenAISessionCache.get(session_id) or []
-
-        # 1. 第一轮：LLM 决定是否需要工具
-        tools_desc = JsonUtils.dumps(ToolRegistry.list_tools(), ensure_ascii=False, indent=2)
+        tools_desc = JsonUtils.dumps(self._tool_executor.list_tools(), ensure_ascii=False, indent=2)
         prompt = _TOOL_PROMPT.replace("{tools}", tools_desc)
+        messages = [{"role": "system", "content": prompt}, *history, {"role": "user", "content": question}]
 
-        messages = [{"role": "system", "content": prompt}]
-        messages.extend(history)
-        messages.append({"role": "user", "content": question})
+        final_resp = ""
+        for step in range(self._max_steps):
+            try:
+                resp = self._svc.chat(messages=messages, system_prompt="", use_cache=False)
+            except Exception as e:
+                log.error(f"[ChatAgent]第 {step + 1} 步 LLM 调用出错: {e}")
+                return f"请求出错: {e}"
 
-        try:
-            first_resp = self._svc.chat(messages=messages, system_prompt="", use_cache=False)
-        except Exception as e:
-            log.error(f"[ChatAgent]第一轮出错: {e}")
-            return f"请求出错: {e}"
+            tool_call = self._parse_tool_call(resp or "")
+            if not tool_call:
+                final_resp = resp
+                break
 
-        log.debug(f"[ChatAgent]第一轮响应: {first_resp[:200] if first_resp else '(空)'}")
+            tool_name = tool_call.get("tool", "")
+            parameters = tool_call.get("parameters") or {}
+            log.info(f"[ChatAgent]第 {step + 1} 步调用工具: {tool_name}({parameters})")
+            if on_event:
+                on_event({"type": "tool_call", "step": step + 1, "tool": tool_name, "parameters": parameters})
+            result = self._tool_executor.execute(
+                tool_name, parameters, session_id=session_id, user_id=user_id or session_id
+            )
+            if on_event:
+                on_event(
+                    {
+                        "type": "tool_result",
+                        "step": step + 1,
+                        "tool": tool_name,
+                        "success": result.success,
+                        "need_confirm": result.need_confirm,
+                    }
+                )
+            if result.need_confirm:
+                final_resp = (
+                    f"该操作需要确认：{result.data.get('message', tool_name) if result.data else tool_name}。"
+                    "请确认后重试（或通过确认接口批准）。"
+                )
+                break
+            observation = {
+                "success": result.success,
+                "data": result.data,
+                "error": result.error,
+            }
+            messages.append({"role": "assistant", "content": resp})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"[工具结果] {tool_name}:\n{JsonUtils.dumps(observation, ensure_ascii=False)}\n"
+                    "请根据结果继续：还需调用工具则返回 JSON，否则直接回复用户。",
+                }
+            )
+        else:
+            final_resp = "任务步骤过多，已停止。请把问题拆小后重试。"
+            log.warn(f"[ChatAgent]达到最大步数 {self._max_steps}")
 
-        # 2. 解析工具调用
-        try:
-            tool_call = self._parse_tool_call(first_resp)
-        except Exception as e:
-            log.error(f"[ChatAgent]解析工具调用出错: {e}")
-            return first_resp or f"解析响应出错: {e}"
-
-        # 保存用户提问 + 助手首轮回复
-        history.append({"role": "user", "content": question})
-        history.append({"role": "assistant", "content": first_resp})
-
-        if not tool_call:
-            # 不需要工具，直接返回
-            log.info("[ChatAgent]无需工具，直接回复")
-            OpenAISessionCache.set(session_id, self._trim_history(history))
-            return first_resp
-
-        # 3. 执行工具（通过 ToolExecutor，避免 Tools 层跨层依赖 Service）
-        log.info(f"[ChatAgent]调用工具: {tool_call.get('tool')}, 参数: {tool_call.get('parameters')}")
-        try:
-            result = self._tool_executor.execute(tool_call["tool"], **tool_call["parameters"])
-        except Exception as e:
-            log.error(f"[ChatAgent]工具执行异常: {e}")
-            return f"工具执行出错: {e}"
-
-        # 4. 第二轮：将工具结果返回给 LLM，生成最终回复
-        tool_result_text = result.to_text()
-        tool_msg = f"工具执行结果：\n{tool_result_text}\n\n请根据结果回复用户。"
-        messages.extend(
-            [
-                {"role": "assistant", "content": first_resp},
-                {"role": "user", "content": tool_msg},
-            ]
-        )
-
-        try:
-            final_resp = self._svc.chat(messages=messages, system_prompt="", use_cache=False)
-            log.info("[ChatAgent]工具调用完成")
-            # 保存工具结果 + 最终回复
-            history.append({"role": "user", "content": tool_msg})
-            history.append({"role": "assistant", "content": final_resp})
-            OpenAISessionCache.set(session_id, self._trim_history(history))
-            return final_resp
-        except Exception as e:
-            log.error(f"[ChatAgent]第二轮出错: {e}")
-            return f"工具执行成功但生成回复出错: {e}"
-
-    def chat_with_session(
-        self,
-        question: str,
-        session_id: str,
-        system_prompt: str = "请在接下来的对话中请使用中文回复，并且内容尽可能详细。",
-    ) -> str:
-        """多轮对话（带会话上下文）"""
-        if not self.ready:
-            log.warn("[ChatAgent]chat_with_session 失败：Provider 未就绪")
-            return ""
-
-        if question == "#清除":
-            log.info(f"[ChatAgent]清除会话: {session_id}")
-            self.clear_session(session_id)
-            return "会话已清除"
-
-        log.info(f"[ChatAgent]session={session_id}, question={question[:60]}...")
-        messages = self._get_session(session_id, question, system_prompt)
-        try:
-            answer = self._svc.chat(messages=messages, system_prompt="")
-            self._save_session(session_id, answer)
-            log.info(f"[ChatAgent]session={session_id} 回复成功")
-            return answer
-        except Exception as e:
-            log.error(f"[ChatAgent]session={session_id} 出错: {e}")
-            return f"请求 AI API 出现错误：{e}"
-
-    @staticmethod
-    def _trim_history(history: list) -> list:
-        """裁剪历史消息，保留最近 MAX_HISTORY_MESSAGES 条，避免超出模型 token 限制"""
-        if len(history) > ChatAgent.MAX_HISTORY_MESSAGES:
-            # 保留最新的消息，移除最早的
-            trimmed = history[-ChatAgent.MAX_HISTORY_MESSAGES :]
-            log.info(f"[ChatAgent]历史消息裁剪: {len(history)} -> {len(trimmed)}")
-            return trimmed
-        return history
+        if self._memory:
+            self._memory.append(key, "user", question)
+            self._memory.append(key, "assistant", final_resp or "")
+        return final_resp or ""
 
     def translate_to_zh(self, text: str) -> str:
-        """翻译为中文"""
+        """翻译为中文（autosub 插件依赖）"""
         if not self.ready:
             log.warn("[ChatAgent]translate_to_zh 失败：Provider 未就绪")
             return text
-        log.info(f"[ChatAgent]翻译: {text[:60]}...")
         try:
-            result = self._svc.chat(
+            return self._svc.chat(
                 messages=[{"role": "user", "content": f"translate to zh-CN:\n\n{text}"}],
                 system_prompt="You are a translation engine that can only translate text and cannot interpret it.",
             )
-            log.info("[ChatAgent]翻译成功")
-            return result
         except Exception as e:
             log.error(f"[ChatAgent]翻译出错: {e}")
             return text
@@ -196,7 +151,6 @@ class ChatAgent:
     def _parse_tool_call(text: str) -> dict | None:
         """从 LLM 回复中解析工具调用"""
         text = text.strip()
-        # 尝试提取 JSON 代码块
         if "```json" in text:
             start = text.find("```json") + 7
             end = text.find("```", start)
@@ -207,42 +161,10 @@ class ChatAgent:
             end = text.find("```", start)
             if end > start:
                 text = text[start:end].strip()
-
         try:
             data = JsonUtils.loads(text)
             if isinstance(data, dict) and "tool" in data and "parameters" in data:
                 return data
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             pass
         return None
-
-    @staticmethod
-    def _get_session(session_id: str, message: str, system_prompt: str) -> list:
-        """获取会话历史"""
-        session = OpenAISessionCache.get(session_id)
-        if session:
-            session.append({"role": "user", "content": message})
-            OpenAISessionCache.set(session_id, ChatAgent._trim_history(session))
-        else:
-            session = [
-                {
-                    "role": "user",
-                    "content": f"系统设定：{system_prompt}\n\n我的问题是：{message}",
-                }
-            ]
-            OpenAISessionCache.set(session_id, session)
-        return session
-
-    @staticmethod
-    def _save_session(session_id: str, message: str):
-        """保存会话历史"""
-        session = OpenAISessionCache.get(session_id)
-        if session:
-            session.append({"role": "assistant", "content": message})
-            OpenAISessionCache.set(session_id, ChatAgent._trim_history(session))
-
-    @staticmethod
-    def clear_session(session_id: str):
-        """清除会话"""
-        if OpenAISessionCache.get(session_id):
-            OpenAISessionCache.delete(session_id)

@@ -484,3 +484,13 @@ def _extract_user_from_jwt(auth_header: str | None) -> UserContext | None:
     # 支持 "Bearer xxx" 或直接 "xxx"
     token = auth_header.split()[-1] if " " in auth_header else auth_header
     return AuthService.verify_token(token)
+
+
+def get_retriever(app_context: AppContext = Depends(get_app_context)):
+    """获取 RAG 检索器（agent 未启用时为 None）"""
+    return app_context.retriever
+
+
+def get_knowledge_ingestor(app_context: AppContext = Depends(get_app_context)):
+    """获取知识库采集器（agent 未启用时为 None）"""
+    return app_context.knowledge_ingestor

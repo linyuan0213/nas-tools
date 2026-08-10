@@ -21,7 +21,6 @@ from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
 from app.media.parser.base import BaseParser
 from app.media.parser.episode_mapper import EpisodeMapper
-from app.media.parser.llm import LLMParser
 from app.media.parser.regex import RegexParser
 from app.storage.backends.base import StorageBackend
 from app.utils import EpisodeFormat, PathUtils, StringUtils
@@ -33,7 +32,7 @@ class MediaService:
     def __init__(
         self,
         tmdb_lookup: TmdbLookup,
-        llm_parser: LLMParser,
+        llm_parser: BaseParser,
     ):
         self._llm_parser = llm_parser
         self._parser = self._build_parser()
@@ -129,7 +128,7 @@ class MediaService:
                 prefix = re.sub(r"\s+", " ", prefix).strip()
                 if prefix and len(prefix) >= 3:
                     parsed.title_en = prefix
-        if not parsed and not isinstance(self._parser, LLMParser):
+        if not parsed and not self._parser.is_llm:
             # Fallback: 默认是 RegexParser 时，用 LLM Parser 兜底
             llm_parser = self._llm_parser
             if llm_parser.ready:
@@ -412,7 +411,7 @@ class MediaService:
         parsed_list = self._parser.parse_batch(titles)
 
         # Fallback: 默认是 RegexParser 时，对解析失败的条目用 LLM Parser 重新解析
-        if not isinstance(self._parser, LLMParser):
+        if not self._parser.is_llm:
             failed_indices = [i for i, p in enumerate(parsed_list) if not p]
             if failed_indices:
                 llm_parser = self._llm_parser

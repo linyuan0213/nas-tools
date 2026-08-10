@@ -3,6 +3,7 @@
 """
 
 from app.domain.interfaces.brush_repo import IBrushTaskRepository, IBrushTorrentRepository
+from app.domain.interfaces.chat import ChatPort
 from app.domain.interfaces.config_repo import (
     IDownloaderRepository,
     IFilterGroupRepository,
@@ -16,6 +17,7 @@ from app.domain.interfaces.download_repo import (
     IDownloadSettingRepository,
     IIndexerStatisticsRepository,
 )
+from app.domain.interfaces.intent import IntentResolver, SearchIntent
 from app.domain.interfaces.plugin_repo import (
     IPluginHistoryRepository,
     ITmdbBlacklistRepository,
@@ -81,4 +83,7 @@ __all__ = [
     "IRBACPermissionRepository",
     "IRBACMenuRepository",
     "IRBACLogRepository",
+    "SearchIntent",
+    "IntentResolver",
+    "ChatPort",
 ]
