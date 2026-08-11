@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.deps import get_current_user
+from api.exception_handlers import register_exception_handlers
 from api.routers import system as system_router
 from app.schemas.auth import UserContext
 
@@ -14,6 +15,7 @@ from app.schemas.auth import UserContext
 @pytest.fixture
 def client():
     app = FastAPI()
+    register_exception_handlers(app)
     app.include_router(system_router.router, prefix="/api/v1/system")
     admin_ctx = UserContext(
         user_id=1,

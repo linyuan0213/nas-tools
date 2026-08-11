@@ -9,6 +9,14 @@ import threading
 import zipfile
 
 import log
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import (
+    PluginError,
+    PluginHotReloadError,
+    PluginInstallingError,
+    PluginManifestInvalidError,
+    PluginNotInstalledError,
+)
 from app.core.settings import settings
 from app.db.repositories.plugin_framework_repository import PluginFrameworkRepository
 from app.db.repositories.rbac_repo_adapter import RBACMenuRepositoryAdapter, RBACRoleRepositoryAdapter
@@ -292,7 +300,7 @@ class PluginFrameworkService:
         acquired = lock.acquire()
         if not acquired:
             log.info(f"[Plugin]插件安装正在进行中，跳过: {zip_path}")
-            raise RuntimeError("插件安装正在执行中，请稍后再试")
+            raise PluginInstallingError("插件安装正在执行中，请稍后再试")
 
         try:
             return self._do_install(zip_path)
@@ -322,7 +330,7 @@ class PluginFrameworkService:
 
         if not os.path.exists(manifest_path):
             shutil.rmtree(extract_dir)
-            raise ValueError("插件包缺少 manifest.json")
+            raise PluginManifestInvalidError("插件包缺少 manifest.json")
 
         with open(manifest_path, encoding="utf-8") as f:
             manifest_data = JsonUtils.load(f)
@@ -330,7 +338,7 @@ class PluginFrameworkService:
         manifest = PluginManifest.from_dict(manifest_data)
         if not manifest.id or not manifest.name:
             shutil.rmtree(extract_dir)
-            raise ValueError("manifest.json 缺少 id 或 name")
+            raise PluginManifestInvalidError("manifest.json 缺少 id 或 name")
 
         # manifest 所在的真实目录（处理 macOS 压缩的子文件夹情况）
         plugin_root = os.path.dirname(manifest_path)
@@ -380,7 +388,7 @@ class PluginFrameworkService:
             )
             ok = self._repo.update_manifest(entity)
             if not ok:
-                raise RuntimeError("插件清单更新数据库失败")
+                raise PluginError("插件清单更新数据库失败", errcode=ErrorCode.DATABASE_ERROR, http_status=500)
             log.info(f"[PluginFrameworkService] 插件更新成功: {manifest.id}@{manifest.version}")
         else:
             entity = PluginManifestEntity(
@@ -399,7 +407,7 @@ class PluginFrameworkService:
             )
             ok = self._repo.insert_manifest(entity)
             if not ok:
-                raise RuntimeError("插件清单写入数据库失败")
+                raise PluginError("插件清单写入数据库失败", errcode=ErrorCode.DATABASE_ERROR, http_status=500)
             log.info(f"[PluginFrameworkService] 插件安装成功: {manifest.id}@{manifest.version}")
 
         self._get_hook_system().emit("plugin.install", {"plugin_id": manifest.id})
@@ -412,7 +420,7 @@ class PluginFrameworkService:
         acquired = lock.acquire()
         if not acquired:
             log.info(f"[Plugin]插件卸载正在进行中，跳过: {plugin_id}")
-            raise RuntimeError("插件卸载正在执行中，请稍后再试")
+            raise PluginInstallingError("插件卸载正在执行中，请稍后再试")
 
         try:
             self._do_uninstall(plugin_id)
@@ -423,7 +431,7 @@ class PluginFrameworkService:
         """实际卸载逻辑"""
         orm_model = self._repo.get_manifest_by_id(plugin_id)
         if not orm_model:
-            raise ValueError(f"插件未安装: {plugin_id}")
+            raise PluginNotInstalledError(f"插件未安装: {plugin_id}")
 
         old_path = str(orm_model.PATH or "")
         target_dir = old_path
@@ -501,7 +509,7 @@ class PluginFrameworkService:
         """启用插件（更新数据库和注册表缓存）"""
         orm_model = self._repo.get_manifest_by_id(plugin_id)
         if not orm_model:
-            raise ValueError(f"插件未安装: {plugin_id}")
+            raise PluginNotInstalledError(f"插件未安装: {plugin_id}")
 
         # 首次启用时标记为已安装
         if not getattr(orm_model, "INSTALLED", True):
@@ -523,7 +531,7 @@ class PluginFrameworkService:
         """禁用插件"""
         orm_model = self._repo.get_manifest_by_id(plugin_id)
         if not orm_model:
-            raise ValueError(f"插件未安装: {plugin_id}")
+            raise PluginNotInstalledError(f"插件未安装: {plugin_id}")
 
         sandbox = self._plugin_sandbox
         sandbox.unload(plugin_id)
@@ -608,14 +616,14 @@ class PluginFrameworkService:
         if request_client:
             request_client.close()
         if not self._plugin_sandbox.load(plugin_id):
-            raise ValueError(f"插件 {plugin_id} 加载失败")
+            raise PluginError(f"插件 {plugin_id} 加载失败", errcode=ErrorCode.PLUGIN_LOAD_FAILED)
 
         instance = self._plugin_sandbox._instances.get(plugin_id)
         if not instance:
-            raise ValueError(f"插件 {plugin_id} 实例不存在")
+            raise PluginNotInstalledError(f"插件 {plugin_id} 实例不存在")
 
         if not hasattr(instance, "run"):
-            raise ValueError(f"插件 {plugin_id} 未实现 run() 方法")
+            raise PluginError(f"插件 {plugin_id} 未实现 run() 方法")
 
         threading.Thread(target=instance.run, daemon=True).start()
         log.info(f"[PluginFrameworkService] 插件 {plugin_id} 立即运行任务已启动")
@@ -624,8 +632,8 @@ class PluginFrameworkService:
         """热重载插件（清理缓存后重新加载）"""
         orm_model = self._repo.get_manifest_by_id(plugin_id)
         if not orm_model:
-            raise ValueError(f"插件未安装: {plugin_id}")
+            raise PluginNotInstalledError(f"插件未安装: {plugin_id}")
 
         sandbox = self._plugin_sandbox
         if not sandbox.reload(plugin_id):
-            raise RuntimeError(f"插件 {plugin_id} 热重载失败")
+            raise PluginHotReloadError(f"插件 {plugin_id} 热重载失败")

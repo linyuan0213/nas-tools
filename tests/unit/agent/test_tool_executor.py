@@ -112,9 +112,7 @@ class TestLevelsAndConfirm:
 
     def test_permission_required_for_write_tool(self, executor):
         """写工具未授予权限时拒绝执行"""
-        result = executor.execute(
-            "subscribe_delete", {"sub_id": 1}, confirmed=True, user_permissions=["agent:view"]
-        )
+        result = executor.execute("subscribe_delete", {"sub_id": 1}, confirmed=True, user_permissions=["agent:view"])
         assert not result.success
         assert "无权限" in result.error
         executor._ctx.subscribe_service.delete_subscribe.assert_not_called()

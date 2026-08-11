@@ -303,7 +303,7 @@ def download(
             )
 
     ThreadExecutor(name="download").submit(_do_download)
-    return success(msg="下载任务已提交")
+    return success(message="下载任务已提交")
 
 
 @router.post("/tasks/add_link", response_model=CommonResponse, summary="添加链接下载任务")
@@ -333,7 +333,7 @@ def download_link(
             download_event_queue.put({"event": DOWNLOAD_FAILED, "data": {"title": req.title or "", "reason": str(e)}})
 
     ThreadExecutor(name="download").submit(_do_download)
-    return success(msg="下载任务已提交")
+    return success(message="下载任务已提交")
 
 
 @router.post("/tasks/resolve_url", response_model=CommonResponse, summary="解析下载链接")
@@ -388,7 +388,7 @@ def download_torrent(
             ExceptionUtils.exception_traceback(e)
 
     ThreadExecutor(name="download").submit(_do_download)
-    return success(msg="下载任务已提交")
+    return success(message="下载任务已提交")
 
 
 @router.post("/tools/hardlinks", response_model=CommonResponse, summary="查找硬链接")

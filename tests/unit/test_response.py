@@ -22,8 +22,8 @@ class TestWebResponse:
 
     def test_fail_default(self):
         result = WebResponse.fail()
-        assert result["code"] == 1
-        assert result["message"] == ""
+        assert result["code"] == 10004  # ErrorCode.OPERATION_FAILED
+        assert result["message"] == "操作失败"
 
     def test_fail_with_code_and_msg(self):
         result = WebResponse.fail(code=404, msg="not found")
@@ -35,7 +35,7 @@ class TestWebResponse:
         assert result["detail"] == "trace"
 
     def test_top_level_success(self):
-        assert success(data="x") == {"code": 0, "data": "x"}
+        assert success(data="x") == {"code": 0, "data": "x", "message": ""}
 
     def test_top_level_fail(self):
         assert fail(code=2, msg="bad") == {"code": 2, "message": "bad"}

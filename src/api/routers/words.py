@@ -190,7 +190,7 @@ def delete_custom_word_group(
 ):
     try:
         svc.delete_word_group(req.gid)
-        return success(msg="")
+        return success(message="")
     except (ServiceError, DomainError) as e:
         return fail(msg=e.message)
     except Exception as e:
@@ -206,7 +206,7 @@ def delete_custom_words(
 ):
     try:
         svc.delete_words_by_ids(req.ids_info or [])
-        return success(msg="")
+        return success(message="")
     except (ServiceError, DomainError) as e:
         return fail(msg=e.message)
     except Exception as e:

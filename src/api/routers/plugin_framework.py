@@ -14,7 +14,8 @@ from pydantic import BaseModel
 
 import log
 from api.deps import get_hook_system, get_plugin_framework_service, require_any_permission, require_permission
-from app.core.exceptions import DomainError, ServiceError
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import DomainError, NexusError, ServiceError
 from app.core.settings import settings
 from app.plugin_framework import api_registry
 from app.plugin_framework.hook_system import HookSystem
@@ -63,7 +64,7 @@ def get_plugin_manifest(
     """获取插件完整 manifest"""
     manifest = svc.get_manifest(plugin_id)
     if not manifest:
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
     return success(data=manifest.to_dict())
 
 
@@ -88,9 +89,9 @@ def save_plugin_config(
 ):
     """保存插件配置"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
     svc.save_config(plugin_id, req.config)
-    return success(msg="保存成功")
+    return success(message="保存成功")
 
 
 @router.post("/plugins/install", response_model=CommonResponse, summary="安装插件")
@@ -109,9 +110,10 @@ def install_plugin(
         manifest = svc.install(tmp_path)
         os.unlink(tmp_path)
 
-        return success(data={"id": manifest.id, "name": manifest.name}, msg="安装成功")
+        return success(data={"id": manifest.id, "name": manifest.name}, message="安装成功")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 安装插件失败: {e}")
         return fail(msg=f"安装失败: {e!s}")
@@ -125,13 +127,14 @@ def uninstall_plugin(
 ):
     """卸载插件"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     try:
         svc.uninstall(plugin_id)
-        return success(msg="卸载成功")
+        return success(message="卸载成功")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 卸载插件失败 {plugin_id}: {e}")
         return fail(msg=f"卸载失败: {e!s}")
@@ -145,15 +148,16 @@ def enable_plugin(
 ):
     """启用插件"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     try:
         # 先更新数据库和缓存状态（同步），后台线程加载插件实例
         svc.enable(plugin_id)
         threading.Thread(target=svc._do_enable, args=(plugin_id,), daemon=True).start()
-        return success(msg="启用中，请稍后刷新")
+        return success(message="启用中，请稍后刷新")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 启用插件失败 {plugin_id}: {e}")
         return fail(msg=f"启用失败: {e!s}")
@@ -167,13 +171,14 @@ def disable_plugin(
 ):
     """禁用插件"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     try:
         svc.disable(plugin_id)
-        return success(msg="禁用成功")
+        return success(message="禁用成功")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 禁用插件失败 {plugin_id}: {e}")
         return fail(msg=f"禁用失败: {e!s}")
@@ -187,13 +192,14 @@ def reload_plugin(
 ):
     """热重载插件"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     try:
         svc.reload_plugin(plugin_id)
-        return success(msg="重载成功")
+        return success(message="重载成功")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 重载插件失败 {plugin_id}: {e}")
         return fail(msg=f"重载失败: {e!s}")
@@ -207,13 +213,14 @@ def run_plugin(
 ):
     """立即运行插件"""
     if not svc.get_manifest(plugin_id):
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     try:
         svc.run_plugin(plugin_id)
-        return success(msg="运行任务已启动")
+        return success(message="运行任务已启动")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 运行插件失败 {plugin_id}: {e}")
         return fail(msg=f"运行失败: {e!s}")
@@ -228,11 +235,12 @@ def _dispatch_plugin_api(plugin_id: str, api_path: str, params: dict):
         result = handler(params)
         if isinstance(result, dict) and "success" in result:
             if result.get("success"):
-                return success(data=result.get("data"), msg=result.get("message") or "success")
+                return success(data=result.get("data"), message=result.get("message") or "success")
             return fail(msg=result.get("message") or "插件接口调用失败")
         return success(data=result)
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 插件接口异常 {plugin_id}/{api_path}: {e}")
         return fail(msg=f"插件接口异常: {e!s}")
@@ -286,7 +294,7 @@ def clear_plugin_logs(
 ):
     """清空插件日志"""
     svc.clear_logs(plugin_id)
-    return success(msg="日志已清空")
+    return success(message="日志已清空")
 
 
 @router.get("/plugins/{plugin_id}/readme", response_model=CommonResponse, summary="获取插件 README")
@@ -322,7 +330,7 @@ def get_plugin_data(
         real_dir = os.path.realpath(data_dir)
         real_target = os.path.realpath(target)
         if not real_target.startswith(real_dir):
-            return fail(msg="非法路径")
+            return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="非法路径")
         if not os.path.exists(target):
             return success(data=[])
         with open(target, encoding="utf-8") as f:
@@ -332,7 +340,8 @@ def get_plugin_data(
             return success(data=list(data.values()))
         return success(data=data)
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 获取插件数据失败: {e}")
         return fail(msg=f"获取数据失败: {e!s}")
@@ -352,9 +361,9 @@ def delete_plugin_data(
         real_dir = os.path.realpath(data_dir)
         real_target = os.path.realpath(target)
         if not real_target.startswith(real_dir):
-            return fail(msg="非法路径")
+            return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="非法路径")
         if not os.path.exists(target):
-            return fail(msg="数据文件不存在")
+            return fail(code=ErrorCode.RESOURCE_NOT_FOUND, msg="数据文件不存在")
         with open(target, encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict) and item_id in data:
@@ -362,12 +371,13 @@ def delete_plugin_data(
         elif isinstance(data, list):
             data = [x for x in data if str(x.get("id", x)) != item_id]
         else:
-            return fail(msg="记录不存在")
+            return fail(code=ErrorCode.RESOURCE_NOT_FOUND, msg="记录不存在")
         with open(target, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        return success(msg="删除成功")
+        return success(message="删除成功")
     except (ServiceError, DomainError) as e:
-        return fail(msg=e.message)
+        _code = e.errcode if isinstance(e, NexusError) else ErrorCode.OPERATION_FAILED
+        return fail(code=_code, msg=e.message)
     except Exception as e:
         log.error(f"[PluginAPI] 删除插件数据失败: {e}")
         return fail(msg=f"删除失败: {e!s}")
@@ -386,7 +396,7 @@ def get_plugin_asset(
     """
     plugin_path = svc.get_plugin_path(plugin_id)
     if not plugin_path:
-        return fail(msg="插件未找到")
+        return fail(code=ErrorCode.PLUGIN_NOT_FOUND, msg="插件未找到")
 
     # /assets/ 是虚拟前缀，实际文件位于插件根目录下
     relative_path = file_path
@@ -398,7 +408,7 @@ def get_plugin_asset(
     real_target = os.path.realpath(target)
 
     if not real_target.startswith(real_plugin_path):
-        return fail(msg="非法路径")
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="非法路径")
 
     if not os.path.exists(target) or not os.path.isfile(target):
         if relative_path.endswith("index.mjs"):
@@ -408,7 +418,7 @@ def get_plugin_asset(
                 media_type="application/javascript",
                 headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
             )
-        return fail(msg="文件不存在")
+        return fail(code=ErrorCode.RESOURCE_NOT_FOUND, msg="文件不存在")
 
     return FileResponse(
         target,

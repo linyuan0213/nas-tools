@@ -1,7 +1,9 @@
 """FastAPI 速率限制依赖 — 按路由精细化限流."""
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import NexusError
 from app.infrastructure.rate_limiter import RateLimitEngine
 
 
@@ -38,9 +40,10 @@ class RateLimitDependency:
         key = f"rate_limit_dep:{client_ip}:{route}"
 
         if not RateLimitDependency._engine.try_acquire(key, rate=self.rate):
-            raise HTTPException(
-                status_code=429,
-                detail="请求过于频繁，请稍后再试",
+            raise NexusError(
+                "请求过于频繁，请稍后再试",
+                errcode=ErrorCode.RATE_LIMITED,
+                http_status=429,
             )
 
     @staticmethod

@@ -9,7 +9,7 @@ import os
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -41,7 +41,8 @@ from app.agent.providers.base import ProviderConfig
 from app.agent.providers.gemini import GeminiProvider
 from app.agent.providers.ollama import OllamaProvider
 from app.agent.providers.openai import OpenAIProvider
-from app.core.exceptions import DomainError, ResourceNotFoundError, ServiceError
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import AuthError, DomainError, PermissionDenied, ResourceNotFoundError, ServiceError
 from app.core.system_config import SystemConfig
 from app.domain.enums import SystemConfigKey
 from app.indexer.registry import get_all_clients as get_all_indexers
@@ -383,7 +384,7 @@ def restory_backup(
     filename = req.file_name
     result = svc.restore_from_backup(filename)
     if result.success:
-        return success(data=[], msg=result.message)
+        return success(data=[], message=result.message)
     return fail(msg=result.message)
 
 
@@ -455,10 +456,8 @@ def test_indexer(
     data["test"] = True
     result = svc.save_config(data)
     if result.success:
-        if result.code == 0:
-            return success(msg=result.msg)
-        return fail(code=result.code, msg=result.msg)
-    return fail(code=result.code, msg=result.msg)
+        return success(message=result.msg)
+    return fail(msg=result.msg)
 
 
 @router.post("/indexers/config", response_model=CommonResponse, summary="保存索引器配置")
@@ -468,9 +467,9 @@ def save_indexer_config(
     svc=Depends(get_indexer_config_service),
 ):
     result = svc.save_config(req.data)
-    if result.success and result.code == 0:
+    if result.success:
         return success()
-    return fail(code=result.code, msg=result.msg)
+    return fail(msg=result.msg)
 
 
 @router.post("/mediaservers", response_model=CommonResponse, summary="获取媒体服务器配置信息")
@@ -504,10 +503,8 @@ def test_mediaserver(
     data["test"] = True
     result = svc.save_config(data)
     if result.success:
-        if result.code == 0:
-            return success(msg=result.msg)
-        return fail(code=result.code, msg=result.msg)
-    return fail(code=result.code, msg=result.msg)
+        return success(message=result.msg)
+    return fail(msg=result.msg)
 
 
 @router.post("/mediaservers/config", response_model=CommonResponse, summary="保存媒体服务器配置")
@@ -517,9 +514,9 @@ def save_mediaserver_config(
     svc=Depends(get_media_server_config_service),
 ):
     result = svc.save_config(req.data)
-    if result.success and result.code == 0:
+    if result.success:
         return success()
-    return fail(code=result.code, msg=result.msg)
+    return fail(msg=result.msg)
 
 
 @router.post("/scheduler/run", response_model=CommonResponse, summary="运行定时任务")
@@ -620,9 +617,9 @@ def clear_cache(
         cleared = manager.cache_clear(req.name)
         if not cleared:
             return fail(msg=f"缓存不存在: {req.name}")
-        return success(msg=f"已清理缓存: {req.name}")
+        return success(message=f"已清理缓存: {req.name}")
     manager.clear_all()
-    return success(msg="已清理全部缓存")
+    return success(message="已清理全部缓存")
 
 
 def _flatten_config(cfg: dict, prefix: str = "") -> dict:
@@ -788,7 +785,7 @@ def user_manager(
 
     if result.success:
         return success(data={"success": False})
-    return fail(code=-1, success=False, message=result.message or "操作失败")
+    return fail(code=ErrorCode.OPERATION_FAILED, success=False, message=result.message or "操作失败")
 
 
 @router.post("/commands", response_model=CommonResponse, summary="获取系统命令列表")
@@ -913,17 +910,15 @@ def stream_logging(
     if not user_ctx and token:
         user_ctx = AuthService.verify_token(token)
     if not user_ctx:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="认证失败，请检查登录状态或 Token",
+        raise AuthError(
+            "认证失败，请检查登录状态或 Token",
+            errcode=ErrorCode.UNAUTHORIZED,
+            http_status=401,
         )
 
     # 权限检查
     if "log:view" not in user_ctx.permissions:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="权限不足，需要日志查看权限",
-        )
+        raise PermissionDenied("权限不足，需要日志查看权限")
 
     log_streaming_service = LogStreamingService(sleep_interval=0.3)
     return StreamingResponse(log_streaming_service.stream(source or ""), media_type="text/event-stream")
@@ -949,7 +944,7 @@ def update_site_config(
 ):
     """手动触发站点配置更新"""
     if "setting:update" not in user.permissions:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要站点配置更新权限")
+        raise PermissionDenied("需要站点配置更新权限")
 
     try:
         force = bool(payload and payload.data and payload.data.get("force"))

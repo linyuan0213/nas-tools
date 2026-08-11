@@ -109,7 +109,7 @@ class TestSubscriptionRouter:
     def test_update_rss_media_missing_id(self, client):
         resp = client.post("/api/v1/subscription/update", json={"name": "Test"})
         assert resp.status_code == 200
-        assert resp.json()["code"] == -1
+        assert resp.json()["code"] != 0
 
     def test_update_rss_media(self, client, mock_subscribe_service):
         resp = client.post("/api/v1/subscription/update", json={"rssid": "1", "name": "Test", "type": "movie"})

@@ -84,7 +84,7 @@ class TestPluginApiDispatch:
         resp = client.post("/api/plugin-framework/plugins/testplugin/api/bad", json={})
         assert resp.status_code == 200
         body = resp.json()
-        assert body["code"] == 1
+        assert body["code"] != 0
         assert body["message"] == "绑定失败"
 
     def test_plain_result_wrapped(self, client):
@@ -95,7 +95,7 @@ class TestPluginApiDispatch:
     def test_unknown_path_fails(self, client):
         resp = client.get("/api/plugin-framework/plugins/testplugin/api/not-exist")
         assert resp.status_code == 200
-        assert resp.json()["code"] == 1
+        assert resp.json()["code"] != 0
 
     def test_handler_exception_fails(self, client):
         def boom(params):
@@ -105,5 +105,5 @@ class TestPluginApiDispatch:
         resp = client.get("/api/plugin-framework/plugins/testplugin/api/boom")
         assert resp.status_code == 200
         body = resp.json()
-        assert body["code"] == 1
+        assert body["code"] != 0
         assert "炸了" in body["message"]

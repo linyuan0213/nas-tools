@@ -8,12 +8,13 @@ import os
 import time
 import urllib.parse
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from starlette.responses import FileResponse, RedirectResponse, Response
 
 import log
 from app.core.constants import TMDB_IMAGE_DOMAIN
-from app.core.exceptions import DomainError, ServiceError
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import DomainError, NexusError, ServiceError
 from app.infrastructure.image_proxy import (
     MAX_CACHE_DAYS,
     SIZE_DIMENSIONS,
@@ -56,7 +57,7 @@ async def _serve_image(
         image_data = await download_image(image_url, referer=referer)
     if not image_data or len(image_data) < 100:
         log.error(f"[ImageProxy]下载内容为空或过小: {image_url}")
-        raise HTTPException(status_code=404, detail="获取图片失败")
+        raise NexusError("获取图片失败", errcode=ErrorCode.IMAGE_FETCH_FAILED, http_status=404)
 
     # 调整尺寸
     if size and size != "original":
@@ -134,7 +135,7 @@ def proxy_image_redirect(request: Request, url: str | None = None):
     2. /img?url=https://... -> 转换为代理路径后重定向
     """
     if not url:
-        raise HTTPException(status_code=400, detail="参数错误")
+        raise NexusError("参数错误", errcode=ErrorCode.PARAM_VALIDATION_FAILED, http_status=400)
 
     # 如果 url 是本地代理路径（以 /img/ 开头），重定向到新路由
     if url.startswith("/img/"):
@@ -152,7 +153,7 @@ def proxy_image_redirect(request: Request, url: str | None = None):
         return RedirectResponse(url=proxy_url, status_code=307)
 
     # 兜底：无法生成代理路径时，直接代理
-    raise HTTPException(status_code=404, detail="无法处理该图片 URL")
+    raise NexusError("无法处理该图片 URL", errcode=ErrorCode.IMAGE_FETCH_FAILED, http_status=404)
 
 
 @router.get("/favicon/external/{encoded_url:path}", summary="代理外部 favicon URL")

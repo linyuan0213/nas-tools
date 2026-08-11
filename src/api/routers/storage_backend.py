@@ -142,7 +142,7 @@ def test_backend(
             setattr(config, k, v)
     backend = StorageBackendFactory.create(config)
     ok, msg = backend.health_check()
-    return success(data={"success": ok, "msg": msg}, msg=msg)
+    return success(data={"success": ok, "msg": msg}, message=msg)
 
 
 @router.post("/types", response_model=CommonResponse, summary="获取存储后端类型")

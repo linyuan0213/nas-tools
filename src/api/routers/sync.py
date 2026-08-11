@@ -17,6 +17,7 @@ from api.deps import (
     require_permission,
 )
 from app.core.constants import RMT_MEDIAEXT
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import (
     DomainError,
     ResourceNotFoundError,
@@ -205,7 +206,7 @@ def del_unknown_path(
         retcode = ft.delete_transfer_unknown(tid)
         if retcode == 0:
             return success()
-        return fail(code=retcode or 1)
+        return fail(code=ErrorCode.SYNC_FAILED)
 
 
 @router.post("/files/delete", response_model=CommonResponse, summary="删除文件")
@@ -249,10 +250,10 @@ def get_sub_path(
         ft = req.filter or "ALL"
         r = svc.get_sub_path(directory=req.directory or "", ft=ft)
     except (ServiceError, DomainError) as e:
-        return fail(code=-1, message=e.message)
+        return fail(code=ErrorCode.SYNC_FAILED, msg=e.message)
     except Exception as e:
         ExceptionUtils.exception_traceback(e)
-        return fail(code=-1, message=f"加载路径失败: {e!s}")
+        return fail(code=ErrorCode.SYNC_FAILED, msg=f"加载路径失败: {e!s}")
     return success(data={"count": len(r), "items": r})
 
 
@@ -272,7 +273,7 @@ def rename(
             path = os.path.join(str(transinfo.SOURCE_PATH), str(transinfo.SOURCE_FILENAME))
             dest_dir = str(transinfo.DEST)
         else:
-            return fail(code=-1, msg="未查询到转移日志记录")
+            return fail(code=ErrorCode.RESOURCE_NOT_FOUND, msg="未查询到转移日志记录")
     else:
         unknown_id = req.unknown_id
         if unknown_id:
@@ -281,11 +282,11 @@ def rename(
                 path = str(unknowninfo.PATH)
                 dest_dir = str(unknowninfo.DEST)
             else:
-                return fail(code=-1, msg="未查询到未识别记录")
+                return fail(code=ErrorCode.RESOURCE_NOT_FOUND, msg="未查询到未识别记录")
     if not dest_dir:
         dest_dir = ""
     if not path:
-        return fail(code=-1, msg="输入路径有误")
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="输入路径有误")
 
     tmdbid = req.tmdb
     mtype = req.type
@@ -318,8 +319,8 @@ def rename(
     if result.success:
         if not need_fix_all and not logid:
             ft.update_transfer_unknown_state(path)
-        return success(msg="转移成功")
-    return fail(code=2, msg=result.message)
+        return success(message="转移成功")
+    return fail(code=ErrorCode.SYNC_FAILED, msg=result.message)
 
 
 @router.post("/rename/file", response_model=CommonResponse, summary="重命名文件")
@@ -331,7 +332,7 @@ def rename_file(
     result = svc.rename_file(path=req.path or "", name=req.name or "")
     if result.success:
         return success()
-    return fail(code=-1, msg=result.message)
+    return fail(code=ErrorCode.SYNC_FAILED, msg=result.message)
 
 
 @router.post("/rename/udf", response_model=CommonResponse, summary="自定义转移")
@@ -342,7 +343,7 @@ def rename_udf(
 ):
     inpath = req.inpath
     if not os.path.exists(inpath or ""):
-        return fail(code=-1, msg="输入路径不存在")
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="输入路径不存在")
     outpath = req.outpath
     syncmod = req.syncmod or ""
     tmdbid = req.tmdb
@@ -369,8 +370,8 @@ def rename_udf(
         season=season,
     )
     if result.success:
-        return success(msg="转移成功")
-    return fail(code=2, msg=result.message)
+        return success(message="转移成功")
+    return fail(code=ErrorCode.SYNC_FAILED, msg=result.message)
 
 
 @router.post("/run", response_model=CommonResponse, summary="执行目录同步")
@@ -381,7 +382,7 @@ def run_directory_sync(
     thread_executor=Depends(get_thread_executor),
 ):
     thread_executor.submit(svc.transfer_sync, req.sid)
-    return success(msg="执行成功")
+    return success(message="执行成功")
 
 
 @router.post("/paths/test_connection", response_model=CommonResponse, summary="测试连接")
@@ -393,7 +394,7 @@ def test_connection(
     result = svc.test_connection(command=req.command)
     if result.success:
         return success()
-    return fail(code=1)
+    return fail(code=ErrorCode.OPERATION_FAILED)
 
 
 @router.post("/directories/update", response_model=CommonResponse, summary="更新目录")
@@ -443,5 +444,5 @@ def re_identification(
 ):
     result = svc.re_identify_items(flag=req.flag or "", ids=req.ids or [])
     if result.success:
-        return success(msg=result.message)
-    return fail(code=2, msg=result.message)
+        return success(message=result.message)
+    return fail(code=ErrorCode.SYNC_FAILED, msg=result.message)

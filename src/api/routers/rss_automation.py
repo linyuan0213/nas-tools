@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from api.deps import get_user_rss_service, require_any_permission, require_permission
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import DomainError, ServiceError
 from app.schemas.common import CommonResponse
 from app.services.rss_automation.userrss_service import UserRssService
@@ -71,7 +72,7 @@ def check_userrss_task(
 ):
     try:
         svc.check_tasks(taskids=req.ids, flag=req.flag or "")
-        return success(msg="")
+        return success(message="")
     except (ServiceError, DomainError) as e:
         return fail(msg=e.message)
     except Exception:
@@ -172,7 +173,7 @@ def rss_article_test(
     taskid = req.taskid
     title = req.title
     if not taskid or not title:
-        return fail(code=-1)
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED)
     dto = svc.test_article(int(taskid) if taskid else 0, title)
     if dto.name == "无法识别":
         return success(data={"name": "无法识别"})
@@ -186,7 +187,7 @@ def rss_articles_check(
     svc: UserRssService = Depends(get_user_rss_service),
 ):
     if not req.articles:
-        return fail(code=2)
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED)
     res = svc.check_articles(taskid=req.taskid, flag=req.flag, articles=req.articles)
     return success() if res else fail()
 
@@ -198,7 +199,7 @@ def rss_articles_download(
     svc: UserRssService = Depends(get_user_rss_service),
 ):
     if not req.articles:
-        return fail(code=2)
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED)
     res = svc.download_articles(taskid=req.taskid, articles=req.articles)
     return success() if res else fail()
 

@@ -3,10 +3,12 @@
 import uuid
 from typing import Any, cast
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 import log
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import AuthError, PermissionDenied
 from app.di.context import AppContext
 from app.infrastructure.cache_system import TokenCache
 from app.infrastructure.security import identify
@@ -133,9 +135,10 @@ def get_current_user(
     if user_ctx:
         return user_ctx
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="安全认证未通过，请检查登录状态、Token 或 ApiKey",
+    raise AuthError(
+        "安全认证未通过，请检查登录状态、Token 或 ApiKey",
+        errcode=ErrorCode.UNAUTHORIZED,
+        http_status=status.HTTP_401_UNAUTHORIZED,
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -150,7 +153,10 @@ def get_current_user_optional(
     """
     try:
         return get_current_user(request, app_context, credentials)
-    except HTTPException:
+    except AuthError as e:
+        # 仅将"未认证"视为可选；权限不足(403)不属于可选场景，需继续抛出
+        if isinstance(e, PermissionDenied):
+            raise
         return None
 
 
@@ -165,7 +171,7 @@ def require_permission(permission: str):
 
     def checker(user: UserContext = current_user_dependency) -> UserContext:
         if permission not in user.permissions:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"权限不足: {permission}")
+            raise PermissionDenied(f"权限不足: {permission}")
         return user
 
     return checker
@@ -180,9 +186,7 @@ def require_any_permission(*permissions: str):
     def checker(user: UserContext = current_user_dependency) -> UserContext:
         if any(p in user.permissions for p in permissions):
             return user
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=f"权限不足，需要以下任一权限: {', '.join(permissions)}"
-        )
+        raise PermissionDenied(f"权限不足，需要以下任一权限: {', '.join(permissions)}")
 
     return checker
 
@@ -196,7 +200,7 @@ def require_all_permissions(*permissions: str):
     def checker(user: UserContext = current_user_dependency) -> UserContext:
         missing = [p for p in permissions if p not in user.permissions]
         if missing:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"权限不足，缺少: {', '.join(missing)}")
+            raise PermissionDenied(f"权限不足，缺少: {', '.join(missing)}")
         return user
 
     return checker

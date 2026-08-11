@@ -218,7 +218,7 @@ def update_brushtask_state(
 ):
     try:
         svc.update_task_state(state=req.state, task_ids=req.ids)
-        return success(msg="")
+        return success(message="")
     except (ServiceError, DomainError) as e:
         return fail(msg=e.message)
     except Exception as e:
@@ -262,9 +262,9 @@ def save_brush_rule(
         return fail(msg="规则名称不能为空")
     if req.id:
         svc.update_rule(req.id, req.model_dump())
-        return success(msg="规则已更新")
+        return success(message="规则已更新")
     rid = svc.add_rule(req.model_dump())
-    return success(data={"id": rid}, msg="规则已创建")
+    return success(data={"id": rid}, message="规则已创建")
 
 
 @router.post("/rules/delete", response_model=CommonResponse, summary="删除刷流规则")

@@ -1,12 +1,13 @@
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from api.deps import get_current_user, get_rbac_service, require_any_permission, require_permission
-from app.core.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import NexusError, ResourceAlreadyExistsError, ResourceNotFoundError
 from app.core.settings import settings
 from app.schemas.auth import UserContext
 from app.schemas.common import CommonResponse
@@ -319,7 +320,7 @@ async def get_avatar(filename: str):
     avatar_dir = Path(settings.data_path) / "static" / "avatars"
     file_path = avatar_dir / filename
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail="头像不存在")
+        raise NexusError("头像不存在", errcode=ErrorCode.RESOURCE_NOT_FOUND, http_status=404)
     return FileResponse(file_path)
 
 

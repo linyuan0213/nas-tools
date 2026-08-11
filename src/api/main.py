@@ -5,16 +5,16 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from scalar_fastapi import get_scalar_api_reference
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import log
 import version
 from api.deps import get_message
+from api.exception_handlers import register_exception_handlers
 from api.routers import (
     apikey,
     auth,
@@ -274,29 +274,4 @@ def health_check(message: Message = Depends(get_message)):
     return result
 
 
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """
-    全局 HTTP 异常处理器
-    当页面路由返回 401 时，自动重定向到登录页（兼容浏览器行为）
-    API 路由返回 JSON 格式错误
-    """
-    if exc.status_code == 401:
-        path = request.url.path
-        # API 路由返回 JSON 401，页面路由重定向到登录页
-        if path.startswith("/api/"):
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"code": -1, "message": "认证失败，请重新登录"},
-            )
-        return RedirectResponse(url="/")
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    log.error(f"[API]请求异常: {request.method} {request.url.path} - {exc}")
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"code": -1, "message": str(exc)},
-    )
+register_exception_handlers(app)

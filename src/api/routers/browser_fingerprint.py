@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from api.deps import get_current_user
+from app.core.error_codes import ErrorCode
 from app.schemas.auth import UserContext
 from app.schemas.common import CommonResponse
 from app.services.browser_fingerprint_service import sync_fingerprint_to_chrome
@@ -25,5 +26,9 @@ async def submit_fingerprint(
     """
     profile_id = sync_fingerprint_to_chrome(user.user_id, fingerprint)
     if not profile_id:
-        return CommonResponse(code=1, message="指纹同步失败（nexus-chrome 不可达或未配置）", data=None)
+        return CommonResponse(
+            code=ErrorCode.OPERATION_FAILED,
+            message="指纹同步失败（nexus-chrome 不可达或未配置）",
+            data=None,
+        )
     return CommonResponse(code=0, message="ok", data={"fp_profile_id": profile_id})

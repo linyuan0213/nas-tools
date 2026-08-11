@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from api.deps import get_scheduler_service, require_any_permission, require_permission
+from app.core.error_codes import ErrorCode
 from app.schemas.common import CommonResponse
 from app.schemas.scheduler import (
     DeleteSchedulerJobRequest,
@@ -60,7 +61,7 @@ def delete_scheduler_job(
         return fail(msg="任务ID不能为空")
     resp = svc.delete_job(DeleteSchedulerJobRequest(id=job_id))
     if resp.code == 0:
-        return success(msg=resp.msg)
+        return success(message=resp.msg)
     return fail(msg=resp.msg)
 
 
@@ -87,7 +88,7 @@ def pause_scheduler_job(
         return fail(msg="任务ID不能为空")
     resp = svc.pause_job(PauseSchedulerJobRequest(id=job_id))
     if resp.code == 0:
-        return success(msg=resp.msg)
+        return success(message=resp.msg)
     return fail(msg=resp.msg)
 
 
@@ -102,7 +103,7 @@ def resume_scheduler_job(
         return fail(msg="任务ID不能为空")
     resp = svc.resume_job(ResumeSchedulerJobRequest(id=job_id))
     if resp.code == 0:
-        return success(msg=resp.msg)
+        return success(message=resp.msg)
     return fail(msg=resp.msg)
 
 
@@ -117,7 +118,7 @@ def run_scheduler_job(
         return fail(msg="任务ID不能为空")
     resp = svc.run_job(RunSchedulerJobRequest(id=job_id))
     if resp.code == 0:
-        return success(msg=resp.msg)
+        return success(message=resp.msg)
     return fail(msg=resp.msg)
 
 
@@ -141,8 +142,8 @@ def update_scheduler_job(
             run_date=req.run_date,
         )
     except Exception as e:
-        return fail(code=1, msg=str(e))
+        return fail(code=ErrorCode.SCHEDULER_ERROR, msg=str(e))
     resp = svc.update_job(dto)
     if resp.code == 0:
-        return success(msg=resp.msg)
+        return success(message=resp.msg)
     return fail(msg=resp.msg)

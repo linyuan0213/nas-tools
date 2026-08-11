@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.deps import get_current_user, get_downloader_service
+from api.exception_handlers import register_exception_handlers
 from api.routers import download as download_router
 from app.schemas.auth import UserContext
 
@@ -70,6 +71,7 @@ class TestDownloadEventsGenerator:
 class TestDownloadEventsSSE:
     def test_auth_required(self):
         app = FastAPI()
+        register_exception_handlers(app)
         app.include_router(download_router.router, prefix="/api/download")
         app.state.context = MagicMock()
         with TestClient(app) as c:
@@ -78,6 +80,7 @@ class TestDownloadEventsSSE:
 
     def test_permission_required(self):
         app = FastAPI()
+        register_exception_handlers(app)
         app.include_router(download_router.router, prefix="/api/download")
         user_ctx = UserContext(
             user_id=2,

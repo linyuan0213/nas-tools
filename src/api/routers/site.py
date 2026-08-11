@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from api.deps import get_indexer_service, get_site_service, require_any_permission, require_permission
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import DomainError, ServiceError  # noqa: F401
 from app.infrastructure.thread import ThreadExecutor
 from app.schemas.common import CommonResponse
@@ -276,7 +277,9 @@ def test_site(
     svc: SiteService = Depends(get_site_service),
 ):
     dto = svc.test_site(req.id or "")
-    return fail(code=dto.code, msg=dto.msg, time=dto.times)
+    if dto.code == 0:
+        return success(message=dto.msg, time=dto.times)
+    return fail(code=ErrorCode.SITE_REQUEST_FAILED, msg=dto.msg, time=dto.times)
 
 
 @router.post("/sites/test_batch", response_model=CommonResponse, summary="批量测试站点连接")
@@ -296,7 +299,9 @@ def update_site(
     svc: SiteService = Depends(get_site_service),
 ):
     dto = svc.update_site(req.model_dump())
-    return fail(code=dto.code or 0, msg=dto.msg or "")
+    if dto.code == 0:
+        return success(message=dto.msg or "")
+    return fail(code=ErrorCode.OPERATION_FAILED, msg=dto.msg or "")
 
 
 @router.post("/sites/cookie_ua", response_model=CommonResponse, summary="更新站点 Cookie 和 UA")

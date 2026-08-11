@@ -3,11 +3,12 @@ API Key 管理路由
 提供 API Key 的生成、列表、更新、删除和使用记录查询
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from api.deps import get_apikey_service, get_current_user
-from app.core.exceptions import ServiceError
+from app.core.error_codes import ErrorCode
+from app.core.exceptions import NexusError, ServiceError
 from app.schemas.auth import UserContext
 from app.schemas.common import CommonResponse
 from app.services.apikey_service import APIKeyService
@@ -95,7 +96,7 @@ async def create_api_key(
         )
         return success(data=result, message="API Key 创建成功，请妥善保存 Key，此页面为唯一展示机会")
     except ServiceError as e:
-        raise HTTPException(status_code=500, detail=f"创建失败: {e.message}") from e
+        raise NexusError(f"创建失败: {e.message}", errcode=ErrorCode.OPERATION_FAILED, http_status=500) from e
 
 
 @router.get("/keys", response_model=CommonResponse, summary="获取 API Key 列表")
@@ -125,7 +126,7 @@ async def update_api_key(
         description=req.description,
     )
     if not ok:
-        raise HTTPException(status_code=404, detail="API Key 不存在或更新失败")
+        raise NexusError("API Key 不存在或更新失败", errcode=ErrorCode.APIKEY_NOT_FOUND, http_status=404)
     return success(message="更新成功")
 
 
@@ -138,7 +139,7 @@ async def delete_api_key(
     """删除 API Key"""
     ok = service.delete_key(key_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="API Key 不存在")
+        raise NexusError("API Key 不存在", errcode=ErrorCode.APIKEY_NOT_FOUND, http_status=404)
     return success(message="删除成功")
 
 

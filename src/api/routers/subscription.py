@@ -17,6 +17,7 @@ from api.deps import (
     require_any_permission,
     require_permission,
 )
+from app.core.error_codes import ErrorCode
 from app.core.system_config import SystemConfig
 from app.domain.enums import SystemConfigKey
 from app.domain.mediatypes import MediaType
@@ -247,6 +248,16 @@ def add_rss_media(
     kwargs = _build_add_kwargs(req)
     code, msg, media_info = _invoke_for_seasons(req.season, kwargs, svc.add_rss_subscribe)
 
+    # code 0=成功, 9=订阅已存在(幂等)；其余为真实失败，需上报而非伪装成功
+    if code not in (0, 9):
+        return fail(
+            code=ErrorCode.SUBSCRIPTION_FAILED,
+            msg=msg,
+            page=req.page,
+            name=req.name,
+            rssid=None,
+        )
+
     rssid = None
     if media_info:
         rssid = svc.get_subscribe_id(mtype=kwargs["mtype"], title=req.name or "", tmdbid=media_info.tmdb_id)
@@ -269,7 +280,7 @@ def update_rss_media(
 ):
     kwargs = _build_update_kwargs(req)
     if not req.rssid:
-        return fail(code=-1, msg="缺少订阅ID", page=req.page, name=req.name, rssid=None)
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="缺少订阅ID", page=req.page, name=req.name, rssid=None)
 
     code, msg, media_info = _invoke_for_seasons(
         req.season, kwargs, svc.update_rss_subscribe, req.total_ep, req.current_ep
@@ -277,7 +288,13 @@ def update_rss_media(
 
     if code == 0:
         return success(data={"page": req.page, "name": req.name, "rssid": req.rssid})
-    return fail(code=code, msg=msg, page=req.page, name=req.name, rssid=req.rssid)
+    return fail(
+        code=ErrorCode.SUBSCRIPTION_FAILED,
+        msg=msg,
+        page=req.page,
+        name=req.name,
+        rssid=req.rssid,
+    )
 
 
 @router.post("/history/delete", response_model=CommonResponse, summary="删除 RSS 历史")
@@ -299,7 +316,9 @@ def re_rss_history(
     parsed = MediaType.from_string(req.type or "")
     rtype = MediaType.MOVIE.value if parsed == MediaType.MOVIE else MediaType.TV.value
     code, msg = svc.redo(rssid=req.rssid, rtype=rtype)
-    return fail(code=code, msg=msg)
+    if code == 0:
+        return success(message=msg)
+    return fail(code=ErrorCode.SUBSCRIPTION_FAILED, msg=msg)
 
 
 @router.post("/refresh", response_model=CommonResponse, summary="刷新 RSS 订阅")

@@ -24,6 +24,7 @@ from api.deps import (
     require_any_permission,
     require_permission,
 )
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import (
     DomainError,
     ResourceNotFoundError,
@@ -202,9 +203,9 @@ def download_subtitle(
 ):
     try:
         svc.download_subtitle(path=req.path, name=req.name)
-        return success(msg="字幕下载任务已提交，正在后台运行。")
+        return success(message="字幕下载任务已提交，正在后台运行。")
     except (ResourceNotFoundError, ServiceError, DomainError) as e:
-        return fail(code=-1, msg=e.message)
+        return fail(code=ErrorCode.OPERATION_FAILED, msg=e.message)
 
 
 @router.post("/season/episodes", response_model=CommonResponse, summary="获取剧集列表")
@@ -271,8 +272,8 @@ def media_path_scrap(
 ):
     msg = svc.scrap_media_path(path=req.path, backend_id=req.backend_id)
     if msg.startswith("请"):
-        return fail(code=-1, msg=msg)
-    return success(msg=msg)
+        return fail(code=ErrorCode.OPERATION_FAILED, msg=msg)
+    return success(message=msg)
 
 
 @router.post("/person", response_model=CommonResponse, summary="获取演员信息")
@@ -339,7 +340,7 @@ def name_test(
     svc: MediaInfoService = Depends(get_media_info_service),
 ):
     if not req.name:
-        return fail(code=-1)
+        return fail(code=ErrorCode.PARAM_VALIDATION_FAILED)
     result = svc.name_test(name=req.name, subtitle=req.subtitle)
     return success(data=result)
 
@@ -440,7 +441,7 @@ def get_library_mediacount(
     result = svc.get_media_count()
     if result:
         return success(data=result)
-    return fail(code=-1, msg="媒体库服务器连接失败")
+    return fail(code=ErrorCode.MEDIA_SERVER_ERROR, msg="媒体库服务器连接失败")
 
 
 @router.post("/library/history", response_model=CommonResponse, summary="获取播放历史")
@@ -674,7 +675,7 @@ def update_category_config(
     svc: MediaFileService = Depends(get_media_file_service),
 ):
     msg = svc.update_category_config(items=req.config or [])
-    return success(msg=msg)
+    return success(message=msg)
 
 
 @router.post("/dir/list", response_model=CommonResponse, summary="获取目录列表")
@@ -699,7 +700,7 @@ def make_dir(
 ):
     try:
         target = svc.make_dir(parent=req.path, name=req.name, backend_id=req.backend_id)
-        return success(data={"path": target}, msg="创建成功")
+        return success(data={"path": target}, message="创建成功")
     except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
         return fail(msg=e.message)
 
@@ -712,7 +713,7 @@ def move_files(
 ):
     try:
         msg = svc.move_or_copy_files(req.files, req.dest_dir, backend_id=req.backend_id, move=True)
-        return success(msg=msg)
+        return success(message=msg)
     except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
         return fail(msg=e.message)
 
@@ -725,7 +726,7 @@ def copy_files(
 ):
     try:
         msg = svc.move_or_copy_files(req.files, req.dest_dir, backend_id=req.backend_id, move=False)
-        return success(msg=msg)
+        return success(message=msg)
     except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
         return fail(msg=e.message)
 
@@ -764,7 +765,7 @@ async def upload_file(
 ):
     try:
         target = svc.save_upload(dest_dir=path, name=file.filename or "", stream=file.file, backend_id=backend_id)
-        return success(data={"path": target}, msg="上传成功")
+        return success(data={"path": target}, message="上传成功")
     except (ValidationError, ResourceNotFoundError, ServiceError, DomainError) as e:
         return fail(msg=e.message)
 
