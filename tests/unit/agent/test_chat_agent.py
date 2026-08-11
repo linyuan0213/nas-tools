@@ -2,11 +2,12 @@
 
 from app.agent.agents.chat_agent import ChatAgent
 from app.agent.agents.memory import ConversationStore
+from app.agent.providers.base import ChatToolResponse, ToolCall
 from app.agent.tools.base import ToolResult
 
 
 class _FakeSvc:
-    def __init__(self, responses: list[str], ready: bool = True):
+    def __init__(self, responses: list[ChatToolResponse], ready: bool = True):
         self._responses = list(responses)
         self._ready = ready
         self.calls: list[list[dict]] = []
@@ -15,9 +16,12 @@ class _FakeSvc:
     def ready(self):
         return self._ready
 
-    def chat(self, messages, system_prompt="", use_cache=False, **kwargs):
+    def chat_tool_calls(self, messages, tools, temperature=0.7):
         self.calls.append(messages)
-        return self._responses.pop(0) if self._responses else "（无更多响应）"
+        return self._responses.pop(0) if self._responses else ChatToolResponse(content="（无更多响应）")
+
+    def chat(self, messages, system_prompt="", use_cache=False, **kwargs):
+        return "ok"
 
 
 class _FakeExecutor:
@@ -51,35 +55,30 @@ class _FakeMemory(ConversationStore):
         self.appended.append((role, content))
 
 
+def _tool_call(name="system_status", args=None, cid="call_1", native=True) -> ChatToolResponse:
+    return ChatToolResponse(content="", tool_calls=[ToolCall(name=name, arguments=args or {}, id=cid)], native=native)
+
+
 class TestChatLoop:
     def test_direct_answer_no_tool(self):
-        svc = _FakeSvc(["你好，有什么可以帮你？"])
+        svc = _FakeSvc([ChatToolResponse(content="你好，有什么可以帮你？")])
         agent = ChatAgent(svc=svc, tool_executor=_FakeExecutor([]))
         assert agent.chat_with_tools("你好") == "你好，有什么可以帮你？"
         assert len(svc.calls) == 1
 
-    def test_single_tool_call_loop(self):
-        svc = _FakeSvc(
-            [
-                '```json\n{"tool": "system_status", "parameters": {}}\n```',
-                "当前 CPU 占用 30%。",
-            ]
-        )
+    def test_native_tool_call_loop(self):
+        svc = _FakeSvc([_tool_call(), ChatToolResponse(content="当前 CPU 占用 30%。")])
         executor = _FakeExecutor([ToolResult(success=True, data={"cpu": 30})])
         agent = ChatAgent(svc=svc, tool_executor=executor)
         answer = agent.chat_with_tools("系统负载怎么样")
         assert answer == "当前 CPU 占用 30%。"
         assert executor.executed == [("system_status", {})]
-        assert len(svc.calls) == 2
+        # 原生协议：工具结果以 tool role 消息回灌
+        assert svc.calls[1][-1]["role"] == "tool"
+        assert svc.calls[1][-1]["tool_call_id"] == "call_1"
 
-    def test_multi_step_loop(self):
-        svc = _FakeSvc(
-            [
-                '{"tool": "system_status", "parameters": {}}',
-                '{"tool": "system_status", "parameters": {}}',
-                "两步查询完成。",
-            ]
-        )
+    def test_multi_step_native_loop(self):
+        svc = _FakeSvc([_tool_call(), _tool_call(cid="call_2"), ChatToolResponse(content="两步查询完成。")])
         executor = _FakeExecutor([ToolResult(success=True, data={"a": 1}), ToolResult(success=True, data={"b": 2})])
         agent = ChatAgent(svc=svc, tool_executor=executor)
         answer = agent.chat_with_tools("查两次状态")
@@ -87,8 +86,19 @@ class TestChatLoop:
         assert len(executor.executed) == 2
         assert len(svc.calls) == 3
 
+    def test_prompt_fallback_tool_call(self):
+        """非原生 provider：prompt 协议解析出的工具调用同样执行"""
+        svc = _FakeSvc([_tool_call(native=False), ChatToolResponse(content="完成。")])
+        executor = _FakeExecutor([ToolResult(success=True, data={})])
+        agent = ChatAgent(svc=svc, tool_executor=executor)
+        answer = agent.chat_with_tools("查状态")
+        assert answer == "完成。"
+        # 回退协议：工具结果以 user [工具结果] 消息回灌
+        assert svc.calls[1][-1]["role"] == "user"
+        assert "[工具结果]" in svc.calls[1][-1]["content"]
+
     def test_max_steps_guard(self):
-        svc = _FakeSvc(['{"tool": "system_status", "parameters": {}}'] * 20)
+        svc = _FakeSvc([_tool_call()] * 20)
         executor = _FakeExecutor([ToolResult(success=True, data={})] * 20)
         agent = ChatAgent(svc=svc, tool_executor=executor, max_steps=3)
         answer = agent.chat_with_tools("循环")
@@ -96,7 +106,7 @@ class TestChatLoop:
         assert len(svc.calls) == 3
 
     def test_need_confirm_breaks_loop(self):
-        svc = _FakeSvc(['{"tool": "system_status", "parameters": {}}'])
+        svc = _FakeSvc([_tool_call()])
         executor = _FakeExecutor([ToolResult(success=True, need_confirm=True, data={"message": "删除任务需确认"})])
         agent = ChatAgent(svc=svc, tool_executor=executor)
         answer = agent.chat_with_tools("删掉任务")
@@ -104,12 +114,7 @@ class TestChatLoop:
         assert len(svc.calls) == 1
 
     def test_tool_error_fed_back(self):
-        svc = _FakeSvc(
-            [
-                '{"tool": "system_status", "parameters": {}}',
-                "查询失败了。",
-            ]
-        )
+        svc = _FakeSvc([_tool_call(), ChatToolResponse(content="查询失败了。")])
         executor = _FakeExecutor([ToolResult(success=False, error="下载器离线")])
         agent = ChatAgent(svc=svc, tool_executor=executor)
         answer = agent.chat_with_tools("查状态")
@@ -117,7 +122,7 @@ class TestChatLoop:
         assert "下载器离线" in svc.calls[1][-1]["content"]
 
     def test_memory_persisted(self):
-        svc = _FakeSvc(["回答"])
+        svc = _FakeSvc([ChatToolResponse(content="回答")])
         memory = _FakeMemory()
         agent = ChatAgent(svc=svc, tool_executor=_FakeExecutor([]), memory=memory)
         agent.chat_with_tools("问题", session_id="s1", user_id="u1")
@@ -125,7 +130,7 @@ class TestChatLoop:
         assert ("assistant", "回答") in memory.appended
 
     def test_history_loaded_into_messages(self):
-        svc = _FakeSvc(["回答"])
+        svc = _FakeSvc([ChatToolResponse(content="回答")])
         memory = _FakeMemory()
         memory.history = [{"role": "user", "content": "之前的问题"}]
         agent = ChatAgent(svc=svc, tool_executor=_FakeExecutor([]), memory=memory)
@@ -135,7 +140,7 @@ class TestChatLoop:
         assert "新问题" in contents
 
     def test_on_event_emitted(self):
-        svc = _FakeSvc(['{"tool": "system_status", "parameters": {}}', "完成"])
+        svc = _FakeSvc([_tool_call(), ChatToolResponse(content="完成")])
         executor = _FakeExecutor([ToolResult(success=True, data={})])
         events: list[dict] = []
         agent = ChatAgent(svc=svc, tool_executor=executor)

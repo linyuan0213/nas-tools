@@ -8,7 +8,13 @@ from app.agent.rag.chunker import MarkdownChunker
 from app.agent.rag.embedding import EmbeddingService
 from app.agent.rag.factory import create_vector_store, resolve_store_path
 from app.agent.rag.ingestor import KnowledgeIngestor, KnowledgeLoader
-from app.agent.rag.loaders import DocsLoader, MessageTemplateLoader, OperationsLoader, default_loaders
+from app.agent.rag.loaders import (
+    DocsLoader,
+    MediaLibraryLoader,
+    MessageTemplateLoader,
+    OperationsLoader,
+    default_loaders,
+)
 from app.agent.rag.models import Chunk, ScoredChunk
 from app.agent.rag.namespaces import Namespace
 from app.agent.rag.retriever import RetrievalResult, Retriever
@@ -29,6 +35,7 @@ __all__ = [
     "DocsLoader",
     "OperationsLoader",
     "MessageTemplateLoader",
+    "MediaLibraryLoader",
     "default_loaders",
     "Namespace",
     "Retriever",

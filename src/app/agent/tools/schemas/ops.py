@@ -35,6 +35,7 @@ class TransferRunTool(BaseTool):
         "required": ["source_path"],
     }
     level = ToolLevel.WRITE
+    permission = "library:manage"
 
 
 class SchedulerListTool(BaseTool):
@@ -55,6 +56,7 @@ class SchedulerRunTool(BaseTool):
         "required": ["job_id"],
     }
     level = ToolLevel.WRITE
+    permission = "service:manage"
 
 
 class SystemStatusTool(BaseTool):
@@ -69,3 +71,4 @@ class MemoryClearTool(BaseTool):
     description = "清空当前会话的对话记忆。当用户说'清空对话/忘记刚才的聊天'时调用。"
     parameters = {"type": "object", "properties": {}}
     level = ToolLevel.WRITE
+    permission = "agent:manage"

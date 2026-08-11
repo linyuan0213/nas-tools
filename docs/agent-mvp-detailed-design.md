@@ -437,10 +437,10 @@ class ContextBuilder:
 
 ### 8.2 `chat_agent.py`（重构）
 
-- 基于 `pydantic_ai.Agent`：tools 从 `ToolRegistry.list_tools()` 动态注册（schema 转换）；`max_steps` 限制循环
-- 工具调用 → `ToolExecutor.execute(name, args, user)`；`need_confirm=True` → 中断循环，返回确认请求给前端
-- `chat_with_tools` 保留同名签名（消息渠道兼容），内部走新循环；`#清除` 魔法字符串删除，改 `memory_clear`
-- 流式：`run_stream` → 逐 chunk yield；工具调用事件单独 yield `{"type":"tool_call",...}`
+- **原生 function calling**：OpenAI 兼容（DeepSeek/DashScope/Ollama /v1）与 Ollama 原生 `tools` 参数调用（`chat_tool_calls`），工具结果以 `tool` role 消息回灌；Gemini 等无原生能力 provider 自动回退 prompt-JSON 协议（`BaseProvider.chat_with_tools` 默认实现），两种协议统一为 `ChatToolResponse(tool_calls, native)`
+- 工具调用 → `ToolExecutor.execute(name, args, user, user_permissions)`；`need_confirm=True` → 中断循环，返回确认请求给前端（经 `/api/agent/chat/confirm` 批准后重放）
+- 循环步数上限 `max_steps`；`on_event` 回调输出 `tool_call`/`tool_result` 步骤事件（SSE）
+- `#清除` 魔法字符串删除，改 `memory_clear` 工具
 - Fallback：主 provider 异常 → 按 `agent.fallback` 链重试（每 provider 一次，叠加缓存/重试）
 - 异步：对外暴露 async 接口；同步 Service 经 `thread_executor` 包装调用
 

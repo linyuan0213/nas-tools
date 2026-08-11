@@ -35,6 +35,16 @@ class Message:
         # 插件注册的消息命令
         self._command_manager._plugin_commands = {}
 
+    def set_agent_enhancer(self, enhancer) -> None:
+        """注入 Agent 通知增强器（单流替换模板；facade 与 builder 同步指向包装器）"""
+        if enhancer is None:
+            return
+        from app.message.core.agent_dispatcher import AgentEnhancingDispatcher
+
+        wrapped = AgentEnhancingDispatcher(self._dispatcher, enhancer)
+        self._dispatcher = wrapped
+        self._builder._dispatcher = wrapped  # type: ignore[assignment] - 包装器行为兼容
+
     # ---------- 属性代理 ----------
 
     @property

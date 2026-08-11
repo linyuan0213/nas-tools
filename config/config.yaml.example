@@ -204,6 +204,11 @@ agent:
     top_k: 6
     rerank_top_k: 3
     namespaces: [media_library, messages, faq, operations]
+  # 通知增强：通知发送出口按 msg_type 用 LLM 重写模板通知（单流替换，不会重复推送）
+  notify:
+    enabled: false
+    msg_types: [download_start, download_fail, rss_finished, transfer_finished, transfer_fail, site_signin]
+    temperature: 0.3
   memory:
     # 工具循环步数上限
     max_steps: 8

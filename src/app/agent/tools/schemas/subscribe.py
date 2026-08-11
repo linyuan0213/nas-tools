@@ -22,6 +22,7 @@ class SubscribeAddTool(BaseTool):
         "required": ["title"],
     }
     level = ToolLevel.WRITE
+    permission = "subscription:manage"
 
 
 class SubscribeListTool(BaseTool):
@@ -53,3 +54,4 @@ class SubscribeDeleteTool(BaseTool):
         "required": ["sub_id"],
     }
     level = ToolLevel.DANGEROUS
+    permission = "subscription:manage"

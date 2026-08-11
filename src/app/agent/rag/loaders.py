@@ -77,6 +77,49 @@ class MessageTemplateLoader(KnowledgeLoader):
         return items
 
 
-def default_loaders() -> list[KnowledgeLoader]:
-    """MVP 默认知识来源"""
-    return [DocsLoader(), OperationsLoader(), MessageTemplateLoader()]
+class MediaLibraryLoader(KnowledgeLoader):
+    """媒体库 → media_library 命名空间（best-effort：统计 + 最近入库项，非全量目录）"""
+
+    namespace = Namespace.MEDIA_LIBRARY
+
+    def __init__(self, media_library_service, latest_num: int = 200):
+        self._service = media_library_service
+        self._latest_num = latest_num
+
+    def load(self) -> Iterable[tuple[str, str]]:
+        if self._service is None:
+            return []
+        try:
+            counts = self._service.get_media_count() or {}
+            text = (
+                "媒体库统计："
+                f"电影 {counts.get('Movie', 0)} 部；"
+                f"剧集 {counts.get('TV', 0)} 部；"
+                f"动漫 {counts.get('Anime', 0)} 部。"
+            )
+            yield ("media_library/statistics", text)
+        except Exception as e:
+            log.warn(f"[MediaLibraryLoader]读取统计失败: {e}")
+        try:
+            items = self._service.get_latest(num=self._latest_num) or []
+        except Exception as e:
+            log.warn(f"[MediaLibraryLoader]读取最近入库失败: {e}")
+            return
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name") or item.get("title") or ""
+            if not name:
+                continue
+            lines = [f"类型：{item.get('type', '')}", f"标题：{name}"]
+            if item.get("year"):
+                lines.append(f"年份：{item['year']}")
+            yield (f"media_library/item/{name}", "\n".join(lines))
+
+
+def default_loaders(media_library_service=None) -> list[KnowledgeLoader]:
+    """MVP 默认知识来源（media_library 需已配置媒体服务器）"""
+    loaders: list[KnowledgeLoader] = [DocsLoader(), OperationsLoader(), MessageTemplateLoader()]
+    if media_library_service is not None:
+        loaders.append(MediaLibraryLoader(media_library_service))
+    return loaders

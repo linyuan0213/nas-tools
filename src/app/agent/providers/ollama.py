@@ -5,7 +5,13 @@ from typing import Any
 from ollama import Client
 
 import log
-from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
+from app.agent.providers.base import (
+    BaseEmbeddingProvider,
+    BaseProvider,
+    ChatToolResponse,
+    ProviderConfig,
+    ToolCall,
+)
 
 
 class OllamaProvider(BaseProvider):
@@ -32,6 +38,49 @@ class OllamaProvider(BaseProvider):
             options={"temperature": temperature},
         )
         return resp["message"]["content"]
+
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+    ) -> ChatToolResponse:
+        """Ollama 原生 function calling"""
+        msgs: list[dict] = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": system_prompt})
+        msgs.extend(messages)
+        tool_specs = [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t.get("description", ""),
+                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
+                },
+            }
+            for t in tools
+        ]
+        try:
+            resp = self._client.chat(
+                model=self._config.model,
+                messages=msgs,
+                tools=tool_specs,
+                options={"temperature": temperature},
+            )
+        except Exception as e:
+            log.warn(f"[OllamaProvider]工具调用请求失败，回退 prompt 协议: {e}")
+            return super().chat_with_tools(messages, tools, system_prompt, temperature)
+
+        message = resp.get("message", {})
+        calls = []
+        for tc in message.get("tool_calls") or []:
+            fn = tc.get("function", {})
+            raw_args = fn.get("arguments")
+            args = raw_args if isinstance(raw_args, dict) else {}
+            calls.append(ToolCall(name=fn.get("name", ""), arguments=args, id=tc.get("id", "")))
+        return ChatToolResponse(content=message.get("content", ""), tool_calls=calls, native=True)
 
     def is_available(self) -> bool:
         try:

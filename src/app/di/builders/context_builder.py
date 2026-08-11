@@ -15,7 +15,7 @@ def build_app_context() -> AppContext:
     infra = build_infrastructure()
     facades = build_business_facades(infra)
     services = build_services(infra, facades)
-    agent_rag = build_agent_rag(facades.agent_service)
+    agent_rag = build_agent_rag(facades.agent_service, services.media_library_service)
     coordinators = build_coordinators(infra, facades, services, agent_rag)
 
     context = AppContext(

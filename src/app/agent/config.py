@@ -1,30 +1,5 @@
-from dataclasses import dataclass
-
+from app.agent.providers.base import EmbeddingConfig, ProviderConfig
 from app.core.settings import settings
-
-
-@dataclass
-class ProviderConfig:
-    """LLM 提供商配置"""
-
-    name: str
-    api_key: str
-    api_url: str
-    model: str
-    proxy: str | None = None
-    timeout: int = 60
-
-
-@dataclass
-class EmbeddingConfig:
-    """Embedding 配置"""
-
-    provider: str
-    model: str
-    api_key: str = ""
-    api_url: str = ""
-    proxy: str | None = None
-    timeout: int = 60
 
 
 def _agent_cfg() -> dict:
@@ -130,4 +105,16 @@ def get_memory_config() -> dict:
             "max_tokens": short.get("max_tokens", 4000),
             "ttl_days": short.get("ttl_days", 30),
         },
+    }
+
+
+def get_notify_config() -> dict:
+    """通知增强参数（通知出口按 msg_type 单流替换模板）"""
+    cfg = _agent_cfg()
+    notify = cfg.get("notify") or {}
+    return {
+        "enabled": bool(notify.get("enabled", False)),
+        "msg_types": notify.get("msg_types")
+        or ["download_start", "download_fail", "rss_finished", "transfer_finished", "transfer_fail", "site_signin"],
+        "temperature": float(notify.get("temperature", 0.3)),
     }

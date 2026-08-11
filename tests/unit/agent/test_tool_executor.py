@@ -110,6 +110,35 @@ class TestLevelsAndConfirm:
         assert result.success
         executor._ctx.downloader_core.delete_torrents.assert_called_once_with(ids=["h1"], delete_file=False)
 
+    def test_permission_required_for_write_tool(self, executor):
+        """写工具未授予权限时拒绝执行"""
+        result = executor.execute(
+            "subscribe_delete", {"sub_id": 1}, confirmed=True, user_permissions=["agent:view"]
+        )
+        assert not result.success
+        assert "无权限" in result.error
+        executor._ctx.subscribe_service.delete_subscribe.assert_not_called()
+
+    def test_permission_granted_executes(self, executor):
+        result = executor.execute(
+            "subscribe_delete",
+            {"sub_id": 1},
+            confirmed=True,
+            user_permissions=["agent:view", "subscription:manage"],
+        )
+        assert result.success
+        executor._ctx.subscribe_service.delete_subscribe.assert_called_once()
+
+    def test_permission_skipped_when_not_provided(self, executor):
+        """消息渠道等未传权限列表时不做拦截（兼容旧路径）"""
+        result = executor.execute("subscribe_delete", {"sub_id": 1}, confirmed=True)
+        assert result.success
+
+    def test_read_tool_no_permission_required(self, executor):
+        executor._ctx.scheduler_service.get_jobs.return_value = MagicMock(model_dump=lambda: {"jobs": []})
+        result = executor.execute("scheduler_list", {}, user_permissions=["agent:view"])
+        assert result.success
+
 
 class TestDispatch:
     def test_media_search_calls_orchestrator(self, executor):

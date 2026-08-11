@@ -16,6 +16,7 @@ class DownloadAddLinkTool(BaseTool):
         "required": ["link"],
     }
     level = ToolLevel.WRITE
+    permission = "download:manage"
 
 
 class MediaDownloadTool(BaseTool):
@@ -30,6 +31,7 @@ class MediaDownloadTool(BaseTool):
         "required": ["title"],
     }
     level = ToolLevel.WRITE
+    permission = "download:manage"
 
 
 class DownloadListTool(BaseTool):
@@ -57,6 +59,7 @@ class DownloadControlTool(BaseTool):
         "required": ["action", "ids"],
     }
     level = ToolLevel.WRITE
+    permission = "download:manage"
 
 
 class DownloaderStatusTool(BaseTool):

@@ -22,6 +22,9 @@ class SQLiteVecStore(VectorStore):
         self._db.enable_load_extension(True)
         sqlite_vec.load(self._db)
         self._db.enable_load_extension(False)
+        # 并发写安全：WAL + busy_timeout（SSE 线程/重建索引可能并行）
+        self._db.execute("PRAGMA journal_mode=WAL")
+        self._db.execute("PRAGMA busy_timeout=5000")
         self._dimension = dimension
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS kb_chunks("
@@ -35,6 +38,18 @@ class SQLiteVecStore(VectorStore):
 
     def _ensure_vec_table(self, dimension: int) -> None:
         if self._dimension:
+            return
+        if self._table_exists("kb_vec"):
+            # 重开已有库：从存量向量恢复维度；维度变化需重建索引
+            row = self._db.execute("SELECT length(vector) FROM kb_vec LIMIT 1").fetchone()
+            if row:
+                existing = row[0] // 4
+                self._dimension = existing
+                if existing != dimension:
+                    raise ValueError(
+                        f"向量维度不匹配：库内为 {existing}，当前 embedding 模型为 {dimension}。"
+                        "请先 POST /api/agent/kb/reindex 重建索引"
+                    )
             return
         self._dimension = dimension
         self._db.execute(

@@ -93,6 +93,17 @@ class TestSQLiteVecStore:
         assert results and results[0].chunk.id == "a"
         s2.close()
 
+    def test_dimension_change_requires_reindex(self, tmp_path):
+        """换 embedding 模型（维度变化）重开库时明确报错"""
+        path = str(tmp_path / "dim.sqlite")
+        s1 = SQLiteVecStore(path)
+        s1.upsert("faq", [_chunk("a", "配置下载器")], [_vec(0.1)])
+        s1.close()
+        s2 = SQLiteVecStore(path)
+        with pytest.raises(ValueError, match="维度不匹配"):
+            s2.upsert("faq", [_chunk("b", "新内容")], [[0.1, 0.2, 0.3]])
+        s2.close()
+
     def test_delete_by_source(self, store):
         chunks = [_chunk("a", "文档一", source="s1"), _chunk("b", "文档二", source="s2")]
         store.upsert("faq", chunks, [_vec(0.1), _vec(0.2)])

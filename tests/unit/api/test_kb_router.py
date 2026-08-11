@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.deps import get_current_user, get_knowledge_ingestor, get_retriever
+from api.exception_handlers import register_exception_handlers
 from api.routers import kb as kb_router
 from app.agent.rag.retriever import RetrievalResult
 from app.schemas.auth import UserContext
@@ -74,6 +75,7 @@ class TestKbRouter:
 
     def test_permission_denied(self):
         app = FastAPI()
+        register_exception_handlers(app)
         app.include_router(kb_router.router, prefix="/api/agent")
         guest = UserContext(user_id=2, username="guest", level=99, permissions=[])
         app.dependency_overrides[get_current_user] = lambda: guest

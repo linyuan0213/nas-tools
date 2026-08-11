@@ -15,6 +15,7 @@ from app.domain.mediatypes import MediaType
 from app.media import meta_info
 from app.media.service import MediaService
 from app.message import Message
+from app.message.formatter import dialect_for_channel, format_agent_message
 from app.services.downloader_core import DownloaderCore
 from app.services.indexer_service import IndexerService
 from app.services.search_pagination import SearchPaginationManager
@@ -220,7 +221,8 @@ class MessageSearchService:
             answer = "AI出错了，请检查LLM配置，如需搜索电影/电视剧，请发送 搜索或下载 + 名称"
         if not answer:
             answer = "AI出错了，请检查LLM配置，如需搜索电影/电视剧，请发送 搜索或下载 + 名称"
-        self._message.send_channel_msg(channel=in_from, title="", text=str(answer).strip(), user_id=user_id)
+        answer_text = format_agent_message(str(answer).strip(), dialect_for_channel(in_from))
+        self._message.send_channel_msg(channel=in_from, title="", text=answer_text, user_id=user_id)
 
     def _search_media(
         self, in_from: SearchType, content: str, user_id: str, user_name: str | None = None, mtype: str = "SEARCH"

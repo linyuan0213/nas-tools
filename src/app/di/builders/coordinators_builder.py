@@ -8,6 +8,7 @@ from app.db.repositories.subscribe_repo_adapter import SubscribeHistoryRepositor
 from app.di.builders.agent_builder import AgentRagObjects
 from app.di.models import BusinessFacades, CoordinatorObjects, InfrastructureObjects, ServiceObjects
 from app.media import MediaCache
+from app.message.agent_enhancer import AgentMessageEnhancer
 from app.services.rss_processor import RssHelper
 from app.services.subscribe.coordinator import DownloadCoordinator
 from app.services.subscribe.handlers import (
@@ -135,6 +136,10 @@ def build_coordinators(
     )
     tool_executor = ToolExecutor(ctx=tool_context)
     facades.agent_service.init_chat_agent(tool_executor, agent_rag.conversation_store)
+
+    # Agent 通知增强（单流替换模板通知，agent 未启用时零开销）
+    if facades.agent_service.ready:
+        infra.message.set_agent_enhancer(AgentMessageEnhancer(facades.agent_service))
 
     # 注册 RSS 自动订阅事件处理器
     build_rss_auto_subscribe_handler(subscribe_service)

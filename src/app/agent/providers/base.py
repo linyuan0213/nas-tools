@@ -1,8 +1,51 @@
 """LLM 提供商抽象基类"""
 
+import json
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+
+from app.utils.json_utils import JsonUtils
+
+_TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体库系统。
+
+你可以使用以下工具来完成用户的请求。如果需要用工具，请按以下格式回复（只返回 JSON，不要其他文字）：
+
+```json
+{{"tool": "工具名", "parameters": {{"参数名": "参数值"}}}}
+```
+
+可用工具列表：
+{tools}
+
+回复规则：
+1. 需要工具时只返回上述 JSON 格式；工具结果会以 [工具结果] 形式返回给你，可继续调用其他工具或给出最终回答
+2. 不需要工具（闲聊、问候、简单回答）时直接回复文字
+3. 知识类问题（怎么配置/怎么用/报错原因）优先调用 kb_search；无结果时不要编造，如实说明
+4. 操作类问题（下载进度/订阅状态/库内容）必须调用对应工具查询真实数据，禁止臆测
+"""
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """一次工具调用"""
+
+    name: str
+    arguments: dict
+    id: str = ""
+
+
+@dataclass
+class ChatToolResponse:
+    """带工具调用的对话响应；native=False 表示走 prompt-JSON 协议回退"""
+
+    content: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    native: bool = False
+
+    @property
+    def has_tool_calls(self) -> bool:
+        return bool(self.tool_calls)
 
 
 @dataclass
@@ -13,6 +56,18 @@ class ProviderConfig:
     api_key: str
     api_url: str
     model: str
+    proxy: str | None = None
+    timeout: int = 60
+
+
+@dataclass
+class EmbeddingConfig:
+    """Embedding 配置"""
+
+    provider: str
+    model: str
+    api_key: str = ""
+    api_url: str = ""
     proxy: str | None = None
     timeout: int = 60
 
@@ -36,6 +91,47 @@ class BaseProvider(ABC):
         response_format: type | None = None,
     ) -> Any:
         """执行对话请求"""
+
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+    ) -> ChatToolResponse:
+        """带工具调用的对话。
+
+        默认实现 = prompt-JSON 协议（无原生工具调用能力的 provider 回退）；
+        OpenAI 兼容 / Ollama 等 provider 可 override 为原生 function calling。
+        """
+        prompt = _TOOL_PROMPT.replace("{tools}", JsonUtils.dumps(tools, ensure_ascii=False, indent=2))
+        content = self.chat(messages=messages, system_prompt=prompt, temperature=temperature)
+        return self._parse_prompt_tool_response(content)
+
+    @staticmethod
+    def _parse_prompt_tool_response(content: str) -> ChatToolResponse:
+        """解析 prompt-JSON 协议响应中的工具调用"""
+        text = (content or "").strip()
+        if "```json" in text:
+            start = text.find("```json") + 7
+            end = text.find("```", start)
+            if end > start:
+                text = text[start:end].strip()
+        elif "```" in text:
+            start = text.find("```") + 3
+            end = text.find("```", start)
+            if end > start:
+                text = text[start:end].strip()
+        try:
+            data = JsonUtils.loads(text)
+            if isinstance(data, dict) and "tool" in data and "parameters" in data:
+                return ChatToolResponse(
+                    content=content,
+                    tool_calls=[ToolCall(name=str(data["tool"]), arguments=data.get("parameters") or {})],
+                )
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return ChatToolResponse(content=content)
 
     @abstractmethod
     def is_available(self) -> bool:

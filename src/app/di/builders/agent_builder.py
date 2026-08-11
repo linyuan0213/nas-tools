@@ -33,7 +33,7 @@ class AgentRagObjects:
     conversation_store: Any | None
 
 
-def build_agent_rag(svc: Any = None) -> AgentRagObjects:
+def build_agent_rag(svc: Any = None, media_library_service: Any = None) -> AgentRagObjects:
     """构建 Agent RAG + 记忆能力（svc 为 AgentService，供摘要器复用）。"""
     if not agent_enabled():
         return AgentRagObjects(None, None, None, None, None)
@@ -47,7 +47,7 @@ def build_agent_rag(svc: Any = None) -> AgentRagObjects:
         store = create_vector_store(get_vector_store_config())
         rag_cfg = get_rag_config()
         chunker = MarkdownChunker(chunk_size=rag_cfg["chunk_size"], overlap=rag_cfg["chunk_overlap"])
-        ingestor = KnowledgeIngestor(chunker, embedding, store, default_loaders())
+        ingestor = KnowledgeIngestor(chunker, embedding, store, default_loaders(media_library_service))
         retriever = Retriever(embedding, store, top_k=rag_cfg["top_k"], rerank_top_k=rag_cfg["rerank_top_k"])
         log.info("[DI]Agent RAG 构建完成")
         return AgentRagObjects(

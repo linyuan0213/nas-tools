@@ -37,6 +37,7 @@ class ToolExecutor:
         confirmed: bool = False,
         session_id: str = "",
         user_id: str = "",
+        user_permissions: list[str] | None = None,
     ) -> ToolResult:
         check = self._registry.validate(tool_name, arguments)
         if not check.success:
@@ -46,6 +47,8 @@ class ToolExecutor:
         handler = self._handlers.get(tool_name)
         if not tool or not handler:
             return ToolResult(success=False, error=f"工具未实现: {tool_name}")
+        if tool.permission and user_permissions is not None and tool.permission not in user_permissions:
+            return ToolResult(success=False, error=f"无权限执行该操作，需要权限: {tool.permission}")
         if tool.level == ToolLevel.DANGEROUS and not confirmed:
             return ToolResult(
                 success=True,

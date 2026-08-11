@@ -25,6 +25,12 @@ class ClearRequest(BaseModel):
     session_id: str = ""
 
 
+class ConfirmRequest(BaseModel):
+    tool: str
+    arguments: dict = {}
+    session_id: str = ""
+
+
 @router.post("/chat")
 def agent_chat(
     req: ChatRequest,
@@ -50,6 +56,7 @@ def agent_chat(
                 user_id=user_id,
                 channel="web",
                 on_event=lambda e: event_queue.put(e),
+                user_permissions=list(user.permissions),
             )
             event_queue.put({"type": "answer", "content": answer})
         except Exception as e:
@@ -68,6 +75,29 @@ def agent_chat(
             yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(_gen(), media_type="text/event-stream")
+
+
+@router.post("/chat/confirm")
+def agent_chat_confirm(
+    req: ConfirmRequest,
+    user=Depends(require_permission("agent:manage")),
+    ctx: AppContext = Depends(get_app_context),
+):
+    """确认并执行危险操作（chat 流程中 need_confirm 后的批准入口）"""
+    schema = ctx.tool_executor.get_schema(req.tool)
+    if not schema or schema.get("level") != "dangerous":
+        return fail(msg="仅支持确认危险操作工具")
+    result = ctx.tool_executor.execute(
+        req.tool,
+        req.arguments,
+        confirmed=True,
+        session_id=req.session_id,
+        user_id=str(user.user_id),
+        user_permissions=list(user.permissions),
+    )
+    if result.success:
+        return success(data=result.data)
+    return fail(msg=result.error or "执行失败", data=result.data)
 
 
 @router.post("/chat/clear")

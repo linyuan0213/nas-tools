@@ -117,6 +117,20 @@ class AgentService:
         log.info("[AgentService]缓存未命中，调用 Provider chat")
         return self._provider.chat(list(messages), system_prompt, temperature)
 
+    def chat_tool_calls(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+    ) -> Any:
+        """带工具调用的 LLM 对话（原生 function calling / prompt 协议回退；结果不可缓存）"""
+        if not self.ready:
+            raise RuntimeError("LLM service not configured")
+        if not self._provider:
+            raise RuntimeError("LLM service not configured")
+        return self._provider.chat_with_tools(messages, tools, system_prompt, temperature)
+
     def structured_chat(
         self,
         messages: list[dict],

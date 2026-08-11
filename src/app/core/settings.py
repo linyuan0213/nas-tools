@@ -234,6 +234,23 @@ class AgentMemoryConfig(BaseModel):
     short_term: AgentShortTermMemoryConfig = Field(default_factory=AgentShortTermMemoryConfig)
 
 
+class AgentNotifyConfig(BaseModel):
+    """Agent 通知增强配置（通知发送出口按 msg_type 单流替换模板）"""
+
+    enabled: bool = False
+    msg_types: list[str] = Field(
+        default_factory=lambda: [
+            "download_start",
+            "download_fail",
+            "rss_finished",
+            "transfer_finished",
+            "transfer_fail",
+            "site_signin",
+        ]
+    )
+    temperature: float = 0.3
+
+
 class AgentConfig(BaseModel):
     """Agent 配置"""
 
@@ -249,6 +266,7 @@ class AgentConfig(BaseModel):
     lancedb: AgentStoreConfig = Field(default_factory=AgentStoreConfig)
     rag: AgentRagConfig = Field(default_factory=AgentRagConfig)
     memory: AgentMemoryConfig = Field(default_factory=AgentMemoryConfig)
+    notify: AgentNotifyConfig = Field(default_factory=AgentNotifyConfig)
 
 
 class DatabaseConfig(BaseModel):

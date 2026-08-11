@@ -5,7 +5,14 @@ from typing import Any
 from openai import APIStatusError, OpenAI
 
 import log
-from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
+from app.agent.providers.base import (
+    BaseEmbeddingProvider,
+    BaseProvider,
+    ChatToolResponse,
+    ProviderConfig,
+    ToolCall,
+)
+from app.utils.json_utils import JsonUtils
 
 
 class OpenAIProvider(BaseProvider):
@@ -46,6 +53,54 @@ class OpenAIProvider(BaseProvider):
             err_msg = self._format_error(e)
             log.warn(f"[OpenAIProvider]请求失败: {err_msg}")
             return ""
+
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+    ) -> ChatToolResponse:
+        """原生 function calling（OpenAI 兼容接口：DeepSeek / DashScope / Ollama /v1 等）"""
+        msgs: list[dict] = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": system_prompt})
+        msgs.extend(messages)
+        tool_specs = [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t.get("description", ""),
+                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
+                },
+            }
+            for t in tools
+        ]
+        kwargs: dict[str, Any] = {
+            "model": self._config.model,
+            "messages": msgs,
+            "temperature": temperature,
+            "tools": tool_specs,
+        }
+        try:
+            resp = self._client.chat.completions.create(**kwargs)
+        except Exception as e:
+            err_msg = self._format_error(e)
+            log.warn(f"[OpenAIProvider]工具调用请求失败，回退 prompt 协议: {err_msg}")
+            return super().chat_with_tools(messages, tools, system_prompt, temperature)
+
+        message: Any = resp.choices[0].message
+        calls = []
+        for tc in message.tool_calls or []:
+            try:
+                args = JsonUtils.loads(tc.function.arguments or "{}")
+            except (ValueError, TypeError):
+                args = {}
+            calls.append(
+                ToolCall(name=tc.function.name or "", arguments=args if isinstance(args, dict) else {}, id=tc.id or "")
+            )
+        return ChatToolResponse(content=message.content or "", tool_calls=calls, native=True)
 
     @staticmethod
     def _format_error(e: Exception) -> str:

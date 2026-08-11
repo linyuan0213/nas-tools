@@ -1,7 +1,11 @@
 """LLM 提供商集合"""
 
-from app.agent.config import EmbeddingConfig
-from app.agent.providers.base import BaseEmbeddingProvider, BaseProvider, ProviderConfig
+from app.agent.providers.base import (
+    BaseEmbeddingProvider,
+    BaseProvider,
+    EmbeddingConfig,
+    ProviderConfig,
+)
 from app.agent.providers.gemini import GeminiEmbeddingProvider, GeminiProvider
 from app.agent.providers.ollama import OllamaEmbeddingProvider, OllamaProvider
 from app.agent.providers.openai import OpenAIEmbeddingProvider, OpenAIProvider
