@@ -5,6 +5,8 @@
 
 from typing import cast
 
+import pytest
+
 from app.agent.agents.memory import ConversationStore, Summarizer
 from app.agent.pydantic_agent import PydanticChatAgent
 from app.agent.tools.base import ToolResult
@@ -119,6 +121,18 @@ class _FakeRepo:
 
 
 class TestPydanticChatAgent:
+    @pytest.fixture(autouse=True)
+    def _agent_provider(self, monkeypatch):
+        """确保 get_provider() 返回可用 provider——不依赖本地 data/config.yaml 的 agent 配置（CI 全新检出无该文件）"""
+        monkeypatch.setattr(
+            "app.agent.config._agent_cfg",
+            lambda: {
+                "enabled": True,
+                "default_provider": "test",
+                "providers": {"test": {"api_url": "http://localhost:1", "model": "test-model"}},
+            },
+        )
+
     def test_multi_step_tool_loop(self, tmp_path):
         svc = _FakeSvc()
         executor = _FakeExecutor()
