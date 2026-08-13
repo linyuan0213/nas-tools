@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import log
-from app.agent.agents.memory import ConversationStore, Summarizer
+from app.agent.agents.memory import ConversationStore, SemanticMemory, Summarizer
 from app.agent.config import (
     agent_enabled,
     get_embedding_config,
@@ -31,17 +31,31 @@ class AgentRagObjects:
     retriever: Any | None
     knowledge_ingestor: Any | None
     conversation_store: Any | None
+    semantic_memory: Any | None
 
 
 def build_agent_rag(svc: Any = None, media_library_service: Any = None) -> AgentRagObjects:
     """构建 Agent RAG + 记忆能力（svc 为 AgentService，供摘要器复用）。"""
     if not agent_enabled():
-        return AgentRagObjects(None, None, None, None, None)
+        return AgentRagObjects(None, None, None, None, None, None)
     conversation_store = _build_conversation_store(svc)
+    semantic_memory = None
+    emb_cfg_pre = get_embedding_config()
+    if emb_cfg_pre and get_memory_config()["long_term"]["enabled"]:
+        try:
+            emb_provider = create_embedding_provider(emb_cfg_pre)
+            semantic_memory = SemanticMemory(
+                store=create_vector_store(get_vector_store_config()),
+                embedding=EmbeddingService(emb_provider),
+                top_k=get_memory_config()["long_term"]["top_k"],
+            )
+            log.info("[DI]长程语义记忆已启用（user_memory 命名空间）")
+        except Exception as e:
+            log.error(f"[DI]长程语义记忆构建失败: {e}")
     emb_cfg = get_embedding_config()
     if not emb_cfg:
         log.warn("[DI]agent 已启用但未配置 embedding，RAG 能力跳过")
-        return AgentRagObjects(None, None, None, None, conversation_store)
+        return AgentRagObjects(None, None, None, None, conversation_store, semantic_memory)
     try:
         embedding = EmbeddingService(create_embedding_provider(emb_cfg))
         store = create_vector_store(get_vector_store_config())
@@ -56,10 +70,11 @@ def build_agent_rag(svc: Any = None, media_library_service: Any = None) -> Agent
             retriever=retriever,
             knowledge_ingestor=ingestor,
             conversation_store=conversation_store,
+            semantic_memory=semantic_memory,
         )
     except Exception as e:
         log.error(f"[DI]Agent RAG 构建失败，降级为无 RAG: {e}")
-        return AgentRagObjects(None, None, None, None, conversation_store)
+        return AgentRagObjects(None, None, None, None, conversation_store, semantic_memory)
 
 
 def _build_conversation_store(svc: Any) -> ConversationStore | None:

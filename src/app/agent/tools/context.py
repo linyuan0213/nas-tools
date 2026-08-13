@@ -21,3 +21,4 @@ class ToolContext:
     event_bus: Any
     retriever: Any = None
     conversation_store: Any = None
+    semantic_memory: Any = None

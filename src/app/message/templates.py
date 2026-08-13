@@ -30,7 +30,7 @@ DEFAULT_MESSAGE_TEMPLATES = {
             "{% endif %}{% if media_info.get_resource_type_string() %}"
             "📦 质量：{{ media_info.get_resource_type_string() }}\n"
             "{% endif %}💾 大小：{{ media_info.size|filesize }}\n"
-            "📥 来自：{{ in_from.value }}\n"
+            "📥 来自：{{ in_from }}\n"
             "{% if exist_filenum != 0 %}⚠️ {{ exist_filenum }}个文件已存在{% endif %}"
         ),
     },
@@ -47,7 +47,7 @@ DEFAULT_MESSAGE_TEMPLATES = {
         "text": (
             "{% if media_info.vote_average %}⭐ {{ media_info.get_vote_string() }}\n"
             "{% endif %}📺 类型：{{ media_info.type.value }}\n"
-            "📥 来自：{{ in_from.value }}\n"
+            "📥 来自：{{ in_from }}\n"
             "{% if media_info.user_name %}👤 用户：{{ media_info.user_name }}{% endif %}"
         ),
     },

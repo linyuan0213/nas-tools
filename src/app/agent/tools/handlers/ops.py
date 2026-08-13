@@ -49,6 +49,19 @@ def system_status(ctx: ToolContext) -> ToolResult:
     return ToolResult(success=True, data=data)
 
 
+def memory_forget(ctx: ToolContext, text: str, user_id: str = "") -> ToolResult:
+    if ctx.semantic_memory is None:
+        return ToolResult(success=False, error="长程语义记忆未启用")
+    deleted = ctx.semantic_memory.forget(user_id or "web", text)
+    return ToolResult(
+        success=True,
+        data={
+            "deleted": deleted,
+            "message": "已删除该偏好记忆" if deleted else "未找到匹配的偏好记忆",
+        },
+    )
+
+
 def memory_clear(ctx: ToolContext, session_id: str = "", user_id: str = "") -> ToolResult:
     if ctx.conversation_store is None:
         return ToolResult(success=False, error="记忆存储未启用")
@@ -63,4 +76,5 @@ HANDLERS = {
     "scheduler_run": scheduler_run,
     "system_status": system_status,
     "memory_clear": memory_clear,
+    "memory_forget": memory_forget,
 }

@@ -187,12 +187,44 @@ class MessageCommandHandler:
 
     _SEARCH_COMMAND_PREFIXES = ("/rss", "/ssa", "订阅", "搜索", "下载")
 
+    # 管理类命令所需权限（Web 内置消息页按用户权限执行；TG/WX webhook 不传权限时不受限）
+    _COMMAND_PERMISSIONS: dict[str, str] = {
+        "/udt": "setting:update",
+        "/clr": "setting:update",
+        "/ptt": "setting:update",
+        "/rst": "setting:update",
+        "/ptr": "setting:update",
+        "/sub": "setting:update",
+        "/utf": "setting:update",
+    }
+
+    def _check_command_permission(self, command: str, user_permissions: list[str] | None) -> bool:
+        """命令权限校验：user_permissions 为 None（webhook 渠道，发送方已认证）时放行"""
+        if user_permissions is None:
+            return True
+        required = self._COMMAND_PERMISSIONS.get(command)
+        if required and required not in user_permissions:
+            return False
+        return True
+
     def _is_search_command(self, msg: str) -> bool:
         """判断是否为搜索/订阅类命令前缀（支持斜杠命令和中文命令）."""
         return any(msg.startswith(prefix) for prefix in self._SEARCH_COMMAND_PREFIXES)
 
-    def handle_message_job(self, msg, in_from=SearchType.OT, user_id=None, user_name=None):
-        """处理消息事件"""
+    def _check_search_permission(self, msg: str, user_permissions: list[str] | None) -> bool:
+        """自由文本搜索意图权限：下载/URL/magnet 需 download:manage，订阅需 subscription:manage"""
+        if user_permissions is None:
+            return True
+        lower = msg.lower()
+        if any(k in lower for k in ("magnet:", "http://", "https://")) or "下载" in msg:
+            if "download:manage" not in user_permissions:
+                return False
+        if "订阅" in msg and "subscription:manage" not in user_permissions:
+            return False
+        return True
+
+    def handle_message_job(self, msg, in_from=SearchType.OT, user_id=None, user_name=None, user_permissions=None):
+        """处理消息事件（user_permissions: Web 用户权限列表，None=webhook 渠道放行）"""
         if not msg:
             return
 
@@ -208,6 +240,12 @@ class MessageCommandHandler:
 
         # 搜索/订阅类命令（含中文"订阅"、"搜索"、"下载"及 /rss、/ssa）直接交给搜索服务
         if self._is_search_command(msg):
+            if not self._check_search_permission(msg, user_permissions):
+                if self._message:
+                    self._message.send_channel_msg(
+                        channel=in_from, title="权限不足，无法执行该操作", user_id=user_id or ""
+                    )
+                return
             if self._message:
                 self._message.send_channel_msg(channel=in_from, title="正在搜索/订阅，请稍候...", user_id=user_id or "")
             TokenCache.delete("search")
@@ -217,6 +255,14 @@ class MessageCommandHandler:
 
         command = self._command_map.get(msg)
         if command:
+            if not self._check_command_permission(msg, user_permissions):
+                if self._message:
+                    self._message.send_channel_msg(
+                        channel=in_from,
+                        title=f"权限不足，无法执行 {command.get('desc')}",
+                        user_id=user_id or "",
+                    )
+                return
             if func := command.get("func"):
                 if self._thread_executor:
                     self._thread_executor.submit(func)

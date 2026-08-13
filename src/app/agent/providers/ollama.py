@@ -47,21 +47,7 @@ class OllamaProvider(BaseProvider):
         temperature: float = 0.7,
     ) -> ChatToolResponse:
         """Ollama 原生 function calling"""
-        msgs: list[dict] = []
-        if system_prompt:
-            msgs.append({"role": "system", "content": system_prompt})
-        msgs.extend(messages)
-        tool_specs = [
-            {
-                "type": "function",
-                "function": {
-                    "name": t["name"],
-                    "description": t.get("description", ""),
-                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
-                },
-            }
-            for t in tools
-        ]
+        msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
         try:
             resp = self._client.chat(
                 model=self._config.model,
@@ -81,6 +67,47 @@ class OllamaProvider(BaseProvider):
             args = raw_args if isinstance(raw_args, dict) else {}
             calls.append(ToolCall(name=fn.get("name", ""), arguments=args, id=tc.get("id", "")))
         return ChatToolResponse(content=message.get("content", ""), tool_calls=calls, native=True)
+
+    def chat_with_tools_stream(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+        on_token: Any = None,
+        on_reasoning: Any = None,
+    ) -> ChatToolResponse:
+        """Ollama 流式 function calling"""
+        msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
+        try:
+            stream = self._client.chat(
+                model=self._config.model,
+                messages=msgs,
+                tools=tool_specs,
+                options={"temperature": temperature},
+                stream=True,
+            )
+        except Exception as e:
+            log.warn(f"[OllamaProvider]流式请求失败，回退非流式: {e}")
+            return super().chat_with_tools_stream(
+                messages, tools, system_prompt, temperature, on_token, on_reasoning
+            )
+
+        content_parts: list[str] = []
+        tool_calls_final: list[ToolCall] = []
+        for chunk in stream:
+            message = chunk.get("message", {})
+            content = message.get("content")
+            if content:
+                content_parts.append(content)
+                if on_token:
+                    on_token(content)
+            for tc in message.get("tool_calls") or []:
+                fn = tc.get("function", {})
+                raw_args = fn.get("arguments")
+                args = raw_args if isinstance(raw_args, dict) else {}
+                tool_calls_final.append(ToolCall(name=fn.get("name", ""), arguments=args, id=tc.get("id", "")))
+        return ChatToolResponse(content="".join(content_parts), tool_calls=tool_calls_final, native=True)
 
     def is_available(self) -> bool:
         try:

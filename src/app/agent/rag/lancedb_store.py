@@ -116,6 +116,29 @@ class LanceDBStore(VectorStore):
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:top_k]
 
+    def list_by_source_prefix(self, namespace: str, prefix: str, limit: int = 50) -> list[dict]:
+        name = f"kb_{namespace}"
+        if name not in self._db.table_names():
+            return []
+        table = self._db.open_table(name)
+        try:
+            # 过滤下推到 LanceDB 扫描，避免全表物化；limit 在存储层生效
+            scan = table.to_lance().scan(filter=f"source LIKE '{prefix}%'", limit=limit)
+            rows = scan.to_arrow()
+        except Exception as e:
+            log.warn(f"[LanceDBStore]过滤扫描失败，回退全量列举: {e}")
+            try:
+                rows = table.to_arrow()
+            except Exception as e2:
+                log.warn(f"[LanceDBStore]列举失败: {e2}")
+                return []
+        result = []
+        for record in rows.to_pylist():
+            src = str(record.get("source", ""))
+            if src.startswith(prefix):
+                result.append({"id": str(record.get("id", "")), "source": src, "text": str(record.get("text", ""))})
+        return result[:limit]
+
     def count(self, namespace: str | None = None) -> int:
         names = [f"kb_{namespace}"] if namespace else [n for n in self._db.table_names() if n.startswith("kb_")]
         return sum(self._db.open_table(n).count_rows() for n in names if n in self._db.table_names())

@@ -29,6 +29,22 @@ class EmbeddingService:
         raw = f"{self._provider.name}:{getattr(self._provider, '_model', '')}:{text}"
         return hashlib.sha1(raw.encode(), usedforsecurity=False).hexdigest()
 
+    def _embed_chunked(self, texts: list[str], size: int) -> list[list[float] | None]:
+        """分批转向量；单批失败时自动缩小批次重试（适配各 provider 批次上限）"""
+        out: list[list[float] | None] = []
+        for start in range(0, len(texts), size):
+            chunk = texts[start : start + size]
+            try:
+                out.extend(self._provider.embed(chunk))
+            except Exception as e:
+                if size <= 1:
+                    log.warn(f"[EmbeddingService]embed 失败: {e}，{len(chunk)} 条置空")
+                    out.extend([None] * len(chunk))
+                else:
+                    log.warn(f"[EmbeddingService]批量 embed 失败，缩小批次重试: {e}")
+                    out.extend(self._embed_chunked(chunk, max(1, size // 2)))
+        return out
+
     def embed_texts(self, texts: list[str]) -> list[list[float] | None]:
         """批量转向量，逐条缓存；失败条返回 None，不污染缓存"""
         if not texts:
@@ -45,12 +61,10 @@ class EmbeddingService:
         for start in range(0, len(missing), self._batch_size):
             batch_idx = missing[start : start + self._batch_size]
             batch_texts = [texts[i] for i in batch_idx]
-            try:
-                vectors = self._provider.embed(batch_texts)
-            except Exception as e:
-                log.warn(f"[EmbeddingService]批量 embed 失败: {e}，{len(batch_texts)} 条置空")
-                continue
+            vectors = self._embed_chunked(batch_texts, self._batch_size)
             for i, vector in zip(batch_idx, vectors, strict=False):
+                if vector is None:
+                    continue
                 results[i] = vector
                 self._cache.set(self._cache_key(texts[i]), vector)
         return results

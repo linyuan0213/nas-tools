@@ -5,6 +5,7 @@ from typing import Any
 import log
 from app.domain.enums import SearchType
 from app.infrastructure.queue import MessageQueueFactory
+from app.message.web_store import WebMessageStore
 from app.utils import StringUtils
 
 
@@ -98,6 +99,9 @@ class MessageDispatcher:
         if channel == SearchType.WEB:
             if self._messagecenter:
                 self._messagecenter.insert_system_message(title=title, content=text)
+            WebMessageStore.instance().add(
+                title=title, content=text, kind="reply", image=image or "", url=url or "", user_id=user_id
+            )
             return True
         client = self._client_manager.get_interactive_client(channel)
         if client:
@@ -132,11 +136,11 @@ class MessageDispatcher:
     def send_channel_list_msg(self, channel: Any, title: str, medias: list, user_id: str = "") -> bool:
         """发送列表选择消息，用于消息交互."""
         if channel == SearchType.WEB:
-            texts = []
-            for index, media in enumerate(medias):
-                texts.append(f"{index}. {media.get_title_string()}，{media.get_vote_string()}")
+            items = WebMessageStore.build_list_items(medias)
+            content = "\n".join(f"{it['index']}. {it['title']}，{it['vote']}".strip() for it in items)
             if self._messagecenter:
-                self._messagecenter.insert_system_message(title=title, content="\n".join(texts))
+                self._messagecenter.insert_system_message(title=title, content=content)
+            WebMessageStore.instance().add(title=title, content="", kind="list", items=items, user_id=user_id)
             return True
         client = self._client_manager.get_interactive_client(channel)
         if client:

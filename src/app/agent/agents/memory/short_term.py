@@ -1,4 +1,6 @@
-"""短程记忆 — ConversationStore（DB 持久化 + 缓存热路径 + token 预算 + 滚动摘要）"""
+"""短程记忆 — ConversationStore（DB 持久化 + 缓存热路径 + token 预算 + 滚动摘要 + 工具执行轨迹）"""
+
+import time
 
 import log
 from app.agent.agents.memory.key import MemoryKey
@@ -38,7 +40,15 @@ class ConversationStore:
         if not conv:
             return []
         rows = self._repo.get_messages(conv.ID)
-        messages = [{"role": r.ROLE, "content": r.CONTENT} for r in rows]
+        messages = [
+            {
+                "role": r.ROLE,
+                "content": r.CONTENT,
+                "tool_calls": r.TOOL_CALLS,
+                "created_at": r.CREATED_AT.timestamp() if r.CREATED_AT else 0,
+            }
+            for r in rows
+        ]
         self._cache.set(key.cache_key(), messages)
         return messages
 
@@ -48,7 +58,7 @@ class ConversationStore:
         messages = self.load_history(key)
         conv = self._repo.get_or_create(key.user_id, key.channel, key.session_id)
         self._repo.append_message(conv.ID, role, content, tokens=estimate_tokens(content), tool_calls=tool_calls)
-        messages.append({"role": role, "content": content})
+        messages.append({"role": role, "content": content, "tool_calls": tool_calls, "created_at": time.time()})
         self._cache.set(key.cache_key(), messages)
         self._maybe_summarize(key, conv.ID, conv.SUMMARY or "", messages)
 
@@ -68,6 +78,27 @@ class ConversationStore:
         key = MemoryKey(user_id=user_id, channel=channel, session_id=session_id)
         self._repo.delete_conversation(key.user_id, key.channel, key.session_id)
         self._cache.delete(key.cache_key())
+
+    def cleanup_expired(self, ttl_days: int) -> int:
+        """删除超过 ttl_days 未更新的会话（记忆过期清理），返回清理的会话数"""
+        return self._repo.cleanup_expired(ttl_days)
+
+    def append_tool_trace(self, key: MemoryKey, tool: str, args: dict, success: bool, result_note: str = "") -> None:
+        """持久化工具执行轨迹（中断恢复/幂等参考）"""
+        self.append(
+            key,
+            "system",
+            f"[已执行] {tool}",
+            tool_calls={"tool": tool, "args": args, "success": success, "result": result_note},
+        )
+
+    def chat_history(self, key: MemoryKey) -> list[dict]:
+        """展示用对话历史：仅 user/assistant 消息（排除滚动摘要与工具轨迹备注），供前端刷新恢复"""
+        return [
+            {"role": m["role"], "content": m["content"], "ts": m.get("created_at") or 0}
+            for m in self.load_history(key)
+            if m["role"] in ("user", "assistant") and m.get("content")
+        ]
 
     def _maybe_summarize(self, key: MemoryKey, conversation_id: int, old_summary: str, messages: list[dict]) -> None:
         """超预算：最早一半消息并入滚动摘要"""

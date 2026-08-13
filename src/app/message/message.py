@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from app.message.core.agent_dispatcher import AgentEnhancingDispatcher
 from app.message.core.client_manager import ClientManager
 from app.message.core.command_manager import CommandManager
 from app.message.core.dispatcher import MessageDispatcher
@@ -39,7 +40,6 @@ class Message:
         """注入 Agent 通知增强器（单流替换模板；facade 与 builder 同步指向包装器）"""
         if enhancer is None:
             return
-        from app.message.core.agent_dispatcher import AgentEnhancingDispatcher
 
         wrapped = AgentEnhancingDispatcher(self._dispatcher, enhancer)
         self._dispatcher = wrapped

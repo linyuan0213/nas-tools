@@ -37,12 +37,14 @@ from api.deps import (
     require_any_permission,
     require_permission,
 )
+from app.agent.providers import list_embedding_models, validate_api_url
 from app.agent.providers.base import ProviderConfig
 from app.agent.providers.gemini import GeminiProvider
 from app.agent.providers.ollama import OllamaProvider
 from app.agent.providers.openai import OpenAIProvider
 from app.core.error_codes import ErrorCode
 from app.core.exceptions import AuthError, DomainError, PermissionDenied, ResourceNotFoundError, ServiceError
+from app.core.root_path import get_project_root
 from app.core.system_config import SystemConfig
 from app.domain.enums import SystemConfigKey
 from app.indexer.registry import get_all_clients as get_all_indexers
@@ -187,6 +189,12 @@ class AgentModelsRequest(BaseModel):
     provider_name: str
     api_url: str | None = None
     api_key: str | None = None
+
+
+class DocReadRequest(BaseModel):
+    """读取内置文档请求"""
+
+    name: str
 
 
 # ---------------------------------------------------------------------------
@@ -720,12 +728,17 @@ def update_config(
 @router.post("/agent/models", response_model=CommonResponse, summary="查询 LLM 模型列表")
 def list_agent_models(
     req: AgentModelsRequest,
-    current_user: UserContext = Depends(require_permission("setting:view")),
+    current_user: UserContext = Depends(require_permission("setting:update")),
 ):
     """查询 LLM Provider 支持的模型列表"""
 
     if not req.api_url or not req.api_key:
         return success(data=[])
+
+    try:
+        validate_api_url(req.api_url)
+    except ValueError as e:
+        return fail(msg=str(e))
 
     config = ProviderConfig(
         name=req.provider_name,
@@ -748,6 +761,35 @@ def list_agent_models(
     except Exception as e:
         log.warn(f"[Agent]查询模型列表失败: {e}")
         return fail(msg=str(e))
+
+
+@router.post("/agent/embedding_models", response_model=CommonResponse, summary="查询 Embedding 模型列表")
+def list_agent_embedding_models(
+    req: AgentModelsRequest,
+    current_user: UserContext = Depends(require_permission("setting:update")),
+):
+    """查询 Embedding Provider 支持的模型列表（动态拉取，失败回退精选）"""
+    models = list_embedding_models(
+        provider_name=req.provider_name,
+        api_url=req.api_url or "",
+        api_key=req.api_key or "",
+    )
+    return success(data=models)
+
+
+@router.post("/docs/read", response_model=CommonResponse, summary="读取内置文档 Markdown")
+def read_system_doc(
+    req: DocReadRequest,
+    current_user: UserContext = Depends(require_permission("agent:view")),
+):
+    """读取内置 docs/*.md 文档内容（供消息中心"相关文档"链接查看，防目录穿越）"""
+    name = Path(req.name).name
+    if not name.endswith(".md"):
+        name = f"{name}.md"
+    doc_path = get_project_root() / "docs" / name
+    if not doc_path.is_file():
+        return fail(msg=f"文档不存在: {name}")
+    return success(data={"name": name, "content": doc_path.read_text(encoding="utf-8")})
 
 
 @router.post("/message_clients/update", response_model=CommonResponse, summary="更新消息客户端")

@@ -1,10 +1,11 @@
-"""检索器 — 混合检索 + 截断 + 引用组装"""
+"""检索器 — 混合检索 + 查询改写 + 截断 + 引用组装"""
 
 from dataclasses import dataclass, field
 
 import log
 from app.agent.rag.embedding import EmbeddingService
 from app.agent.rag.models import ScoredChunk
+from app.agent.rag.query_rewriter import rewrite_query
 from app.agent.rag.vector_store import VectorStore
 
 
@@ -38,19 +39,21 @@ class Retriever:
         self._max_chars = max_chars
 
     def search(self, query: str, namespace: str | None = None) -> RetrievalResult:
-        """混合检索：embedding 失败时退化为纯全文检索"""
+        """混合检索：embedding 失败时退化为纯全文检索；FTS 走查询改写，向量用原文"""
         if not query or not query.strip():
             return RetrievalResult()
         vector = self._embedding.embed_query(query)
         if vector is None:
             log.warn("[Retriever]embedding 失败，退化为纯全文检索")
-        hits = self._store.hybrid_search(query, vector, namespace, self._top_k)
+        fts_query = rewrite_query(query)
+        hits = self._store.hybrid_search(fts_query, vector, namespace, self._top_k)
         hits = hits[: self._rerank_top_k]
         citations = [
             {
                 "source": h.chunk.source,
                 "heading": h.chunk.metadata.get("heading", ""),
                 "snippet": h.chunk.text[: self._max_chars],
+                "score": h.score,
             }
             for h in hits
         ]

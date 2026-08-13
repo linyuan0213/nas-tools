@@ -25,6 +25,10 @@ class ClearRequest(BaseModel):
     session_id: str = ""
 
 
+class MemoryDeleteRequest(BaseModel):
+    text: str
+
+
 class ConfirmRequest(BaseModel):
     tool: str
     arguments: dict = {}
@@ -57,6 +61,7 @@ def agent_chat(
                 channel="web",
                 on_event=lambda e: event_queue.put(e),
                 user_permissions=list(user.permissions),
+                on_token=lambda t: event_queue.put({"type": "token", "content": t}),
             )
             event_queue.put({"type": "answer", "content": answer})
         except Exception as e:
@@ -98,6 +103,33 @@ def agent_chat_confirm(
     if result.success:
         return success(data=result.data)
     return fail(msg=result.error or "执行失败", data=result.data)
+
+
+@router.get("/memory")
+def agent_memory_list(
+    user=Depends(require_permission("agent:view")),
+    ctx: AppContext = Depends(get_app_context),
+):
+    """列出当前用户的长程语义记忆（偏好管理）"""
+    semantic = ctx.semantic_memory
+    if semantic is None:
+        return fail(msg="长程语义记忆未启用")
+    memories = semantic.list(str(user.user_id), limit=50)
+    return success(data={"memories": memories})
+
+
+@router.post("/memory/delete")
+def agent_memory_delete(
+    req: MemoryDeleteRequest,
+    user=Depends(require_permission("agent:manage")),
+    ctx: AppContext = Depends(get_app_context),
+):
+    """删除指定长程记忆"""
+    semantic = ctx.semantic_memory
+    if semantic is None:
+        return fail(msg="长程语义记忆未启用")
+    deleted = semantic.forget(str(user.user_id), req.text)
+    return success(data={"deleted": deleted})
 
 
 @router.post("/chat/clear")

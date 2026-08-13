@@ -36,6 +36,7 @@ from api.routers import (
     subscription,
     sync,
     system,
+    web_message,
     words,
 )
 from app.core.settings import settings
@@ -48,6 +49,7 @@ from app.infrastructure.rate_limiter.middleware import RateLimitMiddleware
 from app.infrastructure.redis import RedisStore
 from app.infrastructure.thread import ThreadExecutor
 from app.mediaserver.client import init_clients as init_mediaservers
+from app.message.client.manager import ensure_web_client
 from app.message.client.manager import init_clients as init_message_clients
 from app.message.message import Message
 from app.schemas.common import HealthCheckResponse, HealthServiceStatus
@@ -88,6 +90,7 @@ async def lifespan(app: FastAPI):
         ("下载器", init_downloaders),
         ("媒体服务器", init_mediaservers),
         ("消息客户端", init_message_clients),
+        ("内置消息页", ensure_web_client),
     ]:
         try:
             init_fn()
@@ -214,6 +217,7 @@ app.include_router(image.router, prefix="/img", tags=["image"])
 app.include_router(apikey.router, prefix="/api/apikey", tags=["apikey"])
 app.include_router(kb.router, prefix="/api/agent", tags=["agent"])
 app.include_router(chat.router, prefix="/api/agent", tags=["agent"])
+app.include_router(web_message.router, prefix="/api/agent", tags=["agent"])
 # 消息客户端 webhook（不需要 /api 前缀）
 app.include_router(message_webhook.router, tags=["message-webhook"])
 

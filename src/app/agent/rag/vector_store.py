@@ -32,5 +32,9 @@ class VectorStore(ABC):
     def count(self, namespace: str | None = None) -> int:
         """知识块数量"""
 
+    def list_by_source_prefix(self, namespace: str, prefix: str, limit: int = 50) -> list[dict]:
+        """按来源前缀列出条目（id/source/text），用于记忆管理等场景"""
+        raise NotImplementedError
+
     def close(self) -> None:
         """释放资源（可选实现）"""

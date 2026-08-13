@@ -1,6 +1,6 @@
 """Agent 会话/消息仓储 — 短程记忆持久化"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.db.models.agent_memory import AGENTCONVERSATION, AGENTMESSAGE
 from app.db.repositories.base_repository import BaseRepository
@@ -95,3 +95,26 @@ class AgentConversationRepository(BaseRepository):
             db.query(AGENTMESSAGE).filter(AGENTMESSAGE.CONVERSATION_ID == conv.ID).delete()
             db.delete(conv)
             db.commit()
+
+    def cleanup_expired(self, ttl_days: int) -> int:
+        """删除超过 ttl_days 未更新的会话及其消息，返回清理的会话数"""
+        if ttl_days <= 0:
+            return 0
+        cutoff = datetime.now() - timedelta(days=ttl_days)
+        with self.session() as db:
+            expired = (
+                db.query(AGENTCONVERSATION.ID)
+                .filter(AGENTCONVERSATION.UPDATED_AT < cutoff)
+                .all()
+            )
+            ids = [c[0] for c in expired]
+            if not ids:
+                return 0
+            db.query(AGENTMESSAGE).filter(AGENTMESSAGE.CONVERSATION_ID.in_(ids)).delete(
+                synchronize_session=False
+            )
+            deleted = db.query(AGENTCONVERSATION).filter(AGENTCONVERSATION.ID.in_(ids)).delete(
+                synchronize_session=False
+            )
+            db.commit()
+            return deleted

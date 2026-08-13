@@ -7,6 +7,7 @@ from typing import Any
 
 import log
 from app.domain.mediatypes import MediaType
+from app.services.web import WebUtils
 from app.utils import StringUtils
 
 
@@ -22,7 +23,7 @@ class MessageBuilder:
     def send_download_message(self, in_from, can_item, download_setting_name=None, downloader_name=None) -> None:
         msg_title = f"{can_item.get_title_ep_string()} 开始下载"
         msg_text = f"{can_item.get_star_string()}"
-        msg_text = f"{msg_text}\n来自：{in_from.value}"
+        msg_text = f"{msg_text}\n来自：{StringUtils.resolve_in_from_display(in_from)}"
         message_image = can_item.get_message_image() if hasattr(can_item, "get_message_image") else ""
         log.debug(f"[MessageBuilder]下载消息图片: {message_image}")
         if download_setting_name:
@@ -32,7 +33,7 @@ class MessageBuilder:
         if can_item.user_name:
             msg_text = f"{msg_text}\n用户：{can_item.user_name}"
         if can_item.site:
-            if in_from.value == "自定义订阅":
+            if StringUtils.resolve_in_from_display(in_from) == "自定义订阅":
                 msg_text = f"{msg_text}\n任务：{can_item.site}"
             else:
                 msg_text = f"{msg_text}\n站点：{can_item.site}"
@@ -66,7 +67,7 @@ class MessageBuilder:
                     description_clean = re.sub(r"<[^>]+>", "", can_item.description)
                 variables = {
                     "item": can_item,
-                    "in_from": in_from,
+                    "in_from": StringUtils.resolve_in_from_display(in_from),
                     "download_setting_name": download_setting_name or "",
                     "downloader_name": downloader_name or "",
                     "title": can_item.title or can_item.get_name() or "",
@@ -119,7 +120,10 @@ class MessageBuilder:
                 msg_str = f"{msg_str}，类别：{media_info.category}"
         if media_info.get_resource_type_string():
             msg_str = f"{msg_str}，质量：{media_info.get_resource_type_string()}"
-        msg_str = f"{msg_str}，大小：{StringUtils.str_filesize(media_info.size)}，来自：{in_from.value}"
+        msg_str = (
+            f"{msg_str}，大小：{StringUtils.str_filesize(media_info.size)}，"
+            f"来自：{StringUtils.resolve_in_from_display(in_from)}"
+        )
         if exist_filenum != 0:
             msg_str = f"{msg_str}，{exist_filenum}个文件已存在"
         if self._messagecenter:
@@ -128,7 +132,7 @@ class MessageBuilder:
             if "transfer_finished" in (client.get("switches") or ""):
                 variables = {
                     "media_info": media_info,
-                    "in_from": in_from,
+                    "in_from": StringUtils.resolve_in_from_display(in_from),
                     "exist_filenum": exist_filenum,
                     "category_flag": category_flag,
                 }
@@ -161,16 +165,20 @@ class MessageBuilder:
             if item_info.category:
                 msg_str = f"{msg_str}，类别：{item_info.category}"
             if item_info.total_episodes == 1:
-                msg_str = f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}，来自：{in_from.value}"
+                msg_str = (
+                    f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
+                )
             else:
-                msg_str = f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}，来自：{in_from.value}"
+                msg_str = (
+                    f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
+                )
             if self._messagecenter:
                 self._messagecenter.insert_system_message(title=msg_title, content=msg_str)
             for client in self._client_manager.active_clients:
                 if "transfer_finished" in (client.get("switches") or ""):
                     variables = {
                         "media_info": item_info,
-                        "in_from": in_from,
+                        "in_from": StringUtils.resolve_in_from_display(in_from),
                         "exist_filenum": exist_filenum,
                         "category_flag": category_flag,
                         "total_episodes": item_info.total_episodes if hasattr(item_info, "total_episodes") else 1,
@@ -215,14 +223,14 @@ class MessageBuilder:
         msg_str = f"类型：{media_info.type.display_name}"
         if media_info.vote_average:
             msg_str = f"{msg_str}，{media_info.get_vote_string()}"
-        msg_str = f"{msg_str}，来自：{in_from.value}"
+        msg_str = f"{msg_str}，来自：{StringUtils.resolve_in_from_display(in_from)}"
         if media_info.user_name:
             msg_str = f"{msg_str}，用户：{media_info.user_name}"
         if self._messagecenter:
             self._messagecenter.insert_system_message(title=msg_title, content=msg_str)
         for client in self._client_manager.active_clients:
             if "rss_added" in (client.get("switches") or ""):
-                variables = {"media_info": media_info, "in_from": in_from}
+                variables = {"media_info": media_info, "in_from": StringUtils.resolve_in_from_display(in_from)}
                 self._dispatcher.sendmsg(
                     client=client,
                     title=msg_title,
@@ -433,7 +441,6 @@ class MessageBuilder:
         if event_info.get("device_name"):
             message_texts.append(f"设备：{event_info.get('client')} {event_info.get('device_name')}")
         if event_info.get("ip"):
-            from app.services.web import WebUtils
 
             message_texts.append(f"位置：{event_info.get('ip')} {WebUtils.get_location(event_info.get('ip'))}")
         if event_info.get("percentage"):

@@ -66,6 +66,20 @@ class SystemStatusTool(BaseTool):
     level = ToolLevel.READ
 
 
+class MemoryForgetTool(BaseTool):
+    name = "memory_forget"
+    description = "删除长程语义记忆中的一条用户偏好。当用户说'忘掉/删除我的某个偏好'时调用。"
+    parameters = {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string", "description": "要删除的偏好内容，如 '偏好 4K REMUX'"},
+        },
+        "required": ["text"],
+    }
+    level = ToolLevel.WRITE
+    permission = "agent:manage"
+
+
 class MemoryClearTool(BaseTool):
     name = "memory_clear"
     description = "清空当前会话的对话记忆。当用户说'清空对话/忘记刚才的聊天'时调用。"

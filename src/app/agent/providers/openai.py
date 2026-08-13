@@ -62,21 +62,7 @@ class OpenAIProvider(BaseProvider):
         temperature: float = 0.7,
     ) -> ChatToolResponse:
         """原生 function calling（OpenAI 兼容接口：DeepSeek / DashScope / Ollama /v1 等）"""
-        msgs: list[dict] = []
-        if system_prompt:
-            msgs.append({"role": "system", "content": system_prompt})
-        msgs.extend(messages)
-        tool_specs = [
-            {
-                "type": "function",
-                "function": {
-                    "name": t["name"],
-                    "description": t.get("description", ""),
-                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
-                },
-            }
-            for t in tools
-        ]
+        msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
         kwargs: dict[str, Any] = {
             "model": self._config.model,
             "messages": msgs,
@@ -100,7 +86,71 @@ class OpenAIProvider(BaseProvider):
             calls.append(
                 ToolCall(name=tc.function.name or "", arguments=args if isinstance(args, dict) else {}, id=tc.id or "")
             )
-        return ChatToolResponse(content=message.content or "", tool_calls=calls, native=True)
+        reasoning = getattr(message, "reasoning_content", "") or ""
+        return ChatToolResponse(content=message.content or "", tool_calls=calls, reasoning=reasoning, native=True)
+
+    def chat_with_tools_stream(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+        on_token: Any = None,
+        on_reasoning: Any = None,
+    ) -> ChatToolResponse:
+        """流式工具对话（OpenAI 兼容：DeepSeek / DashScope / Ollama /v1 等）"""
+        msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
+        kwargs: dict[str, Any] = {
+            "model": self._config.model,
+            "messages": msgs,
+            "temperature": temperature,
+            "tools": tool_specs,
+            "stream": True,
+        }
+        try:
+            stream = self._client.chat.completions.create(**kwargs)
+        except Exception as e:
+            err_msg = self._format_error(e)
+            log.warn(f"[OpenAIProvider]流式请求失败，回退非流式: {err_msg}")
+            return super().chat_with_tools_stream(
+                messages, tools, system_prompt, temperature, on_token, on_reasoning
+            )
+
+        content_parts: list[str] = []
+        reasoning_parts: list[str] = []
+        tool_entries: dict[int, dict[str, str]] = {}
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta.content:
+                content_parts.append(delta.content)
+                if on_token:
+                    on_token(delta.content)
+            r = getattr(delta, "reasoning_content", None)
+            if r:
+                reasoning_parts.append(r)
+                if on_reasoning:
+                    on_reasoning(r)
+            for tc in delta.tool_calls or []:
+                entry = tool_entries.setdefault(tc.index, {"id": "", "name": "", "arguments": ""})
+                if tc.id:
+                    entry["id"] = tc.id
+                if tc.function and tc.function.name:
+                    entry["name"] = tc.function.name
+                if tc.function and tc.function.arguments:
+                    entry["arguments"] += tc.function.arguments
+        calls = []
+        for idx in sorted(tool_entries):
+            entry = tool_entries[idx]
+            try:
+                args = JsonUtils.loads(entry["arguments"] or "{}")
+            except (ValueError, TypeError):
+                args = {}
+            calls.append(ToolCall(name=entry["name"], arguments=args if isinstance(args, dict) else {}, id=entry["id"]))
+        return ChatToolResponse(
+            content="".join(content_parts), tool_calls=calls, reasoning="".join(reasoning_parts), native=True
+        )
 
     @staticmethod
     def _format_error(e: Exception) -> str:

@@ -205,6 +205,13 @@ class SQLiteVecStore(VectorStore):
         }
         return [ScoredChunk(chunk=chunk_map[cid], score=scores[cid]) for cid in top_ids if cid in chunk_map]
 
+    def list_by_source_prefix(self, namespace: str, prefix: str, limit: int = 50) -> list[dict]:
+        rows = self._db.execute(
+            "SELECT id, source, text FROM kb_chunks WHERE namespace = ? AND source LIKE ? LIMIT ?",
+            (namespace, f"{prefix}%", limit),
+        ).fetchall()
+        return [{"id": r[0], "source": r[1], "text": r[2]} for r in rows]
+
     def count(self, namespace: str | None = None) -> int:
         if namespace:
             row = self._db.execute("SELECT COUNT(*) FROM kb_chunks WHERE namespace = ?", (namespace,)).fetchone()

@@ -46,3 +46,18 @@ class AGENTMESSAGE(Base):
     TOOL_CALLS: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     TOKENS: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     CREATED_AT: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class AGENTWEBMESSAGE(Base):
+    __tablename__ = "AGENT_WEB_MESSAGE"
+    __table_args__ = (Index("idx_agent_web_msg_user", "USER_ID", "ID"),)
+
+    ID: Mapped[int] = mapped_column(Integer, Sequence("ID"), primary_key=True)
+    USER_ID: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    KIND: Mapped[str] = mapped_column(String(16), default="notify", server_default="notify")
+    TITLE: Mapped[str] = mapped_column(Text, default="")
+    CONTENT: Mapped[str] = mapped_column(Text, default="")
+    IMAGE: Mapped[str] = mapped_column(Text, default="")
+    URL: Mapped[str] = mapped_column(Text, default="")
+    ITEMS: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    CREATED_AT: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

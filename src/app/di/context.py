@@ -119,3 +119,4 @@ class AppContext:
     retriever: Any = None
     knowledge_ingestor: Any = None
     conversation_store: Any = None
+    semantic_memory: Any = None

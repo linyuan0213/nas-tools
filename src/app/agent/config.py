@@ -70,13 +70,12 @@ def get_embedding_config() -> EmbeddingConfig | None:
 
 
 def get_vector_store_config() -> dict:
-    """向量库配置：type + 各后端参数"""
+    """向量库配置：type + 各后端参数（当前仅 sqlite / lancedb）"""
     cfg = _agent_cfg()
     return {
         "type": cfg.get("vector_store", "sqlite"),
         "sqlite": cfg.get("sqlite") or {},
         "lancedb": cfg.get("lancedb") or {},
-        "qdrant": cfg.get("qdrant") or {},
     }
 
 
@@ -98,12 +97,18 @@ def get_memory_config() -> dict:
     cfg = _agent_cfg()
     mem = cfg.get("memory") or {}
     short = mem.get("short_term") or {}
+    long_term = mem.get("long_term") or {}
     return {
         "max_steps": mem.get("max_steps", 8),
         "short_term": {
             "store": short.get("store", "db"),
             "max_tokens": short.get("max_tokens", 4000),
             "ttl_days": short.get("ttl_days", 30),
+        },
+        "long_term": {
+            "enabled": bool(long_term.get("enabled", False)),
+            "top_k": int(long_term.get("top_k", 5)),
+            "extraction": long_term.get("extraction", "on_session_end"),
         },
     }
 

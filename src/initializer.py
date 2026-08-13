@@ -4,6 +4,7 @@ import log
 from app.core.root_path import get_script_path
 from app.core.settings import settings
 from app.core.system_config import SystemConfig
+from app.db.repositories.apikey_repo_adapter import APIKeyLogRepositoryAdapter, APIKeyRepositoryAdapter
 from app.db.repositories.config_repo_adapter import FilterGroupRepositoryAdapter
 from app.db.repositories.indexer_site_config_repo_adapter import IndexerSiteConfigRepositoryAdapter
 from app.db.repositories.site_repo_adapter import SiteRepositoryAdapter
@@ -11,6 +12,8 @@ from app.db.repositories.subscribe_repository import SubscribeRepository
 from app.db.sql_adapter import adapt_sql_for_engine
 from app.domain.enums import SystemConfigKey
 from app.infrastructure.cache_system.events import init_event_bridge
+from app.infrastructure.redis import RedisStore
+from app.services.apikey_service import APIKeyService
 from app.services.category_init import CategoryInitializer
 from app.services.rbac_init import init_admin_user
 from app.services.rbac_init import init_rbac_system as rbac_init
@@ -170,7 +173,6 @@ def update_config(indexer_statistics_repo=None):
 
 def check_redis():
     """检查 Redis 状态，仅记录日志，不阻塞启动"""
-    from app.infrastructure.redis import RedisStore
 
     try:
         redis_store = RedisStore()
@@ -189,8 +191,6 @@ def init_message_webhook_apikey(apikey_service=None):
     """
     try:
         if apikey_service is None:
-            from app.db.repositories.apikey_repo_adapter import APIKeyLogRepositoryAdapter, APIKeyRepositoryAdapter
-            from app.services.apikey_service import APIKeyService
 
             apikey_service = APIKeyService(
                 key_repo=APIKeyRepositoryAdapter(),

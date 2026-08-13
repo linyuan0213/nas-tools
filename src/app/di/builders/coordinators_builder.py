@@ -22,6 +22,7 @@ from app.services.subscribe.strategies.queue_search import QueueSearchStrategy
 from app.services.subscribe.strategies.rss_feed import RssFeedStrategy
 from app.services.system.config import SystemConfigService
 from app.services.system.lifecycle import SystemLifecycleService
+from app.services.transfer.kb_ingest_handler import register_kb_ingest_handler
 from app.sites import SiteConf
 
 
@@ -116,6 +117,15 @@ def build_coordinators(
         thread_executor=thread_executor,
         hook_system=infra.hook_system,
         event_bus=infra.event_bus,
+        knowledge_ingestor=agent_rag.knowledge_ingestor,
+        conversation_store=agent_rag.conversation_store,
+    )
+
+    # RAG 知识库自动更新：媒体转移完成后节流重建 media_library 命名空间
+    register_kb_ingest_handler(
+        event_bus=infra.event_bus,
+        knowledge_ingestor=agent_rag.knowledge_ingestor,
+        thread_executor=thread_executor,
     )
 
     # 工具层：ToolContext 类型化注入 + 显式初始化 ChatAgent（替代旧 23 参数构造与 set_tool_executor 后门）
@@ -133,9 +143,10 @@ def build_coordinators(
         event_bus=infra.event_bus,
         retriever=agent_rag.retriever,
         conversation_store=agent_rag.conversation_store,
+        semantic_memory=agent_rag.semantic_memory,
     )
     tool_executor = ToolExecutor(ctx=tool_context)
-    facades.agent_service.init_chat_agent(tool_executor, agent_rag.conversation_store)
+    facades.agent_service.init_chat_agent(tool_executor, agent_rag.conversation_store, agent_rag.semantic_memory)
 
     # Agent 通知增强（单流替换模板通知，agent 未启用时零开销）
     if facades.agent_service.ready:

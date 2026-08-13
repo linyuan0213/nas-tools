@@ -42,6 +42,7 @@ def build_app_context() -> AppContext:
         retriever=agent_rag.retriever,
         knowledge_ingestor=agent_rag.knowledge_ingestor,
         conversation_store=agent_rag.conversation_store,
+        semantic_memory=agent_rag.semantic_memory,
         downloader_core=services.downloader_core,
         download_monitor=facades.download_monitor,
         filetransfer_service=services.filetransfer_service,

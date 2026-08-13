@@ -7,6 +7,15 @@ from typing import Any
 
 from app.utils.json_utils import JsonUtils
 
+_TOOL_COMMON_RULES = """2. 不需要工具（闲聊、问候、简单回答）时直接回复文字
+3. 知识类问题（怎么配置/怎么用/报错原因）优先调用 kb_search；无结果时不要编造，如实说明
+4. 操作类问题（下载进度/订阅状态/库内容）必须调用对应工具查询真实数据，禁止臆测
+5. 删除/修改类危险操作（删除订阅、删除下载任务等）不要预先向用户征求确认，直接调用对应工具；
+   系统会自动弹出确认卡供用户批准
+6. 任何写操作（添加订阅、下载、转移等）必须真实调用对应工具并收到成功结果后，才能声称操作成功；
+   未调用工具时严禁声称"已成功"，应如实说明需要执行
+"""
+
 _TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体库系统。
 
 你可以使用以下工具来完成用户的请求。如果需要用工具，请按以下格式回复（只返回 JSON，不要其他文字）：
@@ -20,10 +29,11 @@ _TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体
 
 回复规则：
 1. 需要工具时只返回上述 JSON 格式；工具结果会以 [工具结果] 形式返回给你，可继续调用其他工具或给出最终回答
-2. 不需要工具（闲聊、问候、简单回答）时直接回复文字
-3. 知识类问题（怎么配置/怎么用/报错原因）优先调用 kb_search；无结果时不要编造，如实说明
-4. 操作类问题（下载进度/订阅状态/库内容）必须调用对应工具查询真实数据，禁止臆测
-"""
+""" + _TOOL_COMMON_RULES
+
+TOOL_RULES_PROMPT = """回复规则：
+1. 需要工具时直接调用对应工具；工具结果会以 [工具结果] 形式返回，可继续调用其他工具或给出最终回答
+""" + _TOOL_COMMON_RULES
 
 
 @dataclass(frozen=True)
@@ -41,6 +51,7 @@ class ChatToolResponse:
 
     content: str = ""
     tool_calls: list[ToolCall] = field(default_factory=list)
+    reasoning: str = ""
     native: bool = False
 
     @property
@@ -92,6 +103,30 @@ class BaseProvider(ABC):
     ) -> Any:
         """执行对话请求"""
 
+    def _build_tool_request(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+    ) -> tuple[list[dict], list[dict]]:
+        """组装工具请求：system 提示词前置 + 工具 schema 列表（sync/stream 共用，避免重复）"""
+        msgs: list[dict] = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": system_prompt})
+        msgs.extend(messages)
+        tool_specs = [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t.get("description", ""),
+                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
+                },
+            }
+            for t in tools
+        ]
+        return msgs, tool_specs
+
     def chat_with_tools(
         self,
         messages: list[dict],
@@ -132,6 +167,26 @@ class BaseProvider(ABC):
         except (json.JSONDecodeError, TypeError):
             pass
         return ChatToolResponse(content=content)
+
+    def chat_with_tools_stream(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        system_prompt: str = "",
+        temperature: float = 0.7,
+        on_token: Any = None,
+        on_reasoning: Any = None,
+    ) -> ChatToolResponse:
+        """流式工具对话：content 逐 token 回调 on_token；返回完整 ChatToolResponse。
+
+        默认实现 = 非流式降级（一次回调完整内容）；OpenAI 兼容 / Ollama 覆盖为真流式。
+        """
+        resp = self.chat_with_tools(messages, tools, system_prompt, temperature)
+        if on_token and resp.content:
+            on_token(resp.content)
+        if on_reasoning and resp.reasoning:
+            on_reasoning(resp.reasoning)
+        return resp
 
     @abstractmethod
     def is_available(self) -> bool:

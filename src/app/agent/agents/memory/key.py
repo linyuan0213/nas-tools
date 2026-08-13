@@ -12,4 +12,5 @@ class MemoryKey:
     session_id: str = ""
 
     def cache_key(self) -> str:
-        return f"agent:conv:{self.user_id}:{self.channel}:{self.session_id}"
+        # v3：缓存消息结构需含 created_at（时间线合并），版本号使旧结构缓存自动失效
+        return f"agent:conv:v3:{self.user_id}:{self.channel}:{self.session_id}"
