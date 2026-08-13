@@ -299,7 +299,6 @@ class Torrent:
 
         # 排序函数，合集优先、标题、站点、资源类型、做种数量
         def get_sort_str(x):
-            from app.domain.mediatypes import MediaType
 
             episode_list = x.get_episode_list() if hasattr(x, "get_episode_list") else []
             episode_count = max(len(episode_list), getattr(x, "total_episodes", 0))
@@ -316,6 +315,7 @@ class Torrent:
             season_len = str(len(x.get_season_list())).rjust(2, "0")
             episode_len = str(len(episode_list)).rjust(4, "0")
             # 排序：合集、资源规则、做种/站点（按下载顺序设置）、季集、标题（标题仅作平局决胜）
+            # res_order/site_order = 100-pri（pri 越小优先级越高，主站通常配 1），降序即 pri 小在前
             if download_order == "seeder":
                 return "{}{}{}{}{}{}".format(
                     str(collection_priority).rjust(1, "0"),

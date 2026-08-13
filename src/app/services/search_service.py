@@ -175,8 +175,12 @@ class SearchResultProcessor:
         self._message = message
 
     @staticmethod
-    def sort_results(media_list: list) -> list:
-        """按合集优先、标题、资源顺序、站点顺序、做种数排序"""
+    def sort_results(media_list: list, download_order: str | None = None) -> list:
+        """按合集、集数、资源顺序、做种数/站点顺序（按 download_order）、标题排序。
+
+        与 Torrent.get_download_list 的下载优先规则保持一致：
+        seeder=做种数优先（做种数在站点顺序前），否则站点顺序优先。
+        """
 
         def _sort_key(x):
             episode_list = x.get_episode_list() if hasattr(x, "get_episode_list") else []
@@ -191,14 +195,26 @@ class SearchResultProcessor:
                 collection_priority = 1
             else:
                 collection_priority = 0
-            return "{}{}{}{}{}{}".format(
-                str(collection_priority).rjust(1, "0"),
-                str(episode_count).rjust(3, "0"),
-                str(x.res_order).rjust(3, "0"),
-                str(x.site_order).rjust(3, "0"),
-                str(x.seeders).rjust(10, "0"),
-                str(x.title).ljust(100, " "),
-            )
+            if download_order == "seeder":
+                # 做种数优先：做种数在站点顺序前
+                order_key = "{}{}{}{}{}{}".format(
+                    str(collection_priority).rjust(1, "0"),
+                    str(episode_count).rjust(3, "0"),
+                    str(x.res_order).rjust(3, "0"),
+                    str(x.seeders).rjust(10, "0"),
+                    str(x.site_order).rjust(3, "0"),
+                    str(x.title).ljust(100, " "),
+                )
+            else:
+                order_key = "{}{}{}{}{}{}".format(
+                    str(collection_priority).rjust(1, "0"),
+                    str(episode_count).rjust(3, "0"),
+                    str(x.res_order).rjust(3, "0"),
+                    str(x.site_order).rjust(3, "0"),
+                    str(x.seeders).rjust(10, "0"),
+                    str(x.title).ljust(100, " "),
+                )
+            return order_key
 
         return sorted(media_list, key=_sort_key, reverse=True)
 
@@ -376,8 +392,9 @@ class Searcher:
         if self.message is None:
             return None, no_exists, len(media_list), 0
         if in_from in self.message.get_search_types():
-            # 排序并入库
-            media_list = processor.sort_results(media_list)
+            # 排序并入库（排序尊重下载优先规则：做种数优先时做种数在前）
+            download_order = (settings.get("pt") or {}).get("download_order")
+            media_list = processor.sort_results(media_list, download_order=download_order)
             processor.persist_results(media_list)
             # 订阅始终自动下载；手动/WEB 搜索按"搜索后自动下载"开关决定
             if in_from != SearchType.SUBSCRIBE and not self._search_auto:

@@ -9,6 +9,7 @@ from app.core.exceptions import (
     RepositoryError,
     ServiceError,
 )
+from app.core.settings import settings
 from app.db.repositories.download_repo_adapter import DownloadHistoryRepositoryAdapter
 from app.db.repositories.subscribe_repo_adapter import SubscribeHistoryRepositoryAdapter
 from app.domain.entities.rss import SubscribeState
@@ -473,6 +474,16 @@ class RssFeedStrategy:
                 collection_priority = 1
             else:
                 collection_priority = 0
+            download_order = (settings.get("pt") or {}).get("download_order")
+            # 做种数优先时做种数在站点顺序前，与下载优先规则一致
+            if download_order == "seeder":
+                return (
+                    collection_priority,
+                    episode_count,
+                    x.res_order,
+                    x.seeders,
+                    x.site_order,
+                )
             return (collection_priority, episode_count, x.res_order, x.site_order, x.seeders)
 
         rss_download_torrents.sort(key=_rss_sort_key, reverse=True)

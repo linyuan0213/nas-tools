@@ -75,9 +75,11 @@ class SearchOrchestrator:
             self._progress.end(progress_key)
             return None, ctx.no_exists or {}, 0, 0
 
-        # 4. 排序（复用 SearchResultProcessor，全系统统一排序键）
+        # 4. 排序（复用 SearchResultProcessor，全系统统一排序键；尊重做种数/站点优先规则）
         self._progress.update(value=85, text=f"排序 {len(media_list)} 条结果...", ptype=progress_key)
-        media_list = SearchResultProcessor.sort_results(media_list)
+        media_list = SearchResultProcessor.sort_results(
+            media_list, download_order=(settings.get("pt") or {}).get("download_order")
+        )
 
         # 5. 入库
         if ctx.persist:
@@ -221,7 +223,9 @@ class SearchOrchestrator:
     @staticmethod
     def _sort_results(media_list: list) -> list:
         """已归并到 SearchResultProcessor.sort_results，保留以兼容外部调用"""
-        return SearchResultProcessor.sort_results(media_list)
+        return SearchResultProcessor.sort_results(
+            media_list, download_order=(settings.get("pt") or {}).get("download_order")
+        )
 
     def _filter_downloaded(self, media_list: list) -> list:
         filtered = []

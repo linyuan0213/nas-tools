@@ -64,3 +64,41 @@ class TestTorrentGetDownloadList:
         )
         result = Torrent.get_download_list([single, multi], download_order="default")
         assert result[0].title == "E01-E12 Pack"
+
+    def test_site_mode_prefers_lower_pri_site(self):
+        """site_order=100-pri（pri 越小=主站越优先）：site 模式应选 pri 小（site_order 大）的站点"""
+        low = _MediaInfo(
+            title="Low",
+            type=MediaType.MOVIE,
+            res_order=0,
+            site_order=99,
+            seeders=5,
+        )
+        high = _MediaInfo(
+            title="High",
+            type=MediaType.MOVIE,
+            res_order=0,
+            site_order=-21,
+            seeders=500,
+        )
+        result = Torrent.get_download_list([low, high], download_order="site")
+        assert result[0].title == "Low"
+
+    def test_seeder_mode_tie_prefers_lower_pri_site(self):
+        """seeder 模式种子数相同时，主站（pri 小、site_order 大）胜出"""
+        low = _MediaInfo(
+            title="Low",
+            type=MediaType.MOVIE,
+            res_order=0,
+            site_order=99,
+            seeders=5,
+        )
+        high = _MediaInfo(
+            title="High",
+            type=MediaType.MOVIE,
+            res_order=0,
+            site_order=-21,
+            seeders=5,
+        )
+        result = Torrent.get_download_list([low, high], download_order="seeder")
+        assert result[0].title == "Low"

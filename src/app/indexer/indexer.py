@@ -424,10 +424,10 @@ class Indexer:
 
     @staticmethod
     def _dedup(results: list[dict]) -> list[dict]:
-        """按 (title, size) 去重；builtin 来源优先"""
+        """按 (title, size) 去重；builtin 来源优先，同来源 order_seq 大者（pri 小=主站）优先"""
         ordered = sorted(
             results,
-            key=lambda r: (0 if r.get("_indexer_source") == "builtin" else 1, r.get("_indexer_order", 0)),
+            key=lambda r: (0 if r.get("_indexer_source") == "builtin" else 1, -r.get("_indexer_order", 0)),
         )
         seen: set[tuple] = set()
         deduped: list[dict] = []
