@@ -96,7 +96,7 @@ services:
     restart: always
 ```
 
-启动：
+将上面的 YAML 保存为 `docker-compose.simple.yml`（放在项目或任意目录下）后启动：
 
 ```bash
 docker compose -f docker-compose.simple.yml up -d
@@ -150,6 +150,22 @@ services:
 | 仅前后端 | 前端 + 后端 + SQLite，无需 Redis/DB | `docker compose --profile app-only up -d` |
 
 > 不带 `--profile` 时默认启用基础 MySQL 模式（`""` 空 profile 命中的服务）。
+
+### 可选组件：nexus-verify 与 nexus-chrome
+
+`full-mysql` / `full-postgresql` profile 会额外启动两个可选组件：
+
+| 组件 | 镜像 | 端口 | 作用 |
+|------|------|------|------|
+| nexus-verify | `linyuan0213/nexus-verify` | 9300 | OCR 验证码识别，用于站点自动签到 |
+| nexus-chrome | `linyuan0213/nexus-chrome` | 9850 / 6080 | 浏览器自动化，用于站点 Cookie 更新、网页自动化登录、AI 助手网页抓取 |
+
+组件已随 compose 自动配置好网络互通。若需单独部署，后端通过以下设置启用对应能力：
+
+- 验证码识别：**系统设置 → 基础设置 → 实验室** 中「启用验证码识别服务器」，填 `http://nexus-verify:9300`
+- 网页自动化：**系统设置 → 基础设置 → 实验室** 中「启用网页自动化」，填 `http://nexus-chrome:9850`
+
+> nexus-chrome 的浏览器页面可通过 VNC（端口 6080，默认密码 `password`）实时查看。
 
 ### 1. 修改 docker-compose.yml
 
@@ -414,6 +430,7 @@ compose 已配置好 MySQL（默认）或 PostgreSQL 模式，后端通过 `DATA
 | `APP__LOGIN_USER` | admin | 默认登录用户名 |
 | `APP__LOGIN_PASSWORD` | password | 默认登录密码 |
 | `APP__TMDB_DOMAIN` | api.themoviedb.org | TMDB API 域名 |
+| `APP__DEBUG` | false | Debug 模式，开启后提供 `/docs` API 文档，生产环境保持关闭 |
 
 ### 数据库配置变量（`database` 节点）
 
@@ -424,7 +441,8 @@ compose 已配置好 MySQL（默认）或 PostgreSQL 模式，后端通过 `DATA
 | `DATABASE__PORT` | 0 | 数据库端口 |
 | `DATABASE__USERNAME` | — | 数据库用户名 |
 | `DATABASE__PASSWORD` | — | 数据库密码 |
-| `DATABASE__DATABASE` | nas_tools | 数据库名称 |
+| `DATABASE__DATABASE` | nexus_media | 数据库名称 |
+| `DATABASE__SQLITE_PATH` | data/user.db | SQLite 数据库文件路径（`TYPE=sqlite` 时生效） |
 
 ### Redis 配置变量（`redis` 节点）
 

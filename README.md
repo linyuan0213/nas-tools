@@ -12,7 +12,10 @@ Nexus Media 是一个功能强大的媒体库管理工具，提供自动化追�
 - [安装指南](docs/installation.md) - Docker 和 Docker Compose 安装说明
 ### 使用配置
 - [基础配置](docs/configuration.md) - 系统基础设置详解
+- [AI 助手](docs/agent.md) - 消息中心对话式操作全系统
+- [资源搜索与探索](docs/search.md) - 搜索、探索与媒体详情
 - [站点配置](docs/sites.md) - PT 站点添加、签到与刷流
+- [过滤规则](docs/filter_rules.md) - 资源筛选规则组配置
 - [下载管理](docs/download_management.md) - 下载器、下载设置、自动删种
 - [下载器配置](docs/downloaders.md) - QB/TR/迅雷等下载器详细配置
 - [媒体服务器配置](docs/media_servers.md) - Emby/Jellyfin/Plex/FnOS 配置
@@ -20,8 +23,12 @@ Nexus Media 是一个功能强大的媒体库管理工具，提供自动化追�
 - [媒体库](docs/media_library.md) - 媒体库管理与识别
 - [媒体整理](docs/media_organization.md) - 识别历史、文件管理、未识别处理
 - [RSS 订阅](docs/rss.md) - 电影/电视剧订阅管理
-- [索引器配置](docs/indexers.md) - 内建索引器配置
+- [索引器配置](docs/indexers.md) - 内建/Jackett/Prowlarr 索引器配置
+- [通知渠道配置](docs/notifications.md) - 通知渠道配置详解
 - [消息通知模板](docs/message_templates.md) - 通知渠道与模板配置
+- [服务与调度](docs/service.md) - 服务面板与调度任务
+- [存储后端](docs/storage.md) - 本地/WebDAV/SMB/S3 等存储后端
+- [用户与权限](docs/users.md) - 用户/角色/API Key 管理
 
 ### 插件
 - [插件使用](docs/plugins.md) - 内置插件配置（签到、CookieCloud 等）
@@ -36,6 +43,7 @@ Nexus Media 是一个功能强大的媒体库管理工具，提供自动化追�
 
 ## 主要功能
 
+- **AI 助手**：消息中心对话式操作，支持资源搜索、订阅、下载与知识库问答，可展示思考过程
 - **自动下载**：支持多种PT站点资源自动下载
 - **媒体管理**：自动识别和整理媒体文件
 - **订阅系统**：RSS自动订阅和手动订阅

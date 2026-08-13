@@ -63,7 +63,10 @@ nav:
   - 安装部署: installation.md
   - 使用指南:
       - 基础配置: configuration.md
+      - AI 助手: agent.md
+      - 资源搜索与探索: search.md
       - 站点配置: sites.md
+      - 过滤规则: filter_rules.md
       - 下载管理: download_management.md
       - 下载器配置: downloaders.md
       - 媒体服务器: media_servers.md
@@ -74,11 +77,15 @@ nav:
       - 索引器配置: indexers.md
       - 通知渠道配置: notifications.md
       - 消息通知模板: message_templates.md
+      - 服务与调度: service.md
+      - 存储后端: storage.md
+      - 用户与权限: users.md
   - 插件:
       - 插件使用: plugins.md
       - 插件开发: plugin_development_guide.md
   - 开发者:
       - 本地开发: development.md
       - 架构文档: architecture.md
+      - AI 助手设计: agent-mvp-detailed-design.md
   - 常见问题: faq.md
   - 更新日志: changelog.md
