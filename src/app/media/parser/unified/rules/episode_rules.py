@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+import cn2an
+
 from .base import ExtractionRule
 
 RULES: list[ExtractionRule] = [
@@ -165,7 +167,6 @@ RULES: list[ExtractionRule] = [
 
 
 def _cn2an_extract(match: re.Match[str]) -> dict[str, int] | None:
-    import cn2an
 
     try:
         val = int(cn2an.cn2an(match.group(1), mode="smart"))

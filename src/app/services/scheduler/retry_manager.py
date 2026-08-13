@@ -4,6 +4,7 @@ import datetime
 
 import log
 from app.core.exceptions import RepositoryError, ServiceError
+from app.infrastructure.cache_system import get_cache_manager
 
 
 class RetryManager:
@@ -15,8 +16,6 @@ class RetryManager:
     def _get_retry_cache(self):
         """获取重试计数缓存（内存/Redis自动降级）"""
         if self._core._retry_cache is None:
-            from app.infrastructure.cache_system import get_cache_manager
-
             self._core._retry_cache = get_cache_manager().get_or_create(
                 "scheduler_retry", cache_type="tiered", maxsize=1000
             )

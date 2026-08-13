@@ -3,6 +3,7 @@
 支持令牌桶和滑动窗口两种算法，Redis/内存双后端，支持等待模式.
 """
 
+import re
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -14,7 +15,6 @@ from app.infrastructure.redis import RedisStore
 
 def _parse_rate(rate: str) -> tuple[float, int]:
     """解析速率字符串，如 '10/m' -> (10, 60), '2.5/s' -> (2.5, 1), '1/2s' -> (1, 2)."""
-    import re
 
     m = re.match(r"^(\d+\.?\d*)/(\d+\.?\d*)?([smhd])?$", rate.strip())
     if not m:

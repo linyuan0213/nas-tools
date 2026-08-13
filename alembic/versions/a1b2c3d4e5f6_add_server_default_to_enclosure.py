@@ -19,21 +19,38 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def has_table(table_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return inspector.has_table(table_name)
+
+
+def has_column(table_name, column_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if not inspector.has_table(table_name):
+        return False
+    columns = inspector.get_columns(table_name)
+    return any(col["name"] == column_name for col in columns)
+
+
 def upgrade() -> None:
-    op.alter_column(
-        "SEARCH_RESULT_INFO",
-        "ENCLOSURE",
-        existing_type=sa.String(8192),
-        server_default="",
-        existing_nullable=False,
-    )
+    if has_table("SEARCH_RESULT_INFO") and has_column("SEARCH_RESULT_INFO", "ENCLOSURE"):
+        op.alter_column(
+            "SEARCH_RESULT_INFO",
+            "ENCLOSURE",
+            existing_type=sa.String(8192),
+            server_default="",
+            existing_nullable=False,
+        )
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "SEARCH_RESULT_INFO",
-        "ENCLOSURE",
-        existing_type=sa.String(8192),
-        server_default=None,
-        existing_nullable=False,
-    )
+    if has_table("SEARCH_RESULT_INFO") and has_column("SEARCH_RESULT_INFO", "ENCLOSURE"):
+        op.alter_column(
+            "SEARCH_RESULT_INFO",
+            "ENCLOSURE",
+            existing_type=sa.String(8192),
+            server_default=None,
+            existing_nullable=False,
+        )

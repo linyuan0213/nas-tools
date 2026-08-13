@@ -6,6 +6,8 @@ Create Date: 2026-06-03 09:28:33.865508
 
 """
 
+import json
+
 import sqlalchemy as sa
 from sqlalchemy import Column, Text
 
@@ -42,8 +44,6 @@ def upgrade():
         if not note:
             continue
         try:
-            import json
-
             note_dict = json.loads(note) if isinstance(note, str) else note
             headers = note_dict.get("headers")
             if headers:

@@ -18,13 +18,30 @@ depends_on = None
 TABLES = ("SUBSCRIBE_HISTORY", "SUBSCRIBE_MOVIES", "SUBSCRIBE_TVS")
 
 
+def has_table(table_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return inspector.has_table(table_name)
+
+
+def has_column(table_name, column_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if not inspector.has_table(table_name):
+        return False
+    columns = inspector.get_columns(table_name)
+    return any(col["name"] == column_name for col in columns)
+
+
 def upgrade() -> None:
     for tbl in TABLES:
-        with op.batch_alter_table(tbl) as batch_op:
-            batch_op.alter_column("DESC", existing_type=sa.String(255), type_=sa.Text, nullable=True)
+        if has_table(tbl) and has_column(tbl, "DESC"):
+            with op.batch_alter_table(tbl) as batch_op:
+                batch_op.alter_column("DESC", existing_type=sa.String(255), type_=sa.Text, nullable=True)
 
 
 def downgrade() -> None:
     for tbl in TABLES:
-        with op.batch_alter_table(tbl) as batch_op:
-            batch_op.alter_column("DESC", existing_type=sa.Text, type_=sa.String(255), nullable=True)
+        if has_table(tbl) and has_column(tbl, "DESC"):
+            with op.batch_alter_table(tbl) as batch_op:
+                batch_op.alter_column("DESC", existing_type=sa.Text, type_=sa.String(255), nullable=True)

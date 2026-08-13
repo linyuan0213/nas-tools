@@ -15,6 +15,7 @@ from app.db.repositories.indexer_config_repo_adapter import IndexerConfigReposit
 from app.db.repositories.indexer_site_config_repo_adapter import IndexerSiteConfigRepositoryAdapter
 from app.domain.enums import SystemConfigKey
 from app.indexer.indexer import Indexer
+from app.indexer.registry import get_all_clients
 from app.infrastructure.cache_system import TokenCache
 from app.mediaserver import MediaServer
 from app.schemas.system import (
@@ -107,7 +108,6 @@ class IndexerConfigService:
 
     def _fill_config_keys(self, client_id: str, config: dict) -> None:
         """填充配置字典的 key 为 config schema 中定义的字段 id"""
-        from app.indexer.registry import get_all_clients
 
         for cls in get_all_clients():
             if hasattr(cls, "client_id") and cls.client_id == client_id:

@@ -19,6 +19,22 @@ down_revision: Union[str, None] = "a1b2c3d4e5f6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+
+def has_table(table_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return inspector.has_table(table_name)
+
+
+def has_column(table_name, column_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if not inspector.has_table(table_name):
+        return False
+    columns = inspector.get_columns(table_name)
+    return any(col["name"] == column_name for col in columns)
+
+
 _SWITCH_KEYS = ("parse", "message", "chrome", "proxy", "subtitle", "tag", "public")
 
 
@@ -31,6 +47,8 @@ def _to_bool(value):
 
 
 def upgrade() -> None:
+    if not has_table("CONFIG_SITE"):
+        return
     conn = op.get_bind()
     rows = conn.execute(sa.text("SELECT ID, NOTE FROM CONFIG_SITE")).fetchall()
     for row in rows:

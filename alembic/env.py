@@ -3,6 +3,7 @@ from logging.config import fileConfig
 import sqlalchemy as sa
 from alembic.script import ScriptDirectory
 
+import log
 from alembic import context
 from app.db.database_factory import DatabaseFactory
 from app.db.models import Base
@@ -89,20 +90,45 @@ def run_migrations_online() -> None:
             compare_server_default=False,  # 不比较默认值
         )
 
-        # 检查是否为新数据库（无 alembic_version 表）
-        # 新库直接通过模型创建最新 schema，跳过历史迁移，避免旧迁移与当前模型冲突
+        # 全新库判定：无 alembic_version 且无任何业务表 → 用模型直接建最新 schema 并 stamp 到 head。
         inspector = sa.inspect(connection)
-        is_fresh_db = not inspector.has_table("alembic_version")
-        if is_fresh_db:
-            target_metadata.create_all(connection)
-            # Stamp 当前 revision 为最新，避免下次再跑迁移
+        table_names = set(inspector.get_table_names())
+        business_tables = {t for t in table_names if not t.startswith("alembic_") and not t.startswith("sqlite_")}
+        has_version_table = "alembic_version" in table_names
+
+        def _bootstrap_and_stamp() -> None:
+            target_metadata.create_all(connection, checkfirst=True)
             script = ScriptDirectory.from_config(config)
             head_rev = script.get_current_head()
             connection.execute(
-                sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, PRIMARY KEY (version_num))")
+                sa.text(
+                    "CREATE TABLE IF NOT EXISTS alembic_version "
+                    "(version_num VARCHAR(32) NOT NULL, PRIMARY KEY (version_num))"
+                )
             )
-            connection.execute(sa.text("INSERT INTO alembic_version (version_num) VALUES (:rev)"), {"rev": head_rev})
+            # 冲突保护：并发/遗留状态下已有版本行时不再插入
+            existing = connection.execute(sa.text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
+            if not existing:
+                connection.execute(
+                    sa.text("INSERT INTO alembic_version (version_num) VALUES (:rev)"), {"rev": head_rev}
+                )
             connection.commit()
+
+        if not has_version_table and not business_tables:
+            _bootstrap_and_stamp()
+            return
+
+        # "有业务表但无版本表"（如先跑过 create_all 的开发库）：
+        # - SQLite（默认/开发库）：schema 恒由 create_all 按当前模型构建，直接补建缺失表并 stamp，
+        #   避免重放 MySQL 导向的迁移链（SQLite 不支持其约束/类型 ALTER）；
+        # - MySQL/PostgreSQL（生产）：走守卫迁移链，确保数据迁移（列变更/数据转换）执行，
+        #   避免被永久跳过。
+        if not has_version_table and business_tables and connection.dialect.name == "sqlite":
+            log.warn(
+                "[alembic]SQLite 数据库存在业务表但无 alembic_version（由 create_all 构建），"
+                "已补建缺失表并 stamp 到 head；数据迁移请走 MySQL/PostgreSQL 流程"
+            )
+            _bootstrap_and_stamp()
             return
 
         with context.begin_transaction():

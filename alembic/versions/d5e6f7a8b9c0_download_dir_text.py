@@ -7,7 +7,6 @@ Create Date: 2026-06-23 20:58:00.000000
 """
 
 import sqlalchemy as sa
-from sqlalchemy import inspect
 
 from alembic import op
 
@@ -17,14 +16,23 @@ branch_labels = None
 depends_on = None
 
 
-def _column_exists(table: str, column: str) -> bool:
+def has_table(table_name):
     conn = op.get_bind()
-    cols = {c["name"].upper() for c in inspect(conn).get_columns(table)}
-    return column.upper() in cols
+    inspector = sa.inspect(conn)
+    return inspector.has_table(table_name)
+
+
+def has_column(table_name, column_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if not inspector.has_table(table_name):
+        return False
+    columns = inspector.get_columns(table_name)
+    return any(col["name"] == column_name for col in columns)
 
 
 def upgrade() -> None:
-    if _column_exists("DOWNLOADER", "DOWNLOAD_DIR"):
+    if has_table("DOWNLOADER") and has_column("DOWNLOADER", "DOWNLOAD_DIR"):
         with op.batch_alter_table("DOWNLOADER", schema=None) as batch_op:
             batch_op.alter_column(
                 "DOWNLOAD_DIR",
@@ -35,7 +43,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    if _column_exists("DOWNLOADER", "DOWNLOAD_DIR"):
+    if has_table("DOWNLOADER") and has_column("DOWNLOADER", "DOWNLOAD_DIR"):
         with op.batch_alter_table("DOWNLOADER", schema=None) as batch_op:
             batch_op.alter_column(
                 "DOWNLOAD_DIR",

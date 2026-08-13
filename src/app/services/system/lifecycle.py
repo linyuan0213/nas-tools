@@ -120,6 +120,8 @@ class SystemLifecycleService:
         apikey_service=None,
         hook_system=None,
         event_bus=None,
+        knowledge_ingestor=None,
+        conversation_store=None,
     ):
         self._scheduler = scheduler_core
         self._sync = sync
@@ -137,6 +139,8 @@ class SystemLifecycleService:
         self._apikey_service = apikey_service
         self._hook_system = hook_system
         self._event_bus = event_bus
+        self._knowledge_ingestor = knowledge_ingestor
+        self._conversation_store = conversation_store
 
     @property
     def subscription_monitor(self) -> SubscriptionMonitor | None:
@@ -164,6 +168,8 @@ class SystemLifecycleService:
             media_server=self._media_server,
             sync_engine=self._sync,
             subscribe_service=self._subscribe_service,
+            knowledge_ingestor=self._knowledge_ingestor,
+            conversation_store=self._conversation_store,
         )
         # 2. 并行启动各业务服务（此时调度器已运行，init_config 里的 stop/start_job 可正常执行）
         startup_tasks = [
@@ -190,6 +196,16 @@ class SystemLifecycleService:
                 _start_service_or_log(name, func)
         # 3. 启动下载完成实时监控（事件驱动转移）
         self._download_monitor.start()
+
+        # 4. Agent 知识库：全新部署（KB 为空）时启动重建一次，避免空库等待每日维护
+        if self._knowledge_ingestor is not None and self._thread_executor is not None:
+            try:
+                status = self._knowledge_ingestor.status()
+                if status and all(v == 0 for v in status.values()):
+                    self._thread_executor.submit(self._knowledge_ingestor.reindex)
+                    log.info("[Lifecycle]知识库为空，已触发启动重建")
+            except Exception as e:
+                log.error(f"[Lifecycle]知识库启动检查失败: {e}")
 
     def stop_service(self) -> None:
         """停止所有后台服务"""

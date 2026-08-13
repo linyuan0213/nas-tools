@@ -4,6 +4,7 @@ import hmac
 import re
 import time
 from typing import Any
+from urllib.parse import urlparse
 
 from app.infrastructure.cache_system.cookiecloud_adapter import CookiecloudAdapter
 from app.infrastructure.http.client import HttpClient
@@ -101,7 +102,6 @@ class MTeam(SiteSigninHandler):
         return self._check_response(res, site)
 
     def _resolve_local_storage_domain(self, home_url: str) -> str:
-        from urllib.parse import urlparse
 
         parsed = urlparse(home_url)
         host = parsed.hostname or "m-team.cc"

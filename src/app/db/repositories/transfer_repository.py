@@ -14,6 +14,7 @@ from app.db.models import SYNCHISTORY, TRANSFERBLACKLIST, TRANSFERHISTORY, TRANS
 from app.db.repositories.base_repository import BaseRepository
 from app.db.repositories.episode_progress import contiguous_episodes
 from app.schemas.media import TransferMediaDTO
+from app.utils.string_utils import StringUtils
 
 
 class TransferRepository(BaseRepository):
@@ -124,7 +125,7 @@ class TransferRepository(BaseRepository):
                     TITLE=title,
                     YEAR=media_info.year,
                     SEASON_EPISODE=season_episode,
-                    SOURCE=str(in_from.value) if hasattr(in_from, "value") else str(in_from),
+                    SOURCE=StringUtils.resolve_in_from_display(in_from),
                     SOURCE_PATH=source_path,
                     SOURCE_FILENAME=source_filename,
                     DEST=dest,

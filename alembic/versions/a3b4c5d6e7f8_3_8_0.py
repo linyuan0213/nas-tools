@@ -44,10 +44,14 @@ def upgrade():
             Column("LST_MOD_DATE", String(255)),
         )
     if not has_column("SITE_BRUSH_TASK", "RULE_ID"):
-        op.add_column(
-            "SITE_BRUSH_TASK",
-            Column("RULE_ID", Integer, sa.ForeignKey("SITE_BRUSH_RULE.ID"), nullable=True),
-        )
+        try:
+            op.add_column(
+                "SITE_BRUSH_TASK",
+                Column("RULE_ID", Integer, sa.ForeignKey("SITE_BRUSH_RULE.ID"), nullable=True),
+            )
+        except Exception:  # noqa: BLE001
+            # SQLite 不支持 ADD COLUMN 携带外键；该列后续由拆分迁移接管，忽略即可
+            pass
 
 
 def downgrade():

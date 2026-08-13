@@ -2,6 +2,7 @@
 
 import os
 import re
+import time
 from typing import Any
 
 import log
@@ -60,6 +61,9 @@ class TransferPathResolver:
         self._tv_file_rmt_format = tv_file_rmt_format
         self._backend_cache: dict[str, Any] = {}
         self._storage_backend_repo = storage_backend_repo or StorageBackendRepositoryAdapter()
+        self._media_config_service = None
+        self._last_refresh = 0.0
+        self._refresh_ttl = 60
 
     @classmethod
     def from_settings(
@@ -109,7 +113,7 @@ class TransferPathResolver:
                     tv_season_rmt_format = tv_formats[-2]
                     tv_file_rmt_format = tv_formats[-1]
 
-        return cls(
+        result = cls(
             movie_path=movie_path,
             tv_path=tv_path,
             anime_path=anime_path,
@@ -128,6 +132,45 @@ class TransferPathResolver:
             tv_file_rmt_format=tv_file_rmt_format,
             storage_backend_repo=storage_backend_repo or StorageBackendRepositoryAdapter(),
         )
+        result._media_config_service = media_config_service
+        return result
+
+    def refresh(self) -> None:
+        """重新读取媒体库路径配置，使配置变更无需重启即可生效.
+
+        TTL 守卫：60 秒内不重复读库（转移按文件逐个调用 refresh，
+        避免批量转移退化为 N+1 次 DB 往返）；配置源读取失败时沿用旧配置。
+        """
+        if self._media_config_service is None:
+            return
+        now = time.time()
+        if now - self._last_refresh < self._refresh_ttl:
+            return
+        try:
+            fresh = TransferPathResolver.from_settings(
+                media_config_service=self._media_config_service,
+                storage_backend_repo=self._storage_backend_repo,
+            )
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[TransferPathResolver]配置刷新失败，沿用旧配置: {e}")
+            return
+        self._last_refresh = now
+        self._movie_path = fresh._movie_path
+        self._tv_path = fresh._tv_path
+        self._anime_path = fresh._anime_path
+        self._unknown_path = fresh._unknown_path
+        self._movie_backend = fresh._movie_backend
+        self._tv_backend = fresh._tv_backend
+        self._anime_backend = fresh._anime_backend
+        self._unknown_backend = fresh._unknown_backend
+        self._movie_category_flag = fresh._movie_category_flag
+        self._tv_category_flag = fresh._tv_category_flag
+        self._anime_category_flag = fresh._anime_category_flag
+        self._movie_dir_rmt_format = fresh._movie_dir_rmt_format
+        self._movie_file_rmt_format = fresh._movie_file_rmt_format
+        self._tv_dir_rmt_format = fresh._tv_dir_rmt_format
+        self._tv_season_rmt_format = fresh._tv_season_rmt_format
+        self._tv_file_rmt_format = fresh._tv_file_rmt_format
 
     # ---------- 目标路径属性 ----------
 

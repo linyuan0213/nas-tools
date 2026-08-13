@@ -27,6 +27,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     _PATH_LIMITS: dict[str, str] = {
         "/api/system/refresh": "30/m",
         "/api/auth/login": "5/m",
+        "/api/agent/chat": "20/m",
+        "/api/agent/chat/confirm": "20/m",
+        "/api/agent/message/interact": "10/m",
+        "/api/agent/message/stream": "10/m",
     }
 
     def __init__(self, app, rate: str = "60/m"):

@@ -4,6 +4,7 @@ from threading import Lock
 from time import sleep
 
 import log
+from app.core.settings import settings
 from app.domain.mediatypes import MediaType
 from app.infrastructure.external.doubanapi import DoubanApi, DoubanWeb
 from app.infrastructure.http.client import HttpClient
@@ -295,8 +296,6 @@ class DouBan:
                 cover_url = cover_url.replace("s_ratio_poster", "m_ratio_poster")
                 # 转换为代理URL格式
                 try:
-                    from app.core.settings import settings
-
                     if settings.get("app").get("enable_image_proxy", True):
                         cover_url = f"/img/douban/{urllib.parse.quote(cover_url, safe='')}"
                 except Exception as e:  # noqa: BLE001
@@ -465,8 +464,6 @@ class DouBan:
                 poster_path = poster_path.replace("s_ratio_poster", "m_ratio_poster")
                 # 转换为代理URL格式
                 try:
-                    from app.core.settings import settings
-
                     if settings.get("app").get("enable_image_proxy", True):
                         poster_path = f"/img/douban/{urllib.parse.quote(poster_path, safe='')}"
                 except Exception as e:  # noqa: BLE001

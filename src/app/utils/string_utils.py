@@ -16,6 +16,13 @@ from app.utils.exception_utils import ExceptionUtils
 
 class StringUtils:
     @staticmethod
+    def resolve_in_from_display(in_from) -> str:
+        """
+        渲染消息来源文本：枚举取 .value，字符串（如下载器名称）原样返回
+        """
+        return in_from.value if hasattr(in_from, "value") else str(in_from)
+
+    @staticmethod
     def num_filesize(text):
         """
         将文件大小文本转化为字节

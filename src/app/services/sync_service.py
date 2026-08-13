@@ -324,7 +324,6 @@ class SyncService:
                         _do_one(wid)
                 else:
                     futures = [self._thread_executor.submit(_do_one, wid) for wid in ids]
-                    from concurrent.futures import wait
 
                     wait(futures)
             finally:

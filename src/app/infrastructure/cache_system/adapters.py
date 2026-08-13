@@ -232,7 +232,8 @@ class RedisCacheAdapter(CacheAdapter):
     def _init_redis(self):
         """初始化Redis连接"""
         try:
-            from app.infrastructure.redis import RedisStore
+            # 延迟导入：测试 mock 依赖 + 避免模块加载即连接 Redis
+            from app.infrastructure.redis import RedisStore  # noqa: PLC0415
 
             store = RedisStore()
             if store.is_available():

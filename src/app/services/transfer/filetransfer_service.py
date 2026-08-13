@@ -296,6 +296,9 @@ class FileTransferService:
             assert operation is not None
             log.info(f"[Rmt]开始处理：{in_path}，转移方式：{operation}")
 
+            # 刷新路径解析配置（媒体库路径变更后无需重启即可生效）
+            self._path_resolver.refresh()
+
             episode = episode if episode else (None, False)
 
             # ---------- 阶段 1：发现文件 ----------

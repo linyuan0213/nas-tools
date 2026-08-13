@@ -22,11 +22,12 @@ venv/
 dist/
 build/
 
-# 开发/文档
-docs/
+# 开发/测试
 tests/
-*.md
-!README.md
+
+# 文档（知识库数据源，DocsLoader 仅索引顶层 docs/*.md；assets/decisions 不入镜像）
+docs/*
+!docs/*.md
 
 # Docker
 docker/*

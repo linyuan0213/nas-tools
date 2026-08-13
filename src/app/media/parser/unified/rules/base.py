@@ -100,7 +100,14 @@ class RuleEngine:
 
 
 def get_rule_engine() -> RuleEngine:
-    from . import codec_rules, episode_rules, resolution_rules, season_rules, source_rules, year_rules
+    from . import (  # noqa: PLC0415  # 规则模块循环引用，延迟导入解除
+        codec_rules,
+        episode_rules,
+        resolution_rules,
+        season_rules,
+        source_rules,
+        year_rules,
+    )
 
     engine = RuleEngine()
     for rule in season_rules.RULES:

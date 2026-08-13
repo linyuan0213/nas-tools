@@ -8,7 +8,9 @@ Create Date: 2026-04-10 11:50:00.000000
 
 import ast
 import json
+import os
 
+import ruamel.yaml
 import sqlalchemy as sa
 from sqlalchemy import Column, Integer, Sequence, String, Text
 
@@ -84,12 +86,8 @@ def upgrade() -> None:
 
     # 尝试从配置文件迁移现有媒体服务器配置到数据库
     try:
-        import os
-
         config_path = os.environ.get("NEXUS_MEDIA_CONFIG")
         if config_path:
-            import ruamel.yaml
-
             with open(config_path, encoding="utf-8") as cf:
                 cfg = ruamel.yaml.YAML().load(cf)
             if cfg:

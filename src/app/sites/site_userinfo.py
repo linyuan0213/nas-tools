@@ -9,10 +9,12 @@ import log
 from app.db.models import SITEUSERINFOSTATS as _S
 from app.db.repositories.site_repo_adapter import SiteRepositoryAdapter
 from app.db.repositories.site_repository import SiteRepository
+from app.infrastructure.distributed_lock.lock_manager import get_lock_manager
 from app.infrastructure.http import CookieAuth, HttpClient, HttpClientConfig
 from app.infrastructure.rate_limiter import MemoryTokenBucketBackend, RateLimitEngine
 from app.infrastructure.thread import ThreadExecutor
 from app.message import Message
+from app.message.web_store import WebMessageStore
 from app.sites.engine import SiteEngine
 from app.sites.site_cache import SiteCache
 from app.sites.site_favicon_service import SiteFaviconService
@@ -273,7 +275,6 @@ class SiteUserInfo:
         :param specify_sites: 指定站点名称列表，None 表示全部
         """
         lock_key = f"site:refresh:{','.join(specify_sites) if specify_sites else 'all'}"
-        from app.infrastructure.distributed_lock.lock_manager import get_lock_manager
 
         refresh_lock = get_lock_manager().create_lock(lock_key, ttl_seconds=600)
         acquired = refresh_lock.acquire()
@@ -313,7 +314,23 @@ class SiteUserInfo:
         if inc_downloads or inc_uploads:
             if self.message is None:
                 return
+            msg_text = "\n".join(string_list)
+            # 内容与最近一次已发送的一致（如重启/重复刷新）则跳过，避免产生重复统计消息
+            if self._stats_message_unchanged(msg_text):
+                log.info("[Sites]站点数据统计无变化，跳过重复发送")
+                return
             self.message.send_user_statistics_message(string_list)
+
+    def _stats_message_unchanged(self, msg_text: str) -> bool:
+        """统计消息内容是否与最近一次已发送（持久化）的一致"""
+        try:
+            items = WebMessageStore.instance().history(user_id="", limit=20)
+            for item in reversed(items):
+                if (item.get("title") or "").strip() == "站点数据统计":
+                    return (item.get("content") or "").strip() == msg_text.strip()
+        except Exception as e:
+            log.debug(f"[Sites]统计消息去重检查失败: {e}")
+        return False
 
     def refresh_site_data(self, force=False, specify_sites=None) -> dict:
         """

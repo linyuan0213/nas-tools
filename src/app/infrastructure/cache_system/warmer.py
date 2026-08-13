@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import log
+from app.core.settings import settings
 from app.db.repositories.category_repo_adapter import CategoryConfigRepositoryAdapter
 from app.db.repositories.site_repository import SiteRepository
 
@@ -54,8 +55,6 @@ class ConfigCacheWarmer(CacheWarmer):
         try:
             log.info("[CacheWarmer]开始预热配置数据...")
             cache_manager = CacheManager()
-
-            from app.core.settings import settings
 
             config = settings.get()
             if config:

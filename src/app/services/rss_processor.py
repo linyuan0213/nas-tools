@@ -33,6 +33,22 @@ class RssHelper:
     def _cache_key(self, url: str, proxy: bool) -> str:
         return f"rss:{url}:proxy={proxy}"
 
+    @staticmethod
+    def _looks_like_torrent_url(url: str) -> bool:
+        """判断链接是否为种子直链（而非详情页/公告页），用于仅 link 无 enclosure 的 RSS 回退"""
+        if not url:
+            return False
+        parsed = urlsplit(url)
+        path = (parsed.path or "").lower()
+        query = (parsed.query or "").lower()
+        if path.endswith(".torrent"):
+            return True
+        if any(k in path for k in ("download", "/dl", "torrents", "torrent/")):
+            return True
+        if any(k in query for k in ("passkey=", "authkey=", "torrent_pass=")):
+            return True
+        return False
+
     def parse_rssxml(self, url, proxy=False):
         """
         解析RSS订阅URL，获取RSS中的种子信息
@@ -114,8 +130,11 @@ class RssHelper:
 
                         if not enclosure and not link:
                             continue
-                        # 部分RSS只有link没有enclosure
+                        # 部分RSS只有link没有enclosure：仅当 link 为种子直链时作为下载链接；
+                        # 公告/提醒类条目（无 enclosure、link 为详情/公告页）直接跳过
                         if not enclosure and link:
+                            if not self._looks_like_torrent_url(link):
+                                continue
                             enclosure = link
                             link = None
 

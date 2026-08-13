@@ -19,6 +19,8 @@ depends_on = None
 
 def _column_exists(table: str, column: str) -> bool:
     conn = op.get_bind()
+    if not inspect(conn).has_table(table):
+        return False
     cols = {c["name"].upper() for c in inspect(conn).get_columns(table)}
     return column.upper() in cols
 

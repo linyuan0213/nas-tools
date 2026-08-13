@@ -3,6 +3,7 @@ import re
 import log
 from app.domain.media_utils import check_media_exists
 from app.domain.mediatypes import MediaType
+from app.infrastructure.image_proxy import ImageProxy
 from app.media.models import MediaInfo
 from app.mediaserver.media_server import MediaServer
 from app.schemas.media import MediaSearchResultDTO
@@ -106,8 +107,6 @@ class SearchResultService:
                     )
                 poster_url = item.POSTER
                 try:
-                    from app.infrastructure.image_proxy import ImageProxy
-
                     poster_url = ImageProxy.get_proxy_image_url(item.POSTER, use_proxy=True)
                 except Exception as e:  # noqa: BLE001
                     log.debug(f"[search_result_service]忽略异常: {e}")

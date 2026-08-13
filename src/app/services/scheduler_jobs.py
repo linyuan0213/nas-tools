@@ -43,6 +43,8 @@ def load_default_jobs(
     media_server,
     sync_engine,
     subscribe_service,
+    knowledge_ingestor=None,
+    conversation_store=None,
 ):
     """
     加载系统默认定时任务
@@ -168,3 +170,35 @@ def load_default_jobs(
         jobstore=_jobstore,
     )
     log.info("图片缓存清理任务已注册")
+
+    # Agent 每日维护：RAG 知识库全量重建 + 短期记忆过期清理（agent 未启用时零开销）
+    # 固定每日 03:00 执行，避免每次部署/重启都触发全量重建；
+    # 全新部署的空库重建由 SystemLifecycleService 启动检查处理。
+    if knowledge_ingestor is not None or conversation_store is not None:
+        _agent_cfg = settings.get("agent") or {}
+        memory_cfg = _agent_cfg.get("memory") or {}
+        _ttl_days = _parse_interval(memory_cfg.get("short_term", {}).get("ttl_days"), default=30)
+
+        def _agent_daily_maintenance() -> None:
+            if knowledge_ingestor is not None:
+                try:
+                    stats = knowledge_ingestor.reindex()
+                    log.info(f"[AgentMaintenance]知识库重建完成: {stats}")
+                except Exception as e:
+                    log.error(f"[AgentMaintenance]知识库重建失败: {e}")
+            if conversation_store is not None and _ttl_days > 0:
+                try:
+                    deleted = conversation_store.cleanup_expired(_ttl_days)
+                    if deleted:
+                        log.info(f"[AgentMaintenance]短期记忆过期清理: {deleted} 个会话")
+                except Exception as e:
+                    log.error(f"[AgentMaintenance]记忆清理失败: {e}")
+
+        scheduler.register_cron(
+            job_id="AgentMaintenance.daily",
+            name="Agent 每日维护（知识库重建+记忆清理）",
+            func=_agent_daily_maintenance,
+            cron="0 3 * * *",
+            jobstore=_jobstore,
+        )
+        log.info("Agent 每日维护任务已注册（每日 03:00）")

@@ -8,6 +8,7 @@ from typing import Any
 
 from apscheduler.job import Job
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.util import undefined
 
 import log
 from app.core.exceptions import RepositoryError, ServiceError
@@ -46,8 +47,6 @@ class CronParser:
             return None
 
         if not next_run_time:
-            from apscheduler.util import undefined
-
             next_run_time = undefined
 
         job = None

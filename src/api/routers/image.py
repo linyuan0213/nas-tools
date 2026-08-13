@@ -7,14 +7,16 @@ FastAPI 图片代理路由
 import os
 import time
 import urllib.parse
+from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from starlette.responses import FileResponse, RedirectResponse, Response
 
 import log
 from app.core.constants import TMDB_IMAGE_DOMAIN
 from app.core.error_codes import ErrorCode
 from app.core.exceptions import DomainError, NexusError, ServiceError
+from app.core.settings import settings
 from app.infrastructure.image_proxy import (
     MAX_CACHE_DAYS,
     SIZE_DIMENSIONS,
@@ -170,3 +172,15 @@ async def proxy_favicon(domain: str):
     favicon_url = f"https://{domain}/favicon.ico"
     cache_path = get_cache_path("favicon", domain)
     return await _serve_image(cache_path, favicon_url, referer=f"https://{domain}", media_type="image/x-icon")
+
+
+@router.get("/agent/{name}", summary="Agent 浏览器截图")
+async def agent_screenshot(name: str):
+    """返回 Agent 浏览器工具保存的截图（数据目录 static/agent，防路径穿越）"""
+    safe = Path(name).name
+    if not safe.endswith(".png"):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    path = Path(settings.data_path) / "static" / "agent" / safe
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="文件不存在")
+    return FileResponse(path, media_type="image/png")

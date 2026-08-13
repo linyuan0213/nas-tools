@@ -6,6 +6,7 @@ IndexerSiteConfig Repository
 from datetime import datetime
 
 from sqlalchemy import delete, insert, inspect, select, update
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
@@ -97,7 +98,6 @@ class IndexerSiteConfigRepository(BaseRepository):
             db.execute(stmt)
 
     def _upsert_mysql(self, values: dict) -> None:
-        from sqlalchemy.dialects.mysql import insert as mysql_insert
 
         stmt = mysql_insert(INDEXERSITECONFIG).values(values)
         update = {

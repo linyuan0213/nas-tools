@@ -116,6 +116,7 @@ select = [
     "F",  # Pyflakes
     "I",  # isort
     "S110",  # try-except-pass (do not silently swallow exceptions)
+    "PLC0415",  # import-outside-top-level（导入必须位于文件顶部，禁止函数内导入）
 ]
 ignore = [
     "S101",  # assert
@@ -132,7 +133,9 @@ known-third-party = []
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ARG", "S"]
+"tests/**" = ["ARG", "S", "PLC0415"]
+"examples/**" = ["PLC0415"]
+"scripts/**" = ["PLC0415"]
 "src/api/routers/**" = ["B008"]
 "src/api/deps.py" = ["B008"]
 "alembic/**" = ["S"]

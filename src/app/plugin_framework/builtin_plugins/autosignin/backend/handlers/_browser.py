@@ -7,6 +7,7 @@ import time
 from lxml import etree
 
 from app.infrastructure.chrome import BrowserSession
+from app.infrastructure.chrome.challenge import CHALLENGE_INDICATORS, wait_challenge_clear
 from app.sites.siteconf import SiteConf
 from app.sites.utils import is_logged_in
 from app.utils import ExceptionUtils
@@ -17,13 +18,6 @@ from .base import SigninResult, SiteSigninContext, SiteSigninHandler
 # 串行化浏览器签到：并发启动多个浏览器会话会让 nexus-chrome 资源竞争，
 # 导致 WAF/雷池挑战长时间无法通过（如我堡超时 120s），也减少同时打开的标签页
 _BROWSER_SIGNIN_LOCK = threading.Lock()
-
-_CHALLENGE_INDICATORS = re.compile(
-    r"challenge|cf-browser|Checking your browser|DDoS|正在检查|请等待|验证您不是机器人|slg-bg|slg-box|雷池|安全拦截",
-    re.IGNORECASE,
-)
-_PAGE_WAIT_TIMEOUT = 180
-_PAGE_POLL_INTERVAL = 3
 
 
 class BrowserSigninHandler(SiteSigninHandler):
@@ -63,7 +57,7 @@ class BrowserSigninHandler(SiteSigninHandler):
                 if not html_text:
                     return SigninResult.fail(site, "无法打开网站")
                 html_text = self._wait_cloudflare(session, post_navigate=html_text)
-                if _CHALLENGE_INDICATORS.search(html_text):
+                if CHALLENGE_INDICATORS.search(html_text):
                     return SigninResult.fail(site, f"挑战未通过: {html_text[:100]}")
 
                 if self._already_signed(html_text):
@@ -117,15 +111,7 @@ class BrowserSigninHandler(SiteSigninHandler):
 
     @staticmethod
     def _wait_cloudflare(session: BrowserSession, post_navigate: str) -> str:
-        html_text = post_navigate
-        deadline = time.monotonic() + _PAGE_WAIT_TIMEOUT
-        while time.monotonic() < deadline:
-            if _CHALLENGE_INDICATORS.search(html_text):
-                time.sleep(_PAGE_POLL_INTERVAL)
-                html_text = session.html()
-                continue
-            return html_text
-        return html_text
+        return wait_challenge_clear(session, post_navigate, timeout=180)
 
     @staticmethod
     def _wait_page_stable(session: BrowserSession) -> str:
@@ -136,7 +122,7 @@ class BrowserSigninHandler(SiteSigninHandler):
             if html_text and html_text == prev:
                 return html_text
             prev = html_text
-            time.sleep(_PAGE_POLL_INTERVAL)
+            time.sleep(3)
         return session.html()
 
     def _resolve_home_url(self, site_def, ctx: SiteSigninContext) -> str:
