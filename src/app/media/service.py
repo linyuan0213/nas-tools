@@ -19,7 +19,7 @@ from app.media.identity.remapper import EpisodeRemapper
 from app.media.lookup.base import LookupResult
 from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
-from app.media.parser.base import BaseParser
+from app.media.parser.base import BaseParser, ParserResult
 from app.media.parser.episode_mapper import EpisodeMapper
 from app.media.parser.regex import RegexParser
 from app.storage.backends.base import StorageBackend
@@ -64,6 +64,56 @@ class MediaService:
             if self._llm_parser and self._llm_parser.ready:
                 return self._llm_parser
         return RegexParser()
+
+    def _post_process(self, parsed, title: str, subtitle: str = "") -> ParserResult | None:
+        """解析后处理（所有识别入口共用）：集名粘连修复 / 中文名补充 / 末尾年份提取。
+
+        统一 identify / identify_batch / identify_files 的行为，避免同一解析器在不同
+        路径上后处理不一致（如"识别测试正常但转移识别错"）。
+        """
+        if not parsed:
+            return None
+
+        # 1. 集名粘连修复：S05E10 后的短语剥离，从搜索名中分离
+        if parsed.title_en and not parsed.title_cn and parsed.season:
+            se_text = f"S{parsed.season:02d}E{parsed.episode:02d}" if parsed.episode else f"S{parsed.season:02d}"
+            idx = title.upper().find(se_text.upper())
+            if idx < 0 and parsed.episode:
+                se_text = f"S{parsed.season}E{parsed.episode}"
+                idx = title.upper().find(se_text.upper())
+            if idx >= 0:
+                prefix = title[:idx].replace(".", " ").strip()
+                # 剥离前缀中的发布组方括号与末尾年份，避免污染搜索名
+                prefix = re.sub(r"\[[^\]]*\]", " ", prefix)
+                if parsed.year:
+                    prefix = re.sub(rf"\s*{re.escape(str(parsed.year))}\s*$", "", prefix)
+                prefix = re.sub(r"\s+", " ", prefix).strip()
+                if prefix and len(prefix) >= 3:
+                    parsed.title_en = prefix
+
+        # 2. 中文名补充：标题无中文名且副标题含中文 → 从副标题补提中文名；
+        #    副标题解析出的英文名仅在主标题缺失时才采用，避免无意义目录名（如 /tmp）覆盖真实标题
+        if not parsed.title_cn and subtitle:
+            sub_parsed = self._parser.parse(subtitle, "")
+            if sub_parsed and sub_parsed.title_cn:
+                parsed.title_cn = sub_parsed.title_cn
+            elif sub_parsed and sub_parsed.title_en and not parsed.title_en:
+                parsed.title_en = sub_parsed.title_en
+
+        # 3. 名称末尾年份提取
+        if not parsed.year:
+            name = parsed.title_cn or parsed.title_en or ""
+            year_match = re.search(r"\s+(\d{4})$", name)
+            if year_match:
+                extracted_year = year_match.group(1)
+                if 1900 < int(extracted_year) < 2050:
+                    parsed.year = extracted_year
+                    cleaned = re.sub(r"\s+\d{4}$", "", name)
+                    if parsed.title_cn == name:
+                        parsed.title_cn = cleaned
+                    elif parsed.title_en == name:
+                        parsed.title_en = cleaned
+        return parsed
 
     @staticmethod
     def _apply_words(title: str, subtitle: str | None = None) -> tuple[str, str]:
@@ -112,22 +162,6 @@ class MediaService:
                 subtitle = parent
         title, subtitle = self._apply_words(title, subtitle)
         parsed = self._parser.parse(title, subtitle)
-        # 集名粘连修复：S05E10 后的短语剥离，从搜索名中分离
-        if parsed and parsed.title_en and not parsed.title_cn and parsed.season:
-            se_text = f"S{parsed.season:02d}E{parsed.episode:02d}" if parsed.episode else f"S{parsed.season:02d}"
-            idx = title.upper().find(se_text.upper())
-            if idx < 0 and parsed.episode:
-                se_text = f"S{parsed.season}E{parsed.episode}"
-                idx = title.upper().find(se_text.upper())
-            if idx >= 0:
-                prefix = title[:idx].replace(".", " ").strip()
-                # 剥离前缀中的发布组方括号与末尾年份，避免污染搜索名
-                prefix = re.sub(r"\[[^\]]*\]", " ", prefix)
-                if parsed.year:
-                    prefix = re.sub(rf"\s*{re.escape(str(parsed.year))}\s*$", "", prefix)
-                prefix = re.sub(r"\s+", " ", prefix).strip()
-                if prefix and len(prefix) >= 3:
-                    parsed.title_en = prefix
         if not parsed and not self._parser.is_llm:
             # Fallback: 默认是 RegexParser 时，用 LLM Parser 兜底
             llm_parser = self._llm_parser
@@ -140,14 +174,14 @@ class MediaService:
                 self._lookup.client.set_language()
             return None
 
+        # 公共后处理（与 identify_batch / identify_files 一致）
+        parsed = self._post_process(parsed, title, subtitle)
+        if not parsed:
+            if language:
+                self._lookup.client.set_language()
+            return None
+
         # 领域规则：标题质量过滤，排除纯网站名/垃圾词
-        # 标题无中文名且副标题含中文 → 从副标题补提中文名
-        if not parsed.title_cn and subtitle:
-            sub_parsed = self._parser.parse(subtitle, "")
-            if sub_parsed and sub_parsed.title_cn:
-                parsed.title_cn = sub_parsed.title_cn
-            elif sub_parsed and sub_parsed.title_en:
-                parsed.title_en = sub_parsed.title_en
         search_name = parsed.title_en or parsed.title_cn or ""
         if not is_valid_media_title(search_name):
             log.debug(f"[MediaService]标题质量不合格，跳过识别: {title} -> {search_name}")
@@ -157,20 +191,6 @@ class MediaService:
 
         if mtype:
             parsed.type = mtype
-
-        # 后处理: 名称末尾年份提取
-        if not parsed.year:
-            name = parsed.title_cn or parsed.title_en or ""
-            year_match = re.search(r"\s+(\d{4})$", name)
-            if year_match:
-                extracted_year = year_match.group(1)
-                if 1900 < int(extracted_year) < 2050:
-                    parsed.year = extracted_year
-                    cleaned = re.sub(r"\s+\d{4}$", "", name)
-                    if parsed.title_cn == name:
-                        parsed.title_cn = cleaned
-                    elif parsed.title_en == name:
-                        parsed.title_en = cleaned
 
         search_name = parsed.title_en or parsed.title_cn or title
 
@@ -435,6 +455,11 @@ class MediaService:
                 parsed_list[idx] = parsed
             if not parsed:
                 continue
+            # 公共后处理（与 identify / identify_files 一致）
+            parsed = self._post_process(parsed, titles[idx], subtitles[idx])
+            if not parsed:
+                continue
+            parsed_list[idx] = parsed
             # 领域规则：标题质量过滤
             search_name = parsed.title_en or parsed.title_cn or ""
             if not is_valid_media_title(search_name):
@@ -773,6 +798,7 @@ class MediaService:
                         continue
                     file_name, _ = self._apply_words(file_name)
                     parsed = self._parser.parse(file_name)
+                    parsed = self._post_process(parsed, file_name)
                     info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
                     info.set_tmdb_info(tmdb_info)
                     if season and info.type != MediaType.MOVIE:
@@ -861,6 +887,12 @@ class MediaService:
                 parsed_list[idx] = self._parser.parse(
                     item["title"], f"{item['parent_name']} {item['parent_parent_name']}"
                 )
+            # 公共后处理（与 identify / identify_batch 一致）
+            parsed_list[idx] = self._post_process(
+                parsed_list[idx],
+                item["title"],
+                f"{item['parent_name']} {item['parent_parent_name']}",
+            )
 
         # 2.3 去重后并发查 TMDB
 

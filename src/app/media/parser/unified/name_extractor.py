@@ -78,7 +78,7 @@ _META_TOKEN_RE = re.compile(
     # --- 地区代码 ---
     r"|eur|gbr|ger|kor|jpn|usa|fra|ita|esp|deu|aus|can|chn|hkg|twn|sgp|ind|tha|nld|bel|dnk|swe|nor|fin|prt|bra|mex|arg"
     # --- 发布组 ---
-    r"|rarbg|yts|yify|eztv|ettv|etrg|gtm|fgt|cmrg|evo|ntg|pse|tgx|galaxyrg|sparks|hive|ctrlhd"
+    r"|rarbg|yts|yify|eztv|ettv|etrg|gtm|fgt|cmrg|evo|ntg|pse|tgx|galaxyrg|hive|ctrlhd"
     r"|audies|adweb|nest|runrun|dramas|fhdx|xpost|tigole|joybell|utr|qman|psa|rmteam"
     r"|mteam|beitai|ourbits|hdsky|hdc|chd|ttg|pter|keepfrds|frds|hds|hdfans"
     # --- 版本/内容标签 ---

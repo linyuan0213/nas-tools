@@ -291,3 +291,43 @@ class TestSiteMarkerStripping:
         assert result is not None
         assert result.title_en == "Avatar"
         assert result.year == "2010"
+
+class TestSharedPostProcess:
+    """MediaService._post_process 应让所有识别入口共用同一套后处理"""
+
+    def _service(self):
+        from typing import cast
+
+        from app.media.lookup.tmdb_lookup import TmdbLookup
+        from app.media.parser.regex import RegexParser
+        from app.media.service import MediaService
+
+        return MediaService(tmdb_lookup=cast(TmdbLookup, object()), llm_parser=RegexParser())
+
+    def test_glue_fix_keeps_real_title(self, parser):
+        """'Sparks of Tomorrow' 的 Sparks 不被发布组剥离，集名粘连修复应保留完整标题"""
+        svc = self._service()
+        title = "Sparks. of. Tomorrow. S01E06. 2026. 1080p. NF. WEB-DL. AHD"
+        parsed = parser.parse(title)
+        assert parsed.title_en == "Sparks Of Tomorrow"
+        post = svc._post_process(parsed, title)
+        assert post is not None and post.title_en is not None
+        assert post.title_en.lower() == "sparks of tomorrow"
+        assert post.season == 1 and post.episode == 6 and post.year == "2026"
+
+    def test_year_extracted_from_name_tail(self, parser):
+        """标题末尾年份应被提取为 year 并从标题剥离"""
+        svc = self._service()
+        parsed = parser.parse("Some Title 2019 S01E01 720p WEB-DL")
+        post = svc._post_process(parsed, "Some Title 2019 S01E01 720p WEB-DL")
+        assert post is not None
+        assert post.year == "2019"
+
+    def test_subtitle_does_not_overwrite_title_en(self, parser):
+        """无意义父目录（如 /tmp）解析出的英文名不应覆盖真实标题"""
+        svc = self._service()
+        title = "Sparks. of. Tomorrow. S01E06. 2026. 1080p. NF. WEB-DL. AHD"
+        parsed = parser.parse(title)
+        post = svc._post_process(parsed, title, "tmp /")
+        assert post is not None and post.title_en is not None
+        assert post.title_en.lower() == "sparks of tomorrow"
