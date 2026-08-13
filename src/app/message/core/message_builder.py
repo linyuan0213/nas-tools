@@ -164,10 +164,11 @@ class MessageBuilder:
                 msg_str = f"类型：{item_info.type.display_name}"
             if item_info.category:
                 msg_str = f"{msg_str}，类别：{item_info.category}"
+            from_source = f"，来自：{StringUtils.resolve_in_from_display(in_from)}"
             if item_info.total_episodes == 1:
-                msg_str = f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
+                msg_str = f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}{from_source}"
             else:
-                msg_str = f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
+                msg_str = f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}{from_source}"
             if self._messagecenter:
                 self._messagecenter.insert_system_message(title=msg_title, content=msg_str)
             for client in self._client_manager.active_clients:
