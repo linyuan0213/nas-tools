@@ -183,8 +183,9 @@ class DatabaseFactory:
         # 构建连接URL
         if db_type == DatabaseFactory.SQLITE:
             if db_path is None:
-                # 自动从配置路径获取数据库文件路径
-                db_path = os.path.join(settings.data_path, "user.db")
+                # 优先使用配置的 sqlite_path（DATABASE__SQLITE_PATH），否则落在 data/user.db
+                configured = DatabaseFactory._get_config_value("sqlite_path")
+                db_path = configured or os.path.join(settings.data_path, "user.db")
             url = DatabaseFactory.get_database_url(db_type, db_path=db_path)
         else:
             # MySQL/PostgreSQL 使用配置中的数据库名
