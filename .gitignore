@@ -66,3 +66,5 @@ config/*.pid
 
 # MkDocs 构建输出
 /site/
+
+tests/config_test.yaml.lock
