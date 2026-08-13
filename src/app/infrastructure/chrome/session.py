@@ -24,6 +24,7 @@ class _BaseBrowserSession:
         fingerprint: str = "stealth",
         user_agent: str | None = None,
         proxy_url: str | None = None,
+        fp_profile_id: str | None = None,
         timeout: float = 60.0,
     ):
         self.site_key = site_key
@@ -31,6 +32,7 @@ class _BaseBrowserSession:
         self.fingerprint = fingerprint
         self.user_agent = user_agent
         self.proxy_url = proxy_url
+        self.fp_profile_id = fp_profile_id
         self.timeout = timeout
         self.session_id = site_key
 
@@ -41,6 +43,7 @@ class _BaseBrowserSession:
         return {
             "session_id": self.session_id,
             "fingerprint_profile": self.fingerprint,
+            "fp_profile_id": self.fp_profile_id,
             "user_agent": self.user_agent,
             "proxy": self.proxy_url,
         }
@@ -113,6 +116,13 @@ class BrowserSession(_BaseBrowserSession):
     def fetch(self, url: str, method: str = "GET", **kwargs: Any) -> dict[str, Any]:
         payload = {"url": url, "method": method, **kwargs}
         response = self._client.post(self._session_url(f"/sessions/{self.session_id}/fetch"), json=payload)
+        response.raise_for_status()
+        return response.json().get("data", {})
+
+    def screenshot(self, tab_name: str | None = None, full_page: bool = False) -> dict[str, Any]:
+        """对指定（或活动）标签页截图，返回 {png_base64, size, ...}"""
+        payload = {"tab_name": tab_name, "full_page": full_page}
+        response = self._client.post(self._session_url(f"/sessions/{self.session_id}/screenshot"), json=payload)
         response.raise_for_status()
         return response.json().get("data", {})
 
@@ -194,6 +204,13 @@ class AsyncBrowserSession(_BaseBrowserSession):
     async def fetch(self, url: str, method: str = "GET", **kwargs: Any) -> dict[str, Any]:
         payload = {"url": url, "method": method, **kwargs}
         response = await self._client.post(self._session_url(f"/sessions/{self.session_id}/fetch"), json=payload)
+        response.raise_for_status()
+        return response.json().get("data", {})
+
+    async def screenshot(self, tab_name: str | None = None, full_page: bool = False) -> dict[str, Any]:
+        """对指定（或活动）标签页截图，返回 {png_base64, size, ...}"""
+        payload = {"tab_name": tab_name, "full_page": full_page}
+        response = await self._client.post(self._session_url(f"/sessions/{self.session_id}/screenshot"), json=payload)
         response.raise_for_status()
         return response.json().get("data", {})
 
