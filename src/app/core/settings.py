@@ -111,7 +111,7 @@ class AppConfig(BaseModel):
     )
     init_files: list[str] = Field(default_factory=list)
     tmdb_domain: str = "api.themoviedb.org"
-    debug: bool = True
+    debug: bool = False
     tmdb_image_url: str = ""
     enable_image_proxy: int = 1
     cookie_secure: bool = False
@@ -227,11 +227,20 @@ class AgentShortTermMemoryConfig(BaseModel):
     ttl_days: int = 30
 
 
+class AgentLongTermMemoryConfig(BaseModel):
+    """长程语义记忆配置（用户偏好/事实，向量库存储）"""
+
+    enabled: bool = False
+    top_k: int = 5
+    extraction: str = "on_session_end"  # on_session_end | on_turn_end | off
+
+
 class AgentMemoryConfig(BaseModel):
     """记忆配置"""
 
     max_steps: int = 8
     short_term: AgentShortTermMemoryConfig = Field(default_factory=AgentShortTermMemoryConfig)
+    long_term: AgentLongTermMemoryConfig = Field(default_factory=AgentLongTermMemoryConfig)
 
 
 class AgentNotifyConfig(BaseModel):

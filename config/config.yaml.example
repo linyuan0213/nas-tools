@@ -42,8 +42,8 @@ app:
     (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36
   # 【登录界面壁纸】：themoviedb、bing，设置为themoviedb时需要配置TMDB API Key时才生效
   wallpaper: bing
-  # Debug mode
-  debug: true
+  # Debug mode（默认关闭；开启后提供 /docs API 文档，生产环境请保持关闭）
+  debug: false
   # 开启后，只有Releases更新，才会有更新提示
   releases_update_only: false
 
@@ -155,6 +155,12 @@ laboratory:
   search_keyword: false
   # 【WEB识别增强】通过TMDB WEB检索
   search_tmdbweb: false
+  # 【浏览器自动化】：启用后站点浏览器/Agent 工具（browser_fetch/browser_screenshot）可用
+  chrome_enabled: true
+  # 浏览器自动化服务地址（nexus-chrome 服务，如 http://127.0.0.1:9850）
+  chrome_server_host: http://127.0.0.1:9850
+  # 浏览器自动化默认指纹画像：用户登录同步真实浏览器指纹后自动写入，全局后台流程使用
+  chrome_fp_profile_id: ""
   # 【TMDB缓存过期策略】：是否开启TMDB缓存过期策略，默认7天过期，过期缓存将被删除,  7天内访问过期时间可以被刷新
   tmdb_cache_expire: true
   # 【默认搜索豆瓣资源】：开启将使用豆瓣进行电影电视剧的名称搜索，否则使用TMDB的数据
@@ -167,10 +173,6 @@ laboratory:
   ocr_enabled: true
   # 验证码识别服务器
   ocr_server_host: http://127.0.0.1:9300
-  # 是否启用网页自动化（站点级仍需单独开启 chrome 开关）
-  chrome_enabled: true
-  # 网页自动化服务器
-  chrome_server_host: http://127.0.0.1:9850
 # 【AI Agent】：智能助手（对话/知识库问答），默认关闭
 agent:
   # 是否启用
@@ -217,3 +219,8 @@ agent:
       # 会话 token 预算，超出触发滚动摘要
       max_tokens: 4000
       ttl_days: 30
+    # 长程语义记忆（用户偏好/事实，向量库 user_memory 命名空间）
+    long_term:
+      enabled: false
+      top_k: 5
+      extraction: on_session_end  # on_session_end | on_turn_end | off
