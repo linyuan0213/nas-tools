@@ -77,8 +77,8 @@ class TestWeChatWebhookRouter:
         app = self._make_app(mock_message, app_context)
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService"),
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService"),
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             with TestClient(app) as tc:
                 resp = tc.post(
@@ -119,8 +119,8 @@ class TestWeChatWebhookRouter:
         app = self._make_app(mock_message, app_context)
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService"),
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService"),
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             with TestClient(app) as tc:
                 resp = tc.post(
@@ -149,8 +149,8 @@ class TestWeChatWebhookRouter:
         app = self._make_app(mock_message, app_context)
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService"),
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService"),
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             with TestClient(app) as tc:
                 resp = tc.post(
@@ -178,8 +178,8 @@ class TestWeChatWebhookRouter:
         app = self._make_app(mock_message, app_context)
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService"),
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService"),
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             with TestClient(app) as tc:
                 resp = tc.post(
@@ -197,8 +197,8 @@ class TestWeChatWebhookRouter:
         mock_message, _ = _build_mock_message()
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService") as mock_search_cls,
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService") as mock_search_cls,
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             h1 = webhook_router._get_handlers(app_context, mock_message)
             h2 = webhook_router._get_handlers(app_context, mock_message)
@@ -215,8 +215,8 @@ class TestWeChatWebhookRouter:
         mock_message, _ = _build_mock_message()
 
         with (
-            patch("api.routers.message_webhook.MessageSearchService") as mock_search_cls,
-            patch("api.routers.message_webhook.MessageCommandHandler") as mock_handler_cls,
+            patch("app.services.message_handler_factory.MessageSearchService") as mock_search_cls,
+            patch("app.services.message_handler_factory.MessageCommandHandler") as mock_handler_cls,
         ):
             webhook_router._get_handlers(app_context, mock_message)
             assert mock_handler_cls.call_count == 1
