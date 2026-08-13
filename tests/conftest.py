@@ -8,9 +8,7 @@ _test_config = os.path.join(tempfile.gettempdir(), "nexus_media_test_config.yaml
 os.environ["NEXUS_MEDIA_CONFIG"] = _test_config
 os.environ["DATABASE__TYPE"] = "sqlite"
 # 隔离应用数据库：默认指向 data/user.db，全量测试会 drop_all 真实库，这里强制用临时文件
-os.environ["DATABASE__SQLITE_PATH"] = os.path.join(
-    tempfile.gettempdir(), "nexus_media_test_user.db"
-)
+os.environ["DATABASE__SQLITE_PATH"] = os.path.join(tempfile.gettempdir(), "nexus_media_test_user.db")
 
 import pytest  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402

@@ -30,7 +30,6 @@ class WebMessageStore:
         self._repo = None
         if enable_db:
             try:
-
                 self._repo = WebMessageRepositoryAdapter()
             except Exception as e:
                 log.warn(f"[WebMessageStore]DB 仓储初始化失败，降级纯内存: {e}")
@@ -142,11 +141,7 @@ class WebMessageStore:
         # 内存窗口覆盖 cursor → 走内存热路径
         with self._write_lock:
             if self._items and cursor >= self._items[0]["cursor"]:
-                items = [
-                    i
-                    for i in self._items
-                    if i["cursor"] > cursor and is_visible(i.get("user_id"), user_id)
-                ]
+                items = [i for i in self._items if i["cursor"] > cursor and is_visible(i.get("user_id"), user_id)]
                 # 与 DB 路径语义一致：返回 cursor 之后的前 limit 条（而非最新 limit 条）
                 return items[:limit]
         # 窗口外（重启 / 游标早于内存窗口）→ DB 兜底
@@ -157,11 +152,7 @@ class WebMessageStore:
                 log.warn(f"[WebMessageStore]DB 读取失败: {e}")
         # DB 不可用 → 内存尽力返回
         with self._write_lock:
-            items = [
-                i
-                for i in self._items
-                if i["cursor"] > cursor and is_visible(i.get("user_id"), user_id)
-            ]
+            items = [i for i in self._items if i["cursor"] > cursor and is_visible(i.get("user_id"), user_id)]
             return items[:limit]
 
     def history(self, user_id: str, limit: int = 50) -> list[dict]:
@@ -172,9 +163,5 @@ class WebMessageStore:
             except Exception as e:
                 log.warn(f"[WebMessageStore]DB 历史读取失败: {e}")
         with self._write_lock:
-            items = [
-                i
-                for i in self._items
-                if is_visible(i.get("user_id"), user_id)
-            ]
+            items = [i for i in self._items if is_visible(i.get("user_id"), user_id)]
             return items[-limit:]

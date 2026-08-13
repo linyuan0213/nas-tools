@@ -112,9 +112,7 @@ class OpenAIProvider(BaseProvider):
         except Exception as e:
             err_msg = self._format_error(e)
             log.warn(f"[OpenAIProvider]流式请求失败，回退非流式: {err_msg}")
-            return super().chat_with_tools_stream(
-                messages, tools, system_prompt, temperature, on_token, on_reasoning
-            )
+            return super().chat_with_tools_stream(messages, tools, system_prompt, temperature, on_token, on_reasoning)
 
         content_parts: list[str] = []
         reasoning_parts: list[str] = []

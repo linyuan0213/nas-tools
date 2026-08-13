@@ -146,9 +146,7 @@ class TestPydanticChatAgent:
         )
         agent = PydanticChatAgent(svc=svc, tool_executor=executor, memory=store)
         events = []
-        answer = agent.chat_with_tools(
-            "帮我搜一下 流浪地球", session_id="s1", user_id="u1", on_event=events.append
-        )
+        answer = agent.chat_with_tools("帮我搜一下 流浪地球", session_id="s1", user_id="u1", on_event=events.append)
         assert answer == "找到了《流浪地球》的资源。"
         assert executor.executed, "工具应被执行"
         assert executor.executed[0][0] == "media_search"

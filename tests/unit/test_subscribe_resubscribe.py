@@ -25,17 +25,43 @@ def _session():
 
 def _download_row(tmdb: str, se: str, state: str = "completed"):
     return DOWNLOADHISTORY(
-        TITLE="t", YEAR="", TYPE="TV", TMDBID=tmdb, SE=se, VOTE="", POSTER="", OVERVIEW="",
-        TORRENT="", ENCLOSURE="", SITE="", DESC="", DOWNLOADER="d", DOWNLOAD_ID="x", SAVE_PATH="/p",
-        STATE=state, DATE="",
+        TITLE="t",
+        YEAR="",
+        TYPE="TV",
+        TMDBID=tmdb,
+        SE=se,
+        VOTE="",
+        POSTER="",
+        OVERVIEW="",
+        TORRENT="",
+        ENCLOSURE="",
+        SITE="",
+        DESC="",
+        DOWNLOADER="d",
+        DOWNLOAD_ID="x",
+        SAVE_PATH="/p",
+        STATE=state,
+        DATE="",
     )
 
 
 def _transfer_row(tmdb: int, se: str):
     return TRANSFERHISTORY(
-        MODE="link", TYPE="TV", CATEGORY="", TMDBID=tmdb, TITLE="t", YEAR="", SEASON_EPISODE=se,
-        SOURCE="", SOURCE_PATH="/s", SOURCE_FILENAME="f.mkv", DEST="/tv", DEST_PATH="/tv",
-        DEST_FILENAME="f.mkv", DST_BACKEND="", DATE="",
+        MODE="link",
+        TYPE="TV",
+        CATEGORY="",
+        TMDBID=tmdb,
+        TITLE="t",
+        YEAR="",
+        SEASON_EPISODE=se,
+        SOURCE="",
+        SOURCE_PATH="/s",
+        SOURCE_FILENAME="f.mkv",
+        DEST="/tv",
+        DEST_PATH="/tv",
+        DEST_FILENAME="f.mkv",
+        DST_BACKEND="",
+        DATE="",
     )
 
 

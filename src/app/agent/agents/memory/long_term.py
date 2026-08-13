@@ -71,11 +71,7 @@ class SemanticMemory:
             return []
         vector = self._embedding.embed_query(query)
         hits = self._store.hybrid_search(query, vector, _MEMORY_NAMESPACE, top_k or self._top_k)
-        return [
-            h.chunk.text
-            for h in hits
-            if h.chunk.metadata.get("user_id") == user_id and h.chunk.text.strip()
-        ]
+        return [h.chunk.text for h in hits if h.chunk.metadata.get("user_id") == user_id and h.chunk.text.strip()]
 
     def forget(self, user_id: str, text: str) -> int:
         """按文本删除记忆（仅删除与查询最匹配的一条，避免连带删除语义相近的其他偏好）"""

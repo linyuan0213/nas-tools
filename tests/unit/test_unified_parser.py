@@ -292,6 +292,7 @@ class TestSiteMarkerStripping:
         assert result.title_en == "Avatar"
         assert result.year == "2010"
 
+
 class TestSharedPostProcess:
     """MediaService._post_process 应让所有识别入口共用同一套后处理"""
 

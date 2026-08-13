@@ -293,9 +293,7 @@ class RssFeedStrategy:
                                 try:
                                     new_total = 0
                                     try:
-                                        season_detail = self.media.get_tmdb_tv_season_detail(
-                                            media_info.tmdb_id, season
-                                        )
+                                        season_detail = self.media.get_tmdb_tv_season_detail(media_info.tmdb_id, season)
                                         season_eps = (
                                             season_detail.get("episodes") if isinstance(season_detail, dict) else None
                                         )

@@ -69,5 +69,3 @@ def build_browser_mode(
     )
     browser.session_key = make_session_key(site_key, browser)
     return browser
-
-

@@ -165,13 +165,9 @@ class MessageBuilder:
             if item_info.category:
                 msg_str = f"{msg_str}，类别：{item_info.category}"
             if item_info.total_episodes == 1:
-                msg_str = (
-                    f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
-                )
+                msg_str = f"{msg_str}，大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
             else:
-                msg_str = (
-                    f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
-                )
+                msg_str = f"{msg_str}，总大小：{StringUtils.str_filesize(item_info.size)}，来自：{StringUtils.resolve_in_from_display(in_from)}"
             if self._messagecenter:
                 self._messagecenter.insert_system_message(title=msg_title, content=msg_str)
             for client in self._client_manager.active_clients:
@@ -441,7 +437,6 @@ class MessageBuilder:
         if event_info.get("device_name"):
             message_texts.append(f"设备：{event_info.get('client')} {event_info.get('device_name')}")
         if event_info.get("ip"):
-
             message_texts.append(f"位置：{event_info.get('ip')} {WebUtils.get_location(event_info.get('ip'))}")
         if event_info.get("percentage"):
             percentage = round(float(event_info.get("percentage") or 0), 2)

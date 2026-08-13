@@ -89,9 +89,7 @@ class OllamaProvider(BaseProvider):
             )
         except Exception as e:
             log.warn(f"[OllamaProvider]流式请求失败，回退非流式: {e}")
-            return super().chat_with_tools_stream(
-                messages, tools, system_prompt, temperature, on_token, on_reasoning
-            )
+            return super().chat_with_tools_stream(messages, tools, system_prompt, temperature, on_token, on_reasoning)
 
         content_parts: list[str] = []
         tool_calls_final: list[ToolCall] = []

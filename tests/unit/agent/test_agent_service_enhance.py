@@ -1,6 +1,5 @@
 """AgentService 故障转移 / 用量日志 / 脱敏 单元测试"""
 
-
 import pytest
 
 from app.agent.context import ContextBuilder
@@ -117,9 +116,7 @@ class TestSanitize:
 
 class TestContextBuilder:
     def test_build_order(self):
-        ctx = ContextBuilder().build(
-            system_prompt="SYS", history=[{"role": "user", "content": "h1"}], user_input="q"
-        )
+        ctx = ContextBuilder().build(system_prompt="SYS", history=[{"role": "user", "content": "h1"}], user_input="q")
         assert [m["role"] for m in ctx.messages] == ["system", "user", "user"]
         assert ctx.messages[-1]["content"] == "q"
 

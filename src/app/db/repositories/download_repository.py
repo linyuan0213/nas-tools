@@ -78,11 +78,15 @@ class DownloadRepository(BaseRepository):
         if not tmdb_id:
             return 0
         with self.session() as db:
-            rows = db.query(DOWNLOADHISTORY.SE).filter(
-                DOWNLOADHISTORY.TMDBID != "",
-                DOWNLOADHISTORY.STATE == "completed",
-                DOWNLOADHISTORY.TMDBID == str(tmdb_id),
-            ).all()
+            rows = (
+                db.query(DOWNLOADHISTORY.SE)
+                .filter(
+                    DOWNLOADHISTORY.TMDBID != "",
+                    DOWNLOADHISTORY.STATE == "completed",
+                    DOWNLOADHISTORY.TMDBID == str(tmdb_id),
+                )
+                .all()
+            )
         return contiguous_episodes((se for (se,) in rows), int(season or 1))
 
     def delete_download_history_by_tmdb(self, tmdb_id: int | str | None, season_prefix: str | None = None) -> int:

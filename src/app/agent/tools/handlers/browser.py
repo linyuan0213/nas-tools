@@ -107,9 +107,7 @@ def _close_session(session: BrowserSession) -> None:
     session.close(delete_session=False)
 
 
-def browser_fetch(
-    ctx: ToolContext, url: str, site_key: str | None = None, timeout: int = 30
-) -> ToolResult:
+def browser_fetch(ctx: ToolContext, url: str, site_key: str | None = None, timeout: int = 30) -> ToolResult:
     """浏览器访问网页并返回清理后的文本（截断）"""
     try:
         _validate_url(url)
@@ -130,9 +128,7 @@ def browser_fetch(
     )
 
 
-def browser_screenshot(
-    ctx: ToolContext, url: str, site_key: str | None = None, full_page: bool = False
-) -> ToolResult:
+def browser_screenshot(ctx: ToolContext, url: str, site_key: str | None = None, full_page: bool = False) -> ToolResult:
     """浏览器截图并保存到静态目录，返回可访问的图片 URL"""
     try:
         _validate_url(url)

@@ -17,9 +17,7 @@ class _Repo:
         self.events: list[dict] = []
 
     def get_brushtask_torrents(self, taskid):
-        return [
-            type("T", (), {"DOWNLOAD_ID": i, "ENCLOSURE": "", "PAGE_URL": ""})() for i in self._ids
-        ]
+        return [type("T", (), {"DOWNLOAD_ID": i, "ENCLOSURE": "", "PAGE_URL": ""})() for i in self._ids]
 
     def insert_brush_event(self, **kwargs):
         self.events.append(kwargs)
@@ -108,9 +106,7 @@ def test_pending_torrent_waiting_long_enough_is_deleted():
 
 def test_queued_torrent_waiting_long_enough_is_deleted():
     """排队等待下载（Queued）同样计入等待时间"""
-    lc = _lifecycle(
-        [Torrent(id="A", name="排队种子", download_time=9 * HOUR, iatime=0, status=TorrentStatus.Queued)]
-    )
+    lc = _lifecycle([Torrent(id="A", name="排队种子", download_time=9 * HOUR, iatime=0, status=TorrentStatus.Queued)])
     lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
     assert lc._downloader.deleted == ["A"]
 

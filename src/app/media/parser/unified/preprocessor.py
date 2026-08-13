@@ -23,9 +23,9 @@ _SITE_TLDS = (
 )
 # 站点/发布站标记：方括号域名、www 前缀、空白分隔的裸域名
 _RE_SITE_MARKER = re.compile(
-    rf"\[[\w.-]+\.(?:{_SITE_TLDS})\]"                      # [EZTVx.to] / [rarbg.to]
-    rf"|\bwww\.[\w-]+(?:\.[A-Za-z]{{2,6}})?"                # www.UIndex.org
-    rf"|(?:^|\s)[\w-]+\.(?:{_SITE_TLDS})(?=\s|$)",          # 裸站点域名（空白分隔）
+    rf"\[[\w.-]+\.(?:{_SITE_TLDS})\]"  # [EZTVx.to] / [rarbg.to]
+    rf"|\bwww\.[\w-]+(?:\.[A-Za-z]{{2,6}})?"  # www.UIndex.org
+    rf"|(?:^|\s)[\w-]+\.(?:{_SITE_TLDS})(?=\s|$)",  # 裸站点域名（空白分隔）
     re.IGNORECASE,
 )
 _RE_BRACKET_GROUP = re.compile(r"^\[[^\]]+]$")

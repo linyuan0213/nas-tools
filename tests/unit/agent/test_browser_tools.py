@@ -117,7 +117,6 @@ class _ChallengeSession:
 
 class TestWaitChallenge:
     def test_waits_until_challenge_clears(self):
-        
 
         session = _ChallengeSession(attempts=2)
         html = wait_challenge_clear(cast(BrowserSession, session), session.html())
@@ -126,7 +125,6 @@ class TestWaitChallenge:
         assert session._calls >= 3
 
     def test_immediately_passes_without_challenge(self):
-        
 
         html = wait_challenge_clear(cast(BrowserSession, None), "<html>正常页面</html>")
         assert "正常页面" in html

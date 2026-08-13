@@ -102,19 +102,13 @@ class AgentConversationRepository(BaseRepository):
             return 0
         cutoff = datetime.now() - timedelta(days=ttl_days)
         with self.session() as db:
-            expired = (
-                db.query(AGENTCONVERSATION.ID)
-                .filter(AGENTCONVERSATION.UPDATED_AT < cutoff)
-                .all()
-            )
+            expired = db.query(AGENTCONVERSATION.ID).filter(AGENTCONVERSATION.UPDATED_AT < cutoff).all()
             ids = [c[0] for c in expired]
             if not ids:
                 return 0
-            db.query(AGENTMESSAGE).filter(AGENTMESSAGE.CONVERSATION_ID.in_(ids)).delete(
-                synchronize_session=False
-            )
-            deleted = db.query(AGENTCONVERSATION).filter(AGENTCONVERSATION.ID.in_(ids)).delete(
-                synchronize_session=False
+            db.query(AGENTMESSAGE).filter(AGENTMESSAGE.CONVERSATION_ID.in_(ids)).delete(synchronize_session=False)
+            deleted = (
+                db.query(AGENTCONVERSATION).filter(AGENTCONVERSATION.ID.in_(ids)).delete(synchronize_session=False)
             )
             db.commit()
             return deleted

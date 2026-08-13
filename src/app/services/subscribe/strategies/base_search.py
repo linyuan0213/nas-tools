@@ -309,12 +309,8 @@ class BaseSearchStrategy:
                     try:
                         new_total = 0
                         try:
-                            season_detail = self._media_service.get_tmdb_tv_season_detail(
-                                media_info.tmdb_id, season
-                            )
-                            season_eps = (
-                                season_detail.get("episodes") if isinstance(season_detail, dict) else None
-                            )
+                            season_detail = self._media_service.get_tmdb_tv_season_detail(media_info.tmdb_id, season)
+                            season_eps = season_detail.get("episodes") if isinstance(season_detail, dict) else None
                             if isinstance(season_eps, list):
                                 new_total = len(season_eps)
                         except Exception:  # noqa: BLE001

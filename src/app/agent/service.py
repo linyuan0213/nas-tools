@@ -207,9 +207,7 @@ class AgentService:
             f"请严格按照以下 JSON Schema 返回结果，不要包含任何其他内容：\n"
             f"{response_model.model_json_schema() if response_model else ''}"
         )
-        content = self._call_with_fallback(
-            lambda p, m, s, t: p.chat(m, s, t), messages, prompt, temperature
-        )
+        content = self._call_with_fallback(lambda p, m, s, t: p.chat(m, s, t), messages, prompt, temperature)
         try:
             data = JsonUtils.loads(content)
             if response_model:

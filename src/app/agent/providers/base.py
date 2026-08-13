@@ -16,7 +16,8 @@ _TOOL_COMMON_RULES = """2. 不需要工具（闲聊、问候、简单回答）�
    未调用工具时严禁声称"已成功"，应如实说明需要执行
 """
 
-_TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体库系统。
+_TOOL_PROMPT = (
+    """你是一个智能助手，可以帮助用户管理 NAS 媒体库系统。
 
 你可以使用以下工具来完成用户的请求。如果需要用工具，请按以下格式回复（只返回 JSON，不要其他文字）：
 
@@ -29,11 +30,16 @@ _TOOL_PROMPT = """你是一个智能助手，可以帮助用户管理 NAS 媒体
 
 回复规则：
 1. 需要工具时只返回上述 JSON 格式；工具结果会以 [工具结果] 形式返回给你，可继续调用其他工具或给出最终回答
-""" + _TOOL_COMMON_RULES
+"""
+    + _TOOL_COMMON_RULES
+)
 
-TOOL_RULES_PROMPT = """回复规则：
+TOOL_RULES_PROMPT = (
+    """回复规则：
 1. 需要工具时直接调用对应工具；工具结果会以 [工具结果] 形式返回，可继续调用其他工具或给出最终回答
-""" + _TOOL_COMMON_RULES
+"""
+    + _TOOL_COMMON_RULES
+)
 
 
 @dataclass(frozen=True)

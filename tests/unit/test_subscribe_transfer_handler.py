@@ -37,8 +37,9 @@ def _run(current_missing, transfer_eps, total=12):
     tv_repo.update_lack.side_effect = _capture_lack
     tv_repo.update_state.side_effect = _capture_state
 
-    with patch.object(handlers, "SubscribeTvRepositoryAdapter", return_value=tv_repo), patch.object(
-        handlers, "SubscribeTvEpisodeRepositoryAdapter", return_value=ep_repo
+    with (
+        patch.object(handlers, "SubscribeTvRepositoryAdapter", return_value=tv_repo),
+        patch.object(handlers, "SubscribeTvEpisodeRepositoryAdapter", return_value=ep_repo),
     ):
         handlers.handle_media_episode_transferred(_make_event(transfer_eps, total))
     return captured.get("lack_episodes"), captured.get("state")

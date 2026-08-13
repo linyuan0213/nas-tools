@@ -191,7 +191,6 @@ def init_message_webhook_apikey(apikey_service=None):
     """
     try:
         if apikey_service is None:
-
             apikey_service = APIKeyService(
                 key_repo=APIKeyRepositoryAdapter(),
                 log_repo=APIKeyLogRepositoryAdapter(),

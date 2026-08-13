@@ -176,6 +176,4 @@ def field_groups() -> list[dict]:
         ("标识", ["tmdbid", "imdbid", "media_type", "category", "customization", "effect"]),
     ]
     by_key = {f["key"]: f for f in FIELD_CATALOG}
-    return [
-        {"group": gname, "fields": [by_key[k] for k in keys if k in by_key]} for gname, keys in groups
-    ]
+    return [{"group": gname, "fields": [by_key[k] for k in keys if k in by_key]} for gname, keys in groups]

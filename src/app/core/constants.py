@@ -7,10 +7,7 @@
 SPLIT_CHARS = r"\.|\s+|\(|\)|\[|]|-|\+|★|[|]|/|～|;|&|\||#|_|「|」|~|{|}"
 
 # 默认User-Agent
-DEFAULT_UA = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
-)
+DEFAULT_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
 
 # 收藏了的媒体的目录名
 RMT_FAVTYPE = "精选"

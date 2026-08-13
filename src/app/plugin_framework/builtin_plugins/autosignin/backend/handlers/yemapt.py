@@ -29,8 +29,7 @@ _LOGGED_IN_RE = re.compile(r"个人中心|退出|签到中心", re.IGNORECASE)
 _ALTCHA_CHECKBOX = "css:.altcha-checkbox input[type=checkbox]"
 _CHECKIN_BUTTON = "text=立即签到"
 _ALTCHA_PAYLOAD_JS = (
-    "return (function(){var i=document.querySelector('input[name=altchaPayload]');"
-    "return i && i.value ? '1' : '';})()"
+    "return (function(){var i=document.querySelector('input[name=altchaPayload]');return i && i.value ? '1' : '';})()"
 )
 _ALTCHA_TIMEOUT = 60
 _PAGE_SETTLE = 4

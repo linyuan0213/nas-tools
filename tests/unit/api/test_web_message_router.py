@@ -77,9 +77,7 @@ def client():
     ctx = SimpleNamespace(message=MagicMock())
     app.dependency_overrides[get_app_context] = lambda: ctx
     with (
-        patch(
-            "api.routers.web_message.get_message_command_handler", return_value=handler
-        ) as _,
+        patch("api.routers.web_message.get_message_command_handler", return_value=handler) as _,
         TestClient(app) as c,
     ):
         yield SimpleNamespace(client=c, handler=handler)

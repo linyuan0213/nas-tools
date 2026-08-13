@@ -61,9 +61,7 @@ def test_split_format_movie():
 
 
 def test_split_format_tv():
-    assert nf.split_format(
-        "{title} ({year})/Season {season}/{title} - {season_episode}", "tv"
-    ) == {
+    assert nf.split_format("{title} ({year})/Season {season}/{title} - {season_episode}", "tv") == {
         "dir": "{title} ({year})",
         "season": "Season {season}",
         "file": "{title} - {season_episode}",
