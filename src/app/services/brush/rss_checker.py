@@ -176,7 +176,10 @@ class BrushRssChecker:
                 size = res.get("size")
                 pubdate = res.get("pubdate")
                 category = res.get("category", "")
-                log.debug(f"[Brush]RSS: title={torrent_name[:30]}, link={page_url[:60]}, enc={enclosure[:60]}")
+                log.debug(
+                    f"[Brush]RSS: title={str(torrent_name or '')[:30]}, "
+                    f"link={str(page_url or '')[:60]}, enc={str(enclosure or '')[:60]}"
+                )
 
                 if not enclosure:
                     continue

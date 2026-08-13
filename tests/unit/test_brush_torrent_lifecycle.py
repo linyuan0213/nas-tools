@@ -1,0 +1,131 @@
+"""刷流删种生命周期接线测试 — 验证 pending_time（等待时间）取进种时长而非 iatime"""
+
+from typing import cast
+
+from app.domain.entities.brush import BrushTaskState
+from app.message import Message
+from app.schemas.download import Torrent, TorrentStatus
+from app.services.brush.torrent_lifecycle import BrushTorrentLifecycle
+from app.sites.site_cache import SiteCache
+
+HOUR = 3600
+
+
+class _Repo:
+    def __init__(self, torrent_ids):
+        self._ids = torrent_ids
+        self.events: list[dict] = []
+
+    def get_brushtask_torrents(self, taskid):
+        return [
+            type("T", (), {"DOWNLOAD_ID": i, "ENCLOSURE": "", "PAGE_URL": ""})() for i in self._ids
+        ]
+
+    def insert_brush_event(self, **kwargs):
+        self.events.append(kwargs)
+
+    def delete_brushtask_torrent(self, taskid, rid):
+        pass
+
+    def update_brushtask_torrent_state(self, rows):
+        pass
+
+    def add_brushtask_upload_count(self, *args, **kwargs):
+        pass
+
+
+class _Downloader:
+    def __init__(self, torrents):
+        self._torrents = torrents
+        self.deleted: list[str] = []
+
+    def get_downloader_conf(self, downloader_id):
+        return {"name": "qb", "id": downloader_id}
+
+    def get_torrents(self, downloader_id, ids):
+        return self._torrents
+
+    def delete_torrents(self, downloader_id, ids, delete_file=True):
+        self.deleted = list(ids)
+
+    def get_free_space(self, downloader_id, path):
+        return 100 * 1024**3
+
+
+class _Sites:
+    def get_sites(self, siteid=None):
+        return {"name": "site"}
+
+
+class _Message:
+    def send_brushtask_remove_message(self, **kwargs):
+        pass
+
+
+class _Helper:
+    def get_torrent_attr(self, site_info, enclosure):
+        return enclosure, {}
+
+
+def _lifecycle(torrents):
+    return BrushTorrentLifecycle(
+        helper=_Helper(),
+        repo=_Repo([t.id for t in torrents]),
+        downloader=_Downloader(torrents),
+        sites=cast(SiteCache, _Sites()),
+        message=cast(Message, _Message()),
+    )
+
+
+def _task(rule):
+    return {
+        "id": 1,
+        "name": "刷流",
+        "state": BrushTaskState.RUNNING.value,
+        "downloader": 1,
+        "site_id": 1,
+        "savepath": "/downloads",
+        "remove_rule": rule,
+    }
+
+
+def _pending_torrent(download_time):
+    return Torrent(
+        id="A",
+        name="等待种子",
+        download_time=download_time,
+        iatime=0,
+        status=TorrentStatus.Pending,
+    )
+
+
+def test_pending_torrent_waiting_long_enough_is_deleted():
+    """等待种子（从未活动，iatime=0）等待 9h，配置 等待时间>3h → 应删除"""
+    lc = _lifecycle([_pending_torrent(9 * HOUR)])
+    lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
+    assert lc._downloader.deleted == ["A"]
+
+
+def test_queued_torrent_waiting_long_enough_is_deleted():
+    """排队等待下载（Queued）同样计入等待时间"""
+    lc = _lifecycle(
+        [Torrent(id="A", name="排队种子", download_time=9 * HOUR, iatime=0, status=TorrentStatus.Queued)]
+    )
+    lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
+    assert lc._downloader.deleted == ["A"]
+
+
+def test_downloading_torrent_not_deleted_by_pending_rule():
+    """正在下载的种子不属于等待态，等待时间规则不生效"""
+    lc = _lifecycle(
+        [Torrent(id="A", name="下载中", download_time=9 * HOUR, iatime=9 * HOUR, status=TorrentStatus.Downloading)]
+    )
+    lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
+    assert lc._downloader.deleted == []
+
+
+def test_pending_torrent_waiting_too_short_not_deleted():
+    """等待时长不足 3h 不删除"""
+    lc = _lifecycle([_pending_torrent(1 * HOUR)])
+    lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
+    assert lc._downloader.deleted == []

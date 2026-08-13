@@ -194,7 +194,13 @@ class BrushTorrentLifecycle:
                 torrent_params.update(
                     {
                         "dltime": torrent.download_time,
-                        "pending_time": torrent.iatime if torrent.status == TorrentStatus.Pending else None,
+                        # 等待时间 = 进种时长（download_time），覆盖 Pending/Queued 等待态；
+                        # 不能用 iatime（未活动时间）：从未活动的等待种子 iatime 为 0，等待时间永远不会触发
+                        "pending_time": (
+                            torrent.download_time
+                            if torrent.status in (TorrentStatus.Pending, TorrentStatus.Queued)
+                            else None
+                        ),
                     }
                 )
 
