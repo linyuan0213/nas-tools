@@ -175,6 +175,9 @@ class SearchOrchestrator:
         media_list = []
         progress_key: str = f"search:{ctx.session_id}"
         total = len(search_names)
+        # 关键：把 per-session progress_key 注入 filter_args，否则索引器退回全局 key，
+        # 站点级进度（"站点搜索 X/Y（站点名）：N 条"）就写不进前端 SSE 可见的会话进度
+        filter_args = {**filter_args, "progress_key": progress_key}
 
         if max_workers <= 1 and total == 1:
             self._progress.update(value=30, text=f"正在搜索: {search_names[0]}", ptype=progress_key)
