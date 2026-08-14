@@ -73,7 +73,9 @@ def collect_search_results(futures: dict, timeout_for, on_advance=None) -> list:
 
     :param futures: {Future: (client, indexer)}
     :param timeout_for: 按站点返回超时秒数的回调，超时放弃等待（线程由 HTTP 层自然终结）
-    :param on_advance: 每完成/超时一个站点的回调 (completed, total, indexer, timed_out, elapsed)
+    :param on_advance: 每完成/超时一个站点的回调
+        (completed, total, indexer, timed_out, elapsed, site_status)
+        site_status: {"name", "status": ok/error/timeout, "count", "error"}
     """
     pending = dict(futures)
     started = {f: time.monotonic() for f in futures}
@@ -86,14 +88,23 @@ def collect_search_results(futures: dict, timeout_for, on_advance=None) -> list:
             client, indexer = pending.pop(future)
             completed += 1
             elapsed = time.monotonic() - started[future]
+            site_status = {"name": indexer.name, "status": "ok", "count": 0, "error": ""}
             try:
                 result = future.result()
                 if result:
                     results.extend(result)
+                    site_status["count"] = len(result)
             except Exception:
+                site_status["status"] = "error"
+                site_status["error"] = getattr(client, "last_error", "") or "执行异常"
                 log.error(f"[Indexer]{client.client_id} 搜索 {indexer.name} 失败")
+            else:
+                err = getattr(client, "last_error", "")
+                if not result and err:
+                    site_status["status"] = "error"
+                    site_status["error"] = err
             if on_advance:
-                on_advance(completed, total, indexer, False, elapsed)
+                on_advance(completed, total, indexer, False, elapsed, site_status)
         now = time.monotonic()
         for future, (client, indexer) in list(pending.items()):
             limit = timeout_for(indexer)
@@ -103,7 +114,14 @@ def collect_search_results(futures: dict, timeout_for, on_advance=None) -> list:
                 elapsed = now - started[future]
                 log.warn(f"[Indexer]{indexer.name} 搜索超时({limit}s)，跳过")
                 if on_advance:
-                    on_advance(completed, total, indexer, True, elapsed)
+                    on_advance(
+                        completed,
+                        total,
+                        indexer,
+                        True,
+                        elapsed,
+                        {"name": indexer.name, "status": "timeout", "count": 0, "error": f"超过 {limit}s"},
+                    )
     return results
 
 
@@ -380,16 +398,21 @@ class Indexer:
             }
 
             tracker = get_site_latency_tracker()
+            site_statuses: list[dict] = []
 
-            def _on_advance(completed, total, indexer, timed_out, elapsed):
+            def _on_advance(completed, total, indexer, timed_out, elapsed, site_status=None):
                 tracker.record(indexer, elapsed)
                 pct = 10 + round(50 * (completed / total))
                 tag = "超时跳过" if timed_out else "完成"
-                self.progress.update_max(
-                    ptype=progress_key,
-                    value=pct,
-                    text=f"站点搜索 {completed}/{total} {tag} ({indexer.name})",
-                )
+                text = f"站点搜索 {completed}/{total} {tag} ({indexer.name})"
+                if site_status and site_status.get("error"):
+                    text += f"：{site_status['error']}"
+                self.progress.update_max(ptype=progress_key, value=pct, text=text)
+                if site_status:
+                    site_statuses.append(site_status)
+                    detail = self.progress.get_process(progress_key)
+                    if detail is not None:
+                        detail["sites"] = list(site_statuses)
 
             all_raw_results = collect_search_results(futures, timeout_for=tracker.timeout_for, on_advance=_on_advance)
         finally:
@@ -406,17 +429,23 @@ class Indexer:
         )
 
         end_time = datetime.datetime.now()
+        failed_sites = [s for s in site_statuses if s.get("status") in ("error", "timeout")]
+        failed_summary = ""
+        if failed_sites:
+            failed_summary = "；失败站点：" + "、".join(
+                f"{s['name']}({s.get('error') or s['status']})" for s in failed_sites
+            )
         log.info(
             f"搜索关键词 {key_word} 所有站点完成，"
             f"原始结果 {len(all_raw_results)} 条，有效资源数：{len(pipeline_result.results)}，"
-            f"总耗时 {(end_time - start_time).seconds} 秒"
+            f"总耗时 {(end_time - start_time).seconds} 秒{failed_summary}"
         )
         self.progress.update(
             ptype=progress_key,
             text=(
                 f"搜索关键词 {key_word} 所有站点完成，"
                 f"有效资源数：{len(pipeline_result.results)}，"
-                f"总耗时 {(end_time - start_time).seconds} 秒"
+                f"总耗时 {(end_time - start_time).seconds} 秒{failed_summary}"
             ),
         )
 

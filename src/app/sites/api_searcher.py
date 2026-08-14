@@ -36,6 +36,7 @@ class ApiSiteSearcher:
         self._user_config = user_config or {}
         self._engine = site_engine
         self._auth_tokens: dict[str, str] = {}
+        self.last_error: str = ""
         self._resolve_auth_tokens()
 
     def search(
@@ -47,6 +48,7 @@ class ApiSiteSearcher:
         if not self._site.api:
             return []
         keyword = keyword or ""
+        self.last_error = ""
         search_config = self._site.api.endpoints.get("search", {})
         if not search_config:
             return []
@@ -117,10 +119,12 @@ class ApiSiteSearcher:
                 params = self._render_template(params, **template_vars)
                 res = client.get(url=url, params=params, headers=headers, **rl_kwargs)
             if not res.is_success:
+                self.last_error = f"HTTP {res.status_code}"
                 log.warn(f"[ApiSiteSearcher]{self._site.name} HTTP {res.status_code}, url={url}")
                 return []
             resp_data = res.json()
         except Exception as e:
+            self.last_error = f"{type(e).__name__}"
             log.warn(f"[ApiSiteSearcher]{self._site.name} 搜索失败, url={url}, error={e}")
             return []
         result = self._parse_response(resp_data, search_config)

@@ -37,10 +37,12 @@ class HtmlSiteSearcher:
         self._site = site_def
         self._user_config = user_config or {}
         self._site_engine = site_engine
+        self.last_error: str = ""
 
     def search(self, keyword: str = "", page: int = 0, mtype: MediaType | None = None) -> list[dict[str, Any]]:
         if not self._site.html:
             return []
+        self.last_error = ""
         is_browse = not keyword
         url = self._build_url(keyword, page, mtype)
         if not url:
@@ -150,8 +152,13 @@ class HtmlSiteSearcher:
                 config=HttpClientConfig(proxy_url=proxy_url, browser=browser),
                 rate_limiter=rate_limiter_engine,
             ).get(url=url, headers=headers, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
-        except Exception:
-            log.warn(f"[HtmlSiteSearcher]{self._site.name} 请求失败")
+            if not res.is_success:
+                self.last_error = f"HTTP {res.status_code}"
+                log.warn(f"[HtmlSiteSearcher]{self._site.name} HTTP {res.status_code}, url={url}")
+                return None
+        except Exception as e:
+            self.last_error = f"{type(e).__name__}"
+            log.warn(f"[HtmlSiteSearcher]{self._site.name} 请求失败: {e}")
             return None
         encoding = self._site.encoding or None
         if encoding:

@@ -27,7 +27,7 @@ class TestCollectSearchResults:
         results = collect_search_results(
             {f1: (_client(), _site("S1")), f2: (_client(), _site("S2"))},
             timeout_for=lambda _i: 5,
-            on_advance=lambda c, t, i, to, e: advances.append((c, i.name, to)),
+            on_advance=lambda c, t, i, to, e, s: advances.append((c, i.name, to)),
         )
 
         assert {r["title"] for r in results} == {"a", "b", "c"}
@@ -43,7 +43,7 @@ class TestCollectSearchResults:
         results = collect_search_results(
             {f1: (_client(), _site("S1")), slow: (_client(), _site("SlowSite"))},
             timeout_for=lambda _i: 0.2,
-            on_advance=lambda c, t, i, to, e: advances.append((c, i.name, to)),
+            on_advance=lambda c, t, i, to, e, s: advances.append((c, i.name, to)),
         )
         elapsed = time.monotonic() - start
 

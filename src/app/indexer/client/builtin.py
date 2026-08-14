@@ -213,6 +213,7 @@ class BuiltinIndexer(_IIndexClient):
 
         result_array = []
         error_flag = False
+        self.last_error = ""
         mtype = match_media.type if (match_media and match_media.tmdb_info) else None
         try:
             error_flag, result_array = self.__search_via_engine(
@@ -287,33 +288,36 @@ class BuiltinIndexer(_IIndexClient):
 
         # 分页拉取：关键字搜索时循环翻页直到无更多结果，避免海贼王等长剧集只取到首页
         result_array = []
-        if not paginate:
-            result_array = searcher.search(keyword=search_word, page=page, mtype=mtype)
-        else:
-            seen: set = set()
-            first_page_count = None
-            cur_page = page
-            while cur_page - page < _MAX_SEARCH_PAGES:
-                batch = searcher.search(keyword=search_word, page=cur_page, mtype=mtype)
-                if not batch:
-                    break
-                new_count = 0
-                for it in batch:
-                    key = (it.get("title", ""), it.get("enclosure", "") or it.get("size", ""))
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    result_array.append(it)
-                    new_count += 1
-                # 站点忽略翻页参数返回重复数据，停止
-                if new_count == 0:
-                    break
-                if first_page_count is None:
-                    first_page_count = len(batch)
-                # 本页少于整页说明已是最后一页
-                if first_page_count <= 0 or len(batch) < first_page_count:
-                    break
-                cur_page += 1
+        try:
+            if not paginate:
+                result_array = searcher.search(keyword=search_word, page=page, mtype=mtype)
+            else:
+                seen: set = set()
+                first_page_count = None
+                cur_page = page
+                while cur_page - page < _MAX_SEARCH_PAGES:
+                    batch = searcher.search(keyword=search_word, page=cur_page, mtype=mtype)
+                    if not batch:
+                        break
+                    new_count = 0
+                    for it in batch:
+                        key = (it.get("title", ""), it.get("enclosure", "") or it.get("size", ""))
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        result_array.append(it)
+                        new_count += 1
+                    # 站点忽略翻页参数返回重复数据，停止
+                    if new_count == 0:
+                        break
+                    if first_page_count is None:
+                        first_page_count = len(batch)
+                    if len(batch) < first_page_count:
+                        break
+                    cur_page += 1
+        finally:
+            # 站点级失败原因（HTTP 状态码 / 异常类型）透传给上层，用于搜索状态展示
+            self.last_error = getattr(searcher, "last_error", "") or self.last_error
 
         for item in result_array:
             if "indexer" not in item:
