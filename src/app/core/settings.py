@@ -110,6 +110,8 @@ class AppConfig(BaseModel):
         " (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
     )
     init_files: list[str] = Field(default_factory=list)
+    # 默认分类配置是否已初始化（防止清空后重启被重新导入默认值）
+    category_default_seeded: bool = False
     tmdb_domain: str = "api.themoviedb.org"
     debug: bool = False
     tmdb_image_url: str = ""
