@@ -63,6 +63,12 @@ class MediaServer:
         self._server = None
         self._server_type = None
 
+    def refresh(self) -> None:
+        """配置热重载：清除服务器类型与实例缓存，下次访问按新配置重建。"""
+        with server_lock:
+            self._server_type = None
+            self._server = None
+
     def __build_class(self, ctype, conf):
         for cls in get_all_clients():
             try:

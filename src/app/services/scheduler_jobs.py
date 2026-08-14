@@ -19,6 +19,33 @@ def _refresh_site_data_now_threaded(thread_executor, site_userinfo):
     thread_executor.submit(site_userinfo.refresh_site_data_now)
 
 
+# load_default_jobs 注册的默认定时任务 ID（配置热重载时先移除再按新配置注册）
+DEFAULT_JOB_IDS = (
+    "SiteUserInfo.refresh_site_data_now",
+    "SubscriptionMonitor.run",
+    "MediaServer.sync_mediaserver",
+    "Sync.transfer_mon_files",
+    "Subscribe.refresh_rss_metainfo",
+    "TempCleanup.do_cleanup",
+    "IdentifyMiss.weekly_review",
+    "ImageProxy.clean_old_cache",
+    "AgentMaintenance.daily",
+)
+
+
+def reload_default_jobs(scheduler, **deps) -> None:
+    """配置热重载：移除默认定时任务后按新配置重新注册。"""
+    if not scheduler:
+        return
+    for job_id in DEFAULT_JOB_IDS:
+        try:
+            scheduler.remove_job(job_id)
+        except Exception as e:
+            log.debug(f"[Scheduler]移除任务 {job_id} 失败: {e}")
+    load_default_jobs(scheduler, **deps)
+    log.info("[Scheduler]默认定时任务已按新配置重新注册")
+
+
 def _parse_interval(value, min_val=0, default=0):
     """解析配置中的间隔值（支持字符串/数字）."""
     if not value:

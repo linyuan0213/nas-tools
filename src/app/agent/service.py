@@ -45,6 +45,10 @@ class AgentService:
             extract_memory=get_memory_config()["long_term"]["extraction"] != "off",
         )
 
+    def refresh_config(self) -> None:
+        """配置热重载时刷新启用状态与 Provider（无需重启，ChatAgent 每次调用经 svc 取 Provider）"""
+        self._refresh_config()
+
     @property
     def media_recognizer(self) -> MediaRecognizer:
         if self._media_recognizer is None:
