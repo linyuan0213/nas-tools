@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from app.db.models.agent_memory import AGENTWEBMESSAGE
 from app.db.repositories.base_repository import BaseRepository
-from app.message.web_visibility import visible_sql
+from app.db.web_visibility import visible_sql
 
 
 class WebMessageRepository(BaseRepository):
@@ -38,8 +38,7 @@ class WebMessageRepository(BaseRepository):
                 ITEMS=items,
             )
             db.add(row)
-            db.commit()
-            db.refresh(row)
+            db.flush()
             return row.ID
 
     def history(self, user_id: str, limit: int = 50) -> list[dict]:
@@ -69,11 +68,38 @@ class WebMessageRepository(BaseRepository):
             )
         return [self._to_dict(r) for r in rows]
 
+    def unread_count(self, user_id: str) -> int:
+        """当前用户未读消息数"""
+        with self.session() as db:
+            return (
+                db.query(func.count(AGENTWEBMESSAGE.ID))
+                .filter(
+                    AGENTWEBMESSAGE.READ.is_(False),
+                    visible_sql(AGENTWEBMESSAGE.USER_ID, user_id),
+                )
+                .scalar()
+                or 0
+            )
+
+    def mark_read(self, user_id: str, ids: list[int] | None = None) -> int:
+        """标记已读（ids 为空则全部已读），返回受影响条数"""
+        with self.session() as db:
+            q = db.query(AGENTWEBMESSAGE).filter(
+                AGENTWEBMESSAGE.READ.is_(False),
+                visible_sql(AGENTWEBMESSAGE.USER_ID, user_id),
+            )
+            if ids:
+                q = q.filter(AGENTWEBMESSAGE.ID.in_(ids))
+            count = q.update({AGENTWEBMESSAGE.READ: True, AGENTWEBMESSAGE.READ_AT: datetime.now()})
+            db.commit()
+            return count or 0
+
     @staticmethod
     def _to_dict(row: AGENTWEBMESSAGE) -> dict:
         created = row.CREATED_AT or datetime.now()
         return {
             "cursor": row.ID,
+            "id": row.ID,
             "kind": row.KIND,
             "title": row.TITLE,
             "content": row.CONTENT,
@@ -81,6 +107,7 @@ class WebMessageRepository(BaseRepository):
             "url": row.URL,
             "items": row.ITEMS or [],
             "user_id": row.USER_ID,
+            "read": bool(row.READ),
             "time": created.strftime("%H:%M:%S"),
             "ts": created.timestamp(),
         }

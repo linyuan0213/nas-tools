@@ -29,6 +29,10 @@ class InteractRequest(BaseModel):
     text: str
 
 
+class MarkReadRequest(BaseModel):
+    ids: list[int] | None = None
+
+
 @router.post("/message/interact")
 def message_interact(
     req: InteractRequest,
@@ -77,6 +81,26 @@ def message_history(
     store = WebMessageStore.instance()
     items = store.history(str(user.user_id), limit=max(1, min(limit, 200)))
     return success(data={"messages": items})
+
+
+@router.get("/message/unread-count")
+def message_unread_count(
+    user: Any = Depends(require_permission("agent:view")),
+):
+    """当前用户未读消息数（通知栏红点徽标）"""
+    store = WebMessageStore.instance()
+    return success(data={"unread": store.unread_count(str(user.user_id))})
+
+
+@router.post("/message/read")
+def message_mark_read(
+    req: MarkReadRequest,
+    user: Any = Depends(require_permission("agent:view")),
+):
+    """标记已读（ids 为空则全部已读），供通知去重与徽标清零"""
+    store = WebMessageStore.instance()
+    count = store.mark_read(str(user.user_id), req.ids)
+    return success(data={"marked": count})
 
 
 @router.get("/message/stream")

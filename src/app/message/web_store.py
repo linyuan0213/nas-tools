@@ -14,8 +14,8 @@ from threading import Lock
 
 import log
 from app.db.repositories.web_message_repo_adapter import WebMessageRepositoryAdapter
+from app.db.web_visibility import is_visible
 from app.infrastructure.image_proxy.proxy import ImageProxy
-from app.message.web_visibility import is_visible
 
 
 class WebMessageStore:
@@ -165,3 +165,21 @@ class WebMessageStore:
         with self._write_lock:
             items = [i for i in self._items if is_visible(i.get("user_id"), user_id)]
             return items[-limit:]
+
+    def unread_count(self, user_id: str) -> int:
+        """当前用户未读消息数"""
+        if self._repo is not None:
+            try:
+                return self._repo.unread_count(user_id)
+            except Exception as e:
+                log.warn(f"[WebMessageStore]DB 未读数读取失败: {e}")
+        return 0
+
+    def mark_read(self, user_id: str, ids: list[int] | None = None) -> int:
+        """标记已读（ids 为空则全部已读）"""
+        if self._repo is not None:
+            try:
+                return self._repo.mark_read(user_id, ids)
+            except Exception as e:
+                log.warn(f"[WebMessageStore]DB 标记已读失败: {e}")
+        return 0

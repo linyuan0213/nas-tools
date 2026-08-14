@@ -30,3 +30,9 @@ class WebMessageRepositoryAdapter(IWebMessageRepository):
 
     def max_cursor(self) -> int:
         return self._repo.max_cursor()
+
+    def unread_count(self, user_id: str) -> int:
+        return self._repo.unread_count(user_id)
+
+    def mark_read(self, user_id: str, ids: list[int] | None = None) -> int:
+        return self._repo.mark_read(user_id, ids)

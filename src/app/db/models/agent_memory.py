@@ -5,7 +5,7 @@ Agent 记忆模型
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, Sequence, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, Sequence, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.base import Base
@@ -60,4 +60,6 @@ class AGENTWEBMESSAGE(Base):
     IMAGE: Mapped[str] = mapped_column(Text, default="")
     URL: Mapped[str] = mapped_column(Text, default="")
     ITEMS: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    READ: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    READ_AT: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     CREATED_AT: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
