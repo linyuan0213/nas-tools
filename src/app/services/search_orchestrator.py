@@ -85,7 +85,11 @@ class SearchOrchestrator:
         if ctx.persist:
             self._enrich_and_persist(ctx, media_list)
 
-        self._progress.update(value=100, text=f"搜索完成，共 {len(media_list)} 条", ptype=progress_key)
+        self._progress.update(
+            value=100,
+            text=f"搜索完成，共 {len(media_list)} 条{self._failed_sites_summary(progress_key)}",
+            ptype=progress_key,
+        )
         self._progress.end(progress_key)
 
         # 6. 过滤已下载
@@ -270,6 +274,23 @@ class SearchOrchestrator:
             )
         finally:
             lock.release()
+
+    def _failed_sites_summary(self, progress_key: str) -> str:
+        """从搜索进度中汇总失败站点（error/timeout），用于"搜索完成"文本"""
+        try:
+            detail = self._progress.get_process(progress_key)
+            sites = detail.get("sites") if detail else None
+            if not sites:
+                return ""
+            failed = [s for s in sites if s.get("status") in ("error", "timeout")]
+            if not failed:
+                return ""
+            return "；失败站点：" + "、".join(
+                f"{s['name']}({s.get('error') or s['status']})" for s in failed
+            )
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[Orchestrator]失败站点汇总失败: {e}")
+            return ""
 
     def get_results(self, session_id: str, user_id: str | None = None) -> list:
         if self._search_repo is None:
