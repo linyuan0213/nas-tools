@@ -26,6 +26,10 @@ class IWebMessageRepository(Protocol):
         """最近通知历史（全局 + 本人），刷新恢复用"""
         ...
 
+    def unread_list(self, user_id: str, limit: int = 50) -> list[dict]:
+        """当前用户未读消息列表（通知栏下拉，轻量）"""
+        ...
+
     def after(self, cursor: int, user_id: str, limit: int = 50) -> list[dict]:
         """游标之后的消息（按用户过滤），增量读取用"""
         ...

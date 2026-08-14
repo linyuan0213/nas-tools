@@ -25,6 +25,9 @@ class WebMessageRepositoryAdapter(IWebMessageRepository):
     def history(self, user_id: str, limit: int = 50) -> list[dict]:
         return self._repo.history(user_id, limit)
 
+    def unread_list(self, user_id: str, limit: int = 50) -> list[dict]:
+        return self._repo.unread_list(user_id, limit)
+
     def after(self, cursor: int, user_id: str, limit: int = 50) -> list[dict]:
         return self._repo.after(cursor, user_id, limit)
 

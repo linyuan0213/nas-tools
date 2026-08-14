@@ -92,6 +92,18 @@ def message_unread_count(
     return success(data={"unread": store.unread_count(str(user.user_id))})
 
 
+@router.get("/message/unread")
+def message_unread_list(
+    limit: int = 100,
+    user: Any = Depends(require_permission("agent:view")),
+):
+    """当前用户未读消息列表 + 未读数（通知栏下拉，轻量接口）"""
+    store = WebMessageStore.instance()
+    uid = str(user.user_id)
+    items = store.unread_list(uid, max(1, min(limit, 200)))
+    return success(data={"messages": items, "unread": store.unread_count(uid)})
+
+
 @router.post("/message/read")
 def message_mark_read(
     req: MarkReadRequest,

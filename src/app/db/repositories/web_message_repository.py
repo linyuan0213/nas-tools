@@ -68,6 +68,21 @@ class WebMessageRepository(BaseRepository):
             )
         return [self._to_dict(r) for r in rows]
 
+    def unread_list(self, user_id: str, limit: int = 50) -> list[dict]:
+        """当前用户未读消息列表（全局 + 本人，按时间倒序取最新）"""
+        with self.session() as db:
+            rows = (
+                db.query(AGENTWEBMESSAGE)
+                .filter(
+                    AGENTWEBMESSAGE.READ.is_(False),
+                    visible_sql(AGENTWEBMESSAGE.USER_ID, user_id),
+                )
+                .order_by(AGENTWEBMESSAGE.ID.desc())
+                .limit(limit)
+                .all()
+            )
+        return [self._to_dict(r) for r in reversed(rows)]
+
     def unread_count(self, user_id: str) -> int:
         """当前用户未读消息数"""
         with self.session() as db:

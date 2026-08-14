@@ -25,7 +25,7 @@ repos:
 
       - id: scan-secrets
         name: scan-secrets
-        entry: python scripts/scan_secrets.py
+        entry: uv run python scripts/scan_secrets.py
         language: system
         types: [text]
         pass_filenames: true

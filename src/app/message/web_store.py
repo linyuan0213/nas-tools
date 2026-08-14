@@ -166,6 +166,17 @@ class WebMessageStore:
             items = [i for i in self._items if is_visible(i.get("user_id"), user_id)]
             return items[-limit:]
 
+    def unread_list(self, user_id: str, limit: int = 50) -> list[dict]:
+        """当前用户未读消息列表（通知栏下拉，轻量）"""
+        if self._repo is not None:
+            try:
+                return self._repo.unread_list(user_id, limit)
+            except Exception as e:
+                log.warn(f"[WebMessageStore]DB 未读列表读取失败: {e}")
+        with self._write_lock:
+            items = [i for i in self._items if is_visible(i.get("user_id"), user_id) and i.get("read") is not True]
+            return items[-limit:]
+
     def unread_count(self, user_id: str) -> int:
         """当前用户未读消息数"""
         if self._repo is not None:
