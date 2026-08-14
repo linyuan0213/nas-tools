@@ -14,6 +14,7 @@ from app.agent.tools.handlers.download import (
     downloader_status,
     media_download,
 )
+from app.agent.tools.handlers.logs import system_logs
 from app.agent.tools.handlers.media import kb_search, media_detail, media_search
 from app.agent.tools.handlers.ops import (
     library_check,
@@ -33,6 +34,7 @@ from app.agent.tools.schemas.download import (
     DownloadListTool,
     MediaDownloadTool,
 )
+from app.agent.tools.schemas.logs import SystemLogsTool
 from app.agent.tools.schemas.media import KbSearchTool, MediaDetailTool, MediaSearchTool
 from app.agent.tools.schemas.ops import (
     LibraryCheckTool,
@@ -64,6 +66,7 @@ BUILTIN_TOOLS: list[BaseTool] = [
     SchedulerListTool(),
     SchedulerRunTool(),
     SystemStatusTool(),
+    SystemLogsTool(),
     MemoryClearTool(),
     MemoryForgetTool(),
 ]
@@ -87,6 +90,7 @@ HANDLERS: dict[str, Callable] = {
     "scheduler_list": scheduler_list,
     "scheduler_run": scheduler_run,
     "system_status": system_status,
+    "system_logs": system_logs,
     "memory_clear": memory_clear,
     "memory_forget": memory_forget,
 }

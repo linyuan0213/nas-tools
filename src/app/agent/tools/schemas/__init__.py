@@ -7,6 +7,7 @@ from app.agent.tools.schemas.download import (
     DownloadListTool,
     MediaDownloadTool,
 )
+from app.agent.tools.schemas.logs import SystemLogsTool
 from app.agent.tools.schemas.media import KbSearchTool, MediaDetailTool, MediaSearchTool
 from app.agent.tools.schemas.ops import (
     LibraryCheckTool,
@@ -35,5 +36,6 @@ __all__ = [
     "SchedulerListTool",
     "SchedulerRunTool",
     "SystemStatusTool",
+    "SystemLogsTool",
     "MemoryClearTool",
 ]
