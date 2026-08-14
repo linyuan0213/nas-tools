@@ -49,6 +49,7 @@ class TMDBCache(TypedCache):
     TTL_DEFAULT = 3600  # 1 小时（默认）
 
     MEDIA_CACHE_VERSION = "2"  # 匹配逻辑变更时递增，自动作废旧缓存
+    TMDB_CACHE_VERSION = "2"  # 中文名补全逻辑变更时递增，自动作废旧缓存（旧缓存可能存英文名）
 
     def __init__(self, adapter: CacheAdapter | None = None):
         if adapter is None:
@@ -65,7 +66,7 @@ class TMDBCache(TypedCache):
 
         if mtype == MediaType.ANIME:
             mtype = MediaType.TV
-        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default", extra)
+        key = self._make_key("tmdb", self.TMDB_CACHE_VERSION, mtype.value, tmdbid, language or "default", extra)
         return self.get(key)
 
     def set_tmdb_info(
@@ -75,7 +76,7 @@ class TMDBCache(TypedCache):
 
         if mtype == MediaType.ANIME:
             mtype = MediaType.TV
-        key = self._make_key("tmdb", mtype.value, tmdbid, language or "default", extra)
+        key = self._make_key("tmdb", self.TMDB_CACHE_VERSION, mtype.value, tmdbid, language or "default", extra)
         ttl = ttl or self.TTL_TMDB_INFO
         log.debug(f"[TMDBCache]缓存信息: {key}, TTL={ttl}秒")
         return self.set(key, info, ttl)
@@ -133,11 +134,10 @@ class TMDBCache(TypedCache):
         return self.set(key, info, ttl)
 
     def clear_tmdb_cache(self, tmdbid: str) -> None:
-        """清除指定TMDB ID的所有缓存"""
-        pattern = f"tmdb:*:{tmdbid}:*"
-        keys = self._adapter.keys(pattern)
-        for key in keys:
-            self._adapter.delete(key)
+        """清除指定TMDB ID的所有缓存（兼容旧版无版本号 key 与新版带版本号 key）"""
+        for pattern in (f"tmdb:*:*:{tmdbid}:*", f"tmdb:*:{tmdbid}:*"):
+            for key in self._adapter.keys(pattern):
+                self._adapter.delete(key)
         log.debug(f"[TMDBCache]清除TMDB ID {tmdbid} 的所有缓存")
 
     def clear_media_cache(self, title: str) -> None:

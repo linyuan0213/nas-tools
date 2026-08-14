@@ -1,7 +1,11 @@
 """测试 TMDB 客户端工具函数 — 多语言名称匹配"""
 
 from app.domain.mediatypes import MediaType
-from app.media.lookup.tmdb_client import compare_tmdb_names, get_tmdb_chinese_title
+from app.media.lookup.tmdb_client import (
+    compare_tmdb_names,
+    get_tmdb_chinese_title,
+    update_tmdbinfo_cn_title,
+)
 
 
 class TestCompareTmdbNames:
@@ -69,5 +73,107 @@ class TestGetTmdbChineseTitle:
         result = get_tmdb_chinese_title(info)
         assert result == "Kimetsu no Yaiba"
 
+    def test_zh_cn_from_translations(self):
+        info = {
+            "media_type": MediaType.TV,
+            "alternative_titles": {"results": []},
+            "name": "Chainsmoker Cat",
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "en", "data": {"name": "Chainsmoker Cat"}},
+                    {"iso_639_1": "zh-CN", "data": {"name": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = get_tmdb_chinese_title(info)
+        assert result == "尼古喵喵"
+
+    def test_zh_tw_from_translations_fallback(self):
+        info = {
+            "media_type": MediaType.TV,
+            "alternative_titles": {"results": []},
+            "name": "Chainsmoker Cat",
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "zh-TW", "data": {"name": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = get_tmdb_chinese_title(info)
+        assert result == "尼古喵喵"
+
+    def test_zh_generic_from_translations(self):
+        info = {
+            "media_type": MediaType.MOVIE,
+            "alternative_titles": {"titles": []},
+            "title": "Chainsmoker Cat",
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "zh", "data": {"title": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = get_tmdb_chinese_title(info)
+        assert result == "尼古喵喵"
+
+    def test_translations_no_chinese(self):
+        info = {
+            "media_type": MediaType.TV,
+            "alternative_titles": {"results": []},
+            "name": "Chainsmoker Cat",
+            "translations": {"translations": [{"iso_639_1": "en", "data": {"name": "Chainsmoker Cat"}}]},
+        }
+        result = get_tmdb_chinese_title(info)
+        assert result == "Chainsmoker Cat"
+
     def test_none_info(self):
         assert get_tmdb_chinese_title(None) is None
+
+
+class TestUpdateTmdbinfoCnTitle:
+    def test_fills_cn_title_from_translations(self):
+        info = {
+            "media_type": MediaType.TV,
+            "name": "Chainsmoker Cat",
+            "alternative_titles": {"results": []},
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "zh-CN", "data": {"name": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = update_tmdbinfo_cn_title(info, "zh")
+        assert result["name"] == "尼古喵喵"
+
+    def test_fills_cn_title_with_zh_cn_config(self):
+        info = {
+            "media_type": MediaType.MOVIE,
+            "title": "Chainsmoker Cat",
+            "alternative_titles": {"titles": []},
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "zh-CN", "data": {"title": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = update_tmdbinfo_cn_title(info, "zh-CN")
+        assert result["title"] == "尼古喵喵"
+
+    def test_keep_en_title_when_non_chinese_config(self):
+        info = {
+            "media_type": MediaType.TV,
+            "name": "Chainsmoker Cat",
+            "alternative_titles": {"results": []},
+            "translations": {
+                "translations": [
+                    {"iso_639_1": "zh-CN", "data": {"name": "尼古喵喵"}},
+                ]
+            },
+        }
+        result = update_tmdbinfo_cn_title(info, "en")
+        assert result["name"] == "Chainsmoker Cat"
+
+    def test_keep_cn_title_already_chinese(self):
+        info = {"media_type": MediaType.TV, "name": "尼古喵喵", "alternative_titles": {"results": []}}
+        result = update_tmdbinfo_cn_title(info, "zh")
+        assert result["name"] == "尼古喵喵"

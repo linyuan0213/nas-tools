@@ -139,6 +139,9 @@ def get_tmdb_chinese_title(tmdbinfo):
                 break
         if iso_3166_1 in ("TW", "HK"):
             zh_tw = title
+    if not zh_cn and not zh_tw:
+        # 中文名常只存在于 translations（zh-CN/zh），alternative_titles 不一定有 CN/TW 条目
+        zh_cn, zh_tw = _get_chinese_title_from_translations(tmdbinfo)
     if zh_cn:
         return zh_cn
     if zh_tw:
@@ -146,9 +149,32 @@ def get_tmdb_chinese_title(tmdbinfo):
     return tmdbinfo.get("title") if tmdbinfo.get("media_type") == MediaType.MOVIE else tmdbinfo.get("name")
 
 
+def _get_chinese_title_from_translations(tmdbinfo):
+    """从 translations 提取中文名：优先 zh-CN/zh（简体），回退 zh-TW/zh-HK（繁体）"""
+    zh_cn = None
+    zh_tw = None
+    for tr in (tmdbinfo.get("translations") or {}).get("translations") or []:
+        iso = str(tr.get("iso_639_1") or "")
+        if not iso.lower().startswith("zh"):
+            continue
+        data = tr.get("data") or {}
+        title = data.get("title") or data.get("name")
+        if not title or not StringUtils.is_chinese(title):
+            continue
+        if iso.lower() in ("zh-cn", "zh-sg", "zh"):
+            simplified = to_simplified(title)
+            if simplified == title:
+                zh_cn = title
+                break
+        if iso.lower() in ("zh-tw", "zh-hk", "zh-mo"):
+            zh_tw = title
+    return zh_cn, zh_tw
+
+
 def update_tmdbinfo_cn_title(tmdb_info, default_language):
     org_title = tmdb_info.get("title") if tmdb_info.get("media_type") == MediaType.MOVIE else tmdb_info.get("name")
-    if not StringUtils.is_chinese(org_title) and default_language == "zh":
+    # 中文语言配置（zh/zh-CN/zh-Hans...）下补全中文名；非中文配置保持原样
+    if not StringUtils.is_chinese(org_title) and str(default_language or "").lower().startswith("zh"):
         cn_title = get_tmdb_chinese_title(tmdbinfo=tmdb_info)
         if cn_title and cn_title != org_title:
             if tmdb_info.get("media_type") == MediaType.MOVIE:
