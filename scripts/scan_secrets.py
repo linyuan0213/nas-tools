@@ -7,15 +7,30 @@ from pathlib import Path
 # 强特征：sk- 开头密钥、显式 key/password/secret 赋值、32 位 hex 密钥、JWT
 _PATTERNS = [
     re.compile(r"\bsk-[A-Za-z0-9_\-]{16,}\b"),
-    re.compile(r"(?:api[_-]?key|api_secret|access[_-]?key|secret[_-]?key|client[_-]?secret|password|passwd|token|jwt[_-]?secret)\s*[=:]\s*[\"'][^\"'\s]{8,}[\"']", re.I),
+    re.compile(
+        r"(?:api[_-]?key|api_secret|access[_-]?key|secret[_-]?key|"
+        r"client[_-]?secret|password|passwd|token|jwt[_-]?secret)"
+        r"\s*[=:]\s*[\"'][^\"'\s]{8,}[\"']",
+        re.I,
+    ),
     re.compile(r"\b[a-f0-9]{32}\b"),
     re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
 ]
 
 # 允许占位符/示例值（非真实密钥）
 _ALLOWED = {
-    "test_tmdb_key", "your-api-key", "example", "changeme", "your_password",
-    "xxxx", "password", "admin", "secret", "123456", "token", "api_key",
+    "test_tmdb_key",
+    "your-api-key",
+    "example",
+    "changeme",
+    "your_password",
+    "xxxx",
+    "password",
+    "admin",
+    "secret",
+    "123456",
+    "token",
+    "api_key",
 }
 
 
