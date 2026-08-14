@@ -56,6 +56,7 @@ def build_coordinators(
     download_repo = DownloadHistoryRepositoryAdapter()
     rss_repo = SubscribeHistoryRepositoryAdapter()
     media_cache = MediaCache()
+    system_config = SystemConfigService()
 
     matcher = SubscribeMatcher(site_conf=siteconf, site_cache=site_cache)
     queue_strategy = QueueSearchStrategy(
@@ -66,7 +67,7 @@ def build_coordinators(
         downloader=downloader_core,
         filter_service=filter_service,
         message=message,
-        system_config=SystemConfigService(),
+        system_config=system_config,
     )
     rsshelper = RssHelper(site_engine=site_engine)
     rss_strategy = RssFeedStrategy(
@@ -80,6 +81,7 @@ def build_coordinators(
         subscribe=subscribe_service,
         matcher=matcher,
         message=message,
+        system_config=system_config,
     )
     indexer_strategy = IndexerSearchStrategy(
         service=subscribe_service,
@@ -89,7 +91,7 @@ def build_coordinators(
         downloader=downloader_core,
         filter_service=filter_service,
         message=message,
-        system_config=SystemConfigService(),
+        system_config=system_config,
     )
     subscription_monitor = SubscriptionMonitor(
         subscribe_service=subscribe_service,

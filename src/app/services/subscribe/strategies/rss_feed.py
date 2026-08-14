@@ -13,7 +13,7 @@ from app.core.settings import settings
 from app.db.repositories.download_repo_adapter import DownloadHistoryRepositoryAdapter
 from app.db.repositories.subscribe_repo_adapter import SubscribeHistoryRepositoryAdapter
 from app.domain.entities.rss import SubscribeState
-from app.domain.enums import SearchType
+from app.domain.enums import SearchType, SystemConfigKey
 from app.domain.mediatypes import MediaType
 from app.media.service import MediaService
 from app.message import Message
@@ -44,6 +44,7 @@ class RssFeedStrategy:
         matcher: SubscribeMatcher,
         message: Message,
         coordinator=None,
+        system_config=None,
     ):
         self.media = media
         self.sites = sites
@@ -56,6 +57,7 @@ class RssFeedStrategy:
         self.matcher = matcher
         self.message = message
         self._coordinator = coordinator
+        self._system_config = system_config
 
     def set_coordinator(self, coordinator) -> None:
         """设置下载协调器（用于 SubscriptionMonitor 注入）."""
@@ -68,6 +70,22 @@ class RssFeedStrategy:
                 log.info("[RssFeedStrategy] RSS 轮询正在其他实例执行，跳过")
                 return
             self._do_rss_poll()
+
+    def _get_default_rss_sites(self, mtype: MediaType) -> list:
+        """读取默认订阅设置的 rss_sites（订阅未配置时的回退站点）"""
+        if not self._system_config:
+            return []
+        try:
+            default_setting = self._system_config.get(
+                SystemConfigKey.DefaultSubscribeSettingTV
+                if mtype in (MediaType.TV, MediaType.ANIME)
+                else SystemConfigKey.DefaultSubscribeSettingMOV
+            )
+            if isinstance(default_setting, dict):
+                return default_setting.get("rss_sites") or []
+        except Exception as e:
+            log.debug(f"[RssFeedStrategy]读取默认订阅设置 RSS 站点失败: {e}")
+        return []
 
     def _do_rss_poll(self) -> None:
         if self.sites is None:
@@ -122,7 +140,11 @@ class RssFeedStrategy:
                 else:
                     check_sites += rss_sites
         if check_all:
-            check_sites = []
+            # 订阅未配置 rss_sites → 使用默认订阅设置的 rss_sites（与搜索/手动一致），而非全部站点
+            check_sites = self._get_default_rss_sites(MediaType.TV) + self._get_default_rss_sites(
+                MediaType.MOVIE
+            )
+            check_sites = list(set(check_sites))
         else:
             check_sites = list(set(check_sites))
 

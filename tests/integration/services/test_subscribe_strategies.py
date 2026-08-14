@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+from app.domain.mediatypes import MediaType
 from app.services.subscribe.coordinator import DownloadCoordinator
 from app.services.subscribe.search_engine import SubscribeSearchEngine
 from app.services.subscribe.strategies.indexer_search import IndexerSearchStrategy
@@ -308,3 +309,36 @@ class TestRssFeedStrategy:
         strategy.downloader.batch_download.return_value = ([], [])  # type: ignore[union-attr]
         strategy._download_matched_torrents([media], {})
         coord.try_acquire.assert_called_once()
+
+    def test_get_default_rss_sites_no_system_config(self):
+        strategy = self._make_strategy()
+        strategy._system_config = None
+        assert strategy._get_default_rss_sites(MediaType.TV) == []
+
+    def test_get_default_rss_sites_tv(self):
+        strategy = self._make_strategy()
+        sys_config = MagicMock()
+        sys_config.get.return_value = {"rss_sites": ["siteA", "siteB"]}
+        strategy._system_config = sys_config
+        assert strategy._get_default_rss_sites(MediaType.TV) == ["siteA", "siteB"]
+
+    def test_get_default_rss_sites_movie(self):
+        strategy = self._make_strategy()
+        sys_config = MagicMock()
+        sys_config.get.return_value = {"rss_sites": ["siteM"]}
+        strategy._system_config = sys_config
+        assert strategy._get_default_rss_sites(MediaType.MOVIE) == ["siteM"]
+
+    def test_get_default_rss_sites_invalid_setting(self):
+        strategy = self._make_strategy()
+        sys_config = MagicMock()
+        sys_config.get.return_value = "not_a_dict"
+        strategy._system_config = sys_config
+        assert strategy._get_default_rss_sites(MediaType.TV) == []
+
+    def test_get_default_rss_sites_exception_returns_empty(self):
+        strategy = self._make_strategy()
+        sys_config = MagicMock()
+        sys_config.get.side_effect = RuntimeError("db error")
+        strategy._system_config = sys_config
+        assert strategy._get_default_rss_sites(MediaType.TV) == []

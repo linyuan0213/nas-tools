@@ -194,3 +194,43 @@ class TestBaseSearchStrategy:
         strategy._media_service.identify.return_value = media
         result = strategy._get_media_info("DB:123", "Name", "2024", MediaType.MOVIE)
         assert result is media
+
+
+class TestEffectiveSearchSites:
+    def test_uses_subscribe_configured_sites(self, strategy):
+        strategy._system_config = MagicMock()
+        result = strategy._get_effective_search_sites({"search_sites": ["s1", "s2"]}, MediaType.TV)
+        assert result == ["s1", "s2"]
+        strategy._system_config.get.assert_not_called()
+
+    def test_fallback_to_default_when_not_configured(self, strategy):
+        sys_config = MagicMock()
+        sys_config.get.return_value = {"search_sites": ["defaultA"]}
+        strategy._system_config = sys_config
+        result = strategy._get_effective_search_sites({"search_sites": None}, MediaType.TV)
+        assert result == ["defaultA"]
+
+    def test_empty_list_triggers_fallback_not_zero_sites(self, strategy):
+        # 空列表会覆盖 effective sites → 应回退默认而非 0 站点搜索
+        sys_config = MagicMock()
+        sys_config.get.return_value = {"search_sites": ["defaultB"]}
+        strategy._system_config = sys_config
+        result = strategy._get_effective_search_sites({"search_sites": []}, MediaType.TV)
+        assert result == ["defaultB"]
+
+    def test_movie_uses_movie_default_setting(self, strategy):
+        sys_config = MagicMock()
+        sys_config.get.return_value = {"search_sites": ["movieSite"]}
+        strategy._system_config = sys_config
+        result = strategy._get_effective_search_sites({"search_sites": None}, MediaType.MOVIE)
+        assert result == ["movieSite"]
+
+    def test_no_system_config_returns_empty(self, strategy):
+        strategy._system_config = None
+        assert strategy._get_effective_search_sites({"search_sites": None}, MediaType.TV) == []
+
+    def test_invalid_default_setting_returns_empty(self, strategy):
+        sys_config = MagicMock()
+        sys_config.get.return_value = "not_a_dict"
+        strategy._system_config = sys_config
+        assert strategy._get_effective_search_sites({"search_sites": None}, MediaType.TV) == []

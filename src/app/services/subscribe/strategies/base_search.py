@@ -386,6 +386,9 @@ class BaseSearchStrategy:
                     self._tv_repo.update_state(
                         title=None, year=None, season=None, rssid=rid, state=SubscribeState.SEARCHING.value
                     )
+                    # 搜索站点：订阅未配置时回退到默认订阅设置的 search_sites（与手动搜索一致）。
+                    # 不能直接用 rss_info.get("search_sites")，否则空列表会覆盖 effective sites → 0 站点搜索
+                    sites = self._get_effective_search_sites(rss_info, MediaType.TV)
                     filters_tv = {
                         "restype": rss_info.get("filter_restype"),
                         "pix": rss_info.get("filter_pix"),
@@ -394,13 +397,13 @@ class BaseSearchStrategy:
                         "include": rss_info.get("filter_include"),
                         "exclude": rss_info.get("filter_exclude"),
                         "free": rss_info.get("filter_free"),
-                        "site": rss_info.get("search_sites"),
+                        "site": sites,
                     }
                     search_result, no_exists, _, _ = self._searcher.search_one_media(
                         media_info=media_info,
                         in_from=SearchType.SUBSCRIBE,
                         no_exists=rss_no_exists_local,
-                        sites=self._get_effective_search_sites(rss_info, MediaType.TV),
+                        sites=sites,
                         filters=filters_tv,
                     )
                     if over_edition:
