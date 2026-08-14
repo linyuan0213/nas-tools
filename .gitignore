@@ -68,3 +68,4 @@ config/*.pid
 /site/
 
 tests/config_test.yaml.lock
+tests/config_test.yaml
