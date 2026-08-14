@@ -122,3 +122,20 @@ class TestConversationStore:
         conv = store._repo.get(key.user_id, key.channel, key.session_id)
         assert conv is not None
         assert conv.SUMMARY.startswith("摘要(")
+
+
+class TestGetOrCreateConcurrency:
+    def test_concurrent_get_or_create_same_key(self, db_session):
+        """并发创建同一会话不抛唯一约束冲突"""
+        from concurrent.futures import ThreadPoolExecutor
+
+        repo = AgentConversationRepository()
+        key = MemoryKey(user_id="c1", channel="web", session_id=uuid4().hex[:12])
+
+        def _create(_):
+            return repo.get_or_create(key.user_id, key.channel, key.session_id).ID
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            ids = list(executor.map(_create, range(8)))
+        assert len(set(ids)) == 1
+        assert repo.get(key.user_id, key.channel, key.session_id) is not None

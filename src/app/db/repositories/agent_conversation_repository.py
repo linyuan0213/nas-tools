@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
+
 from app.db.models.agent_memory import AGENTCONVERSATION, AGENTMESSAGE
 from app.db.repositories.base_repository import BaseRepository
 
@@ -11,22 +13,33 @@ class AgentConversationRepository(BaseRepository):
 
     def get_or_create(self, user_id: str, channel: str, session_id: str) -> AGENTCONVERSATION:
         with self.session() as db:
-            conv = (
-                db.query(AGENTCONVERSATION)
-                .filter(
-                    AGENTCONVERSATION.USER_ID == user_id,
-                    AGENTCONVERSATION.CHANNEL == channel,
-                    AGENTCONVERSATION.SESSION_ID == session_id,
-                )
-                .first()
-            )
+            conv = self._query_conversation(db, user_id, channel, session_id)
             if conv:
                 return conv
             conv = AGENTCONVERSATION(USER_ID=user_id, CHANNEL=channel, SESSION_ID=session_id)
             db.add(conv)
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                # 并发下两请求同时创建 → 唯一约束冲突，回滚后重查
+                db.rollback()
+                conv = self._query_conversation(db, user_id, channel, session_id)
+                if conv:
+                    return conv
+                raise
             db.refresh(conv)
             return conv
+
+    def _query_conversation(self, db, user_id: str, channel: str, session_id: str) -> AGENTCONVERSATION | None:
+        return (
+            db.query(AGENTCONVERSATION)
+            .filter(
+                AGENTCONVERSATION.USER_ID == user_id,
+                AGENTCONVERSATION.CHANNEL == channel,
+                AGENTCONVERSATION.SESSION_ID == session_id,
+            )
+            .first()
+        )
 
     def get(self, user_id: str, channel: str, session_id: str) -> AGENTCONVERSATION | None:
         with self.session() as db:
