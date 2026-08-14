@@ -227,5 +227,10 @@ class SearchResultService:
 
     @staticmethod
     def _se_sort(k):
-        k = re.sub(r" +|(?<=s\d)\D*?(?=e)|(?<=s\d\d)\D*?(?=e)", " ", k[0], flags=re.I).split()
-        return (k[0], k[1]) if len(k) > 1 else ("Z" + k[0], "ZZZ")
+        """季/集排序键：季降序（新季在前）→ 整季（无集号）优先 → 集降序（新集在前）"""
+        se = k[0]
+        seasons = [int(x) for x in re.findall(r"[Ss](\d+)", se)]
+        season = max(seasons) if seasons else 0
+        episodes = [int(x) for x in re.findall(r"[Ee](\d+)", se)]
+        episode = max(episodes) if episodes else 0
+        return (season, 1 if episode == 0 else 0, episode)
