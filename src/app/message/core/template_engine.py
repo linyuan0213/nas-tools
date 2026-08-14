@@ -106,19 +106,17 @@ class TemplateEngine:
                 log.error(f"[Message]客户端 {client_name} 模板配置 JSON 解析失败: {e}")
                 return None, None
 
-        if not templates or not isinstance(templates, dict):
-            log.debug(f"[Message]客户端 {client_name} 没有模板配置或格式不正确, 类型: {type(templates)}")
-            return None, None
-
-        template_config = templates.get(msg_type)
-        log.debug(f"[Message]客户端 {client_name} 消息类型 {msg_type} 的模板: {template_config}")
-
-        if not template_config or not isinstance(template_config, dict):
-            log.debug(f"[Message]客户端 {client_name} 没有 {msg_type} 类型的自定义模板，尝试使用默认模板")
+        # 客户端无模板配置或对应类型模板：回退默认模板（非纯文本）
+        template_config = None
+        if isinstance(templates, dict):
+            template_config = templates.get(msg_type)
+            if not isinstance(template_config, dict):
+                template_config = None
+        if template_config is None:
             template_config = DEFAULT_MESSAGE_TEMPLATES.get(msg_type)
-            if not template_config:
-                log.debug(f"[Message]消息类型 {msg_type} 没有默认模板")
-                return None, None
+        if not template_config:
+            log.debug(f"[Message]客户端 {client_name} 消息类型 {msg_type} 无可用模板")
+            return None, None
 
         title_template = template_config.get("title")
         text_template = template_config.get("text")

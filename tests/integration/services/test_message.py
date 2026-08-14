@@ -40,9 +40,26 @@ class TestTemplateEngine:
         assert result == "a\nb"
 
     def test_apply_client_template_no_templates(self):
+        # 客户端无模板配置或空模板：回退默认模板（非纯文本）
         engine = TemplateEngine()
         client = {"name": "test", "templates": None}
-        assert engine.apply_client_template(client, "download_start", {}) == (None, None)
+        title, text = engine.apply_client_template(client, "site_message", {"title": "T", "text": "B"})
+        assert title is not None
+        assert "T" in title
+
+    def test_apply_client_template_empty_dict(self):
+        # 空模板配置 {} 同样回退默认模板（Web 客户端场景）
+        engine = TemplateEngine()
+        client = {"name": "test", "templates": {}}
+        title, text = engine.apply_client_template(client, "site_message", {"title": "T", "text": "B"})
+        assert title is not None
+        assert "T" in title
+
+    def test_apply_client_template_unknown_type(self):
+        # 无此类型且无默认模板 → None
+        engine = TemplateEngine()
+        client = {"name": "test", "templates": None}
+        assert engine.apply_client_template(client, "no_such_type", {}) == (None, None)
 
     def test_apply_client_template_with_default(self):
         from app.message.templates import DEFAULT_MESSAGE_TEMPLATES
