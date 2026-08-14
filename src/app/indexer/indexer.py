@@ -404,9 +404,12 @@ class Indexer:
                 tracker.record(indexer, elapsed)
                 pct = 10 + round(50 * (completed / total))
                 tag = "超时跳过" if timed_out else "完成"
-                text = f"站点搜索 {completed}/{total} {tag} ({indexer.name})"
-                if site_status and site_status.get("error"):
-                    text += f"：{site_status['error']}"
+                text = f"站点搜索 {completed}/{total} {tag}（{indexer.name}）"
+                if site_status:
+                    if site_status.get("status") == "ok":
+                        text += f"：{site_status['count']} 条"
+                    elif site_status.get("error"):
+                        text += f"：{site_status['error']}"
                 self.progress.update_max(ptype=progress_key, value=pct, text=text)
                 if site_status:
                     site_statuses.append(site_status)
