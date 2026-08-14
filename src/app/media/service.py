@@ -116,6 +116,15 @@ class MediaService:
         return parsed
 
     @staticmethod
+    def _backfill_total_episodes(info: MediaInfo) -> None:
+        """从实际解析出的集信息补全 total_episodes（单集=1、多集范围=差+1），避免"共0集"."""
+        if info.total_episodes == 0 and info.begin_episode is not None:
+            if info.end_episode is not None and info.end_episode >= info.begin_episode:
+                info.total_episodes = (info.end_episode - info.begin_episode) + 1
+            else:
+                info.total_episodes = 1
+
+    @staticmethod
     def _apply_words(title: str, subtitle: str | None = None) -> tuple[str, str]:
         """套用识别词（屏蔽 / 替换 / 集偏移），与 meta_info() 的前置清洗保持一致."""
         words = get_words_info()
@@ -801,6 +810,7 @@ class MediaService:
                     parsed = self._post_process(parsed, file_name)
                     info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
                     info.set_tmdb_info(tmdb_info)
+                    self._backfill_total_episodes(info)
                     if season and info.type != MediaType.MOVIE:
                         info.begin_season = int(season)
                     if episode_format:
@@ -929,6 +939,7 @@ class MediaService:
             file_path = path_map[idx]
             parsed = parsed_list[idx]
             info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
+            self._backfill_total_episodes(info)
             if parsed:
                 key = (
                     f"{parsed.title_en or parsed.title_cn or ''}:"
