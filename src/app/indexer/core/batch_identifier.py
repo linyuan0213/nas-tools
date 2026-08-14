@@ -311,7 +311,12 @@ class BatchIdentifier:
 
     @staticmethod
     def _guards_pass(group: dict, match_media) -> bool:
-        """类型一致 + 年份一致（或种子无年份）。TV 和 ANIME 互认兼容。"""
+        """类型一致 + 年份一致（或种子无年份）。TV 和 ANIME 互认兼容。
+
+        年份守卫：电影严格一致（同名不同年的电影是不同作品）；
+        剧集/动漫放宽——多季剧集跨年份（S2 播映年晚于 S1 首播年），
+        且种子标题年份常为发行/压片年而非首播年，名称精确匹配 + tmdb_id 才是真正的判别依据。
+        """
         m_type = getattr(match_media, "type", None)
         g_type = group.get("type")
         if g_type and m_type and g_type != m_type:
@@ -319,7 +324,14 @@ class BatchIdentifier:
                 return False
         g_year = str(group.get("year") or "")
         m_year = str(getattr(match_media, "year", "") or "")
-        return not (g_year and m_year and g_year != m_year)
+        if not (g_year and m_year):
+            return True
+        if g_year == m_year:
+            return True
+        # 剧集/动漫：年份不一致不作为硬冲突（多季/重制/发行年差异）
+        if m_type in (MediaType.TV, MediaType.ANIME) or g_type in (MediaType.TV, MediaType.ANIME):
+            return True
+        return False
 
     @staticmethod
     def _build_group_media_info(group: dict) -> MediaInfo:

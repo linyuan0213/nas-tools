@@ -103,11 +103,36 @@ class TestDirectPass:
         assert cached is not None
         assert cached.tmdb_id == 288971
 
-    def test_year_mismatch_locally_rejected(self, identifier):
-        """年份冲突 → 本地排除，零 API"""
+    def test_tv_year_mismatch_not_rejected(self, identifier):
+        """剧集跨年份（S2 播映年晚于首播年）→ 名称匹配仍直通，零 API"""
         cands = [_cand("Jaadugar A Witch in Mongolia S01E04 2026", _meta(cn="穹庐下的魔女", year="2026"))]
 
         identifier.identify(cands, match_media=self._match_media(year="2025"))
+
+        identifier.media.identify_groups.assert_not_called()
+        key = BatchIdentifier.build_cache_key(cands[0].meta_info)
+        cached = identifier._media_ident_cache.get(key)
+        assert cached is not None
+        assert cached.tmdb_id == 288971
+
+    def test_movie_year_mismatch_locally_rejected(self, identifier):
+        """电影年份冲突 → 本地排除，零 API（同名不同年的电影是不同作品）"""
+        cands = [
+            _cand(
+                "Ghostbusters 2016 1080p",
+                _meta(cn="超能敢死队", en="Ghostbusters", year="2016", mtype=MediaType.MOVIE),
+            )
+        ]
+        movie_match = MediaInfo(
+            cn_name="超能敢死队",
+            title="捉鬼敢死队",
+            en_name="Ghostbusters",
+            year="1984",
+            type=MediaType.MOVIE,
+            tmdb_id=123,
+        )
+
+        identifier.identify(cands, match_media=movie_match)
 
         identifier.media.identify_groups.assert_not_called()
         key = BatchIdentifier.build_cache_key(cands[0].meta_info)

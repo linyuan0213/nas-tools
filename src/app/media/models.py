@@ -496,6 +496,12 @@ class MediaInfo(BaseModel):
                 self.en_name = title_val
             elif not StringUtils.is_chinese(en_val) and not StringUtils.is_japanese(en_val):
                 self.en_name = en_val
+            # 兜底：name/original_name 均为中日文时（中文 locale 的 detail 接口），从 translations 提取英文名
+            if not self.en_name:
+                for tr in (info.get("translations") or {}).get("translations") or []:
+                    if tr.get("iso_639_1") == "en" and tr.get("data", {}).get("name"):
+                        self.en_name = tr["data"]["name"].strip()
+                        break
             if self.release_date:
                 self.year = self.release_date[0:4]
             self.category = get_category(rule_map.get("movie"), info)
@@ -522,6 +528,12 @@ class MediaInfo(BaseModel):
                 self.en_name = name_val
             elif not StringUtils.is_chinese(en_val) and not StringUtils.is_japanese(en_val):
                 self.en_name = en_val
+            # 兜底：name/original_name 均为中日文时（中文 locale 的 detail 接口），从 translations 提取英文名
+            if not self.en_name:
+                for tr in (info.get("translations") or {}).get("translations") or []:
+                    if tr.get("iso_639_1") == "en" and tr.get("data", {}).get("name"):
+                        self.en_name = tr["data"]["name"].strip()
+                        break
             if self.release_date:
                 self.year = self.release_date[0:4]
             if self.type == MediaType.MOVIE:
