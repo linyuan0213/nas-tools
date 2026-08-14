@@ -50,7 +50,6 @@ class SearchQueryBuilder:
         search_name_list = []
         if media_info.keyword:
             search_name_list.append(media_info.keyword)
-            return list(filter(None, search_name_list)), 1
 
         # 中文名
         if media_info.cn_name:
@@ -89,7 +88,14 @@ class SearchQueryBuilder:
                 search_name_list.append(media_info.original_title)
             max_workers = len(search_name_list)
 
-        return list(filter(None, search_name_list)), max_workers
+        # 去重（保持顺序；keyword 常与中文名相同）
+        seen = set()
+        deduped = []
+        for n in search_name_list:
+            if n and n not in seen:
+                seen.add(n)
+                deduped.append(n)
+        return deduped, max(1, min(len(deduped), max_workers))
 
 
 class SearchExecutor:
@@ -353,34 +359,31 @@ class Searcher:
         if filters:
             filter_args.update(filters)
 
-        # 1. 构建搜索词
+        # 1. 构建搜索词（含关键词 + 多语言名，build_search_names 内已去重）
         search_name_list, max_workers = SearchQueryBuilder.build_search_names(media_info, self.media)
 
-        if media_info.keyword:
-            media_list = self.search_medias(media_info.keyword, filter_args, media_info, in_from)
-        else:
-            log.info(f"[Searcher]开始搜索 {search_name_list} ...")
-            optimal_workers = min(len(search_name_list), max_workers, 8)
+        log.info(f"[Searcher]开始搜索 {search_name_list} ...")
+        optimal_workers = min(len(search_name_list), max_workers, 8)
 
-            # 2. 并发执行搜索
-            executor = SearchExecutor(max_workers=optimal_workers)
+        # 2. 并发执行搜索
+        executor = SearchExecutor(max_workers=optimal_workers)
 
-            def _update_progress(finish_count, total):
-                if self.progress is None:
-                    return
-                self.progress.update(
-                    ptype=ProgressKey.SubscribeSearch if in_from == SearchType.SUBSCRIBE else ProgressKey.Search,
-                    value=round(100 * (finish_count / total)),
-                )
-
-            media_list = executor.execute(
-                search_func=self.search_medias,
-                search_names=search_name_list,
-                filter_args=filter_args,
-                media_info=media_info,
-                in_from=in_from or SearchType.WEB,
-                progress_updater=_update_progress,
+        def _update_progress(finish_count, total):
+            if self.progress is None:
+                return
+            self.progress.update(
+                ptype=ProgressKey.SubscribeSearch if in_from == SearchType.SUBSCRIBE else ProgressKey.Search,
+                value=round(100 * (finish_count / total)),
             )
+
+        media_list = executor.execute(
+            search_func=self.search_medias,
+            search_names=search_name_list,
+            filter_args=filter_args,
+            media_info=media_info,
+            in_from=in_from or SearchType.WEB,
+            progress_updater=_update_progress,
+        )
 
         # 3. 去重
         media_list = SearchResultDeduplicator.deduplicate(media_list)
