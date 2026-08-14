@@ -1,6 +1,25 @@
 # 版本历史
 
+## v4.6.1 (2026-08-14)
+
+### 特性
+- **Web 消息未读轻量接口**：新增 `GET /api/agent/message/unread`（未读列表 + 未读数单请求），通知栏下拉不再拉全量历史
+- **配置热重载全面覆盖**：保存配置即生效，无需重启——
+  - **Agent RAG / 知识库 / 长程记忆**：embedding / vector_store / rag / memory 配置变更时自动重建（`agent_reload`），废弃原"必须重启才可用"
+  - **Agent LLM Provider**：default_provider / providers 的 api_key / api_url / model 变更热刷新
+  - **定时任务**：`pt.ptrefresh_date_cron`、`subscribe.queue_interval`、`media.mediasync_interval` / `sync_transfer_interval`、agent 记忆 ttl 等变更时自动重注册默认定时任务
+  - **媒体服务器类型切换**：emby ↔ jellyfin 切换无需重启（连接参数本就懒读生效）
+  - ConfigReloader 支持快照对比（仅实际变更才重建）+ 失败隔离（单步骤失败不影响其他）
+
+### 修复
+- **ConfigReloader**：修复重建步骤返回 `None` 时覆盖上下文字段的 bug（媒体服务器被置空导致定时任务重注册级联失败），仅非 None 时赋值
+- **搜索季解析**：支持英文季/集格式（`S02` / `S2` / `Season 2` / `S02E06` / `E06`），修复搜索只返回 S01 的问题（此前仅识别中文"第X季"）
+
+### 其他
+- 知识库自动更新 handler 改为可重入注册（配置热重载重复调用不会重复订阅事件）
+
 ## v4.6.0 (2026-08-13)
+
 
 ### 特性
 - **AI 助手（消息中心）**：基于 pydantic-ai 重构 Agent 引擎——多步工具循环、推理内容实时 SSE 推送、工具调用事件流式下发（同名工具多次调用时步骤正确配对）、思考过程面板支持
