@@ -73,6 +73,8 @@ class BuiltinIndexer(_IIndexClient):
         self._site_engine = site_engine
         self._site_config_repo = site_config_repo or IndexerSiteConfigRepositoryAdapter()
         self._idx_config_repo = idx_config_repo or IndexerConfigRepositoryAdapter()
+        # 站点级失败原因透传（list() 等不经 search() 的路径也会在 __search_via_engine 读取）
+        self.last_error: str = ""
 
     @classmethod
     def match(cls, ctype):
