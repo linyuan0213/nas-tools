@@ -328,9 +328,30 @@ class SiteService:
             existing = self._site_entity_repo.get_by_id(int(tid))
             if not existing:
                 return SiteUpdateResultDTO(code=400, msg="站点不存在")
+            # 部分更新：请求显式携带的字段用新值，未携带的保留存量（修复"维护编辑只发部分
+            # 字段时 cookie/headers/api_key/bearer_token 被覆盖成 NULL 导致配置丢失"）
+            explicit_fields: set[str] = set()
+            for data_key, attr in (
+                ("site_name", "name"),
+                ("site_pri", "pri"),
+                ("site_rssurl", "rss_url"),
+                ("site_signurl", "sign_url"),
+                ("site_cookie", "cookie"),
+                ("site_api_key", "api_key"),
+                ("site_bearer_token", "bearer_token"),
+                ("site_headers", "headers"),
+                ("site_note", "note"),
+            ):
+                if data.get(data_key) is not None:
+                    explicit_fields.add(attr)
+            if data.get("site_include") is not None or any(
+                v is not None for v in (rss_enable, brush_enable, statistic_enable)
+            ):
+                explicit_fields.add("rss_uses")
+            entity = self._merge_partial_update(existing, entity, explicit_fields)
             try:
                 self._site_entity_repo.update(entity)
-                if name != existing.name and existing.name:
+                if name and name != existing.name and existing.name:
                     self._site_user_info.update_site_name(name, existing.name)
                 self._sites.refresh()
                 return SiteUpdateResultDTO(code=0)
@@ -347,6 +368,29 @@ class SiteService:
             except Exception as e:
                 log.error(f"[SiteService]新增站点失败: {e}")
                 return SiteUpdateResultDTO(code=500, msg=str(e))
+
+    @staticmethod
+    def _merge_partial_update(existing, entity: SiteEntity, explicit_fields: set[str]) -> SiteEntity:
+        """部分更新合并：显式携带的字段用实体新值，其余保留存量.
+
+        修复：站点维护页只编辑部分字段时，未发送的 cookie/headers/api_key/
+        bearer_token/rssurl/signurl/name 等不能被覆盖为空。
+        """
+        attrs = {
+            "name",
+            "pri",
+            "rss_url",
+            "sign_url",
+            "cookie",
+            "api_key",
+            "bearer_token",
+            "headers",
+            "note",
+            "rss_uses",
+        }
+        for attr in attrs - explicit_fields:
+            setattr(entity, attr, getattr(existing, attr, None))
+        return entity
 
     def update_site_cookie_ua(self, siteid: int | str, cookie: str, ua: str) -> None:
         self._site_entity_repo.update_cookie_ua(int(siteid), cookie, ua)

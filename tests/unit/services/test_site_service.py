@@ -161,6 +161,32 @@ class TestSiteServiceUpdate:
         assert "S" in updated.rss_uses
         assert "T" in updated.rss_uses
 
+    def test_update_site_partial_edit_preserves_credentials(self, site_service):
+        """部分编辑（只发开关/note，不带 cookie/headers）不得清空存量认证（站点维护修复）"""
+        existing = MagicMock(name="OldSite", rss_uses="ST")
+        existing.cookie = "c=existing"
+        existing.headers = '{"ua": "old"}'
+        existing.api_key = "old_key"
+        existing.bearer_token = "old_token"
+        site_service._site_entity_repo.get_by_id.return_value = existing
+        site_service.update_site(
+            {
+                "site_id": "1",
+                "site_name": "Test",
+                "site_note": '{"message": true}',
+                "rss_enable": True,
+            }
+        )
+        updated = site_service._site_entity_repo.update.call_args[0][0]
+        # 未携带的认证字段保留存量
+        assert updated.cookie == "c=existing"
+        assert updated.headers == '{"ua": "old"}'
+        assert updated.api_key == "old_key"
+        assert updated.bearer_token == "old_token"
+        # 显式提供的 note 生效；rss_uses 保留存量（开关加 D 需 rssurl，未携带则不添加）
+        assert updated.note == {"message": True}
+        assert updated.rss_uses == "ST"
+
     def test_update_site_normalizes_note_switches_to_boolean(self, site_service):
         site_service._site_entity_repo.get_by_id.return_value = MagicMock(name="OldSite")
         site_service.update_site(
