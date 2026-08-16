@@ -627,9 +627,13 @@ class SubscribeRepository(BaseRepository):
         if not lack_episodes:
             lack = 0
             episodes: list[str] = []
+            new_current_ep: int | None = None
         else:
             lack = len(lack_episodes)
             episodes = [str(epi) for epi in lack_episodes]
+            # current_ep 语义 = 首个待下载集 → 缺失集最小值（转移/刷新后同步推进）
+            nums = [int(e) for e in lack_episodes if str(e).isdigit()]
+            new_current_ep = min(nums) if nums else None
         with self.session() as db:
             if rssid:
                 # 内联 update_rss_tv_episodes，确保与 LACK 更新在同一事务
@@ -642,11 +646,17 @@ class SubscribeRepository(BaseRepository):
                     )
                 else:
                     db.add(SubscribeTvEpisodes(RSSID=rssid, EPISODES=",".join(episodes)))
-                db.query(SubscribeTvs).filter(int(rssid) == SubscribeTvs.ID).update({"LACK": lack})
+                update_fields: dict = {"LACK": lack}
+                if new_current_ep is not None:
+                    update_fields["CURRENT_EP"] = new_current_ep
+                db.query(SubscribeTvs).filter(int(rssid) == SubscribeTvs.ID).update(update_fields)
             else:
+                update_fields = {"LACK": lack}
+                if new_current_ep is not None:
+                    update_fields["CURRENT_EP"] = new_current_ep
                 db.query(SubscribeTvs).filter(
                     title == SubscribeTvs.NAME, str(year) == SubscribeTvs.YEAR, season == SubscribeTvs.SEASON
-                ).update({"LACK": lack})
+                ).update(update_fields)
 
     def update_rss_tv_total(self, rssid: int, total_ep: int, lack_episodes: list | None = None) -> None:
         """更新电视剧总集数（TMDB 集数增加时同步），同时可选更新缺失集"""

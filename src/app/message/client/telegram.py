@@ -1,4 +1,5 @@
 import contextlib
+import html
 import time
 from threading import Lock
 from urllib.parse import urlencode
@@ -156,7 +157,14 @@ class Telegram(_IMessageClient):
             return False, "参数未配置"
         if not title and not text:
             return False, "标题和内容不能同时为空"
-        caption = f"*{title}*\n{text}" if title and text else title or text
+        # 用 HTML parse_mode 而非 Markdown：内容可能含文件名/番号中的 `_ [ ] ( ) ~ #` 等
+        # 未转义字符，Markdown 模式会触发 Telegram 400 "can't parse entities"
+        caption_parts = []
+        if title:
+            caption_parts.append(f"<b>{html.escape(title)}</b>")
+        if text:
+            caption_parts.append(html.escape(text))
+        caption = "\n".join(caption_parts)
         if not caption:
             return False, "消息内容为空"
         proxies = self._get_proxies()
@@ -180,13 +188,13 @@ class Telegram(_IMessageClient):
                     url = f"https://api.telegram.org/bot{self.token}/sendPhoto"
                     res = req.post(
                         url,
-                        data={"chat_id": chat_id, "photo": image, "caption": caption, "parse_mode": "Markdown"},
+                        data={"chat_id": chat_id, "photo": image, "caption": caption, "parse_mode": "HTML"},
                     )
                 else:
                     url = f"https://api.telegram.org/bot{self.token}/sendMessage"
                     res = req.post(
                         url,
-                        data={"chat_id": chat_id, "text": caption, "parse_mode": "Markdown"},
+                        data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"},
                     )
                 ok, msg = self._parse_response(res)
                 if not ok:

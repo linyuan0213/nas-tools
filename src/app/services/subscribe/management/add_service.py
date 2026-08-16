@@ -178,16 +178,19 @@ class SubscribeAddService:
                     total = total_ep
                 else:
                     total = media_info.total_episodes
-                # 重订阅续订：未显式指定开始集数时，从转移记录/下载历史推导断点，
-                # 避免重新订阅从头开始重复下载已下载的剧集
+                # 重订阅续订：始终从转移记录/下载历史推导断点（历史推导只向前，不倒退），
+                # 避免重新订阅从头重复下载已下载剧集，或前端传入旧 current_ep 导致进度卡住。
                 # current_ep 语义 = 首个待下载集（与 RSS 兜底 range(current_ep, total+1) 一致）；
                 # 已获得连续 N 集 → 首个待下载 = N+1。转移记录集数最可靠，二者取较大值。
-                if current_ep is None and media_info.tmdb_id:
+                if media_info.tmdb_id:
                     continue_ep = 0
+                    # start = 订阅起点（首个待下载集）：中途订阅从第 N 集开始跟踪时，
+                    # 历史只有 N 之后的集，须从 N 数起而非从第 1 集（否则误判为 0）
+                    sub_start = int(current_ep) if current_ep and str(current_ep).isdigit() else 1
                     if self._transfer_history_manager:
                         try:
                             continue_ep = self._transfer_history_manager.get_contiguous_transferred_episode_by_tmdb(
-                                media_info.tmdb_id, int(season or 1)
+                                media_info.tmdb_id, int(season or 1), start=sub_start
                             )
                         except Exception as e:  # noqa: BLE001
                             log.debug(f"[SubscribeAdd] 查询转移历史失败: {e}")
@@ -196,13 +199,15 @@ class SubscribeAddService:
                             continue_ep = max(
                                 continue_ep,
                                 self._download_repo.get_contiguous_completed_episode_by_tmdb(
-                                    media_info.tmdb_id, int(season or 1)
+                                    media_info.tmdb_id, int(season or 1), start=sub_start
                                 ),
                             )
                         except Exception as e:  # noqa: BLE001
                             log.debug(f"[SubscribeAdd] 查询下载历史失败: {e}")
                     if continue_ep > 0:
-                        current_ep = continue_ep + 1
+                        # 历史推导只向前：取 历史推导点 与 已传入/显式 current_ep 的较大者，
+                        # 避免前端回传旧进度把已转移的集误标回缺失
+                        current_ep = max(current_ep or 0, continue_ep + 1)
                         log.info(
                             f"[SubscribeAdd]{media_info.get_title_string()} S{season} "
                             f"历史记录已有 {continue_ep} 集，从第 {current_ep} 集开始续订"

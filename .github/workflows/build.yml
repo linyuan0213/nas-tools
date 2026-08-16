@@ -93,13 +93,15 @@ jobs:
         env:
           NOTES: ${{ steps.extract.outputs.notes }}
         run: |
-          printf '%s\n' "$NOTES" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' > notes.txt
+          printf '%s\n' "$NOTES" > notes_raw.txt
+          # changelog 是 GitHub markdown，Telegram HTML 不解析 markdown；
+          # 转成 Telegram 兼容 HTML（**x**→<b>x</b>、- →•、[t](u)→<a>），
+          # 避免 <pre> 内显示 **加粗** 等原始符号
+          python3 scripts/release_notify.py < notes_raw.txt > notes.txt
           {
             echo '<b>Nexus Media ${{ steps.extract.outputs.tag }} 已发布</b>'
             echo ''
-            echo '<pre>'
             cat notes.txt
-            echo '</pre>'
             echo ''
             echo '📦 Docker: <code>docker pull linyuan0213/nexus-media:${{ steps.extract.outputs.version }}</code>'
             echo '🔗 <a href="https://github.com/${{ github.repository }}/releases/tag/${{ steps.extract.outputs.tag }}">查看 Release</a>'

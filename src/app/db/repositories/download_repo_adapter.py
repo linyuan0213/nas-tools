@@ -29,9 +29,9 @@ class DownloadHistoryRepositoryAdapter(IDownloadHistoryRepository):
     def is_completed_by_tmdb(self, tmdb_id: str, season_episode: str) -> bool:
         return self._repo.is_completed_download_history_by_tmdb(int(tmdb_id), season_episode)
 
-    def get_contiguous_completed_episode_by_tmdb(self, tmdb_id, season: int | None) -> int:
-        """查询某季已完成下载的连续集数（重订阅续订用，季包保守记 1）."""
-        return self._repo.get_contiguous_completed_episode_by_tmdb(int(tmdb_id), season)
+    def get_contiguous_completed_episode_by_tmdb(self, tmdb_id, season: int | None, start: int = 1) -> int:
+        """查询某季已完成下载的连续集数（重订阅续订用，季包保守记 start）."""
+        return self._repo.get_contiguous_completed_episode_by_tmdb(int(tmdb_id), season, start=start)
 
     def insert(self, media_info, downloader: str, download_id: str, save_dir: str) -> None:
         self._repo.insert_download_history(media_info, downloader, download_id, save_dir)

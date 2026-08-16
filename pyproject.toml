@@ -91,7 +91,7 @@ docs = [
 package = false
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 [tool.pyright]
 # 项目以源码运行（run.py 注入 src），pyright 需显式解析 src 布局
 include = ["src", "tests"]

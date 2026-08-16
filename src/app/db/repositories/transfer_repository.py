@@ -199,9 +199,9 @@ class TransferRepository(BaseRepository):
                 )
             return None
 
-    def get_contiguous_transferred_episode_by_tmdb(self, tmdbid: int | None, season: int | None) -> int:
+    def get_contiguous_transferred_episode_by_tmdb(self, tmdbid: int | None, season: int | None, start: int = 1) -> int:
         """
-        查询某剧集某季已成功转移的「从第 1 集起连续」的集数（重订阅续订用）。
+        查询某剧集某季已成功转移的「从订阅起点 start 起连续」的最大集号（重订阅续订用）。
 
         转移记录中的集数信息比下载记录可靠（下载记录 SE 可能为空）。
         解析逻辑见 episode_progress.contiguous_episodes。
@@ -210,7 +210,7 @@ class TransferRepository(BaseRepository):
             return 0
         with self.session() as db:
             rows = db.query(TRANSFERHISTORY.SEASON_EPISODE).filter(int(tmdbid) == TRANSFERHISTORY.TMDBID).all()
-        return contiguous_episodes((se for (se,) in rows), int(season or 1))
+        return contiguous_episodes((se for (se,) in rows), int(season or 1), start=int(start or 1))
 
     def delete_transfer_history_by_source(self, source_path: str, source_filename: str) -> None:
         with self.session() as db:

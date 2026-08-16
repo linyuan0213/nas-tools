@@ -70,9 +70,11 @@ class DownloadRepository(BaseRepository):
                 query = query.filter(season_episode == DOWNLOADHISTORY.SE)
             return query.first() is not None
 
-    def get_contiguous_completed_episode_by_tmdb(self, tmdb_id: int | str | None, season: int | None) -> int:
+    def get_contiguous_completed_episode_by_tmdb(
+        self, tmdb_id: int | str | None, season: int | None, start: int = 1
+    ) -> int:
         """
-        查询某剧集某季已完成的下载历史中「从第 1 集起连续」的集数（重订阅续订用）。
+        查询某剧集某季已完成的下载历史中「从订阅起点 start 起连续」的最大集号（重订阅续订用）。
         解析逻辑见 episode_progress.contiguous_episodes。
         """
         if not tmdb_id:
@@ -87,7 +89,7 @@ class DownloadRepository(BaseRepository):
                 )
                 .all()
             )
-        return contiguous_episodes((se for (se,) in rows), int(season or 1))
+        return contiguous_episodes((se for (se,) in rows), int(season or 1), start=int(start or 1))
 
     def delete_download_history_by_tmdb(self, tmdb_id: int | str | None, season_prefix: str | None = None) -> int:
         """

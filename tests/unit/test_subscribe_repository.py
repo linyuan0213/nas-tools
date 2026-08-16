@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+from app.db.models.subscribe import SubscribeTvs
 from app.db.repositories.subscribe_repository import SubscribeRepository
 
 
@@ -69,3 +70,66 @@ class TestSubscribeRepositoryUpdateDefaults:
         assert "TOTAL" not in update_fields
         assert "LACK" not in update_fields
         assert update_fields["NAME"] == "Test"
+
+
+class TestUpdateRssTvLackAdvancesCurrentEp:
+    """update_rss_tv_lack 同步推进 current_ep（首个待下载 = 缺失集最小值）"""
+
+    def _setup_repo(self):
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.db.models.base import Base
+        from app.db.models.subscribe import SubscribeTvs
+        from app.db.session import SessionManager
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(engine)
+        mgr = SessionManager()
+        mgr._engine = engine
+        mgr._factory = sessionmaker(bind=engine, expire_on_commit=False)
+        SubscribeRepository._session_manager = mgr
+        with mgr.session_scope() as db:
+            db.add(
+                SubscribeTvs(
+                    NAME="测试剧",
+                    YEAR="2023",
+                    SEASON="S01",
+                    TMDBID="223564",
+                    TOTAL_EP=48,
+                    CURRENT_EP=26,
+                    TOTAL=48,
+                    LACK=23,
+                    STATE="R",
+                )
+            )
+        return mgr
+
+    def test_advances_to_first_missing(self):
+        mgr = self._setup_repo()
+        repo = SubscribeRepository()
+        repo.update_rss_tv_lack(title=None, year=None, season=None, rssid=1, lack_episodes=[31, 32, 33])
+        with mgr.session_scope() as db:
+            row = db.query(SubscribeTvs).filter(SubscribeTvs.ID == 1).first()
+            assert row.LACK == 3
+            assert row.CURRENT_EP == 31  # 首个待下载集推进
+
+    def test_advances_as_episodes_transfer(self):
+        """转移 26-30 后缺失集变为 31.. → current_ep 从 26 推进到 31"""
+        mgr = self._setup_repo()
+        repo = SubscribeRepository()
+        # 模拟转移完成：缺失集从 [26..48] 减去已转移 26-30 → [31..48]
+        repo.update_rss_tv_lack(title=None, year=None, season=None, rssid=1, lack_episodes=list(range(31, 49)))
+        with mgr.session_scope() as db:
+            row = db.query(SubscribeTvs).filter(SubscribeTvs.ID == 1).first()
+            assert row.LACK == 18
+            assert row.CURRENT_EP == 31
+
+    def test_empty_missing_keeps_current_ep(self):
+        mgr = self._setup_repo()
+        repo = SubscribeRepository()
+        repo.update_rss_tv_lack(title=None, year=None, season=None, rssid=1, lack_episodes=[])
+        with mgr.session_scope() as db:
+            row = db.query(SubscribeTvs).filter(SubscribeTvs.ID == 1).first()
+            assert row.LACK == 0
+            assert row.CURRENT_EP == 26  # 无缺失集时不改 current_ep（完成态由 STATE 表达）

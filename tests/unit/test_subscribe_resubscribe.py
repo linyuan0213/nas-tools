@@ -169,3 +169,90 @@ def test_combine_takes_max_of_both():
     download_ep = DownloadRepository().get_contiguous_completed_episode_by_tmdb(80748, 8)
     assert download_ep == 5
     assert max(transfer_ep, download_ep) == 5
+
+
+class TestMidSeasonResubscribe:
+    """中途订阅：从第 26 集开始跟踪，历史只有 E26-E30 → 应从 26 数起推导到 30"""
+
+    def _setup(self):
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.db.models.base import Base
+        from app.db.models.transfer import TRANSFERHISTORY
+        from app.db.session import SessionManager
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(engine)
+        mgr = SessionManager()
+        mgr._engine = engine
+        mgr._factory = sessionmaker(bind=engine, expire_on_commit=False)
+        TransferRepository._session_manager = mgr
+        with mgr.session_scope() as db:
+            for n in range(26, 31):
+                db.add(
+                    TRANSFERHISTORY(
+                        TMDBID=223564,
+                        SEASON_EPISODE=f"S01 E{n}",
+                        TITLE=f"ep{n}",
+                        SOURCE_FILENAME=f"f{n}",
+                        MODE="link",
+                        TYPE="anime",
+                        CATEGORY="动漫",
+                        YEAR="2026",
+                        SOURCE="manual",
+                        SOURCE_PATH="/src",
+                        DEST="/dest",
+                        DEST_PATH="/dest",
+                        DEST_FILENAME=f"f{n}.mkv",
+                        DATE="2026-01-01",
+                    )
+                )
+        return mgr
+
+    def test_mid_season_start_26_derives_30(self):
+        """历史 E26-E30，订阅起点 26 → 推导连续到 30（而非 0）"""
+        self._setup()
+        repo = TransferRepository()
+        # 旧行为（start=1）：E1 不存在 → 0
+        assert repo.get_contiguous_transferred_episode_by_tmdb(223564, 1, start=1) == 0
+        # 新行为（start=26）：E26-E30 连续到 30
+        assert repo.get_contiguous_transferred_episode_by_tmdb(223564, 1, start=26) == 30
+
+    def test_mid_season_gap_stops_conservative(self):
+        """中途订阅但中间缺集：E26-E28 和 E30（E29 缺）→ 保守停 28"""
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.db.models.base import Base
+        from app.db.models.transfer import TRANSFERHISTORY
+        from app.db.session import SessionManager
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(engine)
+        mgr = SessionManager()
+        mgr._engine = engine
+        mgr._factory = sessionmaker(bind=engine, expire_on_commit=False)
+        TransferRepository._session_manager = mgr
+        with mgr.session_scope() as db:
+            for n in (26, 27, 28, 30):
+                db.add(
+                    TRANSFERHISTORY(
+                        TMDBID=223564,
+                        SEASON_EPISODE=f"S01 E{n}",
+                        TITLE=f"ep{n}",
+                        SOURCE_FILENAME=f"f{n}",
+                        MODE="link",
+                        TYPE="anime",
+                        CATEGORY="动漫",
+                        YEAR="2026",
+                        SOURCE="manual",
+                        SOURCE_PATH="/src",
+                        DEST="/dest",
+                        DEST_PATH="/dest",
+                        DEST_FILENAME=f"f{n}.mkv",
+                        DATE="2026-01-01",
+                    )
+                )
+        repo = TransferRepository()
+        assert repo.get_contiguous_transferred_episode_by_tmdb(223564, 1, start=26) == 28
