@@ -50,3 +50,19 @@ class TestMarkdownToTelegramHtml:
         assert "• <b>订阅进度</b>：重订阅从订阅起点推导断点" in out
         assert "<code>current_ep</code>" in out
         assert '<a href="https://github.com/linyuan0213/nexus-media/releases">Release</a>' in out
+
+    def test_nested_backtick_and_pre_literal(self):
+        """嵌套反引号（`` `代码` ``）与 <pre> 字面量：不错位、不产生裸 HTML 标签（修复 Telegram pre 未闭合 400）"""
+        changelog = "- **发布通知**：不再在 `<pre>` 内显示原始符号，代码 `` `current_ep` `` 等宽"
+        out = markdown_to_telegram_html(changelog)
+        # <pre> 字面量被转义，不产生裸 <pre> 标签
+        assert "<pre>" not in out
+        assert "&lt;pre&gt;" in out
+        # 嵌套反引号不产生错位 <code>
+        assert "`<code>" not in out
+
+    def test_stray_angle_bracket_escaped(self):
+        """残留的孤立 <（非合法标签）被转义，防止未闭合标签触发 Telegram 400"""
+        out = markdown_to_telegram_html("**A** 文本<残留 和 >符号")
+        assert "<b>A</b>" in out
+        assert "&lt;残留" in out
