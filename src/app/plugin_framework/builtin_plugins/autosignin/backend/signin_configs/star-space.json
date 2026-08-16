@@ -1,0 +1,10 @@
+{
+  "site_id": "star-space",
+  "type": "http",
+  "method": "get",
+  "path": "p_index/index.php",
+  "auth": "cookie_raw",
+  "success_markers": ["退出", "魔力值", "上传量", "做种", "今日"],
+  "already_markers": ["已签到", "今日已签到", "今日已签"],
+  "success_absent_markers": ["请登录", "您还未登录", "login.php", "用户名或密码"]
+}
