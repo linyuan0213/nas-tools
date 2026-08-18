@@ -1,5 +1,14 @@
 # 版本历史
 
+## v4.8.0 (2026-08-18)
+
+### 特性
+- **Agent 推理强度与思考模式**：全局配置 `agent.reasoning_effort`（low/high/max，默认 high）与 `agent.disable_thinking`，统一作用于对话、媒体识别、意图解析、记忆抽取等所有 LLM 调用；聊天按次覆盖（推理强度下拉 + 深度思考开关），OpenAI 兼容/Ollama/Gemini 均映射原生推理参数，模型不支持时自动剥离降级
+- **前端 CI 提速**：去掉 windows 矩阵、pnpm 缓存改为 PR 也写入
+
+### 修复
+- **4.7.0 启动失败**：浏览器指纹路由 `request: Request | None` 参数使 FastAPI 构建路由时报 `Invalid args for response field`，应用无法启动（现改为必选 `Request`）
+
 ## v4.7.0 (2026-08-18)
 
 ### 特性
