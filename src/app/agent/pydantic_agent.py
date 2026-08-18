@@ -19,9 +19,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, TypeAdapter, create_model
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
+    ModelMessage,
     ModelRequest,
     ModelResponse,
     RetryPromptPart,
@@ -45,6 +46,8 @@ from app.utils.json_utils import JsonUtils
 
 _CONFIRM_MARKER = "__need_confirm__"
 _CHECKPOINT_MAX = 4000  # checkpoint 消息历史长度上限
+# checkpoint JSON → pydantic-ai 消息重建（带 kind 判别）
+_CHECKPOINT_TA = TypeAdapter(list[ModelMessage])
 
 
 def _part_content(content: Any) -> str:
@@ -376,7 +379,15 @@ class PydanticChatAgent:
 
         try:
             agent = self._build_agent(session_id, user_id, user_permissions, on_token=on_token)
-            result = asyncio.run(agent.run(question, instructions=instructions or None))
+            # 恢复会话历史：多轮对话上下文（checkpoint 持久化的 pydantic-ai 消息）
+            message_history = self._load_checkpoint(session_id, user_id)
+            result = asyncio.run(
+                agent.run(
+                    question,
+                    instructions=instructions or None,
+                    message_history=message_history or None,
+                )
+            )
         except Exception as e:
             log.error(f"[PydanticAgent]运行出错: {e}")
             return f"请求出错: {e}"
@@ -458,6 +469,29 @@ class PydanticChatAgent:
             self._pending_extractions.discard(user_id)
 
     # ------------------------------------------------------------------ checkpoint
+
+    def _load_checkpoint(self, session_id: str, user_id: str) -> list[ModelMessage]:
+        """加载会话历史（checkpoint 持久化的 pydantic-ai 消息），恢复多轮对话上下文.
+
+        修复：agent.run 之前不加载历史导致每次都是全新会话，"可以/继续"等指代上文的话无法理解。
+        """
+        try:
+            cp_dir = Path(settings.data_path) / "agent_checkpoints"
+            safe_user = re.sub(r"[^\w.:-]", "_", user_id or session_id or "anon")
+            safe_session = re.sub(r"[^\w.:-]", "_", session_id or "default")
+            path = cp_dir / f"{safe_user}_{safe_session}.json"
+            if not path.exists():
+                return []
+            data = JsonUtils.loads(path.read_text(encoding="utf-8"))
+            messages = data.get("messages") or []
+            if not messages:
+                return []
+            restored = _CHECKPOINT_TA.validate_python(messages)
+            log.info(f"[PydanticAgent]恢复会话上下文 {len(restored)} 条消息")
+            return restored
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[PydanticAgent]checkpoint 加载失败（忽略，按新会话处理）: {e}")
+            return []
 
     def _checkpoint(self, session_id: str, user_id: str, messages: list) -> None:
         """持久化 pydantic-ai 消息历史（会话恢复/断点续跑的输入快照）"""

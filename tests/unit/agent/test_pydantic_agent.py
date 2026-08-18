@@ -122,7 +122,7 @@ class _FakeRepo:
 
 class TestPydanticChatAgent:
     @pytest.fixture(autouse=True)
-    def _agent_provider(self, monkeypatch):
+    def _agent_provider(self, monkeypatch, tmp_path):
         """确保 get_provider() 返回可用 provider——不依赖本地 data/config.yaml 的 agent 配置（CI 全新检出无该文件）"""
         monkeypatch.setattr(
             "app.agent.config._agent_cfg",
@@ -132,6 +132,10 @@ class TestPydanticChatAgent:
                 "providers": {"test": {"api_url": "http://localhost:1", "model": "test-model"}},
             },
         )
+        # 隔离 checkpoint 目录，避免读到真实 data 目录残留历史
+        from app.agent import pydantic_agent as pa
+
+        monkeypatch.setattr(pa.settings, "nexus_media_data", str(tmp_path / "data"))
 
     def test_multi_step_tool_loop(self, tmp_path):
         svc = _FakeSvc()
@@ -175,3 +179,51 @@ class TestPydanticChatAgent:
         agent.chat_with_tools("帮我搜一下 流浪地球", session_id="s2", user_id="u2")
         assert any(r["role"] == "user" for r in repo.rows)
         assert any(r["role"] == "assistant" for r in repo.rows)
+
+    def test_context_restored_across_turns(self, tmp_path, monkeypatch):
+        """多轮上下文：第二轮对话必须把第一轮的 user/assistant 消息恢复给模型"""
+        svc = _FakeSvc()
+        executor = _FakeExecutor()
+        repo = _FakeRepo()
+        store = ConversationStore(
+            repo=cast(AgentConversationRepository, repo),
+            summarizer=_FakeSummarizer(),
+            max_tokens=4000,
+            keep_recent=10,
+            cache=_DictCache(),
+        )
+        agent = PydanticChatAgent(svc=svc, tool_executor=executor, memory=store)
+
+        captured: list = []
+        original = svc.chat_tool_calls
+
+        def _spy(messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None):
+            captured.append([dict(m) for m in messages])
+            return original(messages, tools, system_prompt, temperature, on_token, on_reasoning)
+
+        monkeypatch.setattr(svc, "chat_tool_calls", _spy)
+
+        agent.chat_with_tools("帮我搜一下 流浪地球", session_id="s3", user_id="u3")
+        agent.chat_with_tools("可以", session_id="s3", user_id="u3")
+
+        # 第二轮输入应包含第一轮的 user 问题与 assistant 回答（即"联系到上文"）
+        assert captured, "模型应收到调用"
+        second_turn = captured[-1]
+        roles = [m.get("role") for m in second_turn]
+        assert "user" in roles and "assistant" in roles
+        assert any("流浪地球" in m.get("content", "") for m in second_turn if m.get("role") == "user")
+
+    def test_checkpoint_roundtrip_rebuilds_messages(self, tmp_path, monkeypatch):
+        """checkpoint 写入后可重建 pydantic-ai 消息（TypeAdapter 判别重建）"""
+        agent = PydanticChatAgent(svc=_FakeSvc(), tool_executor=_FakeExecutor())
+        from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+
+        history = [
+            ModelRequest(parts=[UserPromptPart(content="上一轮问题")]),
+            ModelResponse(parts=[TextPart(content="上一轮回答")]),
+        ]
+        agent._checkpoint("s4", "u4", history)
+        restored = agent._load_checkpoint("s4", "u4")
+        assert len(restored) == 2
+        assert isinstance(restored[0], ModelRequest)
+        assert isinstance(restored[1], ModelResponse)
