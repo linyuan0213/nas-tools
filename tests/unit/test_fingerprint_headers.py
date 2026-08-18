@@ -2,7 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from app.services.browser_fingerprint_service import apply_fingerprint_to_site_configs
+from app.services.browser_fingerprint_service import (
+    apply_fingerprint_to_site_configs,
+    is_mobile_fingerprint,
+    sync_fingerprint_to_chrome,
+)
 from app.utils.fingerprint_headers import fingerprint_to_browser_headers, merge_fingerprint_headers
 from app.utils.json_utils import JsonUtils
 
@@ -218,3 +222,117 @@ class TestApplyFingerprintToSiteConfigs:
         assert site.note["headers"]["Cookie"] == "a=1"
         assert "User-Agent" not in site.note["headers"]
         assert site.note["ua"] == _FP["ua"]
+
+
+class TestMobileFingerprintGuard:
+    """移动端提交保护：不覆盖已有桌面端指纹"""
+
+    _DESKTOP_FP = {
+        "ua": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        ),
+        "platform": "Win32",
+        "touch_points": 0,
+    }
+    _MOBILE_FP = {
+        "ua": (
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+        ),
+        "platform": "Linux armv8l",
+        "touch_points": 5,
+    }
+
+    def test_is_mobile_fingerprint(self):
+        assert not is_mobile_fingerprint(self._DESKTOP_FP)
+        assert is_mobile_fingerprint(self._MOBILE_FP)
+
+    def test_mobile_does_not_overwrite_desktop_fp(self):
+        """移动端 + 已存在桌面指纹：不设置默认画像、不应用站点配置"""
+        site = MagicMock()
+        site.name = "Rousi"
+        site.note = {"ua": self._DESKTOP_FP["ua"]}
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["Rousi"]
+
+        with (
+            patch("app.services.browser_fingerprint_service.get_chrome_server_url", return_value="http://chrome:9222"),
+            patch("app.services.browser_fingerprint_service.httpx2.post") as post,
+            patch("app.services.browser_fingerprint_service._set_default_fp_profile_id") as set_default,
+            patch("app.services.browser_fingerprint_service.apply_fingerprint_to_site_configs") as apply_fp,
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
+            patch(
+                "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
+                return_value=indexer_repo,
+            ),
+        ):
+            result = sync_fingerprint_to_chrome(1, self._MOBILE_FP)
+
+        assert result.profile_id == "user_1_mobile"
+        assert result.site_skipped is True
+        assert result.site_skip_reason
+        post.assert_called_once()
+        payload = post.call_args.kwargs["json"]
+        assert payload["profile_id"] == "user_1_mobile"
+        set_default.assert_not_called()
+        apply_fp.assert_not_called()
+
+    def test_desktop_applies_normally(self):
+        """桌面端提交正常设置默认画像并应用站点配置"""
+        site = MagicMock()
+        site.name = "Rousi"
+        site.note = {"ua": self._DESKTOP_FP["ua"]}
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["Rousi"]
+
+        with (
+            patch("app.services.browser_fingerprint_service.get_chrome_server_url", return_value="http://chrome:9222"),
+            patch("app.services.browser_fingerprint_service.httpx2.post") as post,
+            patch("app.services.browser_fingerprint_service._set_default_fp_profile_id") as set_default,
+            patch("app.services.browser_fingerprint_service.apply_fingerprint_to_site_configs") as apply_fp,
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
+            patch(
+                "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
+                return_value=indexer_repo,
+            ),
+        ):
+            result = sync_fingerprint_to_chrome(1, self._DESKTOP_FP)
+
+        assert result.profile_id == "user_1"
+        assert result.site_skipped is False
+        payload = post.call_args.kwargs["json"]
+        assert payload["profile_id"] == "user_1"
+        set_default.assert_called_once_with("user_1")
+        apply_fp.assert_called_once()
+
+    def test_mobile_first_setup_applies(self):
+        """无桌面指纹时移动端首次设置可应用（站点配置为空 UA）"""
+        site = MagicMock()
+        site.name = "Rousi"
+        site.note = {}
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["Rousi"]
+
+        with (
+            patch("app.services.browser_fingerprint_service.get_chrome_server_url", return_value="http://chrome:9222"),
+            patch("app.services.browser_fingerprint_service.httpx2.post"),
+            patch("app.services.browser_fingerprint_service._set_default_fp_profile_id"),
+            patch("app.services.browser_fingerprint_service.apply_fingerprint_to_site_configs") as apply_fp,
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
+            patch(
+                "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
+                return_value=indexer_repo,
+            ),
+        ):
+            result = sync_fingerprint_to_chrome(1, self._MOBILE_FP)
+
+        assert result.profile_id == "user_1"
+        assert result.site_skipped is False
+        apply_fp.assert_called_once()

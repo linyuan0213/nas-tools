@@ -28,10 +28,13 @@ async def submit_fingerprint(
     - 将指纹 UA / 浏览器请求头更新到已启用站点配置（区分 API / HTML）；
     - 刷新站点缓存使新 UA / 请求头立即生效。
 
+    移动端保护：站点已由桌面端指纹设置时，移动端提交仅同步独立画像
+    （site_skipped=true），不覆盖站点 UA/请求头，避免 PC/移动指纹交替触发风控。
+
     返回 fp_profile_id，后续会话携带该 ID 即呈现与用户真实浏览器一致的指纹。
     """
-    profile_id = sync_fingerprint_to_chrome(user.user_id, fingerprint)
-    if not profile_id:
+    result = sync_fingerprint_to_chrome(user.user_id, fingerprint)
+    if not result.profile_id:
         return CommonResponse(
             code=ErrorCode.OPERATION_FAILED,
             message="指纹同步失败（nexus-chrome 不可达或未配置）",
@@ -45,4 +48,8 @@ async def submit_fingerprint(
             site_cache.refresh()
         except Exception:  # noqa: BLE001
             log.debug("[Fingerprint]刷新站点缓存失败（不影响指纹同步结果）")
-    return CommonResponse(code=0, message="ok", data={"fp_profile_id": profile_id})
+    data: dict[str, Any] = {"fp_profile_id": result.profile_id}
+    if result.site_skipped:
+        data["site_skipped"] = True
+        data["site_skip_reason"] = result.site_skip_reason
+    return CommonResponse(code=0, message="ok", data=data)

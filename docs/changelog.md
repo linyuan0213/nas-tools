@@ -5,6 +5,8 @@
 ### 修复
 - **浏览器指纹未写入站点 UA/高级请求头**：指纹同步误写入索引器配置表（`INDEXER_SITE_CONFIG.DEFAULT_SETTINGS`），而运行时站点请求、索引器搜索与前端维护页读取的站点配置表（`CONFIG_SITE`）未生效；现改为写入站点配置表（`NOTE.ua` / `NOTE.headers` / `HEADERS` 列），启用状态取自索引器配置，仅覆盖 UA 相关键、保留用户自定义认证头
 - **UA 重复展示**：指纹 UA 仅写入站点「认证信息-User-Agent」字段，高级请求头不再重复写入 User-Agent（保留 sec-ch-ua / Accept / Sec-Fetch-* 等 Client Hints）
+- **移动端指纹覆盖桌面端**：站点已由桌面端指纹设置时，移动端提交仅同步独立画像（`user_{id}_mobile`），不设置默认画像、不覆盖站点 UA/请求头，避免 PC/移动指纹交替触发站点风控（API 返回 `site_skipped`/`site_skip_reason` 标识）
+- **自动化浏览器污染指纹**：前端跳过 `navigator.webdriver` / HeadlessChrome 等自动化/无头浏览器提交，防止测试会话覆盖真实浏览器指纹
 
 ## v4.8.0 (2026-08-18)
 

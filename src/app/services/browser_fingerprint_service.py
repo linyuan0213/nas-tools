@@ -6,6 +6,9 @@
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
+
 import httpx2
 
 import log
@@ -16,6 +19,32 @@ from app.sites.engine import SiteEngine
 from app.utils.browser_mode import get_chrome_server_url
 from app.utils.fingerprint_headers import fingerprint_to_browser_headers, merge_fingerprint_headers
 from app.utils.json_utils import JsonUtils
+
+
+@dataclass
+class FingerprintSyncResult:
+    """指纹同步结果"""
+
+    profile_id: str | None = None
+    # 站点 UA/请求头是否被跳过（移动端不覆盖已有桌面端指纹）
+    site_skipped: bool = False
+    site_skip_reason: str = ""
+
+
+_MOBILE_UA_RE = re.compile(r"Mobile|Android|iPhone|iPod|iPad|Windows Phone|BlackBerry|webOS|Silk", re.I)
+_MOBILE_PLATFORMS = ("iPhone", "iPad", "Android", "Symbian", "armv8l")
+
+
+def is_mobile_fingerprint(fingerprint: dict) -> bool:
+    """指纹是否来自移动设备（移动端 UA 或平台标记）。"""
+    ua = str(fingerprint.get("ua") or "")
+    if _MOBILE_UA_RE.search(ua):
+        return True
+    for key in ("platform", "uad_platform"):
+        platform = str(fingerprint.get(key) or "")
+        if any(m in platform for m in _MOBILE_PLATFORMS):
+            return True
+    return False
 
 
 def _normalize_headers(headers) -> dict:
@@ -137,15 +166,52 @@ def apply_fingerprint_to_site_configs(fingerprint: dict) -> int:
     return updated
 
 
-def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
-    """把用户真实指纹同步到 nexus-chrome，返回 fp_profile_id；失败返回 None。"""
-    profile_id = f"user_{user_id}"
+def _has_desktop_fingerprint() -> bool:
+    """站点配置中是否已存在桌面端指纹（非移动 UA）。
+
+    用于移动端提交保护：站点以 PC 访问为主，移动端登录不应覆盖已有桌面端指纹，
+    否则 PC/移动 UA 交替会触发站点风控。
+    """
+    indexer_repo = IndexerSiteConfigRepositoryAdapter()
+    enabled = {n.lower() for n in indexer_repo.list_enabled_names()}
+    site_repo = SiteRepositoryAdapter()
+    for site in site_repo.list_all():
+        if site.name.lower() not in enabled:
+            continue
+        ua = str((site.note or {}).get("ua") or "")
+        if ua and not is_mobile_fingerprint({"ua": ua}):
+            return True
+    return False
+
+
+def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> FingerprintSyncResult:
+    """把用户真实指纹同步到 nexus-chrome 指纹画像。
+
+    返回 FingerprintSyncResult（profile_id 为空表示同步失败）。
+
+    设备保护：移动端提交且站点已存在桌面端指纹时，
+    仅同步到独立的移动画像（user_{id}_mobile），
+    不设置默认画像、不覆盖站点 UA/请求头，避免 PC/移动指纹交替触发风控。
+    """
     server = get_chrome_server_url()
     if not server:
         log.warn("[Fingerprint] nexus-chrome 服务器未配置，跳过指纹同步")
-        return None
+        return FingerprintSyncResult()
 
     sanitized = _sanitize_fingerprint(fingerprint)
+    mobile = is_mobile_fingerprint(sanitized)
+    desktop_active = _has_desktop_fingerprint()
+
+    profile_id = f"user_{user_id}"
+    site_skipped = False
+    site_skip_reason = ""
+    if mobile and desktop_active:
+        # 移动端不覆盖桌面端指纹：另存移动画像，保持站点 UA 为桌面端
+        profile_id = f"{profile_id}_mobile"
+        site_skipped = True
+        site_skip_reason = "站点已由桌面端指纹设置，移动端登录不覆盖（避免 PC/移动 UA 交替触发风控）"
+        log.info(f"[Fingerprint] 用户 {user_id} 移动端指纹仅同步画像，站点 UA 保持桌面端")
+
     payload = {
         "profile_id": profile_id,
         "name": f"user_{user_id} real fingerprint",
@@ -159,6 +225,9 @@ def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
     try:
         resp = httpx2.post(f"{server}/api/profiles", json=payload, headers=headers, timeout=15)
         resp.raise_for_status()
+        if site_skipped:
+            log.info(f"[Fingerprint] 用户 {user_id} 移动端指纹已同步: {profile_id}")
+            return FingerprintSyncResult(profile_id=profile_id, site_skipped=True, site_skip_reason=site_skip_reason)
         # 同步成功：写入实验室默认指纹画像，供全局后台流程（站点定时刷新/RSS 自动化）使用
         _set_default_fp_profile_id(profile_id)
         # 指纹 UA/浏览器请求头同步到站点配置（区分 API / HTML）
@@ -167,7 +236,7 @@ def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
         except Exception as e:  # noqa: BLE001
             log.warn(f"[Fingerprint]应用指纹到站点配置失败: {e}")
         log.info(f"[Fingerprint] 用户 {user_id} 指纹已同步: {profile_id}")
-        return profile_id
+        return FingerprintSyncResult(profile_id=profile_id)
     except Exception as e:  # noqa: BLE001
         log.warn(f"[Fingerprint] 同步用户 {user_id} 指纹失败: {e}")
-        return None
+        return FingerprintSyncResult()
