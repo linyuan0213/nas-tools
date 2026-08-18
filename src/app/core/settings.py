@@ -269,6 +269,8 @@ class AgentConfig(BaseModel):
     default_provider: str = ""
     media_recognizer_enabled: bool = False
     batch_size: int = 100
+    reasoning_effort: str = "high"  # low | high | max（统一作用于所有 Agent LLM 调用）
+    disable_thinking: bool = False  # true = 关闭思考模式
     providers: dict[str, AgentProviderConfig] = Field(default_factory=dict)
     fallback: list[str] = Field(default_factory=list)
     embedding: AgentEmbeddingConfig = Field(default_factory=AgentEmbeddingConfig)

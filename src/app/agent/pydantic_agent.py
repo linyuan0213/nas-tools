@@ -39,7 +39,7 @@ from pydantic_ai.tools import Tool
 import log
 from app.agent.agents.memory import ConversationStore, MemoryKey, SemanticMemory, extract_facts
 from app.agent.config import get_provider
-from app.agent.providers.base import TOOL_RULES_PROMPT
+from app.agent.providers.base import TOOL_RULES_PROMPT, ReasoningConfig
 from app.agent.sanitize import sanitize
 from app.core.settings import settings
 from app.utils.json_utils import JsonUtils
@@ -75,12 +75,14 @@ class NexusModel(Model):
         on_token: Callable[[str], None] | None = None,
         on_reasoning: Callable[[str], None] | None = None,
         on_tool_call: Callable[[str, dict, str], None] | None = None,
+        reasoning: ReasoningConfig | None = None,
     ):
         self._svc = svc
         self._tools = tools
         self.on_token = on_token
         self.on_reasoning = on_reasoning
         self.on_tool_call = on_tool_call
+        self.reasoning = reasoning
         self._call_no = 0
 
     @property
@@ -108,6 +110,7 @@ class NexusModel(Model):
             self.on_token,
             # 仅第一步的推理实时透传（后续步骤不重复展示）
             self.on_reasoning if self._call_no == 1 else None,
+            self.reasoning,
         )
         parts: list = []
         if resp.content:
@@ -302,6 +305,7 @@ class PydanticChatAgent:
         user_id: str,
         user_permissions: list[str] | None,
         on_token: Callable[[str], None] | None = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> Agent:
         self._on_token = on_token
         if not get_provider():
@@ -313,6 +317,7 @@ class PydanticChatAgent:
             on_token=self._on_token,
             on_reasoning=self._on_reasoning,
             on_tool_call=self._on_tool_call,
+            reasoning=reasoning,
         )
         tools = [self._make_tool(s, session_id, user_id, user_permissions) for s in tools_schema]
         return Agent(model=model, tools=tools, system_prompt=TOOL_RULES_PROMPT)
@@ -328,6 +333,7 @@ class PydanticChatAgent:
         on_event: Callable[[dict], None] | None = None,
         user_permissions: list[str] | None = None,
         on_token: Callable[[str], None] | None = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> str:
         """带工具调用的多步对话（事件契约与自研 ChatAgent 一致）"""
         if not self.ready:
@@ -378,7 +384,7 @@ class PydanticChatAgent:
                 log.warn(f"[PydanticAgent]长程记忆注入失败: {e}")
 
         try:
-            agent = self._build_agent(session_id, user_id, user_permissions, on_token=on_token)
+            agent = self._build_agent(session_id, user_id, user_permissions, on_token=on_token, reasoning=reasoning)
             # 恢复会话历史：多轮对话上下文（checkpoint 持久化的 pydantic-ai 消息）
             message_history = self._load_checkpoint(session_id, user_id)
             result = asyncio.run(

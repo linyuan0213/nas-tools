@@ -10,8 +10,24 @@ from app.agent.providers.base import (
     BaseProvider,
     ChatToolResponse,
     ProviderConfig,
+    ReasoningConfig,
     ToolCall,
+    map_reasoning_effort,
 )
+
+
+def _build_options(temperature: float) -> dict[str, Any]:
+    """组装 ollama options（runner 参数）"""
+    return {"temperature": temperature}
+
+
+def _reasoning_kwargs(reasoning: ReasoningConfig | None) -> dict[str, Any]:
+    """推理参数映射：think 是 /api/chat 顶层字段（bool 或 low/medium/high），不能放进 options"""
+    if not reasoning:
+        return {}
+    if reasoning.enabled:
+        return {"think": map_reasoning_effort(reasoning.effort)}
+    return {"think": False}
 
 
 class OllamaProvider(BaseProvider):
@@ -27,6 +43,7 @@ class OllamaProvider(BaseProvider):
         system_prompt: str = "",
         temperature: float = 0.7,
         response_format: type | None = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> Any:
         msgs = []
         if system_prompt:
@@ -35,7 +52,8 @@ class OllamaProvider(BaseProvider):
         resp = self._client.chat(
             model=self._config.model,
             messages=msgs,
-            options={"temperature": temperature},
+            options=_build_options(temperature),
+            **_reasoning_kwargs(reasoning),
         )
         return resp["message"]["content"]
 
@@ -45,6 +63,7 @@ class OllamaProvider(BaseProvider):
         tools: list[dict],
         system_prompt: str = "",
         temperature: float = 0.7,
+        reasoning: ReasoningConfig | None = None,
     ) -> ChatToolResponse:
         """Ollama 原生 function calling"""
         msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
@@ -53,11 +72,12 @@ class OllamaProvider(BaseProvider):
                 model=self._config.model,
                 messages=msgs,
                 tools=tool_specs,
-                options={"temperature": temperature},
+                options=_build_options(temperature),
+                **_reasoning_kwargs(reasoning),
             )
         except Exception as e:
             log.warn(f"[OllamaProvider]工具调用请求失败，回退 prompt 协议: {e}")
-            return super().chat_with_tools(messages, tools, system_prompt, temperature)
+            return super().chat_with_tools(messages, tools, system_prompt, temperature, reasoning)
 
         message = resp.get("message", {})
         calls = []
@@ -76,6 +96,7 @@ class OllamaProvider(BaseProvider):
         temperature: float = 0.7,
         on_token: Any = None,
         on_reasoning: Any = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> ChatToolResponse:
         """Ollama 流式 function calling"""
         msgs, tool_specs = self._build_tool_request(messages, tools, system_prompt)
@@ -84,12 +105,15 @@ class OllamaProvider(BaseProvider):
                 model=self._config.model,
                 messages=msgs,
                 tools=tool_specs,
-                options={"temperature": temperature},
+                options=_build_options(temperature),
                 stream=True,
+                **_reasoning_kwargs(reasoning),
             )
         except Exception as e:
             log.warn(f"[OllamaProvider]流式请求失败，回退非流式: {e}")
-            return super().chat_with_tools_stream(messages, tools, system_prompt, temperature, on_token, on_reasoning)
+            return super().chat_with_tools_stream(
+                messages, tools, system_prompt, temperature, on_token, on_reasoning, reasoning
+            )
 
         content_parts: list[str] = []
         tool_calls_final: list[ToolCall] = []

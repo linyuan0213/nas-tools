@@ -19,7 +19,9 @@ class _FakeSvc:
     def __init__(self):
         self.ready = True
 
-    def chat_tool_calls(self, messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None):
+    def chat_tool_calls(
+        self, messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None, reasoning=None
+    ):
         from app.agent.providers.base import ChatToolResponse, ToolCall
 
         has_tool_result = any(m.get("role") == "tool" for m in messages)
@@ -197,9 +199,9 @@ class TestPydanticChatAgent:
         captured: list = []
         original = svc.chat_tool_calls
 
-        def _spy(messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None):
+        def _spy(messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None, reasoning=None):
             captured.append([dict(m) for m in messages])
-            return original(messages, tools, system_prompt, temperature, on_token, on_reasoning)
+            return original(messages, tools, system_prompt, temperature, on_token, on_reasoning, reasoning)
 
         monkeypatch.setattr(svc, "chat_tool_calls", _spy)
 

@@ -69,3 +69,27 @@ class TestAgentConfig:
         mem = agent_config.get_memory_config()
         assert mem["max_steps"] == 5
         assert mem["short_term"]["store"] == "db"
+
+    def test_reasoning_config_default_high_enabled(self, monkeypatch):
+        monkeypatch.setattr(agent_config, "settings", _StubSettings({"agent": {}}))
+        rc = agent_config.get_reasoning_config()
+        assert rc == {"effort": "high", "enabled": True}
+
+    def test_reasoning_config_override(self, monkeypatch):
+        monkeypatch.setattr(
+            agent_config, "settings", _StubSettings({"agent": {"reasoning_effort": "low", "disable_thinking": True}})
+        )
+        rc = agent_config.get_reasoning_config()
+        assert rc == {"effort": "low", "enabled": False}
+
+    def test_reasoning_config_invalid_effort_normalized(self, monkeypatch):
+        monkeypatch.setattr(agent_config, "settings", _StubSettings({"agent": {"reasoning_effort": "medium"}}))
+        rc = agent_config.get_reasoning_config()
+        assert rc["effort"] == "high"
+
+    def test_normalize_reasoning_effort(self):
+        assert agent_config.normalize_reasoning_effort("low") == "low"
+        assert agent_config.normalize_reasoning_effort("HIGH") == "high"
+        assert agent_config.normalize_reasoning_effort("max") == "max"
+        assert agent_config.normalize_reasoning_effort("") == "high"
+        assert agent_config.normalize_reasoning_effort("medium", default="low") == "low"

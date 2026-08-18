@@ -89,6 +89,26 @@ class EmbeddingConfig:
     timeout: int = 60
 
 
+@dataclass
+class ReasoningConfig:
+    """推理强度与思考模式配置（统一作用于对话 / 识别 / 意图 / 记忆等所有 LLM 调用）
+
+    - effort: low | high | max（默认 high）
+    - enabled: False = 关闭思考模式
+    """
+
+    effort: str = "high"
+    enabled: bool = True
+
+
+_EFFORT_MAP = {"low": "low", "high": "high", "max": "high"}
+
+
+def map_reasoning_effort(effort: str, default: str = "high") -> str:
+    """low/high/max → OpenAI 兼容 / Ollama 档位（max 归并为最高档 high）"""
+    return _EFFORT_MAP.get(effort, default)
+
+
 class BaseProvider(ABC):
     """LLM 提供商抽象基类"""
 
@@ -106,6 +126,7 @@ class BaseProvider(ABC):
         system_prompt: str = "",
         temperature: float = 0.7,
         response_format: type | None = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> Any:
         """执行对话请求"""
 
@@ -139,6 +160,7 @@ class BaseProvider(ABC):
         tools: list[dict],
         system_prompt: str = "",
         temperature: float = 0.7,
+        reasoning: ReasoningConfig | None = None,
     ) -> ChatToolResponse:
         """带工具调用的对话。
 
@@ -146,7 +168,7 @@ class BaseProvider(ABC):
         OpenAI 兼容 / Ollama 等 provider 可 override 为原生 function calling。
         """
         prompt = _TOOL_PROMPT.replace("{tools}", JsonUtils.dumps(tools, ensure_ascii=False, indent=2))
-        content = self.chat(messages=messages, system_prompt=prompt, temperature=temperature)
+        content = self.chat(messages=messages, system_prompt=prompt, temperature=temperature, reasoning=reasoning)
         return self._parse_prompt_tool_response(content)
 
     @staticmethod
@@ -182,12 +204,13 @@ class BaseProvider(ABC):
         temperature: float = 0.7,
         on_token: Any = None,
         on_reasoning: Any = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> ChatToolResponse:
         """流式工具对话：content 逐 token 回调 on_token；返回完整 ChatToolResponse。
 
         默认实现 = 非流式降级（一次回调完整内容）；OpenAI 兼容 / Ollama 覆盖为真流式。
         """
-        resp = self.chat_with_tools(messages, tools, system_prompt, temperature)
+        resp = self.chat_with_tools(messages, tools, system_prompt, temperature, reasoning)
         if on_token and resp.content:
             on_token(resp.content)
         if on_reasoning and resp.reasoning:

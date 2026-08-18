@@ -3,7 +3,7 @@
 import pytest
 
 from app.agent.context import ContextBuilder
-from app.agent.providers.base import ProviderConfig
+from app.agent.providers.base import ProviderConfig, ReasoningConfig
 from app.agent.service import AgentService, sanitize
 
 
@@ -13,20 +13,20 @@ class _FakeProvider:
         self._fail = fail
         self.calls = 0
 
-    def chat(self, messages, system_prompt="", temperature=0.7, response_format=None):
+    def chat(self, messages, system_prompt="", temperature=0.7, response_format=None, reasoning=None):
         self.calls += 1
         if self._fail:
             raise RuntimeError(f"{self._config.name} 挂了")
         return f"{self._config.name} 回答"
 
-    def chat_with_tools(self, messages, tools, system_prompt="", temperature=0.7):
+    def chat_with_tools(self, messages, tools, system_prompt="", temperature=0.7, reasoning=None):
         self.calls += 1
         if self._fail:
             raise RuntimeError(f"{self._config.name} 挂了")
         return f"{self._config.name} tools 回答"
 
     def chat_with_tools_stream(
-        self, messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None
+        self, messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None, reasoning=None
     ):
         self.calls += 1
         if self._fail:
@@ -96,6 +96,66 @@ class TestUsageLog:
         service._provider._fail = True
         service.chat([{"role": "user", "content": "hi"}], use_cache=False)
         assert calls and calls[0]["provider"] == "backup"
+
+
+class _ReasoningProbeProvider(_FakeProvider):
+    """记录每次调用收到的 reasoning 参数"""
+
+    def __init__(self, name="main"):
+        super().__init__(name)
+        self.received: list = []
+
+    def chat(self, messages, system_prompt="", temperature=0.7, response_format=None, reasoning=None):
+        self.received.append(reasoning)
+        return super().chat(messages, system_prompt, temperature, response_format, reasoning)
+
+    def chat_with_tools_stream(
+        self, messages, tools, system_prompt="", temperature=0.7, on_token=None, on_reasoning=None, reasoning=None
+    ):
+        self.received.append(reasoning)
+        return super().chat_with_tools_stream(
+            messages, tools, system_prompt, temperature, on_token, on_reasoning, reasoning
+        )
+
+
+class TestReasoningConfig:
+    def test_chat_tool_calls_passes_reasoning(self, service):
+        probe = _ReasoningProbeProvider()
+        service._provider = probe
+        service.chat_tool_calls(messages=[], tools=[])
+        assert probe.received and probe.received[0] is service._reasoning
+
+    def test_chat_tool_calls_override(self, service):
+        probe = _ReasoningProbeProvider()
+        service._provider = probe
+        override = ReasoningConfig(effort="low", enabled=False)
+        service.chat_tool_calls(messages=[], tools=[], reasoning=override)
+        assert probe.received and probe.received[0] == override
+
+    def test_chat_passes_default(self, service):
+        probe = _ReasoningProbeProvider()
+        service._provider = probe
+        service.chat([{"role": "user", "content": "hi"}], use_cache=False)
+        assert probe.received and probe.received[0] is service._reasoning
+
+    def test_reasoning_for_returns_default(self, service):
+        assert service.reasoning_for() is service._reasoning
+
+    def test_reasoning_for_prefers_override(self, service):
+        override = ReasoningConfig(effort="max")
+        assert service.reasoning_for(override) is override
+
+    def test_refresh_config_clears_cache_on_reasoning_change(self, monkeypatch):
+        import app.agent.service as svc_module
+
+        calls: list = []
+        monkeypatch.setattr(svc_module, "get_reasoning_config", lambda: {"effort": "high", "enabled": True})
+        svc = svc_module.AgentService()
+        monkeypatch.setattr(svc_module.AgentService._cached_chat, "cache_clear", lambda: calls.append(1))
+        monkeypatch.setattr(svc_module, "get_reasoning_config", lambda: {"effort": "low", "enabled": True})
+        svc._refresh_config()
+        assert calls
+        assert svc._reasoning.effort == "low"
 
 
 class TestSanitize:

@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 import log
 from api.deps import get_app_context, require_permission
+from app.agent.config import normalize_reasoning_effort
+from app.agent.providers.base import ReasoningConfig
 from app.di.context import AppContext
 from app.utils.response import fail, success
 
@@ -19,6 +21,10 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     question: str
     session_id: str = ""
+    # 推理强度：low | high | max，空 = 使用配置默认
+    reasoning_effort: str = ""
+    # 关闭思考模式，None = 使用配置默认
+    disable_thinking: bool | None = None
 
 
 class ClearRequest(BaseModel):
@@ -50,6 +56,12 @@ def agent_chat(
     session_id = req.session_id or f"web:{user.user_id}"
     user_id = str(user.user_id)
 
+    reasoning = agent_service.reasoning_for()
+    if req.reasoning_effort or req.disable_thinking is not None:
+        effort = normalize_reasoning_effort(req.reasoning_effort, reasoning.effort)
+        enabled = reasoning.enabled if req.disable_thinking is None else not req.disable_thinking
+        reasoning = ReasoningConfig(effort=effort, enabled=enabled)
+
     event_queue: queue.Queue = queue.Queue()
 
     def _run():
@@ -62,6 +74,7 @@ def agent_chat(
                 on_event=lambda e: event_queue.put(e),
                 user_permissions=list(user.permissions),
                 on_token=lambda t: event_queue.put({"type": "token", "content": t}),
+                reasoning=reasoning,
             )
             event_queue.put({"type": "answer", "content": answer})
         except Exception as e:

@@ -179,6 +179,11 @@ agent:
   enabled: false
   # 默认对话模型提供商
   default_provider: ollama
+  # 推理强度：low | high | max（默认 high）
+  # disable_thinking: true 关闭思考模式
+  # 统一作用于对话、媒体识别、意图解析、记忆抽取等所有 Agent LLM 调用
+  reasoning_effort: high
+  disable_thinking: false
   # 故障转移链（主 provider 失败时依次尝试），空 = 不启用
   fallback: []
   providers:

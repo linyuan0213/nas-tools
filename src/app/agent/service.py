@@ -7,8 +7,8 @@ import log
 from app.agent.agents.media_recognizer import MediaRecognizer
 from app.agent.agents.memory import SemanticMemory
 from app.agent.agents.search_intent import SearchIntentAgent
-from app.agent.config import get_fallback_providers, get_memory_config, get_provider
-from app.agent.providers.base import ProviderConfig
+from app.agent.config import get_fallback_providers, get_memory_config, get_provider, get_reasoning_config
+from app.agent.providers.base import ProviderConfig, ReasoningConfig
 from app.agent.providers.gemini import GeminiProvider
 from app.agent.providers.ollama import OllamaProvider
 from app.agent.providers.openai import OpenAIProvider
@@ -30,6 +30,7 @@ class AgentService:
         self._config: ProviderConfig | None = None
         self._fallbacks: list[Any] = []
         self._enabled = False
+        self._reasoning = ReasoningConfig()
         self._refresh_config()
 
     def init_chat_agent(
@@ -79,6 +80,11 @@ class AgentService:
         """刷新配置（支持热重载）"""
         cfg = settings.get("agent") or {}
         self._enabled = bool(cfg.get("enabled"))
+        reasoning_cfg = get_reasoning_config()
+        new_reasoning = ReasoningConfig(effort=reasoning_cfg["effort"], enabled=reasoning_cfg["enabled"])
+        if new_reasoning != self._reasoning:
+            self._cached_chat.cache_clear()  # type: ignore[attr-defined]
+        self._reasoning = new_reasoning
         if not self._enabled:
             if self._provider is not None or self._fallbacks:
                 log.info("[AgentService]Agent 已禁用，释放 Provider")
@@ -145,6 +151,10 @@ class AgentService:
         """用量日志（落 loguru，可接监控）"""
         log.info(f"[AgentUsage] kind={kind} provider={provider} latency_ms={ms}")
 
+    def reasoning_for(self, override: ReasoningConfig | None = None) -> ReasoningConfig:
+        """当前推理配置；override 优先（对话请求按次覆盖）"""
+        return override if override is not None else self._reasoning
+
     def chat(
         self,
         messages: list[dict],
@@ -162,14 +172,22 @@ class AgentService:
             return self._cached_chat(messages, system_prompt, temperature)
 
         return self._call_with_fallback(
-            lambda p, m, s, t: p.chat(m, s, t, response_format), messages, system_prompt, temperature
+            lambda p, m, s, t, r: p.chat(m, s, t, response_format, r),
+            messages,
+            system_prompt,
+            temperature,
+            self._reasoning,
         )
 
     @lru_cache_with_ttl(ttl=300, maxsize=256)
     def _cached_chat(self, messages: tuple, system_prompt: str, temperature: float) -> str:
         """带缓存的对话（messages 转为 tuple 使其可 hash）"""
         return self._call_with_fallback(
-            lambda p, m, s, t: p.chat(list(m), s, t), list(messages), system_prompt, temperature
+            lambda p, m, s, t, r: p.chat(list(m), s, t, None, r),
+            list(messages),
+            system_prompt,
+            temperature,
+            self._reasoning,
         )
 
     def chat_tool_calls(
@@ -180,18 +198,20 @@ class AgentService:
         temperature: float = 0.7,
         on_token: Any = None,
         on_reasoning: Any = None,
+        reasoning: ReasoningConfig | None = None,
     ) -> Any:
         """带工具调用的 LLM 对话（原生 function calling / prompt 协议回退；结果不可缓存）"""
         if not self.ready:
             raise RuntimeError("LLM service not configured")
         return self._call_with_fallback(
-            lambda p, m, t, s, tmp, cb, rb: p.chat_with_tools_stream(m, t, s, tmp, cb, rb),
+            lambda p, m, t, s, tmp, cb, rb, r: p.chat_with_tools_stream(m, t, s, tmp, cb, rb, r),
             messages,
             tools,
             system_prompt,
             temperature,
             on_token,
             on_reasoning,
+            self.reasoning_for(reasoning),
         )
 
     def structured_chat(
@@ -211,7 +231,9 @@ class AgentService:
             f"请严格按照以下 JSON Schema 返回结果，不要包含任何其他内容：\n"
             f"{response_model.model_json_schema() if response_model else ''}"
         )
-        content = self._call_with_fallback(lambda p, m, s, t: p.chat(m, s, t), messages, prompt, temperature)
+        content = self._call_with_fallback(
+            lambda p, m, s, t, r: p.chat(m, s, t, None, r), messages, prompt, temperature, self._reasoning
+        )
         try:
             data = JsonUtils.loads(content)
             if response_model:

@@ -10,6 +10,24 @@ def agent_enabled() -> bool:
     return bool(_agent_cfg().get("enabled"))
 
 
+_REASONING_EFFORTS = ("low", "high", "max")
+
+
+def normalize_reasoning_effort(effort: str, default: str = "high") -> str:
+    """规范化推理档位：仅接受 low/high/max，其余回退 default"""
+    e = str(effort or "").lower()
+    return e if e in _REASONING_EFFORTS else default
+
+
+def get_reasoning_config() -> dict:
+    """推理参数（统一作用于对话 / 识别 / 意图 / 记忆等所有 LLM 调用）"""
+    cfg = _agent_cfg()
+    return {
+        "effort": normalize_reasoning_effort(cfg.get("reasoning_effort", "high")),
+        "enabled": not bool(cfg.get("disable_thinking", False)),
+    }
+
+
 def get_provider(provider_name: str = "") -> ProviderConfig | None:
     """获取 LLM 提供商配置"""
     cfg = _agent_cfg()
