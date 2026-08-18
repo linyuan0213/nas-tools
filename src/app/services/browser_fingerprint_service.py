@@ -11,10 +11,23 @@ import httpx2
 import log
 from app.core.settings import settings
 from app.db.repositories.indexer_site_config_repo_adapter import IndexerSiteConfigRepositoryAdapter
+from app.db.repositories.site_repo_adapter import SiteRepositoryAdapter
 from app.sites.engine import SiteEngine
 from app.utils.browser_mode import get_chrome_server_url
 from app.utils.fingerprint_headers import fingerprint_to_browser_headers, merge_fingerprint_headers
 from app.utils.json_utils import JsonUtils
+
+
+def _normalize_headers(headers) -> dict:
+    """归一化站点高级请求头为 dict（兼容字符串 JSON 存储）。"""
+    if not headers:
+        return {}
+    if isinstance(headers, str):
+        try:
+            headers = JsonUtils.loads(headers) or {}
+        except Exception:  # noqa: BLE001
+            return {}
+    return headers if isinstance(headers, dict) else {}
 
 
 def _chrome_admin_token() -> str:
@@ -79,6 +92,10 @@ def _sanitize_fingerprint(raw: dict) -> dict:
 def apply_fingerprint_to_site_configs(fingerprint: dict) -> int:
     """把指纹 UA/浏览器请求头应用到已启用站点配置（区分 API / HTML 站点）.
 
+    站点配置存储为 CONFIG_SITE（NOTE.ua / NOTE.headers / HEADERS 列）——
+    运行时站点请求（RSS/刷流/统计）与索引器搜索（SiteCache）以及前端维护页
+    均读取该表；INDEXER_SITE_CONFIG 仅用于启用状态过滤。
+
     更新站点维护的 UA 与高级请求头（headers）：
     - API 站点：Accept 为 JSON、Fetch 语义为 cors/empty
     - HTML 站点：Accept 为文档、Fetch 语义为 navigate/document
@@ -89,30 +106,30 @@ def apply_fingerprint_to_site_configs(fingerprint: dict) -> int:
         log.info("[Fingerprint]指纹缺少 UA，跳过站点配置更新")
         return 0
 
-    repo = IndexerSiteConfigRepositoryAdapter()
     engine = SiteEngine()
+    site_repo = SiteRepositoryAdapter()
+    indexer_repo = IndexerSiteConfigRepositoryAdapter()
+    enabled_names = {n.lower() for n in indexer_repo.list_enabled_names()}
     updated = 0
-    for cfg in repo.list_all(enabled=True):
-        note = dict(cfg.default_settings or {})
-        site_url = str(note.get("signurl") or note.get("rssurl") or "")
+    for site in site_repo.list_all():
+        if site.name.lower() not in enabled_names:
+            continue
+        note = dict(site.note or {})
+        site_url = str(note.get("signurl") or note.get("rssurl") or site.sign_url or site.rss_url or "")
         site_def = engine.get_by_url(site_url) if site_url else None
         site_type = "api" if (site_def and site_def.api) else "html"
         fp_headers = fingerprint_to_browser_headers(fingerprint, site_type)
-        existing_headers = note.get("headers") or {}
-        if isinstance(existing_headers, str):
-            try:
-                existing_headers = JsonUtils.loads(existing_headers) or {}
-            except Exception:  # noqa: BLE001
-                existing_headers = {}
-        if not isinstance(existing_headers, dict):
-            existing_headers = {}
-        note["headers"] = merge_fingerprint_headers(existing_headers, fp_headers)
+        existing_headers = _normalize_headers(note.get("headers") or site.headers)
+        merged_headers = merge_fingerprint_headers(existing_headers, fp_headers)
+        note["headers"] = merged_headers
         note["ua"] = ua
+        site.headers = JsonUtils.dumps(merged_headers, ensure_ascii=False)
+        site.note = note
         try:
-            repo.update_default_settings(cfg.site_name, note)
+            site_repo.update(site)
             updated += 1
         except Exception as e:  # noqa: BLE001
-            log.warn(f"[Fingerprint]更新站点 {cfg.site_name} 配置失败: {e}")
+            log.warn(f"[Fingerprint]更新站点 {site.name} 配置失败: {e}")
     if updated:
         log.info(f"[Fingerprint]已更新 {updated} 个站点的 UA/请求头")
     return updated

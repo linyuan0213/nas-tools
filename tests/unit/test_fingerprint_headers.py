@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from app.services.browser_fingerprint_service import apply_fingerprint_to_site_configs
 from app.utils.fingerprint_headers import fingerprint_to_browser_headers, merge_fingerprint_headers
+from app.utils.json_utils import JsonUtils
 
 _FP = {
     "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -85,22 +86,26 @@ class TestMergeFingerprintHeaders:
 
 
 class TestApplyFingerprintToSiteConfigs:
-    """指纹应用到站点配置（区分 API / HTML）"""
+    """指纹应用到站点配置（写 CONFIG_SITE，启用状态取自 INDEXER_SITE_CONFIG）"""
+
+    @staticmethod
+    def _make_site(name: str, sign_url: str = "", rss_url: str = "", note: dict | None = None, headers=None):
+        ent = MagicMock()
+        ent.name = name
+        ent.sign_url = sign_url
+        ent.rss_url = rss_url
+        ent.note = note if note is not None else {"ua": "old-ua"}
+        ent.headers = headers
+        return ent
 
     def test_updates_site_ua_and_headers(self):
-        api_cfg = MagicMock()
-        api_cfg.site_name = "Rousi"
-        api_cfg.default_settings = {
-            "signurl": "https://rousi.pro",
-            "ua": "old-ua",
-            "headers": {"Cookie": "a=1"},
-        }
-        html_cfg = MagicMock()
-        html_cfg.site_name = "HDKylin"
-        html_cfg.default_settings = {"rssurl": "https://www.hdkyl.in", "ua": "", "headers": None}
+        api_site = self._make_site("Rousi", sign_url="https://rousi.pro", note={"ua": "old-ua"})
+        html_site = self._make_site("HDKylin", rss_url="https://www.hdkyl.in", note={"ua": "", "headers": None})
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [api_site, html_site]
 
-        repo = MagicMock()
-        repo.list_all.return_value = [api_cfg, html_cfg]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["Rousi", "HDKylin"]
 
         engine = MagicMock()
         api_def = MagicMock()
@@ -112,53 +117,100 @@ class TestApplyFingerprintToSiteConfigs:
         engine.get_by_url.side_effect = lambda url: api_def if "rousi" in url else html_def
 
         with (
+            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
             patch(
                 "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
-                return_value=repo,
+                return_value=indexer_repo,
             ),
-            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
         ):
             count = apply_fingerprint_to_site_configs(_FP)
 
         assert count == 2
         # API 站点：Accept JSON
-        api_note = repo.update_default_settings.call_args_list[0].args[1]
-        assert api_note["ua"] == _FP["ua"]
-        assert "application/json" in api_note["headers"]["Accept"]
-        assert api_note["headers"]["Cookie"] == "a=1"
+        api_entity = site_repo.update.call_args_list[0].args[0]
+        assert api_entity.note["ua"] == _FP["ua"]
+        assert "application/json" in api_entity.note["headers"]["Accept"]
+        headers_col = JsonUtils.loads(api_entity.headers)
+        assert headers_col["User-Agent"] == _FP["ua"]
+        assert headers_col["Sec-Fetch-Dest"] == "empty"
+        assert headers_col["Accept"] == api_entity.note["headers"]["Accept"]
         # HTML 站点：Accept 文档
-        html_note = repo.update_default_settings.call_args_list[1].args[1]
-        assert "text/html" in html_note["headers"]["Accept"]
-        assert html_note["headers"]["Sec-Fetch-Dest"] == "document"
+        html_entity = site_repo.update.call_args_list[1].args[0]
+        assert "text/html" in html_entity.note["headers"]["Accept"]
+        assert html_entity.note["headers"]["Sec-Fetch-Dest"] == "document"
+
+    def test_skips_disabled_sites(self):
+        site = self._make_site("Rousi", sign_url="https://rousi.pro")
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = []  # 全部禁用
+        engine = MagicMock()
+        with (
+            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
+            patch(
+                "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
+                return_value=indexer_repo,
+            ),
+        ):
+            count = apply_fingerprint_to_site_configs(_FP)
+        assert count == 0
+        site_repo.update.assert_not_called()
 
     def test_skip_without_ua(self):
-        repo = MagicMock()
-        with patch(
-            "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
-            return_value=repo,
-        ):
+        with patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter") as site_repo_cls:
             count = apply_fingerprint_to_site_configs({"platform": "Windows"})
         assert count == 0
-        repo.list_all.assert_not_called()
+        site_repo_cls.assert_not_called()
 
-    def test_headers_json_string_parsed(self):
-        cfg = MagicMock()
-        cfg.site_name = "S"
-        cfg.default_settings = {"signurl": "https://api.example.com", "headers": '{"Cookie":"a=1"}'}
-        repo = MagicMock()
-        repo.list_all.return_value = [cfg]
+    def test_preserves_user_custom_headers(self):
+        site = self._make_site(
+            "Rousi",
+            sign_url="https://rousi.pro",
+            note={"headers": {"Cookie": "a=1", "Authorization": "Bearer xyz"}},
+        )
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["Rousi"]
         engine = MagicMock()
         site_def = MagicMock()
         site_def.api = MagicMock()
         engine.get_by_url.return_value = site_def
         with (
+            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
             patch(
                 "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
-                return_value=repo,
+                return_value=indexer_repo,
             ),
-            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
         ):
             apply_fingerprint_to_site_configs(_FP)
-        note = repo.update_default_settings.call_args.args[1]
-        assert note["headers"]["Cookie"] == "a=1"
-        assert note["headers"]["User-Agent"] == _FP["ua"]
+        headers = site.note["headers"]
+        assert headers["Cookie"] == "a=1"
+        assert headers["Authorization"] == "Bearer xyz"
+        assert headers["User-Agent"] == _FP["ua"]
+
+    def test_headers_json_string_parsed(self):
+        site = self._make_site("S", sign_url="https://api.example.com", headers='{"Cookie":"a=1"}')
+        site_repo = MagicMock()
+        site_repo.list_all.return_value = [site]
+        indexer_repo = MagicMock()
+        indexer_repo.list_enabled_names.return_value = ["S"]
+        engine = MagicMock()
+        site_def = MagicMock()
+        site_def.api = MagicMock()
+        engine.get_by_url.return_value = site_def
+        with (
+            patch("app.services.browser_fingerprint_service.SiteEngine", return_value=engine),
+            patch("app.services.browser_fingerprint_service.SiteRepositoryAdapter", return_value=site_repo),
+            patch(
+                "app.services.browser_fingerprint_service.IndexerSiteConfigRepositoryAdapter",
+                return_value=indexer_repo,
+            ),
+        ):
+            apply_fingerprint_to_site_configs(_FP)
+        assert site.note["headers"]["Cookie"] == "a=1"
+        assert site.note["headers"]["User-Agent"] == _FP["ua"]
