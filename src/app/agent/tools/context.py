@@ -19,6 +19,17 @@ class ToolContext:
     scheduler_service: Any
     system_info_service: Any
     event_bus: Any
+    site_service: Any = None
+    brush_service: Any = None
+    media_library_service: Any = None
+    transfer_history_service: Any = None
+    user_rss_service: Any = None
+    knowledge_ingestor: Any = None
+    indexer_service: Any = None
+    torrent_remover_service: Any = None
+    storage_backend_service: Any = None
+    words_service: Any = None
+    plugin_framework_service: Any = None
     retriever: Any = None
     conversation_store: Any = None
     semantic_memory: Any = None

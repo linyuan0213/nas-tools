@@ -45,12 +45,12 @@ class TestCatalog:
     def test_all_tools_have_handlers(self):
         names = {t.name for t in BUILTIN_TOOLS}
         assert names == set(HANDLERS.keys())
-        assert len(names) == 21
+        assert len(names) == 40
 
     def test_tool_count_and_levels(self):
         registry = ToolRegistry(BUILTIN_TOOLS)
         schemas = registry.list_tools()
-        assert len(schemas) == 21
+        assert len(schemas) == 40
         for s in schemas:
             assert s["level"] in ("read", "write", "dangerous")
 

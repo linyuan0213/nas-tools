@@ -84,10 +84,36 @@ def downloader_status(ctx: ToolContext) -> ToolResult:
     return ToolResult(success=True, data=data)
 
 
+def download_history_list(ctx: ToolContext, page: int = 1, page_size: int = 10, keyword: str = "") -> ToolResult:
+    """查询下载历史（下载器下载记录：标题/季集/状态/时间）"""
+    try:
+        rows = ctx.downloader_core.get_download_history(page=max(page or 1, 1), num=max(page_size or 10, 1))
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询下载历史失败: {e}")
+    items = []
+    for row in rows:
+        title = getattr(row, "TITLE", "") or ""
+        if keyword and keyword not in title:
+            continue
+        items.append(
+            {
+                "title": title,
+                "year": getattr(row, "YEAR", "") or "",
+                "season_episode": getattr(row, "SE", "") or "",
+                "type": getattr(row, "TYPE", "") or "",
+                "tmdb_id": getattr(row, "TMDBID", "") or "",
+                "state": getattr(row, "STATE", "") or "",
+                "date": getattr(row, "DATE", "") or "",
+            }
+        )
+    return ToolResult(success=True, data={"total": len(items), "items": items[: max(page_size or 10, 1)]})
+
+
 HANDLERS = {
     "download_add_link": download_add_link,
     "media_download": media_download,
     "download_list": download_list,
     "download_control": download_control,
     "downloader_status": downloader_status,
+    "download_history_list": download_history_list,
 }

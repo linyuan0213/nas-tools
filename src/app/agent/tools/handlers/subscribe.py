@@ -43,8 +43,44 @@ def subscribe_delete(ctx: ToolContext, sub_id: int, media_type: str = "movie") -
     return ToolResult(success=True, data={"sub_id": sub_id, "deleted": True})
 
 
+def subscribe_detail(ctx: ToolContext, title: str, tmdb_id: int | None = None) -> ToolResult:
+    """查询单个订阅详情（进度/缺集/站点等）"""
+    try:
+        tvs = ctx.subscribe_service.get_subscribe_tvs() or {}
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询订阅详情失败: {e}")
+    keyword = (title or "").strip().lower()
+    found = []
+    for item in tvs.values() if isinstance(tvs, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").lower()
+        if (keyword and keyword in name) or (tmdb_id and int(item.get("tmdbid") or 0) == int(tmdb_id)):
+            found.append(
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                    "year": item.get("year"),
+                    "season": item.get("season"),
+                    "tmdb_id": item.get("tmdbid"),
+                    "total": item.get("total"),
+                    "lack": item.get("lack"),
+                    "total_ep": item.get("total_ep"),
+                    "current_ep": item.get("current_ep"),
+                    "state": item.get("state"),
+                    "rss_sites": item.get("rss_sites"),
+                    "search_sites": item.get("search_sites"),
+                    "keyword": item.get("keyword"),
+                }
+            )
+    if not found:
+        return ToolResult(success=False, error=f"未找到订阅: {title}")
+    return ToolResult(success=True, data={"total": len(found), "items": found})
+
+
 HANDLERS = {
     "subscribe_add": subscribe_add,
     "subscribe_list": subscribe_list,
+    "subscribe_detail": subscribe_detail,
     "subscribe_delete": subscribe_delete,
 }

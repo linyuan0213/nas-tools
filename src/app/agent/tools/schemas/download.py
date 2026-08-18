@@ -67,3 +67,20 @@ class DownloaderStatusTool(BaseTool):
     description = "查询下载器状态（在线情况、速度、剩余空间）。当用户问'下载器正常吗/磁盘还剩多少'时调用。"
     parameters = {"type": "object", "properties": {}}
     level = ToolLevel.READ
+
+
+class DownloadHistoryListTool(BaseTool):
+    name = "download_history_list"
+    description = (
+        "查询下载历史（已完成/曾下载过的记录：标题、季集、状态、时间）。"
+        "当用户问'下载过什么/历史记录/某部片下过没有'时调用。"
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "page": {"type": "integer", "description": "页码，默认 1", "default": 1},
+            "page_size": {"type": "integer", "description": "返回条数，默认 10", "default": 10},
+            "keyword": {"type": "string", "description": "可选，按标题关键字过滤"},
+        },
+    }
+    level = ToolLevel.READ

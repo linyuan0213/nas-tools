@@ -49,6 +49,162 @@ def system_status(ctx: ToolContext) -> ToolResult:
     return ToolResult(success=True, data=data)
 
 
+def stats_summary(ctx: ToolContext) -> ToolResult:
+    """系统数据总览：媒体库规模 / 下载记录 / 站点数量 / 系统运行信息"""
+    summary: dict = {}
+    # 媒体库规模
+    try:
+        if ctx.media_library_service is not None:
+            count = ctx.media_library_service.get_media_count()
+            if count:
+                summary["library"] = {
+                    "movie": count.get("Movie"),
+                    "series": count.get("Series"),
+                    "episodes": count.get("Episodes"),
+                }
+    except Exception as e:  # noqa: BLE001
+        summary.setdefault("warnings", []).append(f"媒体库统计失败: {e}")
+    # 下载记录
+    try:
+        history = ctx.downloader_core.get_download_history(num=200) or []
+        summary["download"] = {"total": len(history)}
+    except Exception as e:  # noqa: BLE001
+        summary.setdefault("warnings", []).append(f"下载记录统计失败: {e}")
+    # 站点数量
+    try:
+        if ctx.site_service is not None:
+            sites = ctx.site_service.get_sites() or []
+            summary["sites"] = {
+                "total": len(sites),
+                "enabled": sum(1 for s in sites if isinstance(s, dict) and s.get("enabled")),
+            }
+    except Exception as e:  # noqa: BLE001
+        summary.setdefault("warnings", []).append(f"站点统计失败: {e}")
+    # 系统运行信息
+    try:
+        info = ctx.system_info_service.get_system_info()
+        if hasattr(info, "model_dump"):
+            data = info.model_dump()
+        elif hasattr(info, "__dict__"):
+            data = dict(vars(info))
+        else:
+            data = {}
+        summary["system"] = {
+            "version": data.get("version"),
+            "uptime": data.get("uptime"),
+            "memory_mb": data.get("memory_mb"),
+        }
+    except Exception as e:  # noqa: BLE001
+        summary.setdefault("warnings", []).append(f"系统信息获取失败: {e}")
+    return ToolResult(success=True, data=summary)
+
+
+def transfer_history(ctx: ToolContext, keyword: str = "", page: int = 1, page_num: int = 20) -> ToolResult:
+    """查询媒体转移/入库历史"""
+    try:
+        dto = ctx.transfer_history_service.get_transfer_history_page(
+            search_str=keyword or "", page=page or 1, page_num=page_num or 20
+        )
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询转移历史失败: {e}")
+    result = getattr(dto, "result", None) or []
+    items = []
+    for rec in result:
+        if not isinstance(rec, dict):
+            continue
+        items.append(
+            {
+                "title": rec.get("title") or rec.get("TITLE"),
+                "year": rec.get("year") or rec.get("YEAR"),
+                "season_episode": rec.get("season_episode") or rec.get("SE"),
+                "dest_filename": rec.get("dest_filename") or rec.get("DEST_FILENAME"),
+                "date": rec.get("date") or rec.get("DATE"),
+            }
+        )
+    return ToolResult(
+        success=True,
+        data={"total": getattr(dto, "total", len(items)), "items": items},
+    )
+
+
+def kb_status(ctx: ToolContext) -> ToolResult:
+    """查询知识库状态（各命名空间索引块数）"""
+    if ctx.knowledge_ingestor is None:
+        return ToolResult(success=False, error="Agent RAG 未启用")
+    try:
+        return ToolResult(success=True, data={"namespaces": ctx.knowledge_ingestor.status()})
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询知识库状态失败: {e}")
+
+
+def indexer_status(ctx: ToolContext) -> ToolResult:
+    """查询索引器统计"""
+    try:
+        dtos, _ = ctx.indexer_service.get_indexer_statistics()
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询索引器统计失败: {e}")
+    items = []
+    for d in dtos or []:
+        data = d.model_dump() if hasattr(d, "model_dump") else {}
+        items.append(
+            {
+                "name": data.get("name"),
+                "total": data.get("total"),
+                "fail": data.get("fail"),
+                "success": data.get("success"),
+                "avg": data.get("avg"),
+            }
+        )
+    return ToolResult(success=True, data={"total": len(items), "items": items})
+
+
+def torrent_remover_status(ctx: ToolContext) -> ToolResult:
+    """查询自动删种任务列表"""
+    try:
+        svc = ctx.torrent_remover_service
+        repo = getattr(svc, "_repo", None)
+        if hasattr(svc, "get_tasks"):
+            tasks = svc.get_tasks()
+        elif repo is not None and hasattr(repo, "get_tasks"):
+            tasks = repo.get_tasks()
+        else:
+            return ToolResult(success=False, error="删种任务服务不可用")
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询删种任务失败: {e}")
+    if not isinstance(tasks, list):
+        tasks = []
+    items = [
+        {
+            "id": t.get("id"),
+            "name": t.get("name"),
+            "site": t.get("site"),
+            "state": t.get("state"),
+        }
+        for t in tasks
+        if isinstance(t, dict)
+    ]
+    return ToolResult(success=True, data={"total": len(items), "items": items})
+
+
+def storage_status(ctx: ToolContext) -> ToolResult:
+    """查询存储后端列表"""
+    try:
+        backends = ctx.storage_backend_service.list_backends()
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"查询存储后端失败: {e}")
+    items = [
+        {
+            "id": b.get("id"),
+            "name": b.get("name"),
+            "type": b.get("type"),
+            "enabled": b.get("enabled"),
+        }
+        for b in (backends or [])
+        if isinstance(b, dict)
+    ]
+    return ToolResult(success=True, data={"total": len(items), "items": items})
+
+
 def memory_forget(ctx: ToolContext, text: str, user_id: str = "") -> ToolResult:
     if ctx.semantic_memory is None:
         return ToolResult(success=False, error="长程语义记忆未启用")
@@ -75,6 +231,12 @@ HANDLERS = {
     "scheduler_list": scheduler_list,
     "scheduler_run": scheduler_run,
     "system_status": system_status,
+    "stats_summary": stats_summary,
+    "transfer_history": transfer_history,
+    "kb_status": kb_status,
+    "indexer_status": indexer_status,
+    "torrent_remover_status": torrent_remover_status,
+    "storage_status": storage_status,
     "memory_clear": memory_clear,
     "memory_forget": memory_forget,
 }

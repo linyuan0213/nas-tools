@@ -37,6 +37,23 @@ class SubscribeListTool(BaseTool):
     level = ToolLevel.READ
 
 
+class SubscribeDetailTool(BaseTool):
+    name = "subscribe_detail"
+    description = (
+        "查询单个订阅的详细信息（进度、缺集、站点、过滤条件等）。当用户问'某部剧订阅到哪了/缺哪几集/某订阅详情'时调用。"
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "description": "剧名（模糊匹配）"},
+            "tmdb_id": {"type": "integer", "description": "可选，TMDB ID"},
+        },
+        "required": ["title"],
+    }
+    level = ToolLevel.READ
+    permission = "subscription:view"
+
+
 class SubscribeDeleteTool(BaseTool):
     name = "subscribe_delete"
     description = "删除订阅。当用户要求取消某部作品的订阅时调用。"
