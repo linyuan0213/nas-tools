@@ -18,6 +18,7 @@ from granian.constants import Interfaces, Loops
 from granian.log import LogLevels
 
 import log
+from app.core.banner import print_startup_banner
 from app.core.settings import settings
 from version import APP_VERSION
 
@@ -30,6 +31,7 @@ def main():
         if a.startswith("-w"):
             workers = int(a.split("=", 1)[-1] if "=" in a else sys.argv[sys.argv.index(a) + 1])
 
+    print_startup_banner()
     log.console("Nexus Media FastAPI 启动中...")
     log.console(f"模式: {'dev' if dev else 'prod'}, workers={workers}")
     log.console(f"当前版本号：{APP_VERSION}")
