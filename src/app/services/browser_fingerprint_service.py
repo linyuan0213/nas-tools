@@ -10,7 +10,11 @@ import httpx2
 
 import log
 from app.core.settings import settings
+from app.db.repositories.indexer_site_config_repo_adapter import IndexerSiteConfigRepositoryAdapter
+from app.sites.engine import SiteEngine
 from app.utils.browser_mode import get_chrome_server_url
+from app.utils.fingerprint_headers import fingerprint_to_browser_headers, merge_fingerprint_headers
+from app.utils.json_utils import JsonUtils
 
 
 def _chrome_admin_token() -> str:
@@ -72,6 +76,48 @@ def _sanitize_fingerprint(raw: dict) -> dict:
     return out
 
 
+def apply_fingerprint_to_site_configs(fingerprint: dict) -> int:
+    """把指纹 UA/浏览器请求头应用到已启用站点配置（区分 API / HTML 站点）.
+
+    更新站点维护的 UA 与高级请求头（headers）：
+    - API 站点：Accept 为 JSON、Fetch 语义为 cors/empty
+    - HTML 站点：Accept 为文档、Fetch 语义为 navigate/document
+    只覆盖 UA 相关键，保留用户手工配置的 Cookie/认证头等自定义值。
+    """
+    ua = str(fingerprint.get("ua") or "").strip()
+    if not ua:
+        log.info("[Fingerprint]指纹缺少 UA，跳过站点配置更新")
+        return 0
+
+    repo = IndexerSiteConfigRepositoryAdapter()
+    engine = SiteEngine()
+    updated = 0
+    for cfg in repo.list_all(enabled=True):
+        note = dict(cfg.default_settings or {})
+        site_url = str(note.get("signurl") or note.get("rssurl") or "")
+        site_def = engine.get_by_url(site_url) if site_url else None
+        site_type = "api" if (site_def and site_def.api) else "html"
+        fp_headers = fingerprint_to_browser_headers(fingerprint, site_type)
+        existing_headers = note.get("headers") or {}
+        if isinstance(existing_headers, str):
+            try:
+                existing_headers = JsonUtils.loads(existing_headers) or {}
+            except Exception:  # noqa: BLE001
+                existing_headers = {}
+        if not isinstance(existing_headers, dict):
+            existing_headers = {}
+        note["headers"] = merge_fingerprint_headers(existing_headers, fp_headers)
+        note["ua"] = ua
+        try:
+            repo.update_default_settings(cfg.site_name, note)
+            updated += 1
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[Fingerprint]更新站点 {cfg.site_name} 配置失败: {e}")
+    if updated:
+        log.info(f"[Fingerprint]已更新 {updated} 个站点的 UA/请求头")
+    return updated
+
+
 def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
     """把用户真实指纹同步到 nexus-chrome，返回 fp_profile_id；失败返回 None。"""
     profile_id = f"user_{user_id}"
@@ -80,10 +126,11 @@ def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
         log.warn("[Fingerprint] nexus-chrome 服务器未配置，跳过指纹同步")
         return None
 
+    sanitized = _sanitize_fingerprint(fingerprint)
     payload = {
         "profile_id": profile_id,
         "name": f"user_{user_id} real fingerprint",
-        "fingerprint": _sanitize_fingerprint(fingerprint),
+        "fingerprint": sanitized,
     }
     headers = {}
     token = _chrome_admin_token()
@@ -95,6 +142,11 @@ def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> str | None:
         resp.raise_for_status()
         # 同步成功：写入实验室默认指纹画像，供全局后台流程（站点定时刷新/RSS 自动化）使用
         _set_default_fp_profile_id(profile_id)
+        # 指纹 UA/浏览器请求头同步到站点配置（区分 API / HTML）
+        try:
+            apply_fingerprint_to_site_configs(sanitized)
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[Fingerprint]应用指纹到站点配置失败: {e}")
         log.info(f"[Fingerprint] 用户 {user_id} 指纹已同步: {profile_id}")
         return profile_id
     except Exception as e:  # noqa: BLE001
