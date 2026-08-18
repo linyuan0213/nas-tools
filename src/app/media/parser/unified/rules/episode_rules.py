@@ -10,6 +10,20 @@ from .base import ExtractionRule
 
 RULES: list[ExtractionRule] = [
     ExtractionRule(
+        name="sxxexx_resolution_tight",
+        # 集号与分辨率粘连（S01E071080p = S01E07 + 1080p）：非贪婪集号 + 前瞻分辨率截断，
+        # 避免 \d+ 贪婪把 07+1080 全当集号
+        pattern=re.compile(r"[Ss](\d+)[Ee](\d+?)(?=(?:2160|1080|720|480|576)[pPiI]\b)", re.IGNORECASE),
+        category="episode",
+        priority=101,
+        confidence=0.95,
+        stop=True,
+        _extract_fn=lambda m, _: {
+            "season": int(m.group(1)),
+            "episode": int(m.group(2)),
+        },
+    ),
+    ExtractionRule(
         name="sxxexx_range",
         pattern=re.compile(r"[Ss](\d+)[Ee](\d+)[-~][Ee](\d+)", re.IGNORECASE),
         category="episode",
