@@ -19,8 +19,8 @@ router = APIRouter()
 @router.post("/browser/fingerprint", response_model=CommonResponse)
 async def submit_fingerprint(
     fingerprint: dict[str, Any],
+    request: Request,
     user: UserContext = Depends(get_current_user),
-    request: Request | None = None,
 ):
     """提交当前用户浏览器的真实指纹，注入 nexus-chrome 指纹画像。
 
@@ -38,12 +38,11 @@ async def submit_fingerprint(
             data=None,
         )
     # 站点配置已更新：刷新站点缓存使新 UA/请求头立即生效
-    if request is not None:
-        ctx = getattr(request.app.state, "context", None)
-        site_cache = getattr(ctx, "site_cache", None)
-        if site_cache is not None:
-            try:
-                site_cache.refresh()
-            except Exception:  # noqa: BLE001
-                log.debug("[Fingerprint]刷新站点缓存失败（不影响指纹同步结果）")
+    ctx = getattr(request.app.state, "context", None)
+    site_cache = getattr(ctx, "site_cache", None)
+    if site_cache is not None:
+        try:
+            site_cache.refresh()
+        except Exception:  # noqa: BLE001
+            log.debug("[Fingerprint]刷新站点缓存失败（不影响指纹同步结果）")
     return CommonResponse(code=0, message="ok", data={"fp_profile_id": profile_id})
