@@ -127,12 +127,13 @@ class TestApplyFingerprintToSiteConfigs:
             count = apply_fingerprint_to_site_configs(_FP)
 
         assert count == 2
-        # API 站点：Accept JSON
+        # API 站点：Accept JSON；UA 仅写入 ua 字段，高级请求头不重复 User-Agent
         api_entity = site_repo.update.call_args_list[0].args[0]
         assert api_entity.note["ua"] == _FP["ua"]
         assert "application/json" in api_entity.note["headers"]["Accept"]
+        assert "User-Agent" not in api_entity.note["headers"]
         headers_col = JsonUtils.loads(api_entity.headers)
-        assert headers_col["User-Agent"] == _FP["ua"]
+        assert "User-Agent" not in headers_col
         assert headers_col["Sec-Fetch-Dest"] == "empty"
         assert headers_col["Accept"] == api_entity.note["headers"]["Accept"]
         # HTML 站点：Accept 文档
@@ -191,7 +192,9 @@ class TestApplyFingerprintToSiteConfigs:
         headers = site.note["headers"]
         assert headers["Cookie"] == "a=1"
         assert headers["Authorization"] == "Bearer xyz"
-        assert headers["User-Agent"] == _FP["ua"]
+        # UA 由 ua 字段承载，不重复写入高级请求头
+        assert "User-Agent" not in headers
+        assert site.note["ua"] == _FP["ua"]
 
     def test_headers_json_string_parsed(self):
         site = self._make_site("S", sign_url="https://api.example.com", headers='{"Cookie":"a=1"}')
@@ -213,4 +216,5 @@ class TestApplyFingerprintToSiteConfigs:
         ):
             apply_fingerprint_to_site_configs(_FP)
         assert site.note["headers"]["Cookie"] == "a=1"
-        assert site.note["headers"]["User-Agent"] == _FP["ua"]
+        assert "User-Agent" not in site.note["headers"]
+        assert site.note["ua"] == _FP["ua"]

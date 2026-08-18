@@ -119,6 +119,8 @@ def apply_fingerprint_to_site_configs(fingerprint: dict) -> int:
         site_def = engine.get_by_url(site_url) if site_url else None
         site_type = "api" if (site_def and site_def.api) else "html"
         fp_headers = fingerprint_to_browser_headers(fingerprint, site_type)
+        # UA 由站点 UA 字段承载（认证信息 User-Agent），高级请求头不再重复写入 User-Agent
+        fp_headers.pop("User-Agent", None)
         existing_headers = _normalize_headers(note.get("headers") or site.headers)
         merged_headers = merge_fingerprint_headers(existing_headers, fp_headers)
         note["headers"] = merged_headers

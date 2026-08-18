@@ -4,6 +4,7 @@
 
 ### 修复
 - **浏览器指纹未写入站点 UA/高级请求头**：指纹同步误写入索引器配置表（`INDEXER_SITE_CONFIG.DEFAULT_SETTINGS`），而运行时站点请求、索引器搜索与前端维护页读取的站点配置表（`CONFIG_SITE`）未生效；现改为写入站点配置表（`NOTE.ua` / `NOTE.headers` / `HEADERS` 列），启用状态取自索引器配置，仅覆盖 UA 相关键、保留用户自定义认证头
+- **UA 重复展示**：指纹 UA 仅写入站点「认证信息-User-Agent」字段，高级请求头不再重复写入 User-Agent（保留 sec-ch-ua / Accept / Sec-Fetch-* 等 Client Hints）
 
 ## v4.8.0 (2026-08-18)
 
