@@ -34,6 +34,7 @@ from app.infrastructure.progress import ProgressTracker
 from app.infrastructure.thread import ThreadExecutor
 from app.media import MediaService, Scraper
 from app.media import meta_info as meta_info_fn
+from app.media.parser import RegexParser
 from app.message import Message
 from app.schemas.media import TransferMediaDTO
 from app.services.transfer.cleanup_service import TransferCleanupService
@@ -275,6 +276,7 @@ class FileTransferService:
         udf_flag=False,
         root_path=False,
         dst_backend=None,
+        fallback_episode=None,
     ) -> tuple[bool, str]:
         """识别并转移一个文件、多个文件或者目录."""
         if not in_path or not os.path.exists(in_path):
@@ -322,12 +324,26 @@ class FileTransferService:
                     return self._finish_transfer(True, "没有新文件需要处理")
 
             # ---------- 阶段 3：查下载记录 + 批量识别 ----------
+            dl_season = None
+            dl_episode = None
             if not tmdb_info:
-                tmdb_info, media_type = self._lookup_download_record(in_path)
+                tmdb_info, media_type, dl_season, dl_episode = self._lookup_download_record(in_path)
 
             medias = self.media.get_media_info_on_files(file_list, tmdb_info, media_type, season, episode[0])
             if not medias:
                 return self._finish_transfer(False, "搜索媒体信息出错")
+
+            # 订阅/下载历史已知季集时兜底：文件名解析失败的动漫单集用订阅记录的集号补齐，
+            # 避免"无法从文件名中识别出集数"导致订阅下载的剧集无法入库
+            fallback_season = season if season is not None else dl_season
+            fallback_ep = fallback_episode if fallback_episode is not None else dl_episode
+            if fallback_season is not None or fallback_ep is not None:
+                for _path, _info in medias.items():
+                    if fallback_season is not None and _info.begin_season is None and _info.type != MediaType.MOVIE:
+                        _info.begin_season = fallback_season
+                    if fallback_ep is not None and _info.begin_episode is None:
+                        _info.begin_episode = fallback_ep
+                log.info(f"[Rmt]按订阅/下载记录补齐季集: S{fallback_season or '-'}E{fallback_ep or '-'}")
 
             self.progress.update(ptype=ProgressKey.FileTransfer, text=f"共 {len(medias)} 个文件需要处理...")
 
@@ -408,21 +424,33 @@ class FileTransferService:
                     download_info = records[0]
                 else:
                     log.debug(f"[Rmt]{in_path} 命中 {count} 条下载记录，聚合目录多部剧，跳过")
-                    return None, None
+                    return None, None, None, None
         if not download_info and os.path.isfile(in_path):
             parent = os.path.dirname(in_path)
             # 文件回退父目录时，父目录若是聚合目录（多条下载记录）同样不可靠，跳过
             parent_count = self._history.download_repo.count_download_history_by_path(parent)
             if parent_count and parent_count > 1:
                 log.debug(f"[Rmt]{in_path} 父目录 {parent} 命中 {parent_count} 条下载记录，聚合，跳过")
-                return None, None
+                return None, None, None, None
             download_info = self._history.download_repo.get_download_history_by_path(parent)
         if download_info and str(download_info.TMDBID or ""):
             log.info(f"[Rmt]{in_path} 找到下载记录，TMDBID：{download_info.TMDBID}")
             parsed_type = MediaType.from_string(download_info.TYPE)
             media_type = parsed_type
-            return self.media.get_tmdb_info(mtype=media_type, tmdbid=download_info.TMDBID), media_type
-        return None, None
+            dl_season, dl_episode = None, None
+            se = getattr(download_info, "SE", "") or ""
+            if se:
+                se_parsed = RegexParser().parse(str(se))
+                if se_parsed:
+                    dl_season = se_parsed.season
+                    dl_episode = se_parsed.episode
+            return (
+                self.media.get_tmdb_info(mtype=media_type, tmdbid=download_info.TMDBID),
+                media_type,
+                dl_season,
+                dl_episode,
+            )
+        return None, None, None, None
 
     def _transfer_files(
         self,
@@ -575,6 +603,8 @@ class FileTransferService:
                     failed_count += fc
                     alert_count += ac
                     alert_messages = am
+                    if fc > 0:
+                        success_flag = False
                     if udf_flag:
                         return {
                             "total_count": total_count,
@@ -626,6 +656,8 @@ class FileTransferService:
                 alert_messages = am
                 total_exist_filenum += exist_filenum
                 # 失败或已存在（转移历史/目标文件已存在）都不进入成功处理与消息聚合
+                if fc > 0:
+                    success_flag = False
                 if fc > 0 or exist_filenum > 0:
                     continue
 

@@ -106,6 +106,7 @@ class TransferPipeline:
             media_type=task.media_type,
             season=task.season,
             episode=task.episode,
+            fallback_episode=task.fallback_episode,
             dst_backend=dst_backend,
         )
 

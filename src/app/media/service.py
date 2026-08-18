@@ -125,6 +125,40 @@ class MediaService:
                 info.total_episodes = 1
 
     @staticmethod
+    def _fill_episode_from_parent_paths(file_path: str, parsed: ParserResult | None) -> None:
+        """文件名解析不出集号时，从父目录名提取季/集（动漫单集目录常携带 S01E07）.
+
+        订阅下载时下载历史只记到季（S01），单集集号通常只在转移路径的目录名中。
+        裸数字文件名（1.mkv）解析出的数字是种子内索引而非集号，优先用父目录的集号覆盖。
+        """
+        if parsed is None:
+            return
+        file_stem = os.path.splitext(os.path.basename(file_path))[0]
+        bare_index = bool(re.fullmatch(r"\d+", file_stem))
+        if parsed.episode is not None and not bare_index:
+            return
+        parent = os.path.basename(os.path.dirname(file_path))
+        parent_parent = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
+        for ctx in (parent, parent_parent):
+            if not ctx or ctx in (".", "/", "\\", ""):
+                continue
+            try:
+                ctx_parsed = RegexParser().parse(ctx)
+            except Exception:  # noqa: BLE001
+                ctx_parsed = None
+            if ctx_parsed and ctx_parsed.episode:
+                if parsed.season is None or bare_index:
+                    parsed.season = ctx_parsed.season
+                parsed.episode = ctx_parsed.episode
+                if parsed.end_episode is None:
+                    parsed.end_episode = ctx_parsed.end_episode
+                log.info(
+                    f"[MediaService]文件名无集号，从父目录提取: {os.path.basename(file_path)} "
+                    f"-> S{parsed.season or '-'}E{parsed.episode}"
+                )
+                return
+
+    @staticmethod
     def _apply_words(title: str, subtitle: str | None = None) -> tuple[str, str]:
         """套用识别词（屏蔽 / 替换 / 集偏移），与 meta_info() 的前置清洗保持一致."""
         words = get_words_info()
@@ -808,6 +842,7 @@ class MediaService:
                     file_name, _ = self._apply_words(file_name)
                     parsed = self._parser.parse(file_name)
                     parsed = self._post_process(parsed, file_name)
+                    self._fill_episode_from_parent_paths(file_path, parsed)
                     info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
                     info.set_tmdb_info(tmdb_info)
                     self._backfill_total_episodes(info)
@@ -903,6 +938,9 @@ class MediaService:
                 item["title"],
                 f"{item['parent_name']} {item['parent_parent_name']}",
             )
+            # 文件名解析不出集号时，从父目录名提取（动漫单集目录常携带 S01E07）
+            if parsed_list[idx]:
+                self._fill_episode_from_parent_paths(path_map[idx], parsed_list[idx])
 
         # 2.3 去重后并发查 TMDB
 

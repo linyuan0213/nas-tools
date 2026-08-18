@@ -60,6 +60,9 @@ class TransferTask:
     episode: tuple | None = None
     """集号信息"""
 
+    fallback_episode: int | None = None
+    """集号兜底（订阅/下载历史已知集号）：文件名解析不出集号时用于补齐 begin_episode"""
+
     post_process: Callable[["TransferTask", bool, str], None] | None = None
     """后处理回调：func(task, success, message) -> None"""
 

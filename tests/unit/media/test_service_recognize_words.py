@@ -77,3 +77,42 @@ def test_replace_word_applied(no_words):
     parsed = RegexParser().parse(rev)
     assert parsed is not None
     assert parsed.title_en == "The Boys"
+
+
+def test_fill_episode_from_parent_fills_when_missing():
+    """文件名无集号时，从父目录名提取季/集（动漫单集目录携带 S01E07）."""
+    parsed = RegexParser().parse("Sayonara.Lara.mkv")
+    assert parsed is not None
+    assert parsed.episode is None
+    MediaService._fill_episode_from_parent_paths("/downloads/Sayonara.Lara.S01E07.2026.1080p/Sayonara.Lara.mkv", parsed)
+    assert parsed.season == 1
+    assert parsed.episode == 7
+
+
+def test_fill_episode_from_parent_bare_index_overridden():
+    """裸数字文件名（1.mkv）解析的索引不是集号，优先用父目录集号覆盖."""
+    parsed = RegexParser().parse("1.mkv")
+    assert parsed is not None
+    MediaService._fill_episode_from_parent_paths("/downloads/Sparks.of.Tomorrow.S02E03.2026.1080p/1.mkv", parsed)
+    assert parsed.season == 2
+    assert parsed.episode == 3
+
+
+def test_fill_episode_from_parent_does_not_override_existing():
+    """文件名已解析出集号时不覆盖（避免集号冲突）."""
+    parsed = RegexParser().parse("Sayonara.Lara.S01E07.2026.1080p.mkv")
+    assert parsed is not None
+    assert parsed.episode == 7
+    MediaService._fill_episode_from_parent_paths(
+        "/downloads/Sayonara.Lara.S01.2026.1080p/Sayonara.Lara.S01E07.2026.1080p.mkv", parsed
+    )
+    assert parsed.season == 1
+    assert parsed.episode == 7
+
+
+def test_fill_episode_from_parent_no_episode_anywhere():
+    """文件名与父目录都无集号时不改动."""
+    parsed = RegexParser().parse("Some.Movie.2024.1080p.mkv")
+    assert parsed is not None
+    MediaService._fill_episode_from_parent_paths("/downloads/Some.Movie.2024.1080p/Some.Movie.2024.1080p.mkv", parsed)
+    assert parsed.episode is None

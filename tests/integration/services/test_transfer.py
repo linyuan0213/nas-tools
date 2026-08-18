@@ -552,18 +552,37 @@ class TestFileTransferService:
         download_info = MagicMock()
         download_info.TMDBID = 123
         download_info.TYPE = "movie"
+        download_info.SE = "S01 E01"
         mock_service._history.download_repo.get_download_history_by_path.return_value = download_info
         mock_service.media.get_tmdb_info.return_value = {"id": 123}
 
-        tmdb_info, media_type = mock_service._lookup_download_record("/downloads/movie.mkv")
+        tmdb_info, media_type, dl_season, dl_episode = mock_service._lookup_download_record("/downloads/movie.mkv")
         assert tmdb_info == {"id": 123}
         assert media_type == MediaType.MOVIE
+        assert dl_season == 1
+        assert dl_episode == 1
+
+    def test_lookup_download_record_no_se(self, mock_service):
+        download_info = MagicMock()
+        download_info.TMDBID = 123
+        download_info.TYPE = "tv"
+        download_info.SE = ""
+        mock_service._history.download_repo.get_download_history_by_path.return_value = download_info
+        mock_service.media.get_tmdb_info.return_value = {"id": 123}
+
+        tmdb_info, media_type, dl_season, dl_episode = mock_service._lookup_download_record("/downloads/show.mkv")
+        assert tmdb_info == {"id": 123}
+        assert media_type == MediaType.TV
+        assert dl_season is None
+        assert dl_episode is None
 
     def test_lookup_download_record_not_found(self, mock_service):
         mock_service._history.download_repo.get_download_history_by_path.return_value = None
-        tmdb_info, media_type = mock_service._lookup_download_record("/downloads/movie.mkv")
+        tmdb_info, media_type, dl_season, dl_episode = mock_service._lookup_download_record("/downloads/movie.mkv")
         assert tmdb_info is None
         assert media_type is None
+        assert dl_season is None
+        assert dl_episode is None
 
     def test_get_sync_backend_by_dest(self, mock_service):
         entity = MagicMock()
@@ -596,6 +615,181 @@ class TestFileTransferService:
             status, msg = mock_service.transfer_media(SyncType.MAN, unique_path)
         assert status is False  # bluray_disk_dir is None, empty file_list returns failure
         assert "未找到" in msg
+
+    def test_transfer_media_fallback_episode_fills_begin_episode(self, mock_service):
+        """文件名解析不出集号时，用订阅/下载历史的 fallback_episode 补齐 begin_episode"""
+        unique_path = f"/dl/anime-{uuid.uuid4().hex}"
+        media_file = f"{unique_path}/anime.mkv"
+        media = MagicMock()
+        media.type = MediaType.ANIME
+        media.begin_season = 1
+        media.begin_episode = None
+        media.tmdb_info = {"id": 1}
+
+        captured = {}
+
+        def _fake_loop(medias, *args, **kwargs):
+            captured["media"] = list(medias.values())[0]
+            return {
+                "total_count": 1,
+                "failed_count": 0,
+                "alert_count": 0,
+                "alert_messages": [],
+                "message_medias": {},
+                "success_flag": True,
+                "error_message": "",
+            }
+
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("app.services.transfer.filetransfer_service.PathUtils.is_invalid_path", return_value=False),
+            patch("app.services.transfer.filetransfer_service.PathUtils.get_bluray_dir", return_value=None),
+            patch(
+                "app.services.transfer.filetransfer_service.PathUtils.get_dir_files",
+                return_value=[media_file],
+            ),
+            patch.object(mock_service.media, "get_media_info_on_files", return_value={media_file: media}),
+            patch.object(mock_service, "_transfer_files_loop", side_effect=_fake_loop),
+        ):
+            status, msg = mock_service.transfer_media(
+                SyncType.MAN,
+                unique_path,
+                operation="copy",
+                tmdb_info={"id": 1},
+                media_type="tv",
+                season=1,
+                fallback_episode=7,
+            )
+        assert status is True
+        assert captured["media"].begin_episode == 7
+
+    def test_transfer_media_fallback_not_override_existing_episode(self, mock_service):
+        """文件名已解析出集号时不覆盖"""
+        unique_path = f"/dl/anime-{uuid.uuid4().hex}"
+        media_file = f"{unique_path}/anime.mkv"
+        media = MagicMock()
+        media.type = MediaType.ANIME
+        media.begin_season = 1
+        media.begin_episode = 6
+        media.tmdb_info = {"id": 1}
+
+        captured = {}
+
+        def _fake_loop(medias, *args, **kwargs):
+            captured["media"] = list(medias.values())[0]
+            return {
+                "total_count": 1,
+                "failed_count": 0,
+                "alert_count": 0,
+                "alert_messages": [],
+                "message_medias": {},
+                "success_flag": True,
+                "error_message": "",
+            }
+
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("app.services.transfer.filetransfer_service.PathUtils.is_invalid_path", return_value=False),
+            patch("app.services.transfer.filetransfer_service.PathUtils.get_bluray_dir", return_value=None),
+            patch(
+                "app.services.transfer.filetransfer_service.PathUtils.get_dir_files",
+                return_value=[media_file],
+            ),
+            patch.object(mock_service.media, "get_media_info_on_files", return_value={media_file: media}),
+            patch.object(mock_service, "_transfer_files_loop", side_effect=_fake_loop),
+        ):
+            status, msg = mock_service.transfer_media(
+                SyncType.MAN,
+                unique_path,
+                operation="copy",
+                tmdb_info={"id": 1},
+                media_type="tv",
+                season=1,
+                fallback_episode=7,
+            )
+        assert status is True
+        assert captured["media"].begin_episode == 6
+
+    def test_transfer_media_fail_sets_success_flag_false(self, mock_service):
+        """单个文件转移失败（_record_fail）时 transfer_media 必须返回失败，不能误报成功"""
+        unique_path = f"/dl/anime-{uuid.uuid4().hex}"
+        media_file = f"{unique_path}/anime.mkv"
+        media = MagicMock()
+        media.type = MediaType.ANIME
+        media.begin_season = 1
+        media.begin_episode = None
+        media.tmdb_id = 1
+        media.tmdb_info = {"id": 1}
+        media.get_title_string.return_value = "Some Anime"
+
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("app.services.transfer.filetransfer_service.PathUtils.is_invalid_path", return_value=False),
+            patch("app.services.transfer.filetransfer_service.PathUtils.get_bluray_dir", return_value=None),
+            patch(
+                "app.services.transfer.filetransfer_service.PathUtils.get_dir_files",
+                return_value=[media_file],
+            ),
+            patch.object(mock_service.media, "get_media_info_on_files", return_value={media_file: media}),
+            patch("os.path.getsize", return_value=1024),
+            patch.object(
+                mock_service,
+                "_do_transfer_file",
+                return_value=(1, 1, ["识别失败，无法从文件名中识别出集数"], 0, None, None, None),
+            ),
+        ):
+            status, msg = mock_service.transfer_media(
+                SyncType.MAN,
+                unique_path,
+                operation="copy",
+                tmdb_info={"id": 1},
+                media_type="tv",
+                season=1,
+            )
+        assert status is False
+        mock_service.message.send_transfer_fail_message.assert_called_once()
+
+    def test_transfer_media_existing_file_success(self, mock_service):
+        """目标文件已存在（exist_filenum>0）不视为失败，整体仍返回成功"""
+        unique_path = f"/dl/anime-{uuid.uuid4().hex}"
+        media_file = f"{unique_path}/anime.mkv"
+        media = MagicMock()
+        media.type = MediaType.ANIME
+        media.begin_season = 1
+        media.begin_episode = 6
+        media.tmdb_id = 1
+        media.tmdb_info = {"id": 1}
+        media.get_title_string.return_value = "Some Anime"
+
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("app.services.transfer.filetransfer_service.PathUtils.is_invalid_path", return_value=False),
+            patch("app.services.transfer.filetransfer_service.PathUtils.get_bluray_dir", return_value=None),
+            patch(
+                "app.services.transfer.filetransfer_service.PathUtils.get_dir_files",
+                return_value=[media_file],
+            ),
+            patch.object(mock_service.media, "get_media_info_on_files", return_value={media_file: media}),
+            patch("os.path.getsize", return_value=1024),
+            patch.object(
+                mock_service,
+                "_do_transfer_file",
+                return_value=(0, 0, [], 1, "/dst/anime.mkv", "/dst/anime.mkv", "/dst"),
+            ),
+        ):
+            status, msg = mock_service.transfer_media(
+                SyncType.MAN,
+                unique_path,
+                operation="copy",
+                tmdb_info={"id": 1},
+                media_type="tv",
+                season=1,
+            )
+        assert status is True
 
     def test_record_fail(self, mock_service):
         mock_service._history.is_need_insert_transfer_unknown.return_value = True

@@ -68,6 +68,7 @@ def handle_download_completed(
         tmdb_info = None
         media_type = ""
         season = None
+        fallback_episode = None
         try:
             if download_history_repo:
                 history = download_history_repo.get_by_downloader(payload.downloader_id, payload.task_id)
@@ -80,8 +81,11 @@ def handle_download_completed(
                     tmdb_info = media_cache.get_tmdb_info(mtype=media_type, tmdbid=tmdb_id)
                 if history.season_episode:
                     parsed = RegexParser().parse(str(history.season_episode))
-                    if parsed and parsed.season:
-                        season = parsed.season
+                    if parsed:
+                        if parsed.season:
+                            season = parsed.season
+                        if parsed.episode:
+                            fallback_episode = parsed.episode
         except Exception as e:  # noqa: BLE001
             log.debug(f"[Event]读取下载历史TMDB信息失败: {e}")
 
@@ -118,6 +122,7 @@ def handle_download_completed(
             tmdb_info=tmdb_info,
             media_type=media_type,
             season=season,
+            fallback_episode=fallback_episode,
             post_process=_post_process,
         )
         success, message = transfer_pipeline.process(task)
