@@ -18,6 +18,7 @@ from app.db.repositories.download_repository import DownloadRepository
 from app.domain.enums import ProgressKey, SearchType
 from app.indexer.schema import IndexerConfigSchema
 from app.infrastructure.http.client import HttpClient
+from app.infrastructure.http.exceptions import HttpClientError
 from app.utils import DomUtils, ExceptionUtils, StringUtils
 
 
@@ -95,9 +96,29 @@ class _IIndexClient(metaclass=ABCMeta):
 
         search_word = str(StringUtils.handler_special_chars(text=key_word, replace_word=" ", allow_space=True) or "")
         api_url = f"{indexer.domain}?apikey={self.api_key}&t=search&q={quote(search_word)}"
-        result_array = self._parse_torznabxml(api_url)
+        result_array: list = []
+        error_flag = False
+        try:
+            result_array = self._parse_torznabxml(api_url)
+        except Exception as e:
+            # HTTP 错误 / 超时 / 解析异常 → 计为失败
+            error_flag = True
+            log.warn(f"[{self.index_type}]{indexer.name} 搜索失败: {e}")
 
-        _ = (datetime.datetime.now() - start_time).seconds
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
+
+        # 写入索引器统计（正常返回（含空结果）记 Y，请求/解析失败记 N）
+        if self.download_repo:
+            try:
+                self.download_repo.insert_indexer_statistics(
+                    indexer=indexer.name,
+                    itype=self.client_type or self.client_id,
+                    seconds=int(seconds),
+                    result="N" if error_flag else "Y",
+                )
+            except Exception as e:
+                log.warn(f"[Indexer]写入统计失败: {e!s}")
+
         if len(result_array) == 0:
             log.warn(f"[{self.index_type}]{indexer.name} 关键词 {key_word} 未搜索到数据")
             if self.progress:
@@ -111,67 +132,51 @@ class _IIndexClient(metaclass=ABCMeta):
                 )
 
         # 注入站点元信息
-        result_count = len(result_array)
         for item in result_array:
             item["_indexer_name"] = indexer.name
             item["_indexer_order"] = order_seq
             item["_indexer_public"] = getattr(indexer, "public", False)
             item["_indexer_source"] = self.client_type or self.client_id
 
-        # 写入索引器统计（第三方客户端走默认实现）
-        if self.download_repo:
-            try:
-                self.download_repo.insert_indexer_statistics(
-                    indexer=indexer.name,
-                    itype=self.client_type or self.client_id,
-                    seconds=int(_),
-                    result="success" if result_count > 0 else "fail",
-                )
-            except Exception as e:
-                log.warn(f"[Indexer]写入统计失败: {e!s}")
-
         return result_array
 
     @staticmethod
     def _parse_torznabxml(url):
-        """解析 Torznab XML"""
+        """解析 Torznab XML；HTTP 错误 / 超时 / 解析失败向上抛出（由调用方计为失败）"""
         ret_array = []
         if not url:
-            return []
-        try:
-            ret = HttpClient().get(url)
-            if not ret:
-                return []
-            xml_doc = defusedxml.minidom.parseString(ret.text)
-            items = xml_doc.getElementsByTagName("item")
-            for item in items:
-                try:
-                    title = DomUtils.tag_value(item, "title", default="")
-                    enclosure = DomUtils.tag_value(item, "enclosure", "url", default="")
-                    if not enclosure:
-                        enclosure = DomUtils.tag_value(item, "link", default="")
-                    size = DomUtils.tag_value(item, "size", default=0)
-                    description = DomUtils.tag_value(item, "description", default="")
-                    seeders = 0
-                    peers = 0
-                    for node in item.getElementsByTagName("torznab:attr"):
-                        if node.getAttribute("name") == "seeders":
-                            seeders = node.getAttribute("value")
-                        if node.getAttribute("name") == "peers":
-                            peers = node.getAttribute("value")
-                    ret_array.append(
-                        {
-                            "title": title,
-                            "enclosure": enclosure,
-                            "description": description,
-                            "size": size,
-                            "seeders": seeders,
-                            "peers": peers,
-                        }
-                    )
-                except Exception as e:
-                    ExceptionUtils.exception_traceback(e)
-                    continue
-        except Exception as e2:
-            ExceptionUtils.exception_traceback(e2)
+            return ret_array
+        ret = HttpClient().get(url)
+        if not ret:
+            raise HttpClientError("Torznab 请求无响应")
+        xml_doc = defusedxml.minidom.parseString(ret.text)
+        items = xml_doc.getElementsByTagName("item")
+        for item in items:
+            try:
+                title = DomUtils.tag_value(item, "title", default="")
+                enclosure = DomUtils.tag_value(item, "enclosure", "url", default="")
+                if not enclosure:
+                    enclosure = DomUtils.tag_value(item, "link", default="")
+                size = DomUtils.tag_value(item, "size", default=0)
+                description = DomUtils.tag_value(item, "description", default="")
+                seeders = 0
+                peers = 0
+                for node in item.getElementsByTagName("torznab:attr"):
+                    if node.getAttribute("name") == "seeders":
+                        seeders = node.getAttribute("value")
+                    if node.getAttribute("name") == "peers":
+                        peers = node.getAttribute("value")
+                ret_array.append(
+                    {
+                        "title": title,
+                        "enclosure": enclosure,
+                        "description": description,
+                        "size": size,
+                        "seeders": seeders,
+                        "peers": peers,
+                    }
+                )
+            except Exception as e:
+                ExceptionUtils.exception_traceback(e)
+                continue
         return ret_array

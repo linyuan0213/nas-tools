@@ -224,13 +224,19 @@ class BuiltinIndexer(_IIndexClient):
         except Exception as err:
             error_flag = True
             log.warn(f"[{self.client_name}]{indexer.name} 搜索失败: {err}")
+        # 站点级失败（超时/HTTP 错误等被 searcher 吞掉、不抛异常）同样计为失败
+        if not error_flag and self.last_error:
+            error_flag = True
 
-        seconds = round((datetime.datetime.now() - start_time).seconds, 1)
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
 
         # 索引统计
         with _STATS_LOCK:
             self._download_repo.insert_indexer_statistics(
-                indexer=indexer.name, itype=self.client_id, seconds=seconds, result="N" if error_flag else "Y"
+                indexer=indexer.name,
+                itype=self.client_id,
+                seconds=int(seconds),
+                result="N" if error_flag else "Y",
             )
 
         if len(result_array) == 0:
@@ -266,14 +272,23 @@ class BuiltinIndexer(_IIndexClient):
         log.warn(f"[BuiltinIndexer]list 找到站点: {indexer.name} (id={indexer.id}, domain={indexer.domain})")  # type: ignore[union-attr]
         start_time = datetime.datetime.now()
 
-        error_flag, result_array = self.__search_via_engine(search_word=keyword, indexer=indexer, page=page)
+        result_array: list = []
+        error_flag = False
+        try:
+            error_flag, result_array = self.__search_via_engine(search_word=keyword, indexer=indexer, page=page)
+        except Exception as e:
+            error_flag = True
+            log.warn(f"[{self.client_name}]{indexer.name} list 失败: {e}")  # type: ignore[union-attr]
+        # 站点级失败（超时/HTTP 错误等被 searcher 吞掉、不抛异常）同样计为失败
+        if not error_flag and self.last_error:
+            error_flag = True
 
-        seconds = round((datetime.datetime.now() - start_time).seconds, 1)
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
         with _STATS_LOCK:
             self._download_repo.insert_indexer_statistics(
                 indexer=indexer.name,  # type: ignore[union-attr]
                 itype=self.client_id,
-                seconds=seconds,
+                seconds=int(seconds),
                 result="N" if error_flag else "Y",  # type: ignore[union-attr]
             )
         return result_array

@@ -122,41 +122,44 @@ class Jackett(_IIndexClient):
         if keyword:
             api_url += f"&Query={quote(keyword)}"
         api_url += f"&Tracker[]={quote(str(tracker_id))}"
+        result_array: list = []
+        error_flag = False
         try:
             ret = HttpClient().get(api_url)
-            if not ret:
-                return []
-            data = ret.json()
-            results = data.get("Results", [])
-            page_size = 20
-            start = page * page_size
-            items = results[start : start + page_size]
-            result_array = [
-                {
-                    "title": r.get("Title", ""),
-                    "enclosure": r.get("Link") or r.get("MagnetUri") or "",
-                    "description": r.get("Details", ""),
-                    "page_url": r.get("Details", ""),
-                    "size": r.get("Size", 0),
-                    "seeders": r.get("Seeders", 0),
-                    "peers": r.get("Peers", 0),
-                    "uploadvolumefactor": r.get("UploadVolumeFactor"),
-                    "downloadvolumefactor": r.get("DownloadVolumeFactor"),
-                    "indexer": str(tracker_id),
-                }
-                for r in items
-            ]
+            if ret:
+                data = ret.json()
+                results = data.get("Results", [])
+                page_size = 20
+                start = page * page_size
+                items = results[start : start + page_size]
+                result_array = [
+                    {
+                        "title": r.get("Title", ""),
+                        "enclosure": r.get("Link") or r.get("MagnetUri") or "",
+                        "description": r.get("Details", ""),
+                        "page_url": r.get("Details", ""),
+                        "size": r.get("Size", 0),
+                        "seeders": r.get("Seeders", 0),
+                        "peers": r.get("Peers", 0),
+                        "uploadvolumefactor": r.get("UploadVolumeFactor"),
+                        "downloadvolumefactor": r.get("DownloadVolumeFactor"),
+                        "indexer": str(tracker_id),
+                    }
+                    for r in items
+                ]
+            else:
+                error_flag = True
         except Exception as e2:
+            error_flag = True
             ExceptionUtils.exception_traceback(e2)
-            return []
-        seconds = round((datetime.datetime.now() - start_time).seconds, 1)
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
         if self.download_repo:
             try:
                 self.download_repo.insert_indexer_statistics(
                     indexer=str(tracker_id),
                     itype=self.client_type or self.client_id,
                     seconds=int(seconds),
-                    result="success" if result_array else "fail",
+                    result="N" if error_flag else "Y",
                 )
             except Exception as e:
                 log.warn(f"[Jackett]写入统计失败: {e!s}")
@@ -179,11 +182,11 @@ class Jackett(_IIndexClient):
             f"&Query={quote(search_word)}"
             f"&Tracker[]={quote(str(indexer.id))}"
         )
+        result_array: list = []
+        error_flag = False
         try:
             ret = HttpClient().get(api_url)
-            if not ret:
-                result_array = []
-            else:
+            if ret:
                 data = ret.json()
                 results = data.get("Results", [])
                 result_array = [
@@ -200,10 +203,25 @@ class Jackett(_IIndexClient):
                     }
                     for r in results
                 ]
+            else:
+                error_flag = True
         except Exception as e2:
+            error_flag = True
             ExceptionUtils.exception_traceback(e2)
-            return []
-        _ = (datetime.datetime.now() - start_time).seconds
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
+
+        # 写入索引器统计（正常返回（含空结果）记 Y，请求/解析失败记 N）
+        if self.download_repo:
+            try:
+                self.download_repo.insert_indexer_statistics(
+                    indexer=indexer.name,
+                    itype=self.client_type or self.client_id,
+                    seconds=int(seconds),
+                    result="N" if error_flag else "Y",
+                )
+            except Exception as e:
+                log.warn(f"[Indexer]写入统计失败: {e!s}")
+
         if len(result_array) == 0:
             log.warn(f"[Jackett]{indexer.name} 关键词 {key_word} 未搜索到数据")
             if self.progress:
@@ -220,14 +238,4 @@ class Jackett(_IIndexClient):
             item["_indexer_order"] = order_seq
             item["_indexer_public"] = getattr(indexer, "public", False)
             item["_indexer_source"] = self.client_type or self.client_id
-        if self.download_repo:
-            try:
-                self.download_repo.insert_indexer_statistics(
-                    indexer=indexer.name,
-                    itype=self.client_type or self.client_id,
-                    seconds=int(_),
-                    result="success" if result_array else "fail",
-                )
-            except Exception as e:
-                log.warn(f"[Indexer]写入统计失败: {e!s}")
         return result_array

@@ -110,15 +110,21 @@ class Prowlarr(_IIndexClient):
             api_url += f"&q={quote(keyword)}"
         if page > 0:
             api_url += f"&offset={page * 20}&limit=20"
-        result_array = self._parse_torznabxml(api_url)
-        seconds = round((datetime.datetime.now() - start_time).seconds, 1)
+        result_array: list = []
+        error_flag = False
+        try:
+            result_array = self._parse_torznabxml(api_url)
+        except Exception as e:
+            error_flag = True
+            log.warn(f"[Prowlarr]搜索失败: {e}")
+        seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
         if self.download_repo:
             try:
                 self.download_repo.insert_indexer_statistics(
                     indexer=str(index_id),
                     itype=self.client_type or self.client_id,
                     seconds=int(seconds),
-                    result="success" if result_array else "fail",
+                    result="N" if error_flag else "Y",
                 )
             except Exception as e:
                 log.warn(f"[Prowlarr]写入统计失败: {e!s}")
