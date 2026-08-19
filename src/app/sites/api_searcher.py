@@ -44,6 +44,7 @@ class ApiSiteSearcher:
         keyword: str = "",
         page: int = 0,
         mtype: MediaType | None = None,
+        page_size: int | None = None,
     ) -> list[dict[str, Any]]:
         if not self._site.api:
             return []
@@ -61,7 +62,9 @@ class ApiSiteSearcher:
             mapped = mode_mapping.get(mtype_name)
             if mapped is not None:
                 if isinstance(mapped, list):
-                    return self._fanout_search(keyword, page, search_config, body_template, params_template, mapped)
+                    return self._fanout_search(
+                        keyword, page, search_config, body_template, params_template, mapped, page_size
+                    )
                 elif isinstance(mapped, dict):
                     mtype_override = mapped
                 else:
@@ -69,15 +72,19 @@ class ApiSiteSearcher:
         template_vars = {"keyword": keyword, "page": str(page), "page_1": str(int(page) + 1)}
         body = self._render_template(body_template, **template_vars)
         body.update({k: (v.format(**template_vars) if isinstance(v, str) else v) for k, v in mtype_override.items()})
+        if page_size:
+            body["page_size"] = int(page_size)
         return self._execute_request(search_config, body, template_vars)
 
-    def _fanout_search(self, keyword, page, search_config, body_template, params_template, categories):
+    def _fanout_search(self, keyword, page, search_config, body_template, params_template, categories, page_size=None):
         all_results = []
         template_vars = {"keyword": keyword, "page": str(page), "page_1": str(int(page) + 1)}
         seen = set()
         for cat_config in categories:
             fanout_body = {**body_template}
             fanout_body.update(cat_config)
+            if page_size:
+                fanout_body["page_size"] = int(page_size)
             body = self._render_template(fanout_body, **template_vars)
             for result in self._execute_request(search_config, body, template_vars):
                 key = result.get("title", "") + result.get("enclosure", "") + result.get("size", "")

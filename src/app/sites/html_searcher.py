@@ -39,12 +39,18 @@ class HtmlSiteSearcher:
         self._site_engine = site_engine
         self.last_error: str = ""
 
-    def search(self, keyword: str = "", page: int = 0, mtype: MediaType | None = None) -> list[dict[str, Any]]:
+    def search(
+        self,
+        keyword: str = "",
+        page: int = 0,
+        mtype: MediaType | None = None,
+        page_size: int | None = None,
+    ) -> list[dict[str, Any]]:
         if not self._site.html:
             return []
         self.last_error = ""
         is_browse = not keyword
-        url = self._build_url(keyword, page, mtype)
+        url = self._build_url(keyword, page, mtype, page_size)
         if not url:
             return []
 
@@ -63,7 +69,7 @@ class HtmlSiteSearcher:
     def _domain(self) -> str:
         return (self._user_config.get("domain") or self._site.domain or "").rstrip("/")
 
-    def _build_url(self, keyword: str, page: int, mtype: MediaType | None) -> str | None:
+    def _build_url(self, keyword: str, page: int, mtype: MediaType | None, page_size: int | None = None) -> str | None:
         cfg = self._site.html
         if not (isinstance(cfg, dict) or hasattr(cfg, "search")):
             return None
@@ -113,6 +119,12 @@ class HtmlSiteSearcher:
             for pk in ("cat", "category", "cat_id"):
                 if pk in params_filled:
                     params_filled[pk] = MediaTypeMapper.to_site_cat(mtype)
+
+        # 每页数量：站点参数中存在 page_size/limit/per_page 等键时覆盖为前端选择值
+        if page_size:
+            for size_key in ("page_size", "pagesize", "per_page", "perpage", "limit"):
+                if size_key in params_filled:
+                    params_filled[size_key] = int(page_size)
 
         qs = "&".join(f"{k}={quote(str(v))}" for k, v in params_filled.items() if v)
         path_with_slash = f"/{path.lstrip('/')}" if path else ""

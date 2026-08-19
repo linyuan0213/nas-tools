@@ -70,7 +70,7 @@ class _IIndexClient(metaclass=ABCMeta):
     def get_indexers(self, check=True, indexer_id=None, public=True) -> Any:
         """获取索引站点列表"""
 
-    def list(self, index_id, page=0, keyword=None) -> list | None:
+    def list(self, index_id, page=0, page_size=100, keyword=None) -> list | None:
         return None
 
     def is_enabled(self) -> bool:

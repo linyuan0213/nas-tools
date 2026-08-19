@@ -222,16 +222,19 @@ class IndexerService:
     # 资源列表
     # ------------------------------------------------------------------
 
-    def list_resources(self, index_id: str, page: int = 0, keyword: str | None = None) -> IndexerResourcesResultDTO:
+    def list_resources(
+        self, index_id: str, page: int = 0, page_size: int = 100, keyword: str | None = None
+    ) -> IndexerResourcesResultDTO:
         """
         获取内置索引器的资源列表
         :param index_id: 内置站点ID
         :param page: 页码
+        :param page_size: 每页数量
         :param keyword: 搜索关键字
         """
         if not index_id:
             return IndexerResourcesResultDTO(success=True, data=[])
-        resources = self._indexer.list_resources(index_id=index_id, page=page, keyword=keyword)
+        resources = self._indexer.list_resources(index_id=index_id, page=page, page_size=page_size, keyword=keyword)
         if resources is None:
             return IndexerResourcesResultDTO(success=False, msg="获取站点资源出现错误，无法连接到站点！")
         return IndexerResourcesResultDTO(success=True, data=resources)

@@ -109,7 +109,7 @@ class Jackett(_IIndexClient):
             ExceptionUtils.exception_traceback(e2)
             return []
 
-    def list(self, index_id, page=0, keyword=None):
+    def list(self, index_id, page=0, page_size=100, keyword=None):
         if not index_id:
             return None
         start_time = datetime.datetime.now()

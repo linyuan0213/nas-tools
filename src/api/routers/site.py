@@ -91,6 +91,7 @@ class SiteUserStatisticsRequest(BaseModel):
 class SiteResourcesRequest(BaseModel):
     id: str | None = None
     page: int | None = None
+    page_size: int | None = None
     keyword: str | None = None
 
 
@@ -333,7 +334,12 @@ def list_site_resources(
     user: str = Depends(require_any_permission("site:view", "site:manage")),
     svc: SiteService = Depends(get_site_service),
 ):
-    resources = svc.list_site_resources(index_id=req.id or "", page=req.page or 0, keyword=req.keyword or "")
+    resources = svc.list_site_resources(
+        index_id=req.id or "",
+        page=req.page or 0,
+        page_size=req.page_size or 100,
+        keyword=req.keyword or "",
+    )
     if not resources.success:
         return fail(msg=resources.msg)
     return success(data=resources.data)

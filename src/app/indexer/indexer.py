@@ -287,7 +287,7 @@ class Indexer:
             ).get_indexers(check=check, indexer_id=indexer_id)
         return []
 
-    def list_resources(self, index_id, page=0, keyword=None):
+    def list_resources(self, index_id, page=0, page_size=100, keyword=None):
         if not index_id:
             return []
         builtin_cls = get_client_class("builtin")
@@ -297,7 +297,7 @@ class Indexer:
                 site_cache=self._site_cache,
                 site_engine=self._site_engine,
                 download_repo=self.download_repo,
-            ).list(index_id=index_id, page=page, keyword=keyword)
+            ).list(index_id=index_id, page=page, page_size=page_size, keyword=keyword)
             if result is not None:
                 return result
         site_config = self._site_config_repo.get_by_id(index_id)
@@ -308,7 +308,7 @@ class Indexer:
                     site_cache=self._site_cache,
                     site_engine=self._site_engine,
                     download_repo=self.download_repo,
-                ).list(index_id=site_config.site_name, page=page, keyword=keyword)
+                ).list(index_id=site_config.site_name, page=page, page_size=page_size, keyword=keyword)
                 if result is not None:
                     return result
             elif site_config.source and site_config.source != "builtin":
@@ -317,7 +317,9 @@ class Indexer:
                 cfg = idx_config.get(site_config.source, {})
                 client = self._clients.get(site_config.source) or self.__get_client(site_config.source, cfg)
                 if client:
-                    result = client.list(index_id=site_config.site_name, page=page, keyword=keyword)
+                    result = client.list(
+                        index_id=site_config.site_name, page=page, page_size=page_size, keyword=keyword
+                    )
                     if result is not None:
                         return result
         return None

@@ -257,7 +257,7 @@ class BuiltinIndexer(_IIndexClient):
 
         return result_array
 
-    def list(self, index_id, page=0, keyword=None):
+    def list(self, index_id, page=0, page_size=100, keyword=None):
         """
         根据站点ID搜索站点首页资源
         """
@@ -276,7 +276,7 @@ class BuiltinIndexer(_IIndexClient):
         last_error = ""
         try:
             error_flag, result_array, last_error = self.__search_via_engine(
-                search_word=keyword, indexer=indexer, page=page
+                search_word=keyword, indexer=indexer, page=page, page_size=page_size
             )
         except Exception as e:
             error_flag = True
@@ -296,7 +296,7 @@ class BuiltinIndexer(_IIndexClient):
             )
         return result_array
 
-    def __search_via_engine(self, search_word, indexer, mtype=None, page=0, paginate=False):
+    def __search_via_engine(self, search_word, indexer, mtype=None, page=0, paginate=False, page_size=100):
         """执行站点搜索，返回 (error_flag, result_array, last_error) — last_error 为局部值，避免并发共享污染"""
         engine = self._site_engine
         site_def = engine.get_by_id(str(indexer.id)) or engine.get_by_url(indexer.domain or "")
@@ -311,7 +311,7 @@ class BuiltinIndexer(_IIndexClient):
         result_array = []
         try:
             if not paginate:
-                result_array = searcher.search(keyword=search_word, page=page, mtype=mtype)
+                result_array = searcher.search(keyword=search_word, page=page, mtype=mtype, page_size=page_size)
             else:
                 seen: set = set()
                 first_page_count = None

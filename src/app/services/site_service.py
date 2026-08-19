@@ -500,8 +500,10 @@ class SiteService:
     # ------------------------------------------------------------------
     # 资源列表
     # ------------------------------------------------------------------
-    def list_site_resources(self, index_id: str, page: int, keyword: str) -> SiteResourcesResultDTO:
-        result = self._indexer_service.list_resources(index_id=index_id, page=page, keyword=keyword)
+    def list_site_resources(self, index_id: str, page: int, page_size: int, keyword: str) -> SiteResourcesResultDTO:
+        result = self._indexer_service.list_resources(
+            index_id=index_id, page=page, page_size=page_size, keyword=keyword
+        )
         data = result.data
         if result.success and isinstance(data, list):
             for item in data:

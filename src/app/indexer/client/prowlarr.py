@@ -97,7 +97,7 @@ class Prowlarr(_IIndexClient):
             for v in indexers
         ]
 
-    def list(self, index_id, page=0, keyword=None):
+    def list(self, index_id, page=0, page_size=100, keyword=None):
         if not index_id:
             return None
         start_time = datetime.datetime.now()
