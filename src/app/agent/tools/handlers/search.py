@@ -19,6 +19,9 @@ _SEARCH_URLS = {
 
 _MAX_RESULTS = 10
 
+# 降级链：主引擎不可达/无结果时依次尝试其他引擎
+_FALLBACK_ENGINES = ("google", "bing", "baidu")
+
 
 def _nodes(node: Any, expr: str) -> list[Any]:
     """xpath 结果归一化为 list（lxml 可能返回单值/标量）"""
@@ -120,14 +123,8 @@ def _parse_results(engine: str, html_str: str) -> list[dict]:
     return results
 
 
-def web_search(ctx: ToolContext, query: str, engine: str = "google", limit: int = 5) -> ToolResult:
-    """通过内置 Chrome 服务在搜索引擎检索网页，返回结构化结果列表"""
-    query = str(query or "").strip()
-    if not query:
-        return ToolResult(success=False, error="搜索关键词不能为空")
-    if engine not in _SEARCH_URLS:
-        return ToolResult(success=False, error=f"不支持的搜索引擎：{engine}")
-    limit = max(1, min(int(limit or 5), _MAX_RESULTS))
+def _search_with_engine(query: str, engine: str, limit: int) -> dict | None:
+    """单引擎搜索：成功返回 data 字典，失败（网络不可达/无结果）返回 None"""
     url = _search_url(engine, query, limit)
     try:
         _validate_url(url)
@@ -139,12 +136,39 @@ def web_search(ctx: ToolContext, query: str, engine: str = "google", limit: int 
         finally:
             _close_session(session)
     except Exception as e:  # noqa: BLE001
-        log.warn(f"[WebSearch]搜索失败: {e}")
-        return ToolResult(success=False, error=f"搜索失败: {e}")
+        log.warn(f"[WebSearch]{engine} 访问失败: {e}")
+        return None
     results = _parse_results(engine, html_str)[:limit]
     if not results:
-        return ToolResult(success=False, error="未解析到搜索结果（可能遇到人机验证或页面结构变化）")
-    return ToolResult(success=True, data={"query": query, "engine": engine, "results": results})
+        log.warn(f"[WebSearch]{engine} 未解析到搜索结果")
+        return None
+    return {"query": query, "engine": engine, "results": results}
+
+
+def web_search(ctx: ToolContext, query: str, engine: str = "google", limit: int = 5) -> ToolResult:
+    """通过内置 Chrome 服务在搜索引擎检索网页，返回结构化结果列表。
+
+    主引擎不可达（网络/人机验证/无结果）时自动降级到其他引擎，
+    data.engine 为实际命中的引擎，data.engine_tried 为尝试顺序。
+    """
+    query = str(query or "").strip()
+    if not query:
+        return ToolResult(success=False, error="搜索关键词不能为空")
+    if engine not in _SEARCH_URLS:
+        return ToolResult(success=False, error=f"不支持的搜索引擎：{engine}")
+    limit = max(1, min(int(limit or 5), _MAX_RESULTS))
+    engines = [engine] + [e for e in _FALLBACK_ENGINES if e != engine]
+    tried: list[str] = []
+    for eng in engines:
+        tried.append(eng)
+        data = _search_with_engine(query, eng, limit)
+        if data:
+            data["engine_tried"] = tried
+            return ToolResult(success=True, data=data)
+    return ToolResult(
+        success=False,
+        error=f"所有搜索引擎均失败（尝试: {' → '.join(tried)}），请稍后重试或检查 Chrome 服务",
+    )
 
 
 HANDLERS = {

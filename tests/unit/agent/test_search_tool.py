@@ -165,7 +165,7 @@ class TestWebSearchHandler:
         with patch("app.agent.tools.handlers.search._open_session", side_effect=RuntimeError("chrome down")):
             result = web_search(_CTX, "python")
         assert not result.success
-        assert "搜索失败" in result.error
+        assert "所有搜索引擎均失败" in result.error
 
     def test_no_results_reported(self):
         with patch(
@@ -174,4 +174,28 @@ class TestWebSearchHandler:
         ):
             result = web_search(_CTX, "python")
         assert not result.success
-        assert "未解析到搜索结果" in result.error
+        assert "所有搜索引擎均失败" in result.error
+
+    def test_fallback_to_next_engine_on_failure(self):
+        """主引擎（google）不可达 → 自动降级到 bing"""
+        with patch(
+            "app.agent.tools.handlers.search._open_session",
+            side_effect=[RuntimeError("google blocked"), _FakeSession(html=_BING_HTML)],
+        ):
+            result = web_search(_CTX, "python", engine="google")
+        assert result.success
+        assert isinstance(result.data, dict)
+        assert result.data["engine"] == "bing"
+        assert result.data["engine_tried"] == ["google", "bing"]
+
+    def test_fallback_on_empty_results(self):
+        """主引擎无结果（人机验证页）→ 降级到下一引擎"""
+        with patch(
+            "app.agent.tools.handlers.search._open_session",
+            side_effect=[_FakeSession(html="<html><body>consent</body></html>"), _FakeSession(html=_BING_HTML)],
+        ):
+            result = web_search(_CTX, "python")
+        assert result.success
+        assert isinstance(result.data, dict)
+        assert result.data["engine"] == "bing"
+        assert result.data["engine_tried"] == ["google", "bing"]

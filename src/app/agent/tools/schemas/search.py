@@ -10,7 +10,7 @@ class WebSearchTool(BaseTool):
         "用于查询互联网上的信息：新闻、攻略、资料、实时动态、网页内容等。"
         "注意：若用户在'找/搜某部影视剧集的资源/种子/有没有得下'，应调用 media_search 而非本工具；"
         "若需浏览某个具体网址页面，应调用 browser_fetch。"
-        "引擎可选 google/bing/baidu（默认 google）。"
+        "引擎可选 google/bing/baidu（默认 google）；主引擎不可达时会自动降级到其他可用引擎。"
     )
     parameters = {
         "type": "object",
