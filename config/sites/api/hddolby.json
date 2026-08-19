@@ -32,22 +32,13 @@
         },
         "mode_mapping": {
           "MOVIE": {
-            "categories": [
-              401
-            ]
+            "categories": []
           },
           "TV": {
-            "categories": [
-              402,
-              403,
-              404,
-              405
-            ]
+            "categories": []
           },
           "ANIME": {
-            "categories": [
-              405
-            ]
+            "categories": []
           }
         },
         "response": {
