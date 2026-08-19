@@ -165,7 +165,15 @@ services:
 - 验证码识别：**系统设置 → 基础设置 → 实验室** 中「启用验证码识别服务器」，填 `http://nexus-verify:9300`
 - 网页自动化：**系统设置 → 基础设置 → 实验室** 中「启用网页自动化」，填 `http://nexus-chrome:9850`
 
-> nexus-chrome 的浏览器页面可通过 VNC（端口 6080，默认密码 `password`）实时查看。
+> nexus-chrome 的浏览器页面可通过 VNC（端口 6080）实时查看。
+> **安全提示**：VNC 密码为必填项，**禁止使用默认值 `password`**。请在项目目录 `.env` 中配置，例如：
+>
+> ```bash
+> # .env
+> VNC_PASSWORD=你的强密码
+> ```
+>
+> 未设置 `VNC_PASSWORD` 时 `docker compose up` 会直接报错并提示，避免默认弱口令暴露 VNC 远程桌面。
 
 ### 1. 修改 docker-compose.yml
 

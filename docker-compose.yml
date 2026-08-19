@@ -227,7 +227,9 @@ services:
     logging: *logging
     shm_size: 2g
     environment:
-      - VNC_PASSWORD=password
+      # 安全提示：VNC 密码必填，禁止使用默认值 password。
+      # 请在项目目录 .env 中配置，例如：VNC_PASSWORD=你的强密码
+      - VNC_PASSWORD=${VNC_PASSWORD:?请先在 .env 中设置 VNC_PASSWORD（禁止使用默认密码 password）}
       - SESSION_TTL=1800
       - SESSION_CLEANUP_INTERVAL=60
     volumes:
