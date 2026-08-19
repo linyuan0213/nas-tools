@@ -35,6 +35,7 @@ from app.agent.tools.handlers.ops import (
 )
 from app.agent.tools.handlers.plugins import plugin_info, plugin_list, plugin_run
 from app.agent.tools.handlers.rss_task import rss_task_list
+from app.agent.tools.handlers.search import web_search
 from app.agent.tools.handlers.site import site_status, site_update_cookie
 from app.agent.tools.handlers.subscribe import subscribe_add, subscribe_delete, subscribe_detail, subscribe_list
 from app.agent.tools.handlers.words import words_add, words_delete, words_list, words_toggle
@@ -68,6 +69,7 @@ from app.agent.tools.schemas.ops import (
 )
 from app.agent.tools.schemas.plugins import PluginInfoTool, PluginListTool, PluginRunTool
 from app.agent.tools.schemas.rss_task import RssTaskListTool
+from app.agent.tools.schemas.search import WebSearchTool
 from app.agent.tools.schemas.site import SiteStatusTool
 from app.agent.tools.schemas.subscribe import (
     SubscribeAddTool,
@@ -83,6 +85,7 @@ BUILTIN_TOOLS: list[BaseTool] = [
     KbSearchTool(),
     BrowserFetchTool(),
     BrowserScreenshotTool(),
+    WebSearchTool(),
     DownloadAddLinkTool(),
     MediaDownloadTool(),
     DownloadListTool(),
@@ -126,6 +129,7 @@ HANDLERS: dict[str, Callable] = {
     "kb_search": kb_search,
     "browser_fetch": browser_fetch,
     "browser_screenshot": browser_screenshot,
+    "web_search": web_search,
     "download_add_link": download_add_link,
     "media_download": media_download,
     "download_list": download_list,

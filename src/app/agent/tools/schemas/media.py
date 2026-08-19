@@ -8,7 +8,7 @@ class MediaSearchTool(BaseTool):
     description = (
         "搜索影视资源（种子）。传入自然语言查询（可含类型、年份、季、集），"
         "系统统一进行意图识别、TMDB 匹配与站点并发搜索，返回按合集/质量/做种排序的结果。"
-        "当用户想'找/搜/有没有'某部影视资源时调用。"
+        "当用户想'找/搜/有没有'某部影视资源时调用，不要用 web_search 搜索影视资源。"
     )
     parameters = {
         "type": "object",
