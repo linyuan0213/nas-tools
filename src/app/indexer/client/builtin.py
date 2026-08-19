@@ -73,8 +73,6 @@ class BuiltinIndexer(_IIndexClient):
         self._site_engine = site_engine
         self._site_config_repo = site_config_repo or IndexerSiteConfigRepositoryAdapter()
         self._idx_config_repo = idx_config_repo or IndexerConfigRepositoryAdapter()
-        # 站点级失败原因透传（list() 等不经 search() 的路径也会在 __search_via_engine 读取）
-        self.last_error: str = ""
 
     @classmethod
     def match(cls, ctype):
@@ -215,17 +213,18 @@ class BuiltinIndexer(_IIndexClient):
 
         result_array = []
         error_flag = False
-        self.last_error = ""
+        last_error = ""
         mtype = match_media.type if (match_media and match_media.tmdb_info) else None
         try:
-            error_flag, result_array = self.__search_via_engine(
+            error_flag, result_array, last_error = self.__search_via_engine(
                 search_word=search_word, indexer=indexer, mtype=mtype, paginate=True
             )
         except Exception as err:
             error_flag = True
+            last_error = str(err)
             log.warn(f"[{self.client_name}]{indexer.name} 搜索失败: {err}")
         # 站点级失败（超时/HTTP 错误等被 searcher 吞掉、不抛异常）同样计为失败
-        if not error_flag and self.last_error:
+        if not error_flag and last_error:
             error_flag = True
 
         seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
@@ -274,13 +273,17 @@ class BuiltinIndexer(_IIndexClient):
 
         result_array: list = []
         error_flag = False
+        last_error = ""
         try:
-            error_flag, result_array = self.__search_via_engine(search_word=keyword, indexer=indexer, page=page)
+            error_flag, result_array, last_error = self.__search_via_engine(
+                search_word=keyword, indexer=indexer, page=page
+            )
         except Exception as e:
             error_flag = True
+            last_error = str(e)
             log.warn(f"[{self.client_name}]{indexer.name} list 失败: {e}")  # type: ignore[union-attr]
         # 站点级失败（超时/HTTP 错误等被 searcher 吞掉、不抛异常）同样计为失败
-        if not error_flag and self.last_error:
+        if not error_flag and last_error:
             error_flag = True
 
         seconds = round((datetime.datetime.now() - start_time).total_seconds(), 1)
@@ -294,14 +297,15 @@ class BuiltinIndexer(_IIndexClient):
         return result_array
 
     def __search_via_engine(self, search_word, indexer, mtype=None, page=0, paginate=False):
+        """执行站点搜索，返回 (error_flag, result_array, last_error) — last_error 为局部值，避免并发共享污染"""
         engine = self._site_engine
         site_def = engine.get_by_id(str(indexer.id)) or engine.get_by_url(indexer.domain or "")
         if not site_def or not (site_def.api or site_def.html):
-            return True, []
+            return True, [], ""
         user_config = self._build_user_config(indexer)
         searcher = create_searcher(indexer.domain, site_engine=self._site_engine, user_config=user_config)
         if not searcher:
-            return True, []
+            return True, [], ""
 
         # 分页拉取：关键字搜索时循环翻页直到无更多结果，避免海贼王等长剧集只取到首页
         result_array = []
@@ -333,8 +337,8 @@ class BuiltinIndexer(_IIndexClient):
                         break
                     cur_page += 1
         finally:
-            # 站点级失败原因（HTTP 状态码 / 异常类型）透传给上层，用于搜索状态展示
-            self.last_error = getattr(searcher, "last_error", "") or self.last_error
+            # 站点级失败原因（HTTP 状态码 / 异常类型）作为局部返回值透传
+            last_error = getattr(searcher, "last_error", "") or ""
 
         for item in result_array:
             if "indexer" not in item:
@@ -355,7 +359,7 @@ class BuiltinIndexer(_IIndexClient):
                             )
                         detail = f"{base}{detail}" if base else detail
                     item["page_url"] = detail
-        return False, result_array
+        return False, result_array, last_error
 
     @staticmethod
     def _build_user_config(indexer):
