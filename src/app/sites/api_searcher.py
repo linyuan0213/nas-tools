@@ -91,6 +91,9 @@ class ApiSiteSearcher:
         method = search_config.get("method", "GET").upper()
         path = search_config.get("path", "").lstrip("/")
         url = f"{base_url}/{path}"
+        # 空数组参数（如 categories: []）表示不过滤，发送前剔除——
+        # 部分站点 API 对显式空数组返回 500（如 hddolby），缺省该参数才是"全部分类"
+        body = {k: v for k, v in body.items() if not (isinstance(v, list) and len(v) == 0)}
         headers = self._engine._build_headers(self._site, self._user_config)
         proxy = get_proxies() if self._user_config.get("proxy") else None
         proxy_url = proxy.get("http") if proxy else None
