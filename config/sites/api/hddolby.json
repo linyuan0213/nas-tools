@@ -22,7 +22,7 @@
       "search": {
         "method": "POST",
         "path": "/torrent/search",
-        "content_type": "application/x-www-form-urlencoded",
+        "content_type": "application/json;charset=utf-8",
         "body": {
           "keyword": "{keyword}",
           "page_number": "{page}",
@@ -32,13 +32,22 @@
         },
         "mode_mapping": {
           "MOVIE": {
-            "categories": []
+            "categories": [
+              401
+            ]
           },
           "TV": {
-            "categories": []
+            "categories": [
+              402,
+              403,
+              404,
+              405
+            ]
           },
           "ANIME": {
-            "categories": []
+            "categories": [
+              405
+            ]
           }
         },
         "response": {
