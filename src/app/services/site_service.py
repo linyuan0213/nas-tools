@@ -508,6 +508,12 @@ class SiteService:
         if result.success and isinstance(data, list):
             for item in data:
                 self._attach_media_ident(item)
+            # 返回 {list, has_more}：has_more 表示本页已满（可能还有下一页），供前端分页导航
+            return SiteResourcesResultDTO(
+                success=True,
+                data={"list": data, "has_more": len(data) >= max(page_size, 1)},
+                msg=result.msg,
+            )
         return SiteResourcesResultDTO(success=result.success, data=data, msg=result.msg)
 
     @staticmethod
