@@ -47,3 +47,38 @@ class TestStripEmptyLists:
         kwargs = client_cls.return_value.post.call_args.kwargs
         body = kwargs["data"]
         assert '"categories":[401]' in body
+
+
+class TestApplyPageSize:
+    """每页数量按站点实际参数名覆盖（page_size/pageSize/size/嵌套 pageParam/params）"""
+
+    def test_hddolby_page_size(self):
+        body = {"page_number": 0, "page_size": 100}
+        ApiSiteSearcher._apply_page_size(body, 20)
+        assert body["page_size"] == 20
+
+    def test_mteam_camelcase_pageSize(self):
+        body = {"pageNumber": 1, "pageSize": 100}
+        ApiSiteSearcher._apply_page_size(body, 50)
+        assert body["pageSize"] == 50
+        assert "page_size" not in body
+
+    def test_tnode_size(self):
+        body = {"page": 1, "size": 20}
+        ApiSiteSearcher._apply_page_size(body, 50)
+        assert body["size"] == 50
+
+    def test_yemapt_nested_pageParam(self):
+        body = {"pageParam": {"current": 1, "pageSize": 20}}
+        ApiSiteSearcher._apply_page_size(body, 40)
+        assert body["pageParam"]["pageSize"] == 40
+
+    def test_no_page_param_untouched(self):
+        body = {"keyword": "x"}
+        ApiSiteSearcher._apply_page_size(body, 20)
+        assert "page_size" not in body
+
+    def test_none_page_size_untouched(self):
+        body = {"page_size": 100}
+        ApiSiteSearcher._apply_page_size(body, None)
+        assert body["page_size"] == 100

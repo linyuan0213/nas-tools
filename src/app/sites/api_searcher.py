@@ -72,9 +72,7 @@ class ApiSiteSearcher:
         template_vars = {"keyword": keyword, "page": str(page), "page_1": str(int(page) + 1)}
         body = self._render_template(body_template, **template_vars)
         body.update({k: (v.format(**template_vars) if isinstance(v, str) else v) for k, v in mtype_override.items()})
-        if page_size:
-            body["page_size"] = int(page_size)
-        return self._execute_request(search_config, body, template_vars)
+        return self._execute_request(search_config, body, template_vars, page_size=page_size)
 
     def _fanout_search(self, keyword, page, search_config, body_template, params_template, categories, page_size=None):
         all_results = []
@@ -83,17 +81,41 @@ class ApiSiteSearcher:
         for cat_config in categories:
             fanout_body = {**body_template}
             fanout_body.update(cat_config)
-            if page_size:
-                fanout_body["page_size"] = int(page_size)
             body = self._render_template(fanout_body, **template_vars)
-            for result in self._execute_request(search_config, body, template_vars):
+            for result in self._execute_request(search_config, body, template_vars, page_size=page_size):
                 key = result.get("title", "") + result.get("enclosure", "") + result.get("size", "")
                 if key not in seen:
                     seen.add(key)
                     all_results.append(result)
         return all_results
 
-    def _execute_request(self, search_config, body, template_vars):
+    @staticmethod
+    def _apply_page_size(container: dict, page_size: int | None) -> None:
+        """按站点实际参数名覆盖每页数量（兼容 page_size/pageSize/size/limit 及 pageParam.pageSize 嵌套）"""
+        if not page_size:
+            return
+        for key in (
+            "page_size",
+            "pageSize",
+            "pagesize",
+            "size",
+            "per_page",
+            "perpage",
+            "limit",
+            "count",
+        ):
+            if key in container:
+                container[key] = int(page_size)
+                return
+        for group in ("pageParam", "pagination", "paging"):
+            nested = container.get(group)
+            if isinstance(nested, dict):
+                for key in ("pageSize", "page_size", "size"):
+                    if key in nested:
+                        nested[key] = int(page_size)
+                        return
+
+    def _execute_request(self, search_config, body, template_vars, page_size=None):
         base_url = (self._site.api.base_url or "").rstrip("/") if self._site.api else ""
         method = search_config.get("method", "GET").upper()
         path = search_config.get("path", "").lstrip("/")
@@ -101,6 +123,7 @@ class ApiSiteSearcher:
         # 空数组参数（如 categories: []）表示不过滤，发送前剔除——
         # 部分站点 API 对显式空数组返回 500（如 hddolby），缺省该参数才是"全部分类"
         body = {k: v for k, v in body.items() if not (isinstance(v, list) and len(v) == 0)}
+        self._apply_page_size(body, page_size)
         headers = self._engine._build_headers(self._site, self._user_config)
         proxy = get_proxies() if self._user_config.get("proxy") else None
         proxy_url = proxy.get("http") if proxy else None
@@ -127,6 +150,7 @@ class ApiSiteSearcher:
             else:
                 params = dict(search_config.get("params") or {})
                 params = self._render_template(params, **template_vars)
+                self._apply_page_size(params, page_size)
                 res = client.get(url=url, params=params, headers=headers, **rl_kwargs)
             if not res.is_success:
                 self.last_error = f"HTTP {res.status_code}"
