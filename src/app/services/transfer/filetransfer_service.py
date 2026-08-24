@@ -112,6 +112,7 @@ class FileTransferService:
 
     def get_no_exists_medias(self, meta_info, season=None, total_num=None):
         # 先查转移历史 DB：已转移过的剧集视为已存在
+        # 仅信任源路径仍存在的历史记录（调试/测试残留的假记录源已删除，不参与判断）
         if meta_info.type != MediaType.MOVIE and meta_info.tmdb_id and season and total_num:
             try:
                 season_str = f"S{season:02d}" if isinstance(season, int) else str(season)
@@ -119,6 +120,8 @@ class FileTransferService:
                 transferred: set[int] = set()
                 if history:
                     for h in history:
+                        if not getattr(h, "source_path", "") or not os.path.exists(str(getattr(h, "source_path", ""))):
+                            continue
                         se = h.season_episode or ""
                         parts = se.replace("S", "").split("E")
                         if len(parts) >= 2 and parts[0].isdigit() and int(parts[0]) == int(season):
@@ -817,6 +820,16 @@ class FileTransferService:
         return 1, 1, alert_messages
 
     @staticmethod
+    def _target_exists(path: str, dst_backend) -> bool:
+        """目标文件是否存在：存储后端（远端）用 backend.exists，本地用 os.path.exists"""
+        if dst_backend is not None:
+            try:
+                return bool(dst_backend.exists(path))
+            except Exception:  # noqa: BLE001
+                return os.path.exists(path)
+        return os.path.exists(path)
+
+    @staticmethod
     def _episode_in_history(history, episode) -> bool:
         """判断某集是否已存在于转移历史（支持 S01E01 与 S01E01-E05 格式）."""
         for h in history or []:
@@ -854,18 +867,27 @@ class FileTransferService:
         exist_filenum = 0
 
         # 结合转移历史去重：该 tmdb+季+集已转移过则跳过，
-        # 避免目标路径规则变化（如分类子目录调整）导致重复入库
+        # 避免目标路径规则变化（如分类子目录调整）导致重复入库。
+        # 仅信任源路径仍存在的历史记录：调试/测试残留（源已删除，如 /tmp 假记录）不参与去重，
+        # 避免真实文件被误判"已转移"而跳过实际转移
         if media.type != MediaType.MOVIE and media.tmdb_id and media.begin_season and media.begin_episode is not None:
             try:
                 season_str = f"S{media.begin_season:02d}"
                 history = self._history.get_transfer_info_by(tmdbid=media.tmdb_id, season=season_str) or []
-                if history and self._episode_in_history(history, media.begin_episode):
+                valid_history = [
+                    h
+                    for h in history
+                    if getattr(h, "source_path", "") and os.path.exists(str(getattr(h, "source_path", "")))
+                ]
+                if valid_history and self._episode_in_history(valid_history, media.begin_episode):
                     log.warn(
                         f"[Rmt]剧集已在转移历史中（{media.get_season_episode_string()}），跳过："
                         f"{ret_file_path or file_item}"
                     )
-                    # 已转移过则写入黑名单，避免目录同步每周期重复识别
-                    self._history.insert_transfer_blacklist(file_item)
+                    # 仅当目标文件真实存在（本地或存储后端）时才写黑名单，
+                    # 防止误判（历史记录无效/目标缺失）把真实文件永久黑名单化
+                    if ret_file_path and self._target_exists(ret_file_path, dst_backend):
+                        self._history.insert_transfer_blacklist(file_item)
                     return 0, 0, alert_messages, 1, new_file, ret_file_path, ret_dir_path
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[Rmt]转移历史去重查询失败: {e}")
