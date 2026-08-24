@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +13,6 @@ from scalar_fastapi import get_scalar_api_reference
 
 import log
 import version
-from api.deps import get_message
 from api.exception_handlers import register_exception_handlers
 from api.routers import (
     apikey,
@@ -56,32 +55,30 @@ from app.schemas.common import HealthCheckResponse, HealthServiceStatus
 from app.services.system.lifecycle import SystemLifecycleService
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """应用生命周期管理：启动后台服务"""
-    app.state.ready = False
-
+def _startup(app: FastAPI) -> None:
+    """后台线程执行全部初始化，避免阻塞 lifespan 接受连接."""
     try:
         app_context = build_app_context()
         app.state.context = app_context
     except Exception as e:
         log.error(f"[FastAPI]构建应用上下文失败: {e}")
-        raise
+        return
 
     try:
         log.info("[FastAPI]初始化数据库表结构...")
         init_db()
     except Exception as e:
         log.error(f"[FastAPI]数据库初始化失败: {e}")
-        raise
+        return
 
     try:
         log.info("[FastAPI]启动后台服务...")
         system_lifecycle: SystemLifecycleService = app_context.system_lifecycle
         system_lifecycle.start_service()
+        app.state.system_lifecycle = system_lifecycle
     except Exception as e:
         log.error(f"[FastAPI]后台服务启动失败: {e}")
-        raise
+        return
 
     log.info("[FastAPI]后台服务启动完成")
 
@@ -101,27 +98,31 @@ async def lifespan(app: FastAPI):
     app.state.ready = True
     log.info("[FastAPI]核心服务已就绪，后台加载插件...")
 
-    async def _load_plugins_and_refresh_menus():
-        """后台加载插件、同步菜单、初始化消息客户端，避免阻塞核心服务就绪."""
-        try:
-            message: Message = app_context.message
-            plugin_sandbox = app_context.plugin_sandbox
-            await asyncio.to_thread(plugin_sandbox.load_all)
-            log.info("[FastAPI]插件加载完成")
-            await asyncio.to_thread(app_context.plugin_framework_service.refresh_plugin_menus_at_startup)
-            log.info("[FastAPI]插件菜单同步完成")
-            await asyncio.to_thread(lambda: message.active_clients)
-            log.info("[FastAPI]消息客户端初始化完成")
-            await asyncio.to_thread(message.refresh_menus)
-            log.info("[FastAPI]消息菜单刷新完成")
-        except Exception as e:
-            log.error(f"[FastAPI]后台插件或消息初始化失败: {e}")
+    try:
+        message: Message = app_context.message
+        plugin_sandbox = app_context.plugin_sandbox
+        plugin_sandbox.load_all()
+        log.info("[FastAPI]插件加载完成")
+        app_context.plugin_framework_service.refresh_plugin_menus_at_startup()
+        log.info("[FastAPI]插件菜单同步完成")
+        message.active_clients
+        log.info("[FastAPI]消息客户端初始化完成")
+        message.refresh_menus()
+        log.info("[FastAPI]消息菜单刷新完成")
+    except Exception as e:
+        log.error(f"[FastAPI]后台插件或消息初始化失败: {e}")
 
-    startup_task = asyncio.create_task(_load_plugins_and_refresh_menus())
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理：初始化放后台线程，服务立即可接受连接（未就绪时返回 503）"""
+    app.state.ready = False
+
+    startup_task = asyncio.create_task(asyncio.to_thread(_startup, app))
 
     yield
 
-    if startup_task and not startup_task.done():
+    if not startup_task.done():
         startup_task.cancel()
         try:
             await startup_task
@@ -129,11 +130,13 @@ async def lifespan(app: FastAPI):
             pass
 
     log.info("[FastAPI]关闭后台服务...")
-    try:
-        system_lifecycle.stop_service()
-    except Exception as e:
-        log.error(f"[FastAPI]服务关闭异常: {e}")
-    log.info("[FastAPI]后台服务已关闭")
+    system_lifecycle = getattr(app.state, "system_lifecycle", None)
+    if system_lifecycle is not None:
+        try:
+            system_lifecycle.stop_service()
+        except Exception as e:
+            log.error(f"[FastAPI]服务关闭异常: {e}")
+        log.info("[FastAPI]后台服务已关闭")
 
     ThreadExecutor.shutdown_all()
 
@@ -240,7 +243,7 @@ def root():
 
 
 @app.get("/health", response_model=HealthCheckResponse, summary="健康检查")
-def health_check(message: Message = Depends(get_message)):
+def health_check(request: Request):
     """健康检查：验证数据库、Redis 及关键外部服务的可用性"""
     result = HealthCheckResponse(status="ok", version=version.APP_VERSION)
 
@@ -268,12 +271,19 @@ def health_check(message: Message = Depends(get_message)):
         result.status = "degraded"
         result.redis = HealthServiceStatus(status="error", detail=f"Redis 检查失败: {e!s}")
 
-    # 关键外部服务：消息客户端
-    try:
-        msg_clients = message.active_clients
-        result.services["message"] = HealthServiceStatus(status="ok", detail=f"已配置 {len(msg_clients)} 个消息客户端")
-    except Exception as e:
-        result.services["message"] = HealthServiceStatus(status="error", detail=f"消息客户端检查失败: {e!s}")
+    # 关键外部服务：消息客户端（初始化期间 context 未就绪则标记 degraded）
+    ctx = getattr(request.app.state, "context", None)
+    if ctx is None:
+        result.status = "degraded"
+        result.services["message"] = HealthServiceStatus(status="error", detail="服务初始化中")
+    else:
+        try:
+            msg_clients = ctx.message.active_clients
+            result.services["message"] = HealthServiceStatus(
+                status="ok", detail=f"已配置 {len(msg_clients)} 个消息客户端"
+            )
+        except Exception as e:
+            result.services["message"] = HealthServiceStatus(status="error", detail=f"消息客户端检查失败: {e!s}")
 
     return result
 
