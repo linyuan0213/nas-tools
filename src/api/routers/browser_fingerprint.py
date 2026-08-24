@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -33,7 +34,7 @@ async def submit_fingerprint(
 
     返回 fp_profile_id，后续会话携带该 ID 即呈现与用户真实浏览器一致的指纹。
     """
-    result = sync_fingerprint_to_chrome(user.user_id, fingerprint)
+    result = await asyncio.to_thread(sync_fingerprint_to_chrome, user.user_id, fingerprint)
     if not result.profile_id:
         return CommonResponse(
             code=ErrorCode.OPERATION_FAILED,
@@ -45,7 +46,7 @@ async def submit_fingerprint(
     site_cache = getattr(ctx, "site_cache", None)
     if site_cache is not None:
         try:
-            site_cache.refresh()
+            await asyncio.to_thread(site_cache.refresh)
         except Exception:  # noqa: BLE001
             log.debug("[Fingerprint]刷新站点缓存失败（不影响指纹同步结果）")
     data: dict[str, Any] = {"fp_profile_id": result.profile_id}

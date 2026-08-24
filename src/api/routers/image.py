@@ -4,6 +4,7 @@ FastAPI 图片代理路由
 复用 app.helper.image_proxy_core 的下载/缓存逻辑
 """
 
+import asyncio
 import os
 import time
 import urllib.parse
@@ -52,18 +53,18 @@ async def _serve_image(
         except Exception as e:
             log.error(f"[ImageProxy]读取缓存失败: {str(e)}")
 
-    # 下载图片
+    # 下载图片（同步 downloader 放线程池，避免阻塞事件循环）
     if downloader:
-        image_data = downloader(image_url)
+        image_data = await asyncio.to_thread(downloader, image_url)
     else:
         image_data = await download_image(image_url, referer=referer)
     if not image_data or len(image_data) < 100:
         log.error(f"[ImageProxy]下载内容为空或过小: {image_url}")
         raise NexusError("获取图片失败", errcode=ErrorCode.IMAGE_FETCH_FAILED, http_status=404)
 
-    # 调整尺寸
+    # 调整尺寸（PIL CPU 密集，放线程池）
     if size and size != "original":
-        image_data = resize_image(image_data, size)
+        image_data = await asyncio.to_thread(resize_image, image_data, size)
 
     # 保存到缓存
     try:
