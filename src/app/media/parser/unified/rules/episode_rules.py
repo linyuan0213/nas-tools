@@ -171,7 +171,11 @@ RULES: list[ExtractionRule] = [
     ),
     ExtractionRule(
         name="bare_episode",
-        pattern=re.compile(r"(?<![.\d\-×xX/])\b(0?[1-9]\d{0,2})\b(?!\s*[pP]\b)(?!\.\d)"),
+        # 数字后紧跟连字符+字母（100-nin）或普通单词（The 100 Girlfriends）属于标题词，不是集号；
+        # 裸集号后面应紧跟技术信息起点（括号/点/连字符/数字）或标题结尾
+        pattern=re.compile(
+            r"(?<![.\d\-×xX/])\b(0?[1-9]\d{0,2})\b(?!\s*[pP]\b)(?!\.\d)(?![-~][a-zA-Z])(?=\s*(?:[\[\]()._\-]|\d|$))"
+        ),
         category="episode",
         priority=50,
         confidence=0.5,

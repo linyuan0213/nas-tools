@@ -18,6 +18,9 @@ from app.utils import StringUtils
 
 _TTL = 24 * 3600
 
+# 解析规则版本：规则变更（如集号/季号提取修复）时 +1，使旧缓存自动失效
+_PARSER_VERSION = 4
+
 
 class ParseCache:
     def __init__(self):
@@ -26,7 +29,7 @@ class ParseCache:
     @staticmethod
     def _key(title: str, subtitle: str | None, mtype: MediaType | None) -> str:
         raw = f"{title}\x00{subtitle or ''}\x00{mtype.value if mtype else ''}"
-        return f"parse:{StringUtils.md5_hash(raw)}"
+        return f"parse:v{_PARSER_VERSION}:{StringUtils.md5_hash(raw)}"
 
     def parse(self, title: str, subtitle: str | None = None, mtype: MediaType | None = None) -> MediaInfo:
         """带缓存的 meta_info：命中返回独立副本，未命中解析后写缓存"""

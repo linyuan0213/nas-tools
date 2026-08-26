@@ -194,6 +194,41 @@ class TestEdgeCases:
     def test_empty_title(self, parser):
         assert parser.parse("") is None
 
+    def test_hyphenated_number_in_title_not_episode(self, parser):
+        """标题复合词中的数字（100-nin）不得识别为集号"""
+        result = parser.parse(
+            "Kimi no Koto ga Dai Dai Dai Dai Daisuki na 100-nin no Kanojo S01 1080p BluRay x265 FLAC 2.0-7³ACG"
+        )
+        assert result is not None
+        assert result.season == 1
+        assert result.episode is None
+
+    def test_hyphenated_number_web_dl_variant(self, parser):
+        result = parser.parse(
+            "Kimi no Koto ga Dai Dai Dai Dai Daisuki na 100-nin no Kanojo S01 2023 "
+            "1080p CR WEB-DL x264 AAC-AnimeS@ADWeb"
+        )
+        assert result is not None
+        assert result.episode is None
+
+    def test_number_followed_by_name_word_not_episode(self, parser):
+        """The 100 Girlfriends：数字后跟普通单词属于标题词，不是集号"""
+        result = parser.parse(
+            "The 100 Girlfriends Who Really Really Really Really REALLY Love You S01 2023 "
+            "1080p Baha WEB-DL AAC H264-HHWEB"
+        )
+        assert result is not None
+        assert result.season == 1
+        assert result.episode is None
+        assert "100" in (result.title_en or "")
+
+    def test_bare_episode_before_tech_token_still_works(self, parser):
+        """裸集号后紧跟技术信息仍应识别"""
+        result = parser.parse("Some Anime Title 05 1080p WEB-DL AAC")
+        assert result is not None
+        assert result.episode == 5
+
+
     def test_no_episode(self, parser):
         result = parser.parse("Movie Title 2008 1080p BluRay")
         assert result is not None

@@ -388,7 +388,7 @@ def _extract_free_text(ctx: ParseContext, text: str) -> None:
 
     cn_parts: list[str] = []
     en_parts: list[str] = []
-    for word in words:
+    for idx, word in enumerate(words):
         word = word.removesuffix("]")
         if not word:
             continue
@@ -397,6 +397,10 @@ def _extract_free_text(ctx: ParseContext, text: str) -> None:
         if len(word) <= 2 and word.lower() in ("h", "x", "e", "ac", "dd", "he", "av"):
             continue
         if word.isdigit():
+            # 纯数字词：位于名称中部（后面还有字母词）的是标题本体数字（The 100 Girlfriends），
+            # 末尾孤立数字视为解析残留丢弃
+            if any(w[:1].isalpha() for w in words[idx + 1 :]):
+                en_parts.append(word)
             continue
         elif StringUtils.is_chinese(word):
             # 过滤纯元数据的汉字词（如 日语中字、新番、连载等）
