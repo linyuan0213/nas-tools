@@ -210,6 +210,11 @@ class MediaInfoService:
     def search_media_infos(self, keyword, source, page) -> list[dict]:
         """搜索媒体词条"""
         medias = search_media_infos(keyword=keyword, source=source, page=page)
+        if not medias and source != "douban":
+            # 空结果且 TMDB 搜索出错 → 抛出错误让前端提示"搜索失败"，而非误导性的"未找到相关媒体"
+            search_error = self._media.get_tmdb_search_error()
+            if search_error:
+                raise ServiceError(f"TMDB 搜索请求失败，请稍后重试: {search_error}")
         results = []
         for media in medias:
             d = media.to_dict()

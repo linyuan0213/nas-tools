@@ -66,6 +66,8 @@ class TmdbSearch:
 
     def __init__(self, client: TmdbClient):
         self.client = client
+        # 最近一次搜索的错误信息（供上层区分"无结果"与"请求失败"）
+        self.last_error: str | None = None
 
     def search_movie(self, name: str, year: Any = None) -> Any:
         if self.client.search is None:
@@ -408,6 +410,7 @@ class TmdbSearch:
 
     def search_multi_infos(self, name: str) -> list:
         """查询所有匹配的 movie/tv 结果（用于列表展示，不做名称匹配）"""
+        self.last_error = None
         if self.client.search is None:
             return []
         if not name:
@@ -415,11 +418,13 @@ class TmdbSearch:
         try:
             multis: Any = self.client.search.multi({"query": name}) or []
         except TMDBError as err:
+            self.last_error = str(err)
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return []
         except HttpRateLimitError:
             raise
         except Exception as err:
+            self.last_error = str(err)
             log.error(f"[Meta]多媒体信息查询时异常：{err!s}")
             return []
         ret_infos = []
@@ -431,6 +436,7 @@ class TmdbSearch:
 
     def search_movie_infos(self, name: str, year: Any = None) -> list:
         """查询所有匹配的电影结果（用于列表展示）"""
+        self.last_error = None
         if self.client.search is None:
             return []
         if not name:
@@ -441,9 +447,11 @@ class TmdbSearch:
                 params["year"] = year
             movies: Any = self.client.search.movies(params) or []
         except TMDBError as err:
+            self.last_error = str(err)
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return []
         except Exception as err:
+            self.last_error = str(err)
             log.error(f"[Meta]电影信息查询时异常：{err!s}")
             return []
         ret_infos = []
@@ -454,6 +462,7 @@ class TmdbSearch:
 
     def search_tv_infos(self, name: str, year: Any = None) -> list:
         """查询所有匹配的电视剧结果（用于列表展示）"""
+        self.last_error = None
         if self.client.search is None:
             return []
         if not name:
@@ -464,9 +473,11 @@ class TmdbSearch:
                 params["first_air_date_year"] = year
             tvs: Any = self.client.search.tv_shows(params) or []
         except TMDBError as err:
+            self.last_error = str(err)
             log.error(f"[Meta]连接TMDB出错：{err!s}")
             return []
         except Exception as err:
+            self.last_error = str(err)
             log.error(f"[Meta]剧集信息查询时异常：{err!s}")
             return []
         ret_infos = []

@@ -1155,6 +1155,10 @@ class MediaService:
     def get_tmdb_infos(self, title, year=None, mtype=None, language=None, page=1):
         return self._lookup.get_tmdb_infos(title, year, mtype, language, page)
 
+    def get_tmdb_search_error(self) -> str | None:
+        """最近一次 TMDB 搜索的错误信息（区分"无结果"与"请求失败"）"""
+        return self._lookup.get_last_search_error()
+
     def search_tmdb_person(self, name):
         return self._lookup.search_tmdb_person(name)
 

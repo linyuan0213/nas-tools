@@ -418,6 +418,10 @@ class TmdbLookup(BaseLookup):
     def get_random_discover_backdrop(self):
         return self.discover.get_random_backdrop()
 
+    def get_last_search_error(self) -> str | None:
+        """最近一次搜索的错误信息（None 表示上次搜索正常结束）"""
+        return self.search.last_error
+
     def get_tmdb_infos(self, title, year=None, mtype=None, language=None, page=1):
         if not self.client.tmdb:
             log.error("[Meta]TMDB API Key 未设置！")
