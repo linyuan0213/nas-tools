@@ -93,6 +93,7 @@ class SearchResultService:
                     item.SITE,
                     video_encode,
                     filter_season,
+                    respix,
                 )
             else:
                 fav, rssid = 0, None
@@ -141,12 +142,16 @@ class SearchResultService:
                         "releasegroup": [releasegroup],
                         "video": [video_encode] if video_encode else [],
                         "season": [filter_season] if filter_season else [],
+                        "resolution": [respix] if respix else [],
                     },
                 }
 
         for _title, item in search_results_dict.items():
             item["filter"]["season"].sort(reverse=True)
             item["filter"]["releasegroup"] = sorted(item["filter"]["releasegroup"], key=lambda x: (x == "未知", x))
+            item["filter"]["resolution"] = sorted(
+                item["filter"]["resolution"], key=self._resolution_weight, reverse=True
+            )
             item["torrent_dict"] = sorted(item["torrent_dict"].items(), key=self._se_sort, reverse=True)
         return MediaSearchResultDTO(total=total, result=search_results_dict)
 
@@ -181,6 +186,7 @@ class SearchResultService:
         site,
         video_encode,
         filter_season,
+        resolution,
     ):
         """将新结果合并到已有标题分组中"""
         result_item = search_results_dict[title_string]
@@ -224,6 +230,25 @@ class SearchResultService:
             torrent_filter["video"].append(video_encode)
         if filter_season and filter_season not in torrent_filter.get("season"):
             torrent_filter["season"].append(filter_season)
+        # 防御旧数据无 resolution 键（浅拷贝的 dict 需 setdefault 回原对象）
+        if resolution:
+            res_list = result_item["filter"].setdefault("resolution", [])
+            if resolution not in res_list:
+                res_list.append(resolution)
+
+    @staticmethod
+    def _resolution_weight(res: str) -> int:
+        """分辨率排序权重：高清在前"""
+        r = (res or "").lower()
+        if "8k" in r or "4320" in r:
+            return 5
+        if "4k" in r or "2160" in r:
+            return 4
+        if "1080" in r:
+            return 3
+        if "720" in r:
+            return 2
+        return 1 if r else 0
 
     @staticmethod
     def _se_sort(k):

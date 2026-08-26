@@ -574,12 +574,22 @@ async def search_progress(session_id: str):
     async def event_stream():
         tracker = ProgressTracker()
         last_val = -1
-        deadline = asyncio.get_running_loop().time() + 600
-        while asyncio.get_running_loop().time() < deadline:
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + 600
+        missing_since: float | None = None
+        while loop.time() < deadline:
             detail = tracker.get_process(f"search:{session_id}")
             if not detail:
+                # 会话无进度记录：后端重启后内存进度已清空，或会话早已结束。
+                # 宽限 3s 覆盖“SSE 先于搜索任务启动”的竞态，超时关闭流让前端回源已持久化的结果
+                now = loop.time()
+                if missing_since is None:
+                    missing_since = now
+                elif now - missing_since > 3:
+                    break
                 await asyncio.sleep(0.3)
                 continue
+            missing_since = None
             val = detail.get("value", 0)
             if val != last_val:
                 last_val = val
