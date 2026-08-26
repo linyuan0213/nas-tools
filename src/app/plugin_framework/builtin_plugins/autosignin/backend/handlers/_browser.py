@@ -6,8 +6,13 @@ import time
 
 from lxml import etree
 
+from app.core.settings import settings
 from app.infrastructure.chrome import BrowserSession
-from app.infrastructure.chrome.challenge import CHALLENGE_INDICATORS, wait_challenge_clear
+from app.infrastructure.chrome.challenge import (
+    CHALLENGE_INDICATORS,
+    has_pending_turnstile,
+    wait_challenge_clear,
+)
 from app.sites.siteconf import SiteConf
 from app.sites.utils import is_logged_in
 from app.utils import ExceptionUtils
@@ -48,7 +53,10 @@ class BrowserSigninHandler(SiteSigninHandler):
 
     def _do_signin(self, ctx, site, site_def, home_url, server_url) -> SigninResult:
         try:
-            with BrowserSession(site_key=site, server_url=server_url) as session:
+            # 使用用户真实浏览器指纹画像（实验室默认画像），提高 Turnstile 等人机验证通过率
+            lab = settings.get("laboratory") or {}
+            fp_profile_id = str(lab.get("chrome_fp_profile_id") or "") or None
+            with BrowserSession(site_key=site, server_url=server_url, fp_profile_id=fp_profile_id) as session:
                 # 优先直接访问签到页：GET attendance 即完成签到，无需首页查找+点击，
                 # 且等待签到页自身的 WAF/雷池挑战清除后再判定，避免误报失败
                 attendance_url = self._resolve_attendance_url(home_url)
@@ -59,6 +67,11 @@ class BrowserSigninHandler(SiteSigninHandler):
                 html_text = self._wait_cloudflare(session, post_navigate=html_text)
                 if CHALLENGE_INDICATORS.search(html_text):
                     return SigninResult.fail(site, f"挑战未通过: {html_text[:100]}")
+                html_text = self._wait_embedded_turnstile(session, html_text)
+                if has_pending_turnstile(html_text) and not (
+                    self._already_signed(html_text) or self._success(html_text)
+                ):
+                    return SigninResult.fail(site, "人机验证未完成（Cloudflare Turnstile 未通过），请稍后重试")
 
                 if self._already_signed(html_text):
                     return SigninResult.already(site)
@@ -89,6 +102,7 @@ class BrowserSigninHandler(SiteSigninHandler):
                 html_text = self._wait_page_stable(session)
                 # 点击后可能跳转至签到页并触发 WAF/雷池挑战，需等待挑战清除再判定
                 html_text = self._wait_cloudflare(session, post_navigate=html_text)
+                html_text = self._wait_embedded_turnstile(session, html_text)
 
                 if self._success(html_text):
                     return SigninResult.custom(True, f"[{site}]浏览器签到成功")
@@ -112,6 +126,20 @@ class BrowserSigninHandler(SiteSigninHandler):
     @staticmethod
     def _wait_cloudflare(session: BrowserSession, post_navigate: str) -> str:
         return wait_challenge_clear(session, post_navigate, timeout=180)
+
+    def _wait_embedded_turnstile(self, session: BrowserSession, html_text: str) -> str:
+        """等待内嵌 Turnstile 完成（如观众签到页：验证通过后页面脚本自动提交表单）."""
+        if not has_pending_turnstile(html_text):
+            return html_text
+        deadline = time.monotonic() + 90
+        while time.monotonic() < deadline:
+            if self._already_signed(html_text) or self._success(html_text):
+                return html_text
+            time.sleep(3)
+            html_text = session.html()
+            if not has_pending_turnstile(html_text):
+                return html_text
+        return html_text
 
     @staticmethod
     def _wait_page_stable(session: BrowserSession) -> str:
