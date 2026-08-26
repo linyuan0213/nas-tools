@@ -134,6 +134,9 @@ async def get_current_user_info(
             "avatar": avatar,
             "level": user.level,
             "permissions": user.permissions,
+            # 超管按角色代码判定（角色代码不可通过接口修改）
+            "is_superadmin": any(r.role_code == "superadmin" for r in roles) if roles else False,
+            "is_default_password": rbac_service.is_default_password(user.user_id),
             "roles": [role.role_name for role in roles] if roles else [],
         },
     }

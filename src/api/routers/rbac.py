@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from api.deps import get_current_user, get_rbac_service, require_any_permission, require_permission
 from app.core.error_codes import ErrorCode
-from app.core.exceptions import NexusError, ResourceAlreadyExistsError, ResourceNotFoundError
+from app.core.exceptions import NexusError, ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError
 from app.core.settings import settings
 from app.schemas.auth import UserContext
 from app.schemas.common import CommonResponse
@@ -162,9 +162,9 @@ def delete_user(
         return fail(success=False, message="用户ID不能为空")
 
     try:
-        _ = svc.delete_user(req.id)
+        _ = svc.delete_user(req.id, current_user_id=current_user.user_id)
         return success(data={"success": True, "message": "删除成功"})
-    except (ResourceAlreadyExistsError, ResourceNotFoundError) as e:
+    except (ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError) as e:
         return fail(success=False, message=e.message)
 
 
@@ -233,7 +233,6 @@ def get_users(
                 "email": d["email"],
                 "avatar": d.get("avatar"),
                 "status": d["status"],
-                "is_superadmin": bool(d.get("is_superadmin", 0)),
                 "roles": roles,
                 "last_login_at": last_login,
                 "pris": [role.get("role_name") for role in roles] if roles else ["普通用户"],
@@ -362,7 +361,7 @@ def delete_role(
     try:
         message = svc.delete_role(req.id)
         return success(data={"success": True, "message": message})
-    except (ResourceAlreadyExistsError, ResourceNotFoundError) as e:
+    except (ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError) as e:
         return fail(success=False, message=e.message)
 
 
@@ -391,7 +390,7 @@ def update_role(
             svc.assign_menus_to_role(req.id, req.menu_ids)
 
         return success(data={"success": True, "message": "更新成功"})
-    except (ResourceAlreadyExistsError, ResourceNotFoundError) as e:
+    except (ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError) as e:
         return fail(success=False, message=e.message)
 
 

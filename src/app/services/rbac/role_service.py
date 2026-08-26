@@ -3,8 +3,10 @@
 from typing import cast
 
 import log
-from app.core.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from app.core.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError
 from app.db.models.rbac import RBACRole
+
+SUPERADMIN_ROLE_CODE = "superadmin"
 
 
 class RBACRoleService:
@@ -44,6 +46,13 @@ class RBACRoleService:
         role = self.role_repo.get_role_by_id(role_id)
         if not role:
             raise ResourceNotFoundError(f"角色不存在: id={role_id}")
+        # 内置超级管理员角色不可禁用（角色代码接口不提供修改，仅需拦截禁用）
+        if (
+            str(role.ROLE_CODE or "") == SUPERADMIN_ROLE_CODE
+            and kwargs.get("status") is not None
+            and kwargs["status"] != 1
+        ):
+            raise ServiceError("内置超级管理员角色不可禁用")
         success = self.role_repo.update_role(role_id, **kwargs)
         if not success:
             raise ResourceNotFoundError("更新失败")
@@ -53,6 +62,8 @@ class RBACRoleService:
         role = self.role_repo.get_role_by_id(role_id)
         if not role:
             raise ResourceNotFoundError(f"角色不存在: id={role_id}")
+        if str(role.ROLE_CODE or "") == SUPERADMIN_ROLE_CODE:
+            raise ServiceError("内置超级管理员角色不可删除")
         success = self.role_repo.delete_role(role_id)
         if not success:
             raise ResourceNotFoundError("删除失败")

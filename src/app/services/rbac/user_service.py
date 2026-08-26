@@ -3,9 +3,11 @@
 from typing import cast
 
 import log
-from app.core.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from app.core.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError, ServiceError
 from app.db.models.rbac import RBACUser
 from app.infrastructure.security import generate_password_hash
+
+SUPERADMIN_ROLE_CODE = "superadmin"
 
 
 class RBACUserService:
@@ -21,7 +23,6 @@ class RBACUserService:
         email: str | None = None,
         nickname: str | None = None,
         role_ids: list[int] | None = None,
-        is_superadmin: int = 0,
     ) -> RBACUser:
         """创建用户，成功返回用户对象，失败抛出异常."""
         if self.user_repo.is_user_exists(username):
@@ -36,7 +37,6 @@ class RBACUserService:
             password_hash=password_hash,
             email=email,
             nickname=nickname,
-            is_superadmin=is_superadmin,
         )
         if not user or isinstance(user, bool):
             user = self.user_repo.get_user_by_username(username)
@@ -67,15 +67,31 @@ class RBACUserService:
         if not success:
             raise ResourceNotFoundError("更新失败")
 
-    def delete_user(self, user_id: int) -> None:
+    def delete_user(self, user_id: int, current_user_id: int | None = None) -> None:
         """删除用户，失败抛出异常."""
         user = self.user_repo.get_user_by_id(user_id)
         if not user:
             raise ResourceNotFoundError(f"用户不存在: id={user_id}")
+        if current_user_id is not None and user_id == current_user_id:
+            raise ServiceError("不能删除当前登录用户")
+        self._check_not_last_superadmin(user_id)
         success = self.user_repo.delete_user(user_id)
         if not success:
             raise ResourceNotFoundError("删除失败")
         log.info(f"[RBAC]删除用户: {user.USERNAME}")
+
+    def _check_not_last_superadmin(self, user_id: int) -> None:
+        """目标用户是最后一个启用状态的超级管理员时禁止删除（超管由角色 superadmin 判定）."""
+        roles = self.user_repo.get_user_roles(user_id)
+        if not any(r.role_code == SUPERADMIN_ROLE_CODE and r.status == 1 for r in roles):
+            return
+        for other in self.user_repo.get_all_users():
+            if other.id == user_id or other.status != 1:
+                continue
+            other_roles = self.user_repo.get_user_roles(other.id)
+            if any(r.role_code == SUPERADMIN_ROLE_CODE and r.status == 1 for r in other_roles):
+                return
+        raise ServiceError("不能删除最后一个超级管理员")
 
     def get_user_by_id(self, user_id: int) -> RBACUser | None:
         return cast(RBACUser | None, self.user_repo.get_user_by_id(user_id))

@@ -157,7 +157,6 @@ class RBACUserRepository(BaseRepository):
         password_hash: str,
         email: str | None = None,
         nickname: str | None = None,
-        is_superadmin: int = 0,
     ) -> RBACUser:
         """
         创建新用户
@@ -167,7 +166,6 @@ class RBACUserRepository(BaseRepository):
             password_hash: 密码哈希
             email: 邮箱
             nickname: 昵称
-            is_superadmin: 是否为超级管理员
 
         Returns:
             创建的用户对象
@@ -178,7 +176,6 @@ class RBACUserRepository(BaseRepository):
                 PASSWORD_HASH=password_hash,
                 EMAIL=email,
                 NICKNAME=nickname or username,
-                IS_SUPERADMIN=is_superadmin,
                 STATUS=1,
             )
             db.add(user)

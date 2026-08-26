@@ -54,19 +54,22 @@ class RBACService:
     def change_password(self, user_id: int, old_password: str, new_password: str) -> tuple:
         return self._auth.change_password(user_id, old_password, new_password)
 
+    def is_default_password(self, user_id: int) -> bool:
+        return self._auth.is_default_password(user_id)
+
     def reset_password(self, user_id: int, new_password: str, old_password: str | None = None) -> tuple:
         return self._auth.reset_password(user_id, new_password, old_password)
 
     # ==================== 用户管理（委托） ====================
 
-    def create_user(self, username: str, password: str, email=None, nickname=None, role_ids=None, is_superadmin=0):
-        return self._user.create_user(username, password, email, nickname, role_ids, is_superadmin)
+    def create_user(self, username: str, password: str, email=None, nickname=None, role_ids=None):
+        return self._user.create_user(username, password, email, nickname, role_ids)
 
     def update_user(self, user_id: int, **kwargs) -> None:
         return self._user.update_user(user_id, **kwargs)
 
-    def delete_user(self, user_id: int) -> None:
-        return self._user.delete_user(user_id)
+    def delete_user(self, user_id: int, current_user_id: int | None = None) -> None:
+        return self._user.delete_user(user_id, current_user_id=current_user_id)
 
     def get_user_by_id(self, user_id: int):
         return self._user.get_user_by_id(user_id)

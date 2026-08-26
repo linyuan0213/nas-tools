@@ -55,9 +55,6 @@ class RBACUser(Base):
     # 用户状态: 1=启用, 0=禁用
     STATUS: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
-    # 是否为超级管理员: 1=是, 0=否
-    IS_SUPERADMIN: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-
     # 最后登录信息
     LAST_LOGIN_AT: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     LAST_LOGIN_IP: Mapped[str] = mapped_column(String(64), nullable=True)
@@ -81,7 +78,6 @@ class RBACUser(Base):
             "nickname": self.NICKNAME,
             "avatar": self.AVATAR,
             "status": self.STATUS,
-            "is_superadmin": self.IS_SUPERADMIN,
             "last_login_at": self.LAST_LOGIN_AT.strftime("%Y-%m-%d %H:%M:%S")
             if self.LAST_LOGIN_AT is not None
             else None,

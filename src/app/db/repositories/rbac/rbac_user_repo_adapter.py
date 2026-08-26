@@ -55,9 +55,8 @@ class RBACUserRepositoryAdapter(IRBACUserRepository):
         password_hash: str,
         email: str | None = None,
         nickname: str | None = None,
-        is_superadmin: int = 0,
     ) -> RBACUserEntity:
-        row = self._repo.create_user(username, password_hash, email, nickname, is_superadmin)
+        row = self._repo.create_user(username, password_hash, email, nickname)
         if isinstance(row, bool):
             row = self._repo.get_user_by_username(username)
         return cast(RBACUserEntity, RBACUserEntity.from_orm(row))

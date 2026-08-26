@@ -58,6 +58,11 @@ def init_admin_user(
                 log.info(f"[RBAC初始化]管理员用户 {admin_username} 已存在")
             return True
 
+        # 系统中已有其他用户（管理员改名/删除过）→ 不再复活默认账号，避免安全隐患
+        if user_repo.get_all_users():
+            log.info(f"[RBAC初始化]系统已存在用户，跳过创建默认管理员 {admin_username}")
+            return True
+
         password_hash = generate_password_hash(admin_password)
 
         user = user_repo.create_user(username=admin_username, password_hash=password_hash, nickname="系统管理员")

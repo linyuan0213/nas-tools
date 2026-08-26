@@ -306,7 +306,6 @@ class TestRBACMenuService:
         menu_repo = MagicMock()
         user_repo = MagicMock()
         user = MagicMock()
-        user.IS_SUPERADMIN = 0
         user_repo.get_user_by_id.return_value = user
         menu = MagicMock()
         menu.ID = 1

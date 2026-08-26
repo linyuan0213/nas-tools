@@ -21,7 +21,6 @@ class RBACUserEntity:
     nickname: str | None
     avatar: str | None
     status: int
-    is_superadmin: int
     last_login_at: datetime | None
     last_login_ip: str | None
     created_at: datetime | None
@@ -47,7 +46,6 @@ class RBACUserEntity:
             nickname=getattr(orm_model, "NICKNAME", None),
             avatar=getattr(orm_model, "AVATAR", None),
             status=getattr(orm_model, "STATUS", 1),
-            is_superadmin=getattr(orm_model, "IS_SUPERADMIN", 0),
             last_login_at=getattr(orm_model, "LAST_LOGIN_AT", None),
             last_login_ip=getattr(orm_model, "LAST_LOGIN_IP", None),
             created_at=getattr(orm_model, "CREATED_AT", None),
@@ -69,7 +67,6 @@ class RBACUserEntity:
             "nickname": self.nickname,
             "avatar": self.avatar,
             "status": self.status,
-            "is_superadmin": self.is_superadmin,
             "last_login_at": self.last_login_at.strftime("%Y-%m-%d %H:%M:%S") if self.last_login_at else None,
             "last_login_ip": self.last_login_ip,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,

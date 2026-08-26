@@ -83,6 +83,23 @@ class RBACAuthService:
             return True, "密码修改成功"
         return False, "密码修改失败"
 
+    def is_default_password(self, user_id: int) -> bool:
+        """当前密码是否仍为初始默认密码（用于提示用户尽快修改）.
+
+        仅当未自定义初始密码（即使用内置默认值 "password"）时才判定；
+        部署者通过 APP__LOGIN_PASSWORD 自定义的初始密码视为有意设置，不提示。
+        """
+        user = self.user_repo.get_user_by_id(user_id)
+        if not user or not user.PASSWORD_HASH:
+            return False
+        configured_pwd = settings.get("app").get("login_password") or ""
+        is_custom_initial = (
+            bool(configured_pwd) and not configured_pwd.startswith("[hash]") and configured_pwd != "password"
+        )
+        if is_custom_initial:
+            return False
+        return check_password_hash(user.PASSWORD_HASH, "password")
+
     def reset_password(self, user_id: int, new_password: str, old_password: str | None = None) -> tuple:
         """重置密码"""
         user = self.user_repo.get_user_by_id(user_id)
