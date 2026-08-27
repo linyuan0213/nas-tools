@@ -80,11 +80,11 @@ API 类站点无需手动配请求头，在新增站点向导第 2 步「认证�
    ```
    或通过 CookieCloud 同步 local_storage 中的 token 数据。
 
-#### 夜梦（YemaPT）
+#### 野马（YemaPT）
 
-1. 登录夜梦站点，在个人详情页创建 **API AuthKey**（有效期 180 天，每个账号最多同时保留 3 个）
+1. 登录野马站点，在个人详情页创建 **API AuthKey**（有效期 180 天，每个账号最多同时保留 3 个）
 2. 在站点「认证信息」的 **API Key** 中粘贴 AuthKey
-3. 系统会以 `Authorization: <AuthKey>` 请求头发送。注意：**不要**填在「Bearer Token」字段——夜梦开放 API 要求 `Authorization` 直接携带 AuthKey，不允许 `Bearer ` 前缀（填入 Bearer 字段会导致接口返回 403 `need api auth`，站点测试显示「密钥失效」）
+3. 系统会以 `Authorization: <AuthKey>` 请求头发送。注意：**不要**填在「Bearer Token」字段——野马开放 API 要求 `Authorization` 直接携带 AuthKey，不允许 `Bearer ` 前缀（填入 Bearer 字段会导致接口返回 403 `need api auth`，站点测试显示「密钥失效」）
 
 ### 更新站点 Cookie
 
