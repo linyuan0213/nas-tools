@@ -1,5 +1,16 @@
 # 版本历史
 
+## v4.10.2 (2026-08-27)
+
+### 特性
+- **站点配置更新源可配置**：新增 `pt.sites_update_url` 配置（支持 `PT__SITES_UPDATE_URL` 环境变量），可指向自建站点配置源；默认仍为 nexus-media-sites 官方 release
+- **站点 id 统一小写**：14 个站点 id 规范化（U2→u2、PANDA→panda、HDKylin→hdkylin 等）；配套 Alembic 迁移自动重映射存量数据（索引器配置/刷流/订阅/用户 RSS），`get_by_id` 兼容旧大小写，升级无需手动干预
+- **站点配置 schema 完善**：补齐解析器实际读取的字段（nested 模式 torrents、html_field 扩展、torrent_attr.response、user_info 等），新增 validate.py 语义检查（重复 id/未知键/废弃过滤器）
+
+### 修复
+- **站点配置缺陷**：chdbits `defualt_value` 拼写错误、ourbits 字符串过滤器（后端解析器不支持）修复
+- **站点配置清理**：移除 95 个站点中不生效的废弃过滤器（trim/dateparse 等）
+
 ## v4.10.1 (2026-08-27)
 
 ### 特性
