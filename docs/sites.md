@@ -70,15 +70,11 @@ API 类站点无需手动配请求头，在新增站点向导第 2 步「认证�
 2. 在站点「认证信息」的 **API Key** 中粘贴令牌（系统会自动以 `x-api-key` 请求头发送）
 3. 按需配置 User-Agent
 
-#### 肉丝（Rousi）
+#### RousiPro（Rousi）
 
-1. 登录肉丝站点，进入「账户设置」复制 **Passkey**
-2. 在站点「认证信息」的 **Bearer Token** 中粘贴（无需 `Bearer ` 前缀，系统自动处理）
-3. 签到配置（可选）：自动签到需要在请求头参数中额外添加签到专用 token：
-   ```json
-   {"x-sign-token": "你的签到令牌"}
-   ```
-   或通过 CookieCloud 同步 local_storage 中的 token 数据。
+1. 登录 Rousi 站点，进入「账户设置」生成 **API Key**
+2. 在站点「认证信息」的 **Bearer Token** 中粘贴 API Key（无需 `Bearer ` 前缀，系统自动处理，以 `Authorization` 请求头发送）
+3. 自动签到：基于站点 **Cookie** 认证（`__Host-peergo_session`）。在站点「认证信息」的 **Cookie** 中填入登录后的会话 Cookie 即可，无需额外请求头
 
 #### 野马（YemaPT）
 
