@@ -173,6 +173,14 @@ laboratory:
   ocr_enabled: true
   # 验证码识别服务器
   ocr_server_host: http://127.0.0.1:9300
+  # 【ADR-014 身份识别体系】统一身份解析/匹配（同名系列不误配、可解释决策）
+  # 三个开关为渐进灰度，按序开启并观察日志差异后再全量转正：
+  #   identity_index   — P1 别名索引：get_all_names 走本地索引（热路径零网络）
+  #   identity_resolver— P2 统一识别决策流：BatchIdentifier 走 IdentityResolver
+  #   target_matcher   — P3 统一判等：搜索过滤与订阅匹配走 TargetMatcher（ID 判等 + edition 距离）
+  identity_index: false
+  identity_resolver: false
+  target_matcher: false
 # 【AI Agent】：智能助手（对话/知识库问答），默认关闭
 agent:
   # 是否启用

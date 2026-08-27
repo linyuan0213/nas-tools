@@ -277,6 +277,7 @@ class BatchIdentifier:
         resolver = get_identity_resolver(self.media)
         total = len(order)
         pending: list[dict] = []
+        stats = {"local_hit": 0, "local_reject": 0, "external_pending": 0, "external_hit": 0, "external_fail": 0}
 
         # 阶段1：本地决策（直通/索引/评分，零外部调用）
         for idx, key in enumerate(order):
@@ -284,13 +285,19 @@ class BatchIdentifier:
             result = resolver.resolve_local(g, match_media)
             if result is None:
                 pending.append(g)
+                stats["external_pending"] += 1
                 continue
             self._apply_result(key, result)
+            if result.status == IdentifyStatus.HIT:
+                stats["local_hit"] += 1
+            elif result.status == IdentifyStatus.NOT_FOUND:
+                stats["local_reject"] += 1
             log.info(f"[BatchIdentifier]{g['title'][:50]} [{result.reason}] confidence={result.confidence:.2f}")
             if idx % 10 == 0 or idx == total - 1:
                 self.progress.update(ptype=progress_key, text=f"本地识别 {idx + 1}/{total} ...")
 
         if not pending:
+            log.info(f"[BatchIdentifier]识别完成(全本地): {stats}")
             return
 
         # 阶段2：外部解析（攒批并发，一次 identify_groups 调用）
@@ -300,10 +307,17 @@ class BatchIdentifier:
             result = ext_results.get(g["_cache_key"])
             if result:
                 self._apply_result(g["_cache_key"], result)
+                if result.status == IdentifyStatus.HIT:
+                    stats["external_hit"] += 1
+                else:
+                    stats["external_fail"] += 1
                 log.info(f"[BatchIdentifier]{g['title'][:50]} [{result.reason}] confidence={result.confidence:.2f}")
+        log.info(f"[BatchIdentifier]识别完成: {stats}")
 
     def _apply_result(self, key: str, result) -> None:
         if result.status == IdentifyStatus.HIT and result.media_info:
+            # 置信度透传：ResolveResult.confidence → 缓存 MediaInfo
+            result.media_info.confidence = result.confidence
             self._media_ident_cache.set(key, result.media_info)
         elif result.status == IdentifyStatus.NOT_FOUND and result.media_info:
             self._media_ident_cache.set(key, result.media_info, ttl=_NOT_FOUND_TTL)
@@ -367,4 +381,6 @@ class BatchIdentifier:
         info.tmdb_info = getattr(match_media, "tmdb_info", None) or {}
         info.poster_path = getattr(match_media, "poster_path", None)
         info.backdrop_path = getattr(match_media, "backdrop_path", None)
+        # 全名严格命中目标别名集 → 最高置信
+        info.confidence = 1.0
         return info

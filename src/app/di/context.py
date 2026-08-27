@@ -16,6 +16,12 @@ if TYPE_CHECKING:
     from app.events.bus import EventBus
     from app.infrastructure.queue.base import MessageQueue
     from app.infrastructure.thread import ThreadExecutor
+    from app.media.identity.builder import IdentityIndexBuilder
+    from app.media.identity.graph import EditionGraph
+    from app.media.identity.index import AliasIndex
+    from app.media.identity.matcher import TargetMatcher
+    from app.media.identity.remapper import EpisodeRemapper
+    from app.media.identity.resolver import IdentityResolver
     from app.media.service import MediaService
     from app.mediaserver.media_server import MediaServer
     from app.message.message import Message
@@ -112,6 +118,14 @@ class AppContext:
     # 协调器层
     subscription_monitor: Any
     system_lifecycle: SystemLifecycleService
+
+    # 媒体身份解析（ADR-014）
+    alias_index: AliasIndex
+    edition_graph: EditionGraph
+    identity_resolver: IdentityResolver
+    target_matcher: TargetMatcher
+    identity_builder: IdentityIndexBuilder
+    episode_remapper: EpisodeRemapper
 
     # Agent RAG（未启用时为 None，带默认值便于最小构造）
     embedding_service: Any = None

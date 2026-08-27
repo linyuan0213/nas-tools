@@ -75,6 +75,12 @@ def test_app_context_fields():
         user_rss_service=MagicMock(),
         subscription_monitor=MagicMock(),
         system_lifecycle=MagicMock(),
+        alias_index=MagicMock(),
+        edition_graph=MagicMock(),
+        identity_resolver=MagicMock(),
+        target_matcher=MagicMock(),
+        identity_builder=MagicMock(),
+        episode_remapper=MagicMock(),
     )
     assert ctx.event_bus is not None
     assert ctx.media_service is not None

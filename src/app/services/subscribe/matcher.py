@@ -1,13 +1,15 @@
 """Subscribe matcher — 判断种子是否命中用户订阅清单."""
 
-import re
-
 import log
+from app.core.settings import settings
 from app.db.repositories.config_repo_adapter import FilterGroupRepositoryAdapter, FilterRuleRepositoryAdapter
 from app.domain.mediatypes import MediaType
 from app.indexer.core.filter_engine import IndexerFilterEngine
+from app.media.identity.matcher import get_target_matcher
+from app.media.models import MediaInfo
 from app.sites.site_cache import SiteCache
 from app.sites.siteconf import SiteConf
+from app.utils import StringUtils
 
 
 class SubscribeMatcher:
@@ -23,6 +25,32 @@ class SubscribeMatcher:
         self._filter = filter_engine or IndexerFilterEngine()
         self._site_cache = site_cache
         self._site_conf = site_conf or SiteConf(site_engine=None)
+
+    @staticmethod
+    def _use_unified_match() -> bool:
+        """ADR-014 P3：订阅匹配统一走 TargetMatcher（ID 判等 + edition 距离）"""
+        return bool(settings.get("laboratory").get("target_matcher"))
+
+    def _match_tmdb(self, media_info, rss_info) -> bool:
+        """订阅目标 TMDB 身份判等：统一路径（TargetMatcher）或退化 tmdb_id 判等"""
+        tmdbid = rss_info.get("tmdbid")
+        if not self._use_unified_match():
+            return str(getattr(media_info, "tmdb_id", None)) == str(tmdbid)
+        target = MediaInfo(tmdb_id=tmdbid, title=rss_info.get("name") or "", year=rss_info.get("year"))
+        result = get_target_matcher().match(media_info, target)
+        if not result.matched and result.reason != "no_identity":
+            log.debug(f"[SubscribeMatcher]{rss_info.get('name')} 身份不匹配: {result.reason}")
+        return result.matched
+
+    @staticmethod
+    def _fuzzy_name_match(name, media_info) -> bool:
+        """规范化子串匹配：防正则注入、大小写/标点鲁棒（替代裸 re.search）"""
+        if not name:
+            return True
+        search_title = f"{media_info.rev_string or ''} {media_info.title} {media_info.year}"
+        n = StringUtils.handler_special_chars(name).upper().strip()
+        t = StringUtils.handler_special_chars(search_title).upper().strip()
+        return bool(n) and n in t
 
     def match(
         self,
@@ -66,8 +94,8 @@ class SubscribeMatcher:
                 fuzzy_match = rss_info.get("fuzzy_match")
 
                 if not fuzzy_match:
-                    if tmdbid and not tmdbid.startswith("DB:"):
-                        if str(media_info.tmdb_id) != str(tmdbid):
+                    if tmdbid and not str(tmdbid).startswith("DB:"):
+                        if not self._match_tmdb(media_info, rss_info):
                             continue
                     else:
                         if year and str(media_info.year) not in [str(year), str(int(year) + 1), str(int(year) - 1)]:
@@ -77,8 +105,7 @@ class SubscribeMatcher:
                 else:
                     if year and str(year) != str(media_info.year):
                         continue
-                    search_title = f"{media_info.rev_string} {media_info.title} {media_info.year}"
-                    if name and not re.search(name, search_title, re.I) and name not in search_title:
+                    if not self._fuzzy_name_match(name, media_info):
                         continue
 
                 match_flag = True
@@ -99,8 +126,8 @@ class SubscribeMatcher:
                 fuzzy_match = rss_info.get("fuzzy_match")
 
                 if not fuzzy_match:
-                    if tmdbid and not tmdbid.startswith("DB:"):
-                        if str(media_info.tmdb_id) != str(tmdbid):
+                    if tmdbid and not str(tmdbid).startswith("DB:"):
+                        if not self._match_tmdb(media_info, rss_info):
                             continue
                     else:
                         if year and str(year) != str(media_info.year):
@@ -114,8 +141,7 @@ class SubscribeMatcher:
                         continue
                     if year and str(year) != str(media_info.year):
                         continue
-                    search_title = f"{media_info.rev_string} {media_info.title} {media_info.year}"
-                    if not re.search(name, search_title, re.I) and name not in search_title:
+                    if not self._fuzzy_name_match(name, media_info):
                         continue
 
                 match_flag = True

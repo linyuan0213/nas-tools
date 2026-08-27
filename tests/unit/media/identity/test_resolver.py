@@ -156,6 +156,47 @@ class TestExternalValidation:
         assert args[1].kind == "fan"
         assert args[1].work_id == 999
 
+    def test_external_hit_learns_work_metadata(self, resolver):
+        """外部解析命中后回写最小 Work 元数据（冷→热闭环：下次本地可评分命中）"""
+        resolver.media.get_all_names.return_value = []
+        g = _group(["新番中文名"], cn="新番中文名")
+        resolver.index.lookup.side_effect = lambda n: []
+        resolver.index.get_work.return_value = None  # Work 元数据未索引
+        resolver.media.identify_groups.return_value = {
+            "k1": (
+                IdentifyStatus.HIT,
+                MediaInfo(
+                    cn_name="新番中文名",
+                    title="新番中文名",
+                    original_title="Shin Bangumi",
+                    year="2026",
+                    type=MediaType.TV,
+                    tmdb_id=999,
+                ),
+            )
+        }
+        result = resolver.resolve(g, None)
+        assert result.status == IdentifyStatus.HIT
+        work = resolver.index.put_work.call_args[0][0]
+        assert work.work_id == 999
+        assert work.official_titles == ["新番中文名", "Shin Bangumi"]
+        assert work.aliases[0].kind == "fan"
+
+    def test_external_hit_skips_work_when_already_indexed(self, resolver):
+        """Work 已索引时不再重复回写（避免覆盖已构建的完整元数据）"""
+        resolver.media.get_all_names.return_value = []
+        g = _group(["新番中文名"], cn="新番中文名")
+        resolver.index.lookup.side_effect = lambda n: []
+        resolver.index.get_work.return_value = Work(
+            source="tmdb", work_id=999, official_titles=["完整版名称"], aliases=[]
+        )
+        resolver.media.identify_groups.return_value = {
+            "k1": (IdentifyStatus.HIT, MediaInfo(cn_name="新番中文名", tmdb_id=999))
+        }
+        result = resolver.resolve(g, None)
+        assert result.status == IdentifyStatus.HIT
+        resolver.index.put_work.assert_not_called()
+
 
 class TestEditionGraph:
     def test_find_edition(self):

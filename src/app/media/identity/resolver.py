@@ -19,16 +19,19 @@ from app.media.identity.models import (
     ALIAS_OFFICIAL,
     ALIAS_ROMANIZATION,
     ALIAS_TRANSLATION,
+    EDITION_MARKERS,
+    Alias,
     AliasEntry,
     Work,
     normalize_text,
 )
 from app.media.models import MediaInfo
 
-# 版本/子系列标记词（可扩展；捕获组保留原文作为 marker）
+# 版本/子系列标记词（EDITION_MARKERS 单一来源）+ 拉丁词组 + 第X季模式
 _EDITION_WORDS_RE = re.compile(
-    r"(?i)(sac_2045|arise|2nd\s*gig|stand\s+alone\s+complex|solid\s+state\s+society"
-    r"|剧场版|总集篇|特别篇|OVA|OAD|第[一二三四五六七八九十\d]+季)"
+    r"(?i)("
+    + r"|".join(re.escape(m) for m in sorted(EDITION_MARKERS, key=len, reverse=True))
+    + r"|2nd\s*gig|stand\s+alone\s+complex|solid\s+state\s+society|第[一二三四五六七八九十\d]+季)"
 )
 
 _KIND_WEIGHT = {
@@ -39,6 +42,8 @@ _KIND_WEIGHT = {
 }
 _HIT_SCORE = 0.5
 _HIT_MARGIN = 1.3
+# 索引命中置信度低于该值告警（canary：观察学成别名/边缘评分的可靠性）
+_LOW_CONFIDENCE_WARN = 0.65
 
 
 @dataclass
@@ -136,6 +141,11 @@ class IdentityResolver:
                 # fan 证据名记命中（达阈值升格 translation）
                 for n in ev_names:
                     self.index.record_hit(n, work.source, work.work_id)
+                if score < _LOW_CONFIDENCE_WARN:
+                    log.warn(
+                        f"[IdentityResolver]低置信索引命中: {group.get('title', '')[:50]} "
+                        f"-> {work.source}/{work.work_id} score={score:.2f} aliases={ev_names} markers={markers}"
+                    )
                 return ResolveResult(
                     IdentifyStatus.HIT,
                     info,
@@ -191,7 +201,8 @@ class IdentityResolver:
                             reason="distinguishing_names",
                         )
                         continue
-                # 学成回写：fan 别名（仅作证据，不单独定身份）
+                # 学成回写：fan 别名（仅作证据，不单独定身份）+ 最小 Work 元数据
+                self._learn_work(info)
                 for n in g.get("names") or []:
                     self.index.add_alias(n, AliasEntry("tmdb", info.tmdb_id, kind=ALIAS_FAN))
                 results[key] = ResolveResult(
@@ -224,7 +235,8 @@ class IdentityResolver:
                         evidence=[f"reject:命中目标但存在区分信息 {unresolved}"],
                         reason="distinguishing_names",
                     )
-            # 学成回写：fan 别名（仅作证据，不单独定身份）
+            # 学成回写：fan 别名（仅作证据，不单独定身份）+ 最小 Work 元数据
+            self._learn_work(info)
             for n in group.get("names") or []:
                 self.index.add_alias(n, AliasEntry("tmdb", info.tmdb_id, kind=ALIAS_FAN))
             return ResolveResult(
@@ -290,6 +302,30 @@ class IdentityResolver:
         if source == "bgm":
             return self.index.get_work("bgm", work_id)
         return None
+
+    def _learn_work(self, info) -> None:
+        """外部解析命中后回写最小 Work 元数据（完成冷→热闭环，避免同作品重复外部解析）"""
+        if not info or not getattr(info, "tmdb_id", None):
+            return
+        tmdb_id = int(info.tmdb_id)
+        if self.index.get_work("tmdb", tmdb_id):
+            return
+        mtype = getattr(info, "type", None)
+        year_str = str(getattr(info, "year", "") or "")[:4]
+        work = Work(
+            source="tmdb",
+            work_id=tmdb_id,
+            media_type="anime" if mtype == MediaType.ANIME else (mtype.value if mtype else "tv"),
+            year=int(year_str) if year_str.isdigit() else None,
+            official_titles=[n for n in (getattr(info, "title", None), getattr(info, "original_title", None)) if n],
+            aliases=[
+                Alias(text=n, kind=ALIAS_FAN, source="learned")
+                for n in (getattr(info, "cn_name", None), getattr(info, "en_name", None))
+                if n
+            ],
+        )
+        self.index.put_work(work)
+        log.info(f"[IdentityResolver]外部解析学成 Work: tmdb/{tmdb_id} {work.official_titles}")
 
     @staticmethod
     def _strict(name: str, target_names: list[str]) -> bool:
@@ -395,3 +431,9 @@ def get_identity_resolver(media_service=None) -> IdentityResolver:
             raise ValueError("首次获取 IdentityResolver 必须提供 media_service")
         _resolver = IdentityResolver(media_service)
     return _resolver
+
+
+def set_identity_resolver(resolver: IdentityResolver | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _resolver
+    _resolver = resolver

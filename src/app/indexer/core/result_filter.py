@@ -23,15 +23,15 @@ from app.indexer.core.models import FilterStats, SearchCandidate
 from app.infrastructure.cache_system import get_cache_manager
 from app.infrastructure.progress import ProgressTracker
 from app.media.identity.matcher import get_target_matcher
+from app.media.identity.models import EDITION_MARKERS as _EDITION_MARKERS
 from app.media.parser.parse_cache import cached_meta_info
 from app.utils import StringUtils
 
-_EDITION_MARKERS: frozenset[str] = frozenset(
-    {"剧场版", "特别篇", "总集篇", "特别版", "OVA", "OAD", "oad", "OVA版", "OAD版"}
-)
-
 # 字幕/配音标签前缀（如 "中字攻壳机动队"），会污染名称比较需剥除
 _CN_TAG_PREFIX_RE = re.compile(r"^(?:官方中字|中文字幕|中文字|中字|国配|粤配|日配|简中|繁中|简繁|繁简)")
+
+# 命中置信度低于该值告警（canary：与 IdentityResolver._LOW_CONFIDENCE_WARN 一致）
+_LOW_CONFIDENCE_WARN = 0.65
 
 
 def _strip_cn_tag_prefix(name: str) -> str:
@@ -525,18 +525,15 @@ class ResultFilter:
                 f"meta_name={mi.get_name()}, match_name={match_media.get_name()}"
             )
             if qnm_result:
-                low_confidence = bool(not mi.en_name and mi.cn_name)
-                log.info(
-                    f"[ResultFilter]{torrent_name} 快速名称匹配成功"
-                    f"{'（低置信，仍走 TMDB）' if low_confidence else '，跳过TMDB查询'}"
-                )
+                # ADR-014：qnm 降级为召回门，命中不再直通，交 BatchIdentifier 身份层识别
+                log.info(f"[ResultFilter]{torrent_name} 快速名称匹配，走身份层识别")
                 candidates.append(
                     SearchCandidate(
                         item=item,
                         meta_info=mi,
                         res_order=res_order,
-                        skip_tmdb=not low_confidence,
-                        media_info=self._media.merge_media_info(mi, match_media) if not low_confidence else mi,
+                        skip_tmdb=False,
+                        media_info=mi,
                         indexer_name=indexer_name,
                         indexer_order=indexer_order,
                         indexer_public=indexer_public,
@@ -762,6 +759,11 @@ class ResultFilter:
                 f"[ResultFilter]{display_name} {description} 识别为 {media_info.get_title_string()} "
                 f"{media_info.get_season_episode_string()} 匹配成功"
             )
+            if 0.0 < getattr(media_info, "confidence", 0.0) < _LOW_CONFIDENCE_WARN:
+                log.warn(
+                    f"[ResultFilter]{display_name} 低置信命中 confidence={media_info.confidence:.2f} "
+                    f"（canary：观察学成别名/边缘评分的可靠性）"
+                )
             # 只订阅免费：download_volume_factor==0 视为免费(free/2xfree)
             if filter_args.get("free") and downloadvolumefactor != 0.0:
                 log.info(f"[ResultFilter]{display_name} 非免费种子(dl_factor={downloadvolumefactor})，仅订阅免费，跳过")

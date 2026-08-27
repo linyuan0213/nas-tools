@@ -191,3 +191,9 @@ def get_edition_graph() -> EditionGraph:
     if _graph is None:
         _graph = EditionGraph()
     return _graph
+
+
+def set_edition_graph(graph: EditionGraph | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _graph
+    _graph = graph

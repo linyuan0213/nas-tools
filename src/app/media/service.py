@@ -549,7 +549,7 @@ class MediaService:
                     alt_parsed = copy.copy(parsed)
                     alt_parsed.title_en, alt_parsed.title_cn = alt_name, parsed.title_en or parsed.title_cn
                     alt_key = (
-                        f"{alt_parsed.title_en or alt_parsed.title_cn or ''}:"
+                        f"{_norm_name(alt_parsed.title_en or alt_parsed.title_cn or '')}:"
                         f"{alt_parsed.year or ''}:"
                         f"{alt_parsed.type.value if alt_parsed.type else ''}"
                     )
@@ -582,7 +582,7 @@ class MediaService:
             info = MediaInfo.from_parser(parsed) if parsed else MediaInfo()
             if parsed:
                 key = (
-                    f"{parsed.title_en or parsed.title_cn or ''}:"
+                    f"{_norm_name(parsed.title_en or parsed.title_cn or '')}:"
                     f"{parsed.year or ''}:"
                     f"{parsed.type.value if parsed.type else ''}"
                 )
@@ -634,7 +634,7 @@ class MediaService:
                     map_indices.append(idx)
             if map_items:
                 log.info(f"[EpisodeMapper]批量映射 {len(map_items)} 条记录")
-                mapped = self._episode_mapper.map_batch(map_items)
+                mapped = self._episode_remapper.remap_batch(map_items)
                 mapped_count = 0
                 for i, mapped_result in enumerate(mapped):
                     if isinstance(mapped_result, tuple):
@@ -705,7 +705,7 @@ class MediaService:
                     for info in hit_infos
                 ]
                 log.info(f"[EpisodeMapper]批量映射 {len(map_items)} 条记录")
-                mapped = self._episode_mapper.map_batch(map_items)
+                mapped = self._episode_remapper.remap_batch(map_items)
                 mapped_count = 0
                 for info, mapped_result in zip(hit_infos, mapped, strict=False):
                     if isinstance(mapped_result, tuple):

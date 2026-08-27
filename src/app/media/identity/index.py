@@ -164,3 +164,9 @@ def get_alias_index() -> AliasIndex:
         _index = AliasIndex()
         log.debug("[IdentityIndex]别名索引初始化完成")
     return _index
+
+
+def set_alias_index(index: AliasIndex | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _index
+    _index = index

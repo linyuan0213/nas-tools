@@ -2,7 +2,7 @@
 
 import itertools
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,6 +12,7 @@ from app.indexer.core.batch_identifier import BatchIdentifier
 from app.indexer.core.models import SearchCandidate
 from app.infrastructure.cache_system import get_cache_manager
 from app.infrastructure.http.exceptions import HttpRateLimitError
+from app.media.identity.resolver import ResolveResult
 from app.media.lookup.base import LookupResult
 from app.media.models import MediaInfo
 from app.media.service import MediaService
@@ -102,6 +103,8 @@ class TestDirectPass:
         cached = identifier._media_ident_cache.get(key)
         assert cached is not None
         assert cached.tmdb_id == 288971
+        # 全名严格命中目标别名集 → 最高置信透传
+        assert cached.confidence == 1.0
 
     def test_tv_year_mismatch_not_rejected(self, identifier):
         """剧集跨年份（S2 播映年晚于首播年）→ 名称匹配仍直通，零 API"""
@@ -335,3 +338,68 @@ class TestIdentifyGroups:
         status, _ = result["v2_test_S1_E1"]
         assert status == IdentifyStatus.ERROR
         assert lookup.lookup.call_count == 1
+
+    def test_identify_groups_uses_episode_remapper(self):
+        """集数重映射走 EpisodeRemapper（发布组编号习惯优先，再交 EpisodeMapper）"""
+        lookup = MagicMock()
+        lookup.lookup.return_value = LookupResult(tmdb_id=97699, media_type=MediaType.TV)
+        svc = self._service(lookup)
+        svc._episode_mapping_enabled = True
+        svc._episode_remapper = MagicMock()
+        svc._episode_remapper.remap_batch.return_value = [(2, 12)]  # S4E12 → S2E12（编号习惯映射）
+
+        group = self._group(["攻壳机动队"])
+        group["seasons"] = [4]
+        group["episodes"] = [12]
+        result = svc.identify_groups([group])
+
+        status, info = result["v2_test_S1_E1"]
+        assert status == IdentifyStatus.HIT
+        svc._episode_remapper.remap_batch.assert_called_once()
+        assert info.begin_season == 2
+        assert info.begin_episode == 12
+        # 种子原始值保留，供下游区分
+        assert info.seeds_season == 4
+
+
+class TestConfidencePropagation:
+    """ADR-014 置信度端到端透传：ResolveResult.confidence → 缓存 MediaInfo"""
+
+    def _match_media(self):
+        return MediaInfo(cn_name="攻壳机动队", title="攻壳机动队", year="2026", type=MediaType.TV, tmdb_id=255358)
+
+    def test_resolver_hit_writes_confidence(self, identifier):
+        cands = [_cand("攻壳机动队 S01E04 2026", _meta(cn="攻壳机动队"))]
+        key = BatchIdentifier.build_cache_key(cands[0].meta_info)
+        resolver = MagicMock()
+        resolver.resolve_local.return_value = ResolveResult(
+            IdentifyStatus.HIT, MediaInfo(cn_name="攻壳机动队", tmdb_id=255358), confidence=0.83
+        )
+        with (
+            patch("app.indexer.core.batch_identifier.settings") as mock_settings,
+            patch("app.indexer.core.batch_identifier.get_identity_resolver", return_value=resolver),
+        ):
+            mock_settings.get.return_value = {"identity_resolver": True}
+            identifier.identify(cands, match_media=self._match_media())
+
+        cached = identifier._media_ident_cache.get(key)
+        assert cached is not None
+        assert cached.confidence == pytest.approx(0.83)
+
+    def test_local_reject_keeps_zero_confidence(self, identifier):
+        cands = [_cand("攻壳机动队 S01E04 2026", _meta(cn="攻壳机动队"))]
+        key = BatchIdentifier.build_cache_key(cands[0].meta_info)
+        resolver = MagicMock()
+        resolver.resolve_local.return_value = ResolveResult(
+            IdentifyStatus.NOT_FOUND, MediaInfo(cn_name="攻壳机动队"), confidence=0.0
+        )
+        with (
+            patch("app.indexer.core.batch_identifier.settings") as mock_settings,
+            patch("app.indexer.core.batch_identifier.get_identity_resolver", return_value=resolver),
+        ):
+            mock_settings.get.return_value = {"identity_resolver": True}
+            identifier.identify(cands, match_media=self._match_media())
+
+        cached = identifier._media_ident_cache.get(key)
+        assert cached is not None
+        assert cached.confidence == 0.0

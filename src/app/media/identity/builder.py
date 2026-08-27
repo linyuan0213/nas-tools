@@ -138,3 +138,9 @@ def get_identity_builder() -> IdentityIndexBuilder:
     if _builder is None:
         _builder = IdentityIndexBuilder()
     return _builder
+
+
+def set_identity_builder(builder: IdentityIndexBuilder | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _builder
+    _builder = builder

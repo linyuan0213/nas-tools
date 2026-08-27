@@ -69,3 +69,9 @@ def get_target_matcher() -> TargetMatcher:
     if _matcher is None:
         _matcher = TargetMatcher()
     return _matcher
+
+
+def set_target_matcher(matcher: TargetMatcher | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _matcher
+    _matcher = matcher

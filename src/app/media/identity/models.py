@@ -20,6 +20,12 @@ ALIAS_FAN = "fan"  # 学成别名：仅作评分证据，不可单独确定身�
 # fan → translation 升格所需的一致命中次数
 FAN_PROMOTE_HITS = 2
 
+# 版本/子系列标记词（单一来源）：IdentityResolver 版本下钻 + ResultFilter 衍生词判断共用。
+# 拉丁词组（2nd gig / stand alone complex 等）与「第X季」模式由 resolver 正则单独补充。
+EDITION_MARKERS: frozenset[str] = frozenset(
+    {"剧场版", "特别篇", "总集篇", "特别版", "OVA", "OAD", "oad", "OVA版", "OAD版", "SAC_2045", "ARISE"}
+)
+
 
 def normalize_text(text: str) -> str:
     """别名归一化 — 与全链路比较语义一致"""

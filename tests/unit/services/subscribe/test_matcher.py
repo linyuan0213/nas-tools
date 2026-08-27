@@ -1,10 +1,12 @@
 """SubscribeMatcher 单元测试."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app.domain.mediatypes import MediaType
+from app.media.identity.matcher import TargetMatcher
+from app.media.identity.models import Work
 from app.services.subscribe.matcher import SubscribeMatcher
 
 
@@ -182,3 +184,109 @@ class TestSubscribeMatcher:
         assert media_info.year == o_year
         assert media_info.type == o_type
         assert media_info.tmdb_id == o_tmdb
+
+
+def _unified_target_matcher(works=None):
+    index = MagicMock()
+    if works:
+        index.get_work.side_effect = lambda source, wid: works.get(wid)
+    return TargetMatcher(graph=MagicMock(), index=index)
+
+
+class TestUnifiedMatching:
+    """ADR-014 P3：target_matcher 开启后订阅匹配走统一身份判等"""
+
+    @pytest.fixture
+    def matcher(self):
+        return SubscribeMatcher()
+
+    def test_same_tmdb_matches(self, matcher):
+        """同一 tmdb_id → id_match 命中"""
+        media_info = _make_media_info(MediaType.TV, "Ghost In The Shell", "2026", tmdb_id=255358)
+        rss_tvs = {1: {"name": "攻壳机动队", "year": "2026", "season": "S01", "tmdbid": "255358", "fuzzy_match": False}}
+        with (
+            patch("app.services.subscribe.matcher.settings") as mock_settings,
+            patch(
+                "app.services.subscribe.matcher.get_target_matcher",
+                return_value=_unified_target_matcher(),
+            ),
+        ):
+            mock_settings.get.return_value = {"target_matcher": True}
+            match_flag, match_msg, match_info = matcher.match(
+                media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False
+            )
+        assert match_flag is True
+        assert match_info["name"] == "攻壳机动队"
+
+    def test_different_tmdb_rejected(self, matcher):
+        """不同 tmdb_id 且无 franchise 关系 → 拒绝"""
+        media_info = _make_media_info(MediaType.TV, "Ghost In The Shell", "2026", tmdb_id=62070)
+        rss_tvs = {1: {"name": "攻壳机动队", "year": "2026", "season": "S01", "tmdbid": "255358", "fuzzy_match": False}}
+        with (
+            patch("app.services.subscribe.matcher.settings") as mock_settings,
+            patch(
+                "app.services.subscribe.matcher.get_target_matcher",
+                return_value=_unified_target_matcher(),
+            ),
+        ):
+            mock_settings.get.return_value = {"target_matcher": True}
+            match_flag, _, _ = matcher.match(media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False)
+        assert match_flag is False
+
+    def test_same_franchise_different_edition_rejected(self, matcher):
+        """同 franchise 不同 edition（SAC_2045 vs 2026 新剧）→ 可解释拒绝"""
+        works = {
+            62070: Work(
+                source="tmdb",
+                work_id=62070,
+                franchise="ghostintheshell",
+                official_titles=["Ghost in the Shell SAC_2045"],
+            ),
+            255358: Work(
+                source="tmdb",
+                work_id=255358,
+                franchise="ghostintheshell",
+                official_titles=["Ghost in the Shell"],
+            ),
+        }
+        media_info = _make_media_info(MediaType.TV, "Ghost In The Shell SAC_2045", "2020", tmdb_id=62070)
+        rss_tvs = {1: {"name": "攻壳机动队", "year": "2026", "season": "S01", "tmdbid": "255358", "fuzzy_match": False}}
+        with (
+            patch("app.services.subscribe.matcher.settings") as mock_settings,
+            patch(
+                "app.services.subscribe.matcher.get_target_matcher",
+                return_value=_unified_target_matcher(works),
+            ),
+        ):
+            mock_settings.get.return_value = {"target_matcher": True}
+            match_flag, _, _ = matcher.match(media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False)
+        assert match_flag is False
+
+
+class TestFuzzyNameMatch:
+    """fuzzy 分支：规范化子串匹配替代裸 re.search"""
+
+    def test_regex_metachar_treated_as_literal(self, matcher):
+        """订阅名含正则元字符 → 按字面子串匹配，不当作正则"""
+        media_info = _make_media_info(MediaType.TV, "攻壳机动队", "2026")
+        rss_tvs = {
+            1: {"name": "攻壳机动队(2026)", "year": "2026", "season": "S01", "tmdbid": None, "fuzzy_match": True}
+        }
+        match_flag, _, _ = matcher.match(media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False)
+        assert match_flag is True
+
+    def test_punct_differs_still_matches(self, matcher):
+        """标点/大小写差异经归一化后仍匹配"""
+        media_info = _make_media_info(MediaType.TV, "Ghost.In.The.Shell", "2026")
+        rss_tvs = {
+            1: {"name": "ghost in the shell", "year": "2026", "season": "S01", "tmdbid": None, "fuzzy_match": True}
+        }
+        match_flag, _, _ = matcher.match(media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False)
+        assert match_flag is True
+
+    def test_name_not_in_title_rejected(self, matcher):
+        """名称与种子标题无包含关系 → 拒绝"""
+        media_info = _make_media_info(MediaType.TV, "Star Wars", "1977")
+        rss_tvs = {1: {"name": "攻壳机动队", "year": "2026", "season": "S01", "tmdbid": None, "fuzzy_match": True}}
+        match_flag, _, _ = matcher.match(media_info, {}, rss_tvs, "test_site", None, "", False, "", {}, False)
+        assert match_flag is False

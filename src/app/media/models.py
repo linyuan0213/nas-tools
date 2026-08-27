@@ -95,6 +95,9 @@ class MediaInfo(BaseModel):
     # ---- TMDB 完整信息 ----
     tmdb_info: dict[str, Any] = Field(default_factory=dict)
 
+    # ---- 识别置信度（ADR-014 透传，0.0-1.0；未识别/旧路径默认 0） ----
+    confidence: float = 0.0
+
     # ---- 本地状态 ----
     fav: str = "0"
     rss_sites: list[str] = Field(default_factory=list)

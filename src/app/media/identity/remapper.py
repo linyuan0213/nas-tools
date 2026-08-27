@@ -136,3 +136,9 @@ def get_episode_remapper(episode_mapper: EpisodeMapper | None = None) -> Episode
     if _remapper is None:
         _remapper = EpisodeRemapper(episode_mapper=episode_mapper)
     return _remapper
+
+
+def set_episode_remapper(remapper: EpisodeRemapper | None) -> None:
+    """DI 装配入口：注入 builder 显式构建的实例；None 复位（测试隔离）。"""
+    global _remapper
+    _remapper = remapper

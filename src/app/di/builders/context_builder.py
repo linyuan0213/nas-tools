@@ -4,6 +4,7 @@ import log
 from app.di.builders.agent_builder import build_agent_rag
 from app.di.builders.coordinators_builder import build_coordinators
 from app.di.builders.facades_builder import build_business_facades
+from app.di.builders.identity_builder import build_identity
 from app.di.builders.infrastructure_builder import build_infrastructure
 from app.di.builders.services_builder import build_services
 from app.di.context import AppContext
@@ -14,6 +15,7 @@ def build_app_context() -> AppContext:
     log.info("[DI]开始构建对象图...")
     infra = build_infrastructure()
     facades = build_business_facades(infra)
+    identity = build_identity(facades)
     services = build_services(infra, facades)
     agent_rag = build_agent_rag(facades.agent_service, services.media_library_service)
     coordinators = build_coordinators(infra, facades, services, agent_rag)
@@ -93,6 +95,12 @@ def build_app_context() -> AppContext:
         user_rss_service=services.user_rss_service,
         subscription_monitor=coordinators.subscription_monitor,
         system_lifecycle=coordinators.system_lifecycle,
+        alias_index=identity.alias_index,
+        edition_graph=identity.edition_graph,
+        identity_resolver=identity.identity_resolver,
+        target_matcher=identity.target_matcher,
+        identity_builder=identity.identity_builder,
+        episode_remapper=identity.episode_remapper,
     )
     log.info("[DI]对象图构建完成")
     return context
