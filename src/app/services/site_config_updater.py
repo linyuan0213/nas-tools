@@ -6,12 +6,14 @@
 """
 
 import os
+import re
 import shutil
 import tempfile
 import zipfile
 from typing import Any
 
 import log
+from app.core.constants import SITES_DATA_URL
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.core.settings import settings
 from app.infrastructure.http.client import HttpClient
@@ -22,18 +24,30 @@ from app.utils.config_tools import get_proxies
 class SiteConfigUpdater:
     """站点配置更新器"""
 
-    _RELEASE_API_URL = "https://api.github.com/repos/linyuan0213/nexus-media-sites/releases/latest"
+    _DEFAULT_RELEASE_API_URL = SITES_DATA_URL
     _ASSET_NAME = "sites-config.zip"
     _VERSION_FILE = "version"
     _REQUIRED_SUBDIRS = ("api", "html", "schema")
 
-    def __init__(self, config_dir: str | None = None):
+    def __init__(self, config_dir: str | None = None, release_api_url: str | None = None):
         if config_dir is None:
             cfg = settings
             config_dir = cfg.config_path if cfg.config_path else None
         self._config_dir = config_dir or "/config"
         self._sites_dir = os.path.join(self._config_dir, "sites")
         self._version_file = os.path.join(self._sites_dir, self._VERSION_FILE)
+        # 站点配置更新源 URL：优先构造函数参数，其次 pt.sites_update_url 配置，最后内置默认
+        configured = getattr(settings.pt, "sites_update_url", "") if hasattr(settings, "pt") else ""
+        self._release_api_url = release_api_url or configured or self._DEFAULT_RELEASE_API_URL
+        self._repo_base = self._extract_repo_base(self._release_api_url)
+
+    @staticmethod
+    def _extract_repo_base(url: str) -> str:
+        """从 release API URL 提取 GitHub 仓库地址前缀（用于拼装资源下载地址）"""
+        match = re.search(r"/repos/([^/]+/[^/]+)/", url)
+        if not match:
+            return ""
+        return f"https://github.com/{match.group(1)}"
 
     def _read_local_version(self) -> str:
         try:
@@ -54,7 +68,7 @@ class SiteConfigUpdater:
             headers = {"Accept": "application/vnd.github.v3+json"}
             proxy_url = proxies.get("http") if proxies else None
             with HttpClient(config=HttpClientConfig(proxy_url=proxy_url, timeout=15)) as client:
-                resp = client.get(self._RELEASE_API_URL, headers=headers)
+                resp = client.get(self._release_api_url, headers=headers)
                 return resp.json()
         except (ServiceError, RepositoryError, DomainError):
             raise
@@ -68,8 +82,8 @@ class SiteConfigUpdater:
             if asset.get("name") == self._ASSET_NAME:
                 return asset.get("browser_download_url")
         tag = release_info.get("tag_name", "")
-        if tag:
-            return f"https://github.com/linyuan0213/nexus-media-sites/releases/download/{tag}/{self._ASSET_NAME}"
+        if tag and self._repo_base:
+            return f"{self._repo_base}/releases/download/{tag}/{self._ASSET_NAME}"
         return None
 
     @staticmethod

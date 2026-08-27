@@ -133,6 +133,9 @@ pt:
   download_order: site
   # 【搜索结果数量限制】：每个站点返回搜索结果的最大数量
   site_search_result_num: 100
+  # 【站点配置更新源】：站点配置远程更新 release API 地址，留空使用默认
+  # 默认：https://api.github.com/repos/linyuan0213/nexus-media-sites/releases/latest
+  sites_update_url: ""
 
 # 【openai】
 openai:
