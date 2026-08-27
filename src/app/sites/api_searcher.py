@@ -83,7 +83,9 @@ class ApiSiteSearcher:
             fanout_body.update(cat_config)
             body = self._render_template(fanout_body, **template_vars)
             for result in self._execute_request(search_config, body, template_vars, page_size=page_size):
-                key = result.get("title", "") + result.get("enclosure", "") + result.get("size", "")
+                key = "".join(
+                    str(result.get(k) or "") for k in ("title", "enclosure", "size")
+                )
                 if key not in seen:
                     seen.add(key)
                     all_results.append(result)
