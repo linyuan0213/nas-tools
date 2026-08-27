@@ -178,12 +178,23 @@ class SyncEngine:
             cfg = self.get_sync_path_conf(sid)
             if not cfg:
                 continue
+            # watchdog 只能监听本地目录；远程后端源由周期任务 transfer_sync 轮询
+            if cfg.src_backend_id != "local":
+                log.info(f"[Sync]{cfg.source} 远程源，由周期任务轮询")
+                continue
+            if not os.path.isdir(cfg.source):
+                log.error(f"[Sync]{cfg.source} 本地目录不存在，跳过监控")
+                continue
             obs = PollingObserver(timeout=10) if cfg.compatibility else Observer(timeout=10)
+            try:
+                obs.schedule(FileMonitorHandler(cfg.source, self), path=cfg.source, recursive=True)
+                obs.daemon = True
+                obs.start()
+            except Exception as e:
+                log.error(f"[Sync]{cfg.source} 监控启动失败: {e}")
+                continue
             with _observer_lock:
                 self._observers.append(obs)
-            obs.schedule(FileMonitorHandler(cfg.source, self), path=cfg.source, recursive=True)
-            obs.daemon = True
-            obs.start()
             log.info(f"[Sync]{cfg.source} 监控已启动")
 
     def stop(self) -> None:
