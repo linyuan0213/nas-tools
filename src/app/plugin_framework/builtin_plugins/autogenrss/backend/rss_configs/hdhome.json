@@ -1,5 +1,5 @@
 {
-  "site_id": "HDHome",
+  "site_id": "hdhome",
   "type": "form",
   "path": "getrss.php",
   "method": "post",

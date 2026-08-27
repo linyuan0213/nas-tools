@@ -80,13 +80,8 @@
           "optional": true
         },
         "date": {
-          "selector": "div:nth-child(6)",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%H:%M:%S%d/%m/%Y"
-            }
-          ]
+          "selector": "div:nth-child(6)"
+
         },
         "size": {
           "selector": "div:nth-child(7)"

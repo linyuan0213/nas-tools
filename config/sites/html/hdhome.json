@@ -1,5 +1,5 @@
 {
-  "id": "HDHome",
+  "id": "hdhome",
   "name": "家园",
   "domain": "https://hdhome.org",
   "encoding": "UTF-8",
@@ -323,13 +323,8 @@
           "optional": true
         },
         "date": {
-          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
+
         },
         "size": {
           "selector": "td:nth-child(5)"
@@ -373,12 +368,7 @@
                 "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
                 0
               ]
-            },
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+            }]
         },
         "description": {
           "selector": "td:nth-child(2) > table > tr > td.embedded > span[style]",

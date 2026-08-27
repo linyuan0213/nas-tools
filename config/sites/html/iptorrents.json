@@ -55,15 +55,8 @@
         },
         "download": {
           "selector": "a[href*=\"/download.php/\"]",
-          "attribute": "href",
-          "filters": [
-            {
-              "name": "lstrip",
-              "args": [
-                "/"
-              ]
-            }
-          ]
+          "attribute": "href"
+
         },
         "date_elapsed": {
           "selector": "td:nth-child(2) > div",
@@ -82,11 +75,7 @@
                 "|",
                 1
               ]
-            },
-            {
-              "name": "date_en_elapsed_parse"
-            }
-          ]
+            }]
         },
         "size": {
           "selector": "td:nth-child(6)"

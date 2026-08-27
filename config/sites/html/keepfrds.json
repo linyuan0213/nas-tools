@@ -134,13 +134,8 @@
           "optional": true
         },
         "date": {
-          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
+
         },
         "downloadvolumefactor": {
           "case": {
@@ -170,12 +165,7 @@
                 "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
                 0
               ]
-            },
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+            }]
         },
         "description": {
           "selector": "a[title][href*=\"details.php?id=\"]",

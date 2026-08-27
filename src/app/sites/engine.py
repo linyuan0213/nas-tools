@@ -266,7 +266,14 @@ class SiteEngine:
         self._index_site(site_def)
 
     def get_by_id(self, site_id: str) -> SiteDefinition | None:
-        return self._sites.get(site_id)
+        if not site_id:
+            return None
+        site = self._sites.get(site_id)
+        if site:
+            return site
+        # 兼容存量数据中的大小写差异（站点 id 已统一为小写）
+        lowered = site_id.lower()
+        return self._sites.get(lowered) if lowered != site_id else None
 
     def get_by_url(self, url: str) -> SiteDefinition | None:
         if not url:

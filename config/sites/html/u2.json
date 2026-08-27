@@ -1,5 +1,5 @@
 {
-  "id": "U2",
+  "id": "u2",
   "name": "幼儿园",
   "domain": "https://u2.dmhy.org",
   "encoding": "UTF-8",
@@ -208,13 +208,8 @@
           "optional": true
         },
         "date": {
-          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
+
         },
         "size": {
           "selector": "td:nth-child(5)"
@@ -250,13 +245,8 @@
           "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
           "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
           "selector": "td > b > time[title]",
-          "attribute": "title",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "attribute": "title"
+
         },
         "description": {
           "selector": "td:nth-child(2) > table > tr > td.embedded",

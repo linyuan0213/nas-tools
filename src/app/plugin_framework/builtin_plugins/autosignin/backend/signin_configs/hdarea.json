@@ -1,5 +1,5 @@
 {
-  "site_id": "HDarea",
+  "site_id": "hdarea",
   "type": "http",
   "method": "post",
   "path": "sign_in.php",

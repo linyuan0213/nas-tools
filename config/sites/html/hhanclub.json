@@ -124,13 +124,8 @@
           "optional": true
         },
         "date": {
-          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
+
         },
         "downloadvolumefactor": {
           "case": {
@@ -152,13 +147,8 @@
           "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
           "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
           "selector": "div > span > span[title]",
-          "attribute": "title",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "attribute": "title"
+
         },
         "tags": {
           "selector": "div.items-center > a > span.tag"

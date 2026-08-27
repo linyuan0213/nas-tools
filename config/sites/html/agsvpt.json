@@ -1,5 +1,5 @@
 {
-  "id": "AGSVPT",
+  "id": "agsvpt",
   "name": "末日种子库",
   "domain": "https://www.agsvpt.com",
   "encoding": "UTF-8",
@@ -110,13 +110,8 @@
           "optional": true
         },
         "date": {
-          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
+
         },
         "downloadvolumefactor": {
           "case": {
@@ -140,13 +135,8 @@
           "default_value": "{% if fields['downloadvolumefactor']==0 %}{{max_time}}{% endif%}",
           "default_value_format": "%Y-%m-%d %H:%M:%S.%f",
           "selector": "div > b > span[title]",
-          "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > font > span",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d %H:%M:%S"
-            }
-          ]
+          "attribute": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2) > font > span"
+
         },
         "description": {
           "selector": "td.rowfollow:nth-child(2) > table.torrentname > tr > td:nth-child(2)",

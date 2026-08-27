@@ -196,13 +196,8 @@
           "optional": true
         },
         "date": {
-          "selector": "td:nth-child(5)",
-          "filters": [
-            {
-              "name": "dateparse",
-              "args": "%Y-%m-%d%H:%M:%S"
-            }
-          ]
+          "selector": "td:nth-child(5)"
+
         },
         "imdbid": {
           "selector": "span.imdb_rate > a",
@@ -243,12 +238,7 @@
                 "\\d+年\\d+月\\d+日\\d+点\\d+分",
                 0
               ]
-            },
-            {
-              "name": "dateparse",
-              "args": "%Y年%m月%d日%H点%M分"
-            }
-          ]
+            }]
         },
         "minimumratio": {
           "case": {
