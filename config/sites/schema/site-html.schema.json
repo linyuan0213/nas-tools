@@ -26,13 +26,15 @@
         "category": {"$ref": "#/definitions/category_config"},
         "torrents": {"$ref": "#/definitions/torrents_config"},
         "conf": {"$ref": "#/definitions/conf_config"},
+        "test_connection": {"type": "string", "description": "连通性测试路径"},
         "browse": {
           "type": "object",
           "description": "浏览模式配置，用于非搜索场景获取种子列表",
           "properties": {
             "path": {"type": "string"},
             "params": {"type": "object"},
-            "start_page": {"type": "integer", "default": 0}
+            "start": {"type": "integer", "default": 1, "description": "起始页（第 1 页）"},
+            "start_page": {"type": "integer", "default": 0, "description": "起始页偏移（兼容旧写法）"}
           }
         },
         "parser_type": {
@@ -107,6 +109,42 @@
             "selector": {"type": "string", "description": "列表行的 CSS/XPath 选择器"}
           }
         },
+        "browse_list": {
+          "type": "object",
+          "description": "浏览模式列表行选择器",
+          "properties": {
+            "selector": {"type": "string"}
+          }
+        },
+        "browse_fields": {
+          "type": "object",
+          "description": "浏览模式字段解析（结构与 fields 一致）",
+          "properties": {
+            "id": {"$ref": "#/definitions/html_field"},
+            "tid": {"$ref": "#/definitions/html_field"},
+            "title": {"$ref": "#/definitions/html_field"},
+            "details": {"$ref": "#/definitions/html_field"},
+            "download": {"$ref": "#/definitions/html_field"},
+            "size": {"$ref": "#/definitions/html_field"},
+            "seeders": {"$ref": "#/definitions/html_field"},
+            "leechers": {"$ref": "#/definitions/html_field"},
+            "grabs": {"$ref": "#/definitions/html_field"},
+            "date_added": {"$ref": "#/definitions/html_field"},
+            "date_elapsed": {"$ref": "#/definitions/html_field"},
+            "downloadvolumefactor": {"$ref": "#/definitions/html_field"},
+            "uploadvolumefactor": {"$ref": "#/definitions/html_field"}
+          }
+        },
+        "container_xpath": {"type": "string", "description": "nested 模式容器 XPath"},
+        "row_xpath": {"type": "string", "description": "nested 模式行 XPath"},
+        "container_fields": {
+          "type": "object",
+          "description": "nested 模式容器级字段（结构与 fields 一致）",
+          "properties": {
+            "description": {"$ref": "#/definitions/html_field"},
+            "imdbid": {"$ref": "#/definitions/html_field"}
+          }
+        },
         "fields": {
           "type": "object",
           "properties": {
@@ -151,10 +189,12 @@
     "html_field": {
       "type": "object",
       "properties": {
-        "selector": {"type": "string", "description": "CSS/XPath 选择器"},
+        "selector": {"type": "string", "description": "CSS 选择器"},
+        "xpath": {"type": "string", "description": "XPath 选择器（优先于 selector）"},
         "attribute": {"type": "string", "description": "提取的属性名，如 href、src"},
         "text": {"type": ["string", "number"], "description": "Jinja2 模板文本，引用其他字段"},
         "type": {"type": "string", "description": "字段类型标识"},
+        "value": {"type": ["string", "number", "boolean"], "description": "常量类型的固定值"},
         "case": {
           "type": "object",
           "description": "条件映射：selector 提取的值 → 最终值"
@@ -163,6 +203,18 @@
         "contents": {"type": ["integer", "string"], "description": "内容提取索引"},
         "remove": {"type": "string", "description": "要移除的子元素选择器"},
         "optional": {"type": "boolean", "description": "是否可选字段"},
+        "default": {"type": ["string", "number", "boolean"], "description": "字段缺失/未命中时的默认值"},
+        "default_value": {"type": ["string", "number"], "description": "字段缺失时的默认值"},
+        "default_value_format": {
+          "type": "string",
+          "description": "计算默认值的格式（如 now、today）"
+        },
+        "index": {"type": "integer", "description": "提取结果序号"},
+        "join": {"type": "string", "description": "多元素提取结果的分隔符"},
+        "if_present": {"type": ["string", "number", "boolean"], "description": "元素存在时的取值，否则用 default"},
+        "replace": {"type": "object", "description": "字符串替换映射表"},
+        "transform": {"type": "string", "description": "值转换（与 API 站点一致）"},
+        "template": {"type": "string", "description": "URL 模板"},
         "filters": {
           "type": "array",
           "items": {
@@ -177,11 +229,6 @@
               }
             ]
           }
-        },
-        "default_value": {"type": ["string", "number"], "description": "字段缺失时的默认值"},
-        "default_value_format": {
-          "type": "string",
-          "description": "计算默认值的格式（如 now、today）"
         }
       }
     },
@@ -201,19 +248,45 @@
       "description": "用户信息抓取配置",
       "properties": {
         "type": {"type": "string", "description": "用户信息获取方式"},
+        "page": {"type": "string", "description": "用户主页路径"},
+        "brief_page": {"type": "string", "description": "用户简要信息路径（做种/下载统计等）"},
         "fields": {
           "type": "object",
-          "description": "通过 CSS 选择器提取的字段"
+          "description": "通过 CSS 选择器提取的字段",
+          "properties": {
+            "userid": {"$ref": "#/definitions/user_info_field"},
+            "username": {"$ref": "#/definitions/user_info_field"},
+            "upload": {"$ref": "#/definitions/user_info_field"},
+            "download": {"$ref": "#/definitions/user_info_field"},
+            "ratio": {"$ref": "#/definitions/user_info_field"},
+            "bonus": {"$ref": "#/definitions/user_info_field"},
+            "join_at": {"$ref": "#/definitions/user_info_field"},
+            "user_level": {"$ref": "#/definitions/user_info_field"},
+            "seeding": {"$ref": "#/definitions/user_info_field"},
+            "leeching": {"$ref": "#/definitions/user_info_field"}
+          }
         },
         "seeding": {
           "type": "object",
           "description": "做种信息配置",
           "properties": {
             "page": {"type": "string"},
+            "page_start": {"type": "integer", "description": "起始页码（默认 1）"},
+            "method": {"enum": ["GET", "POST"]},
+            "path": {"type": "string"},
             "list_selector": {"type": "string"},
             "size_selector": {"type": "string"},
             "seeders_selector": {"type": "string"},
             "total_regex": {"type": "string"},
+            "response": {
+              "type": "object",
+              "properties": {
+                "items_key": {"type": "string"},
+                "seeders_field": {"type": "string"},
+                "size_field": {"type": "string"},
+                "total_count_field": {"type": "string"}
+              }
+            },
             "type": {"type": "string"}
           }
         },
@@ -222,6 +295,17 @@
           "items": {"type": "string"},
           "description": "自定义魔力值标签名"
         }
+      }
+    },
+    "user_info_field": {
+      "type": "object",
+      "description": "用户信息字段提取配置",
+      "properties": {
+        "selector": {"type": "string", "description": "CSS 选择器"},
+        "attribute": {"type": "string", "description": "提取的属性名"},
+        "extract": {"type": "string", "description": "提取方式：text / attribute"},
+        "pattern": {"type": "string", "description": "正则提取"},
+        "values": {"type": "object", "description": "值映射表（如等级）"}
       }
     }
   }

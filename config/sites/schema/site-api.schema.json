@@ -37,7 +37,9 @@
             "header_name": {"type": "string", "description": "API 密钥的 header 名称"},
             "token_source": {"type": "string", "description": "cookie 中 token 的键名"},
             "csrf_url": {"type": "string", "description": "获取 CSRF token 的 URL"},
-            "csrf_selector": {"type": "string", "description": "从 HTML 提取 CSRF 的选择器"}
+            "csrf_selector": {"type": "string", "description": "从 HTML 提取 CSRF 的选择器"},
+            "csrf_selector_type": {"type": "string", "description": "CSRF 提取方式（text / attribute）"},
+            "user_agent": {"type": "string", "description": "请求 User-Agent 覆盖"}
           }
         },
         "endpoints": {
@@ -60,10 +62,11 @@
         "path": {"type": "string", "description": "请求路径，支持 {keyword} {page_1} {tid} 占位"},
         "params": {"type": "object", "description": "查询参数"},
         "body": {"type": "object", "description": "请求体"},
+        "content_type": {"type": "string", "description": "请求 Content-Type，如 application/json"},
         "response_key": {"type": "string", "description": "响应中提取数据的 JSON 路径"},
         "mode_mapping": {
           "type": "object",
-          "description": "媒体类型到请求参数的映射（MOVIE/TV/ANIME → body/params 覆盖）"
+          "description": "媒体类型到请求参数的映射（MOVIE/TV/ANIME → body/params 覆盖，值为对象/字符串/数组）"
         },
         "response": {
           "type": "object",
@@ -95,7 +98,9 @@
                 "labels": {"$ref": "#/definitions/field_mapping"},
                 "tags": {"$ref": "#/definitions/field_mapping"},
                 "category": {"$ref": "#/definitions/field_mapping"},
-                "category_icon": {"$ref": "#/definitions/field_mapping"}
+                "category_icon": {"$ref": "#/definitions/field_mapping"},
+                "minimumratio": {"$ref": "#/definitions/field_mapping"},
+                "minimumseedtime": {"$ref": "#/definitions/field_mapping"}
               }
             }
           }
@@ -113,7 +118,7 @@
         "response_key": {"type": "string"},
         "value": {"description": "constant 类型的固定值"},
         "map": {"type": "object", "description": "值映射表"},
-        "transform": {"type": "string", "description": "值转换: map_value, utc_to_local"},
+        "transform": {"type": "string", "description": "值转换: map_value, utc_to_local, timestamp_to_date, num_filesize_B, split_map"},
         "filters": {"type": "array", "items": {"type": "object"}},
         "selector": {"type": "string", "description": "HTML 类型时的 CSS 选择器"},
         "attribute": {"type": "string", "description": "HTML 类型时提取的属性"},
@@ -129,9 +134,14 @@
         "method": {"enum": ["GET", "POST"]},
         "path": {"type": "string", "description": "下载链接路径模板"},
         "body": {"type": "object"},
+        "body_format": {"enum": ["form", "json"], "description": "请求体格式（form/json）"},
+        "params": {"type": "object", "description": "查询参数"},
         "response_key": {"type": "string", "description": "响应中提取下载链接的 JSON 路径"},
-        "params": {"type": "object"},
-        "download_url": {"type": "string", "description": "下载域名/前缀覆盖"},
+        "presigned": {"type": "boolean", "description": "下载链接是否为预签名 URL"},
+        "download_url": {
+          "type": "string",
+          "description": "下载地址模板覆盖，api_chained 支持 {base} {token} {tid} 占位"
+        },
         "selectors": {"type": "object", "description": "HTML 类型时的下载链接选择器"}
       }
     },
@@ -142,7 +152,22 @@
         "fields": {"type": "object"},
         "url": {"type": "string"},
         "method": {"enum": ["GET", "POST"]},
-        "body": {"type": "object"}
+        "path": {"type": "string"},
+        "params": {"type": "object"},
+        "body": {"type": "object"},
+        "body_format": {"enum": ["form", "json"]},
+        "response": {
+          "type": "object",
+          "description": "种子属性（FREE/2XFREE/做种数）在响应中的取值规则",
+          "properties": {
+            "free_key": {"type": "string"},
+            "free_value": {"type": ["string", "number"]},
+            "2xfree_key": {"type": "string"},
+            "2xfree_value": {"type": ["string", "number"]},
+            "peer_count_key": {"type": "string"},
+            "peer_count_type": {"type": "string"}
+          }
+        }
       }
     },
     "subtitle_config": {
@@ -159,6 +184,8 @@
       "description": "用户信息解析配置",
       "properties": {
         "type": {"type": "string", "enum": ["api", "html"]},
+        "page": {"type": "string", "description": "用户主页路径"},
+        "brief_page": {"type": "string", "description": "用户简要信息路径（做种/下载统计等）"},
         "profile": {"$ref": "#/definitions/user_info_endpoint"},
         "seeding": {"$ref": "#/definitions/user_info_seeding"},
         "fields": {"type": "object"},
@@ -170,6 +197,7 @@
       "properties": {
         "method": {"enum": ["GET", "POST"]},
         "path": {"type": "string"},
+        "params": {"type": "object"},
         "body": {"type": "object"},
         "response": {
           "type": "object",
@@ -178,6 +206,7 @@
               "type": "object",
               "properties": {
                 "user_id": {"$ref": "#/definitions/field_mapping"},
+                "userid": {"$ref": "#/definitions/field_mapping"},
                 "username": {"$ref": "#/definitions/field_mapping"},
                 "upload": {"$ref": "#/definitions/field_mapping"},
                 "download": {"$ref": "#/definitions/field_mapping"},
@@ -185,7 +214,12 @@
                 "bonus": {"$ref": "#/definitions/field_mapping"},
                 "user_level": {"$ref": "#/definitions/field_mapping"},
                 "join_at": {"$ref": "#/definitions/field_mapping"},
-                "leeching": {"$ref": "#/definitions/field_mapping"}
+                "seeding": {"$ref": "#/definitions/field_mapping"},
+                "seeding_size": {"$ref": "#/definitions/field_mapping"},
+                "leeching": {"$ref": "#/definitions/field_mapping"},
+                "leeching_size": {"$ref": "#/definitions/field_mapping"},
+                "message_unread": {"$ref": "#/definitions/field_mapping"},
+                "site_favicon": {"$ref": "#/definitions/field_mapping"}
               }
             }
           }
@@ -200,6 +234,7 @@
         "path": {"type": "string"},
         "body": {"type": "object"},
         "page": {"type": "string"},
+        "page_start": {"type": "integer"},
         "list_selector": {"type": "string"},
         "size_selector": {"type": "string"},
         "seeders_selector": {"type": "string"},
@@ -210,16 +245,18 @@
             "response_type": {"enum": ["single", "paginated"]},
             "items_key": {"type": "string"},
             "seeders_field": {"type": "string"},
-            "size_field": {"type": "string"}
+            "size_field": {"type": "string"},
+            "total_count_field": {"type": "string"}
           }
         },
         "pagination": {
           "type": "object",
           "properties": {
             "type": {"enum": ["page_param", "offset", "none"]},
+            "page_key": {"type": "string"},
+            "page_param": {"type": "string"},
             "total_pages_key": {"type": "string"},
             "next_key": {"type": "string"},
-            "page_param": {"type": "string"},
             "start_value": {"type": "integer"}
           }
         }
