@@ -1,5 +1,15 @@
 # 版本历史
 
+## v4.10.0 (2026-08-27)
+
+### 特性
+- **媒体身份识别体系（ADR-014）**：统一身份解析/匹配分层（别名索引、edition 图谱、IdentityResolver、TargetMatcher），灰度开关控制渐进转正；订阅匹配与搜索过滤接入统一判等，quick_name_match 降级为召回
+- **识别链路增强**：置信度端到端透传、外部解析 Work 学成回写（冷→热闭环）、集数重映射覆盖 RSS/分组路径、identity 模块 DI 收敛
+
+### 修复
+- **英文标题识别失效**：identify_batch 去重/组装键归一化不一致致英文标题 lookup 结果丢失，修复后恢复
+- **站点解析修复**：Rousi 自动签到适配 Peergo 新架构；移除 rousi.zip 重复定义；FRDS 做种统计；audiences.me 加入日期 / hhanclub 用户名
+
 ## v4.9.0 (2026-08-26)
 
 ### 特性
