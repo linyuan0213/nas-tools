@@ -219,6 +219,8 @@ def _parse_seeding_html(ins: ConfigHtmlUserInfo, doc: Any, html_text: str) -> No
                 rows = doc.xpath(list_sel)
             except Exception:
                 rows = []
+            if not isinstance(rows, list):
+                rows = []
         info = JsonUtils.loads(ins.seeding_info) if ins.seeding_info and ins.seeding_info != "[]" else []
         size_sel = sc.get("size_selector", "td:nth-child(4)")
         seeders_sel = sc.get("seeders_selector", "td:nth-child(5)")

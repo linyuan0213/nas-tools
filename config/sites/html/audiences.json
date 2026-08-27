@@ -207,6 +207,7 @@
   },
   "user_info": {
     "type": "html",
+    "page": "userdetails.php?id={userid}",
     "fields": {
       "userid": {
         "selector": "a[href*=\"userdetails\"]",
@@ -255,7 +256,7 @@
       "join_at": {
         "selector": "",
         "extract": "regex",
-        "pattern": "加入日期[\\s\\S]*?(\\d{4}-\\d{2}-\\d{2})"
+        "pattern": "加入日期[\\s\\S]*?(\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2})"
       }
     },
     "seeding": {

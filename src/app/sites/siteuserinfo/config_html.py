@@ -105,6 +105,7 @@ class ConfigHtmlUserInfo:
         cfg = self._def.user_info if isinstance(self._def.user_info, dict) else {}
         if cfg.get("type") == "html" and cfg.get("fields"):
             nexus_php._parse_userid(self)
+            nexus_php._parse_base_info(self)
             self._parse_fields(cfg)
             self.user_level = self.user_level or ""
             self._parse_seeding(cfg)
@@ -160,7 +161,8 @@ class ConfigHtmlUserInfo:
         selector = cfg.get("selector", "")
         extract = cfg.get("extract", "text")
         attr = cfg.get("attribute", "")
-        if not selector:
+        # 空 selector + regex 提取：直接在整页 HTML 上跑正则
+        if not selector and extract != "regex":
             return None
         raw = None
         try:
@@ -250,6 +252,8 @@ class ConfigHtmlUserInfo:
                 try:
                     rows = doc.xpath(ls)
                 except Exception:
+                    rows = []
+                if not isinstance(rows, list):
                     rows = []
             cnt = 0
             for row in rows:

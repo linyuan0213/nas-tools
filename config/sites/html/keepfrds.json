@@ -203,5 +203,13 @@
       ]
     }
   },
+  "user_info": {
+    "seeding": {
+      "page": "torrents.php?option-torrents=3&userid={userid}",
+      "list_selector": "table.torrents > tr",
+      "size_selector": "td:nth-child(5)",
+      "seeders_selector": "td:nth-child(6)"
+    }
+  },
   "detail_page_url": "/details.php?id={tid}"
 }
