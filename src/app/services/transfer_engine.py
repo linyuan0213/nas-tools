@@ -201,24 +201,54 @@ class TransferEngine:
         target_dir: str,
         operation: str,
         record_blacklist: bool = True,
+        src_backend: StorageBackend | None = None,
         dst_backend: StorageBackend | None = None,
     ) -> None:
         backend = dst_backend or self._local
-        for file in PathUtils.get_dir_files(src_dir):
+        src_b = src_backend or self._local
+        if src_backend is not None:
+            files = self._list_backend_files_recursive(src_b, src_dir)
+        else:
+            files = PathUtils.get_dir_files(src_dir)
+        for file in files:
             new_file = file.replace(src_dir, target_dir)
-            if not os.path.exists(new_file):
-                if backend.exists(new_file):
-                    log.warn(f"[Rmt]{new_file} 文件已存在")
-                    continue
+            if backend.exists(new_file):
+                log.warn(f"[Rmt]{new_file} 文件已存在")
+                continue
             backend.mkdir(os.path.dirname(new_file), parents=True)
-            self._execute(file, new_file, operation, dst_backend)
+            self._execute(file, new_file, operation, src_backend, dst_backend)
             if record_blacklist:
                 self._blacklist.insert(file)
 
+    def _list_backend_files_recursive(self, backend: StorageBackend, dir_path: str) -> list[str]:
+        """递归列举后端目录下全部文件"""
+        files: list[str] = []
+        stack = [dir_path]
+        while stack:
+            current = stack.pop()
+            for finfo in backend.list_dir(current):
+                if finfo.is_dir:
+                    stack.append(finfo.path)
+                else:
+                    files.append(finfo.path)
+        return files
+
     def transfer_bluray_dir(
-        self, src_dir: str, target_dir: str, operation: str, dst_backend: StorageBackend | None = None
+        self,
+        src_dir: str,
+        target_dir: str,
+        operation: str,
+        src_backend: StorageBackend | None = None,
+        dst_backend: StorageBackend | None = None,
     ) -> None:
-        self.transfer_dir(src_dir, target_dir, operation, record_blacklist=False, dst_backend=dst_backend)
+        self.transfer_dir(
+            src_dir,
+            target_dir,
+            operation,
+            record_blacklist=False,
+            src_backend=src_backend,
+            dst_backend=dst_backend,
+        )
         self._blacklist.insert(src_dir)
 
     def transfer(

@@ -400,12 +400,39 @@ class FileTransferService:
         self.progress.end(ProgressKey.FileTransfer)
         return status, message
 
+    def _get_bluray_dir(self, in_path: str, src_backend=None) -> str | None:
+        """识别蓝光原盘根目录，支持本地与远程源（后端感知）"""
+        if src_backend is None:
+            return PathUtils.get_bluray_dir(in_path)
+        norm = os.path.normpath(in_path).replace("\\", "/")
+        exists = src_backend.exists
+        try:
+            if exists(f"{norm}/BDMV/index.bdmv"):
+                return norm
+            if norm.endswith("BDMV") and exists(f"{norm}/index.bdmv"):
+                return os.path.dirname(norm)
+            if norm.endswith("STREAM") and exists(f"{os.path.dirname(norm)}/index.bdmv"):
+                return PathUtils.get_parent_paths(norm, 2)
+            # 多碟：一级子目录含 BDMV/index.bdmv（如 剧名/Disc1/BDMV）
+            for fi in src_backend.list_dir(norm):
+                if fi.is_dir and exists(f"{fi.path.rstrip('/')}/BDMV/index.bdmv"):
+                    return norm
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[Rmt]蓝光目录检测失败: {e}")
+        return None
+
     def _discover_files(self, in_path, files, episode, min_filesize, src_backend=None):
         """发现待处理文件列表，返回 (bluray_disk_dir, file_list). 支持远程源（src_backend 非空）。"""
         bluray_disk_dir = None
         if not files:
             if src_backend is not None:
-                # 远程源：后端目录列举（文件名即媒体标识，无需下载）
+                # 远程源：先判断是否蓝光原盘（整个盘作为一个媒体）
+                bluray_disk_dir = self._get_bluray_dir(in_path, src_backend)
+                if bluray_disk_dir:
+                    file_list = [bluray_disk_dir]
+                    log.info(f"[Rmt]当前为蓝光原盘文件夹：{in_path!s}")
+                    return bluray_disk_dir, file_list
+                # 非蓝光：后端目录列举（文件名即媒体标识，无需下载）
                 src_stat = src_backend.stat(in_path)
                 is_dir = src_stat is not None and src_stat.is_dir
                 if is_dir:
@@ -1044,7 +1071,9 @@ class FileTransferService:
                     alert_messages,
                     "识别失败，无法获取蓝光目录路径",
                 )
-            self._engine.transfer_bluray_dir(file_item, ret_dir_path, operation)
+            self._engine.transfer_bluray_dir(
+                file_item, ret_dir_path, operation, src_backend=src_backend, dst_backend=dst_backend
+            )
         elif not ret_file_path:
             return self._record_fail(
                 file_item,
