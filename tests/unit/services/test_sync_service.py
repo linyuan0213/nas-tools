@@ -1,5 +1,6 @@
 """SyncService 单元测试."""
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -275,3 +276,65 @@ class TestSyncServiceStatic:
         result = SyncService.update_directory("add", "key", "/path")
         assert result.success
         mock_settings.save.assert_called_once_with({"key": "/path"})
+
+
+class TestSyncServiceRemoteSource:
+    def _make_backend(self):
+        backend = MagicMock()
+        backend.exists.return_value = True
+        return backend
+
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_remote_path_exists_true(self, mock_resolve, service):
+        backend = self._make_backend()
+        mock_resolve.return_value = backend
+        assert service.remote_path_exists("/vol2/media/tv/重器", "5") is True
+        backend.exists.assert_called_once_with("/vol2/media/tv/重器")
+
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_remote_path_exists_backend_missing(self, mock_resolve, service):
+        mock_resolve.return_value = None
+        assert service.remote_path_exists("/x", "5") is False
+
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_remote_path_exists_not_found(self, mock_resolve, service):
+        backend = self._make_backend()
+        backend.exists.return_value = False
+        mock_resolve.return_value = backend
+        assert service.remote_path_exists("/missing", "5") is False
+
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_stage_remote_file(self, mock_resolve, service):
+        import io
+
+        backend = self._make_backend()
+        file_info = MagicMock()
+        file_info.is_dir = False
+        backend.stat.return_value = file_info
+        backend.read_stream.return_value = io.BytesIO(b"media-bytes")
+        mock_resolve.return_value = backend
+        local = service._stage_remote_source("/remote/movie.mkv", "5")
+        assert local
+        assert os.path.exists(local)
+        with open(local, "rb") as f:
+            assert f.read() == b"media-bytes"
+        backend.read_stream.assert_called_once_with("/remote/movie.mkv")
+
+    @patch("app.services.sync_service.SyncService._stage_remote_dir")
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_stage_remote_dir(self, mock_resolve, mock_stage_dir, service):
+        backend = self._make_backend()
+        dir_info = MagicMock()
+        dir_info.is_dir = True
+        backend.stat.return_value = dir_info
+        mock_resolve.return_value = backend
+        local = service._stage_remote_source("/remote/tv", "5")
+        assert local
+        mock_stage_dir.assert_called_once()
+
+    @patch("app.services.sync_service.SyncService._resolve_backend")
+    def test_stage_remote_missing(self, mock_resolve, service):
+        backend = self._make_backend()
+        backend.exists.return_value = False
+        mock_resolve.return_value = backend
+        assert service._stage_remote_source("/missing", "5") == ""
