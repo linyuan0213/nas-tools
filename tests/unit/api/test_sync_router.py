@@ -142,6 +142,29 @@ class TestSyncRouter:
         assert resp.status_code == 200
         assert resp.json()["code"] != 0
 
+    def test_rename_udf_remote_path_not_exists(self, client, mock_sync_service):
+        mock_sync_service.remote_path_exists.return_value = False
+        resp = client.post(
+            "/api/v1/sync/rename/udf",
+            json={"inpath": "/vol2/media/tv/重器", "src_backend_id": "5"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["code"] != 0
+        mock_sync_service.remote_path_exists.assert_called_once_with("/vol2/media/tv/重器", "5")
+
+    def test_rename_udf_remote_path_ok(self, client, mock_sync_service):
+        mock_sync_service.remote_path_exists.return_value = True
+        resp = client.post(
+            "/api/v1/sync/rename/udf",
+            json={"inpath": "/vol2/media/tv/重器", "syncmod": "copy", "src_backend_id": "5"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["code"] == 0
+        mock_sync_service.manual_transfer.assert_called_once()
+        call_kwargs = mock_sync_service.manual_transfer.call_args.kwargs
+        assert call_kwargs["inpath"] == "/vol2/media/tv/重器"
+        assert call_kwargs["src_backend_id"] == "5"
+
     def test_run_directory_sync(self, client, mock_sync_service):
         resp = client.post("/api/v1/sync/run", json={"sid": 1})
         assert resp.status_code == 200
