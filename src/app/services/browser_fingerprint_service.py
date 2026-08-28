@@ -29,6 +29,8 @@ class FingerprintSyncResult:
     # 站点 UA/请求头是否被跳过（移动端不覆盖已有桌面端指纹）
     site_skipped: bool = False
     site_skip_reason: str = ""
+    # nexus-chrome 未配置时的正常跳过（非失败）
+    skipped_not_configured: bool = False
 
 
 _MOBILE_UA_RE = re.compile(r"Mobile|Android|iPhone|iPod|iPad|Windows Phone|BlackBerry|webOS|Silk", re.I)
@@ -195,8 +197,8 @@ def sync_fingerprint_to_chrome(user_id: int, fingerprint: dict) -> FingerprintSy
     """
     server = get_chrome_server_url()
     if not server:
-        log.warn("[Fingerprint] nexus-chrome 服务器未配置，跳过指纹同步")
-        return FingerprintSyncResult()
+        log.debug("[Fingerprint] nexus-chrome 服务器未配置，跳过指纹同步")
+        return FingerprintSyncResult(skipped_not_configured=True)
 
     sanitized = _sanitize_fingerprint(fingerprint)
     mobile = is_mobile_fingerprint(sanitized)

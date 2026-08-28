@@ -35,10 +35,13 @@ async def submit_fingerprint(
     返回 fp_profile_id，后续会话携带该 ID 即呈现与用户真实浏览器一致的指纹。
     """
     result = await asyncio.to_thread(sync_fingerprint_to_chrome, user.user_id, fingerprint)
+    # nexus-chrome 未配置属正常跳过，不报错
+    if result.skipped_not_configured:
+        return CommonResponse(code=0, message="未配置 nexus-chrome，跳过指纹同步", data=None)
     if not result.profile_id:
         return CommonResponse(
             code=ErrorCode.OPERATION_FAILED,
-            message="指纹同步失败（nexus-chrome 不可达或未配置）",
+            message="指纹同步失败（nexus-chrome 不可达）",
             data=None,
         )
     # 站点配置已更新：刷新站点缓存使新 UA/请求头立即生效
