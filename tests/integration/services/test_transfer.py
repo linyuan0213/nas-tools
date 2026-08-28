@@ -881,53 +881,73 @@ class TestTransferReplicateToBackends:
             service._path_resolver = mock_resolver
             return service, mock_resolver
 
-    def test_replicate_to_other_enabled_backend(self):
+    def test_replicate_enqueues_other_backends(self):
+        from app.services.transfer import filetransfer_service as module
+
         service, mock_resolver = self._make_service()
         backend_b = MagicMock()
-        backend_b.config.enabled = True
+        backend_b.id = "6"
+        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        mock_queue = MagicMock()
+        with patch.object(module, "_get_mirror_queue", return_value=mock_queue):
+            service._replicate_to_enabled_backends(media, "/data/tv1/测试剧 - S01E01.mkv", None)
+
+        mock_queue.submit.assert_called_once()
+        args = mock_queue.submit.call_args.args
+        assert args[0] == service._mirror_upload
+        assert args[4] == [("/data/tv2", backend_b)]
+        assert args[5] == "测试剧 - S01E01.mkv"
+
+    def test_replicate_skips_primary_backend(self):
+        from app.services.transfer import filetransfer_service as module
+
+        service, mock_resolver = self._make_service()
+        primary = MagicMock()
+        primary.id = "6"
+        backend_b = MagicMock()
+        backend_b.id = "6"
+        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        mock_queue = MagicMock()
+        with patch.object(module, "_get_mirror_queue", return_value=mock_queue):
+            service._replicate_to_enabled_backends(media, "/data/tv1/S01E01.mkv", primary)
+
+        mock_queue.submit.assert_not_called()
+
+    def test_mirror_upload_writes_and_skips_existing(self):
+        service, mock_resolver = self._make_service()
+        backend_b = MagicMock()
         backend_b.id = "6"
         backend_b.exists.return_value = False
-        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
         mock_resolver.get_dest_path_by_info.return_value = "/data/tv2/测试剧 (2026)/Season 1"
 
         media = MagicMock()
         media.type = MediaType.TV
 
         with patch("app.services.transfer.filetransfer_service.open", mock_open(read_data=b"data")):
-            service._replicate_to_enabled_backends(media, "/data/tv1/测试剧 - S01E01.mkv", None)
+            service._mirror_upload(media, "/data/tv1/S01E01.mkv", None, [("/data/tv2", backend_b)], "S01E01.mkv")
 
-        mock_resolver.list_enabled_dest_backends.assert_called_once_with(MediaType.TV)
         backend_b.write_stream.assert_called_once()
         call_path = backend_b.write_stream.call_args[0][0]
-        assert call_path == "/data/tv2/测试剧 (2026)/Season 1/测试剧 - S01E01.mkv"
+        assert call_path == "/data/tv2/测试剧 (2026)/Season 1/S01E01.mkv"
 
-    def test_skip_existing_backend(self):
+    def test_mirror_upload_skip_existing_file(self):
         service, mock_resolver = self._make_service()
         backend_b = MagicMock()
-        backend_b.config.enabled = True
         backend_b.id = "6"
         backend_b.exists.return_value = True
-        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+        mock_resolver.get_dest_path_by_info.return_value = "/data/tv2/测试剧 (2026)/Season 1"
 
         media = MagicMock()
         media.type = MediaType.TV
 
-        service._replicate_to_enabled_backends(media, "/data/tv1/S01E01.mkv", None)
-
-        backend_b.write_stream.assert_not_called()
-
-    def test_skip_primary_backend(self):
-        service, mock_resolver = self._make_service()
-        primary = MagicMock()
-        primary.id = "6"
-        backend_b = MagicMock()
-        backend_b.config.enabled = True
-        backend_b.id = "6"
-        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
-
-        media = MagicMock()
-        media.type = MediaType.TV
-
-        service._replicate_to_enabled_backends(media, "/data/tv1/S01E01.mkv", primary)
+        service._mirror_upload(media, "/data/tv1/S01E01.mkv", None, [("/data/tv2", backend_b)], "S01E01.mkv")
 
         backend_b.write_stream.assert_not_called()

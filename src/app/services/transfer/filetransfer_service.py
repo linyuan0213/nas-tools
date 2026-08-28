@@ -8,6 +8,8 @@ import hashlib
 import os
 import re
 import shutil
+import threading
+import time
 from collections import defaultdict
 from collections.abc import Callable
 from concurrent.futures import Future, wait
@@ -31,6 +33,7 @@ from app.events.payloads import (
 )
 from app.infrastructure.distributed_lock.lock_manager import get_lock_manager
 from app.infrastructure.progress import ProgressTracker
+from app.infrastructure.queue.memory_queue import MemoryMessageQueue
 from app.infrastructure.thread import ThreadExecutor
 from app.media import MediaService, Scraper
 from app.media import meta_info as meta_info_fn
@@ -43,6 +46,23 @@ from app.services.transfer.history_manager import TransferHistoryManager
 from app.services.transfer.path_resolver import TransferPathResolver
 from app.services.transfer_engine import TransferEngine
 from app.utils import ExceptionUtils, PathUtils, StringUtils
+
+# 多后端镜像上传：后端间写入间隔（秒），避免连续上传压垮后端
+MIRROR_BACKEND_DELAY = 1.0
+
+_mirror_queue: MemoryMessageQueue | None = None
+_mirror_queue_lock = threading.Lock()
+
+
+def _get_mirror_queue() -> MemoryMessageQueue:
+    """镜像上传专用串行队列（单 worker，惰性单例）"""
+    global _mirror_queue
+    if _mirror_queue is None:
+        with _mirror_queue_lock:
+            if _mirror_queue is None:
+                _mirror_queue = MemoryMessageQueue(max_workers=1, maxsize=1000)
+                _mirror_queue.start()
+    return _mirror_queue
 
 
 class FileTransferService:
@@ -965,7 +985,10 @@ class FileTransferService:
         return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
 
     def _replicate_to_enabled_backends(self, media, transferred_path, primary_backend) -> None:
-        """转移成功后，将该媒体复制到其他已启用且缺失该文件的后端（多后端镜像）"""
+        """转移成功后，将该媒体镜像到其他已启用且缺失该文件的后端。
+
+        通过串行后台队列（单 worker）执行，避免并发上传打爆多个后端。
+        """
         try:
             dest_pairs = self._path_resolver.list_enabled_dest_backends(media.type)
             if not dest_pairs:
@@ -974,32 +997,52 @@ class FileTransferService:
             file_name = os.path.basename(transferred_path or "")
             if not file_name:
                 return
-            for dest_root, backend in dest_pairs:
-                backend_id = str(getattr(backend, "id", ""))
-                if backend_id == primary_id:
-                    continue
-                try:
-                    dest_dir = self._path_resolver.get_dest_path_by_info(dest_root, media, self.media)
-                except Exception as e:  # noqa: BLE001
-                    log.debug(f"[Rmt]镜像目标路径计算失败: {e}")
-                    continue
-                if not dest_dir:
-                    continue
-                dest_file = os.path.join(dest_dir, file_name)
-                try:
-                    if backend.exists(dest_file):
-                        continue
-                    if primary_backend is None:
-                        with open(transferred_path, "rb") as src:
-                            backend.write_stream(dest_file, src)
-                    else:
-                        with primary_backend.read_stream(transferred_path) as src:
-                            backend.write_stream(dest_file, src)
-                    log.info(f"[Rmt]已镜像到后端 {backend_id}: {dest_file}")
-                except Exception as e:  # noqa: BLE001
-                    log.warn(f"[Rmt]镜像到后端 {backend_id} 失败: {e}")
+            targets = [
+                (dest_root, backend)
+                for dest_root, backend in dest_pairs
+                if str(getattr(backend, "id", "")) != primary_id
+            ]
+            if not targets:
+                return
+            mirror_queue = _get_mirror_queue()
+            mirror_queue.submit(
+                self._mirror_upload,
+                media,
+                transferred_path,
+                primary_backend,
+                targets,
+                file_name,
+                name=f"mirror:{file_name}",
+            )
         except Exception as e:  # noqa: BLE001
-            log.warn(f"[Rmt]多后端镜像失败: {e}")
+            log.warn(f"[Rmt]多后端镜像任务提交失败: {e}")
+
+    def _mirror_upload(self, media, transferred_path, primary_backend, targets: list, file_name: str) -> None:
+        """后台串行执行镜像上传（同一时间仅一个后端写入）"""
+        for dest_root, backend in targets:
+            backend_id = str(getattr(backend, "id", ""))
+            try:
+                dest_dir = self._path_resolver.get_dest_path_by_info(dest_root, media, self.media)
+            except Exception as e:  # noqa: BLE001
+                log.debug(f"[Rmt]镜像目标路径计算失败: {e}")
+                continue
+            if not dest_dir:
+                continue
+            dest_file = os.path.join(dest_dir, file_name)
+            try:
+                if backend.exists(dest_file):
+                    continue
+                if primary_backend is None:
+                    with open(transferred_path, "rb") as src:
+                        backend.write_stream(dest_file, src)
+                else:
+                    with primary_backend.read_stream(transferred_path) as src:
+                        backend.write_stream(dest_file, src)
+                log.info(f"[Rmt]已镜像到后端 {backend_id}: {dest_file}")
+            except Exception as e:  # noqa: BLE001
+                log.warn(f"[Rmt]镜像到后端 {backend_id} 失败: {e}")
+            # 后端间间隔，避免连续上传压垮后端
+            time.sleep(MIRROR_BACKEND_DELAY)
 
     def _record_fail(self, file_item, reg_path, target_dir, operation, udf_flag, alert_messages, msg):
         self.progress.update(ptype=ProgressKey.FileTransfer, text=msg)
