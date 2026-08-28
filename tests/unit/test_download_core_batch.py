@@ -260,3 +260,65 @@ class TestBatchDownloadFlow:
 
         downloaded, left = core.batch_download("WEB", [movie1, movie2])
         assert len(downloaded) == 2
+
+
+class TestGetDownloadDirInfo:
+    """下载目录均衡选择测试."""
+
+    def _media(self, mtype):
+        media = MagicMock()
+        media.type = mtype
+        media.category = None
+        media.size = 1024 * 1024 * 100
+        return media
+
+    def test_picks_first_when_single_match(self):
+        from app.downloader.client_factory import DownloadClientFactory
+
+        media = self._media(MediaType.MOVIE)
+        dirs = [{"type": "movie", "save_path": "/data/tv/movies"}]
+        info = DownloadClientFactory.get_download_dir_info(media, dirs)
+        assert info["path"] == "/data/tv/movies"
+
+    def test_picks_more_free_space_among_matches(self, monkeypatch):
+        from app.downloader.client_factory import DownloadClientFactory
+
+        media = self._media(MediaType.MOVIE)
+        dirs = [
+            {"type": "movie", "save_path": "/data/dir1"},
+            {"type": "movie", "save_path": "/data/dir2"},
+        ]
+        monkeypatch.setattr("app.downloader.client_factory.os.path.exists", lambda p: True)
+        monkeypatch.setattr(
+            "app.downloader.client_factory.SystemUtils.get_free_space",
+            lambda p: 1000 if "dir1" in p else 5000,
+        )
+        info = DownloadClientFactory.get_download_dir_info(media, dirs)
+        assert info["path"] == "/data/dir2"
+
+    def test_type_filter_respected(self):
+        from app.downloader.client_factory import DownloadClientFactory
+
+        media = self._media(MediaType.TV)
+        dirs = [
+            {"type": "movie", "save_path": "/data/movies"},
+            {"type": "tv", "save_path": "/data/tv"},
+        ]
+        info = DownloadClientFactory.get_download_dir_info(media, dirs)
+        assert info["path"] == "/data/tv"
+
+    def test_too_small_free_space_skipped(self, monkeypatch):
+        from app.downloader.client_factory import DownloadClientFactory
+
+        media = self._media(MediaType.MOVIE)
+        dirs = [
+            {"type": "movie", "save_path": "/data/full"},
+            {"type": "movie", "save_path": "/data/ok"},
+        ]
+        monkeypatch.setattr("app.downloader.client_factory.os.path.exists", lambda p: True)
+        monkeypatch.setattr(
+            "app.downloader.client_factory.SystemUtils.get_free_space",
+            lambda p: 10 if "full" in p else 999999,
+        )
+        info = DownloadClientFactory.get_download_dir_info(media, dirs)
+        assert info["path"] == "/data/ok"

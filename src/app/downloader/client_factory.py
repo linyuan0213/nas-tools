@@ -368,10 +368,11 @@ class DownloadClientFactory:
 
     @staticmethod
     def get_download_dir_info(media, downloaddir):
-        """根据媒体信息读取一个下载目录的信息"""
+        """根据媒体信息读取一个下载目录的信息；多个匹配目录按剩余空间均衡选择"""
         if media.type:
+            candidates = []
             for attr in downloaddir or []:
-                if not attr:
+                if not attr or not isinstance(attr, dict):
                     continue
                 if attr.get("type") and attr.get("type") not in (media.type.value, media.type.display_name):
                     continue
@@ -379,13 +380,30 @@ class DownloadClientFactory:
                     continue
                 if not attr.get("save_path") and not attr.get("label"):
                     continue
-                if (
-                    (attr.get("container_path") or attr.get("save_path"))
-                    and os.path.exists(attr.get("container_path") or attr.get("save_path"))
-                    and media.size
-                    and SystemUtils.get_free_space(attr.get("container_path") or attr.get("save_path"))
-                    < NumberUtils.get_size_gb(StringUtils.num_filesize(media.size))
-                ):
-                    continue
-                return {"path": attr.get("save_path"), "category": attr.get("category"), "label": attr.get("label")}
+                path = attr.get("container_path") or attr.get("save_path")
+                if path and os.path.exists(path) and media.size:
+                    try:
+                        if SystemUtils.get_free_space(path) < NumberUtils.get_size_gb(
+                            StringUtils.num_filesize(media.size)
+                        ):
+                            continue
+                    except Exception as e:  # noqa: BLE001
+                        log.debug(f"[Downloader]剩余空间检查失败: {e}")
+                candidates.append(attr)
+            if candidates:
+                if len(candidates) > 1:
+
+                    def _free(attr) -> float:
+                        p = attr.get("container_path") or attr.get("save_path")
+                        try:
+                            if not p or not os.path.exists(p):
+                                return 0
+                            return SystemUtils.get_free_space(p) or 0
+                        except Exception:  # noqa: BLE001
+                            return 0
+
+                    best = max(candidates, key=_free)
+                    return {"path": best.get("save_path"), "category": best.get("category"), "label": best.get("label")}
+                c = candidates[0]
+                return {"path": c.get("save_path"), "category": c.get("category"), "label": c.get("label")}
         return {"path": None, "category": None, "label": None}
