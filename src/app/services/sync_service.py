@@ -7,6 +7,7 @@ import importlib
 import os
 import re
 import shutil
+import tempfile
 from collections.abc import Callable
 from concurrent.futures import Future, wait
 from typing import Any
@@ -190,15 +191,22 @@ class SyncService:
         tmdbid: int | None = None,
         season: int | None = None,
         need_fix_all: bool = False,
+        src_backend_id: str = "local",
     ) -> ManualTransferResultDTO:
         """
         手工转移文件
         验证参数后提交后台线程执行，避免 API 超时
+        支持 webdav/openlist 等远程存储源：先暂存到本地临时目录再走本地转移管道
         """
         inpath = os.path.normpath(inpath)
         if outpath:
             outpath = os.path.normpath(outpath)
-        if not os.path.exists(inpath):
+        if src_backend_id and src_backend_id != "local":
+            staged = self._stage_remote_source(inpath, src_backend_id)
+            if not staged:
+                return ManualTransferResultDTO(success=False, message="输入路径不存在")
+            inpath = staged
+        elif not os.path.exists(inpath):
             return ManualTransferResultDTO(success=False, message="输入路径不存在")
 
         episode = None
@@ -262,6 +270,69 @@ class SyncService:
         except Exception as e:  # noqa: BLE001
             log.debug(f"[sync_service]忽略异常: {e}")
         return None
+
+    def _resolve_backend(self, backend_id: str):
+        """按 id 解析存储后端实例，失败返回 None"""
+        try:
+            entity = self._storage_backend_repo.get_by_id(int(backend_id))
+            if not entity:
+                return None
+            info = StorageBackendFactory.get_config_info(entity.type)
+            stype, cls = info if info else (StorageType.LOCAL, LocalStorageConfig)
+            config = cls(id=str(entity.id), name=entity.name, type=stype, enabled=entity.enabled)
+            for k, v in entity.config.items():
+                if hasattr(config, k):
+                    setattr(config, k, v)
+            return StorageBackendFactory.create(config)
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[sync_service]解析存储后端失败: {e}")
+        return None
+
+    def remote_path_exists(self, path: str, backend_id: str) -> bool:
+        """远程存储源路径是否存在"""
+        backend = self._resolve_backend(backend_id)
+        if not backend:
+            return False
+        try:
+            return bool(backend.exists(path))
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[sync_service]远程路径检查失败: {e}")
+        return False
+
+    def _stage_remote_source(self, remote_path: str, backend_id: str) -> str:
+        """递归下载远程源（文件或目录）到本地临时目录，返回本地路径；失败返回空串"""
+        backend = self._resolve_backend(backend_id)
+        if not backend:
+            return ""
+        try:
+            local_root = tempfile.mkdtemp(prefix="nm_stage_")
+            if not backend.exists(remote_path):
+                return ""
+            info = backend.stat(remote_path)
+            local_target = os.path.join(local_root, os.path.basename(remote_path.rstrip("/")) or "source")
+            if info and not info.is_dir:
+                os.makedirs(os.path.dirname(local_target), exist_ok=True)
+                with open(local_target, "wb") as f, backend.read_stream(remote_path) as src:
+                    shutil.copyfileobj(src, f)
+                return local_target
+            self._stage_remote_dir(backend, remote_path, local_target)
+            return local_target
+        except Exception as e:  # noqa: BLE001
+            log.error(f"[sync_service]远程源暂存失败: {e}")
+        return ""
+
+    def _stage_remote_dir(self, backend, remote_path: str, local_dir: str) -> None:
+        """递归暂存远程目录"""
+        os.makedirs(local_dir, exist_ok=True)
+        for fi in backend.list_dir(remote_path):
+            rel = os.path.basename(fi.path.rstrip("/"))
+            local_item = os.path.join(local_dir, rel or "item")
+            if fi.is_dir:
+                self._stage_remote_dir(backend, fi.path, local_item)
+            else:
+                os.makedirs(os.path.dirname(local_item), exist_ok=True)
+                with open(local_item, "wb") as f, backend.read_stream(fi.path) as src:
+                    shutil.copyfileobj(src, f)
 
     # ---------- 重新识别 ----------
 
