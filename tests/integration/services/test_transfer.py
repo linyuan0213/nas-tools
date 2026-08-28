@@ -2,7 +2,7 @@
 
 import re
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
@@ -844,3 +844,90 @@ class TestTransferPathResolverMultiBackend:
             MediaType.TV, in_path="/tv1/downloads", media=media, media_service=MagicMock()
         )
         assert result == "/tv1"
+
+
+class TestTransferReplicateToBackends:
+    """多后端镜像复制测试."""
+
+    def _make_service(self):
+        with (
+            patch("app.services.transfer.filetransfer_service.TransferPathResolver") as mock_res_cls,
+            patch("app.services.transfer.filetransfer_service.get_lock_manager") as mock_get_lm,
+        ):
+            mock_lock = MagicMock()
+            mock_lock.acquire.return_value = True
+            mock_lock.__enter__.return_value = mock_lock
+            mock_lock.__exit__.return_value = False
+            mock_get_lm.return_value.create_lock.return_value = mock_lock
+
+            mock_resolver = MagicMock()
+            mock_resolver.unknown_path = []
+            mock_res_cls.from_settings.return_value = mock_resolver
+
+            service = FileTransferService(
+                media_service=MagicMock(),
+                message=MagicMock(),
+                scraper=MagicMock(),
+                thread_executor=MagicMock(),
+                history_manager=MagicMock(),
+                progress=MagicMock(),
+                event_bus=MagicMock(),
+                engine=MagicMock(),
+                path_resolver=mock_resolver,
+                existence_checker=MagicMock(),
+                cleanup_service=MagicMock(),
+                sync_path_repo=MagicMock(),
+            )
+            service._path_resolver = mock_resolver
+            return service, mock_resolver
+
+    def test_replicate_to_other_enabled_backend(self):
+        service, mock_resolver = self._make_service()
+        backend_b = MagicMock()
+        backend_b.config.enabled = True
+        backend_b.id = "6"
+        backend_b.exists.return_value = False
+        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+        mock_resolver.get_dest_path_by_info.return_value = "/data/tv2/测试剧 (2026)/Season 1"
+
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        with patch("app.services.transfer.filetransfer_service.open", mock_open(read_data=b"data")):
+            service._replicate_to_enabled_backends(media, "/data/tv1/测试剧 - S01E01.mkv", None)
+
+        mock_resolver.list_enabled_dest_backends.assert_called_once_with(MediaType.TV)
+        backend_b.write_stream.assert_called_once()
+        call_path = backend_b.write_stream.call_args[0][0]
+        assert call_path == "/data/tv2/测试剧 (2026)/Season 1/测试剧 - S01E01.mkv"
+
+    def test_skip_existing_backend(self):
+        service, mock_resolver = self._make_service()
+        backend_b = MagicMock()
+        backend_b.config.enabled = True
+        backend_b.id = "6"
+        backend_b.exists.return_value = True
+        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        service._replicate_to_enabled_backends(media, "/data/tv1/S01E01.mkv", None)
+
+        backend_b.write_stream.assert_not_called()
+
+    def test_skip_primary_backend(self):
+        service, mock_resolver = self._make_service()
+        primary = MagicMock()
+        primary.id = "6"
+        backend_b = MagicMock()
+        backend_b.config.enabled = True
+        backend_b.id = "6"
+        mock_resolver.list_enabled_dest_backends.return_value = [("/data/tv2", backend_b)]
+
+        media = MagicMock()
+        media.type = MediaType.TV
+
+        service._replicate_to_enabled_backends(media, "/data/tv1/S01E01.mkv", primary)
+
+        backend_b.write_stream.assert_not_called()

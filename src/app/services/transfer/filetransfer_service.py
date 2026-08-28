@@ -915,6 +915,7 @@ class FileTransferService:
                     self._engine.transfer(
                         file_item, new_file, operation, over_flag=True, old_file=old, dst_backend=dst_backend
                     )
+                    self._replicate_to_enabled_backends(media, new_file, dst_backend)
                     return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
                 else:
                     log.warn(f"[Rmt]文件 {ret_file_path} 已存在，跳过")
@@ -959,7 +960,46 @@ class FileTransferService:
             ret_file_path = f"{ret_file_path}{file_ext}"
             new_file = ret_file_path
             self._engine.transfer(file_item, ret_file_path, operation, over_flag=False, dst_backend=dst_backend)
+        # 多后端镜像：复制到其他已启用且缺失该文件的后端
+        self._replicate_to_enabled_backends(media, new_file, dst_backend)
         return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
+
+    def _replicate_to_enabled_backends(self, media, transferred_path, primary_backend) -> None:
+        """转移成功后，将该媒体复制到其他已启用且缺失该文件的后端（多后端镜像）"""
+        try:
+            dest_pairs = self._path_resolver.list_enabled_dest_backends(media.type)
+            if not dest_pairs:
+                return
+            primary_id = str(getattr(primary_backend, "id", "")) if primary_backend is not None else "local"
+            file_name = os.path.basename(transferred_path or "")
+            if not file_name:
+                return
+            for dest_root, backend in dest_pairs:
+                backend_id = str(getattr(backend, "id", ""))
+                if backend_id == primary_id:
+                    continue
+                try:
+                    dest_dir = self._path_resolver.get_dest_path_by_info(dest_root, media, self.media)
+                except Exception as e:  # noqa: BLE001
+                    log.debug(f"[Rmt]镜像目标路径计算失败: {e}")
+                    continue
+                if not dest_dir:
+                    continue
+                dest_file = os.path.join(dest_dir, file_name)
+                try:
+                    if backend.exists(dest_file):
+                        continue
+                    if primary_backend is None:
+                        with open(transferred_path, "rb") as src:
+                            backend.write_stream(dest_file, src)
+                    else:
+                        with primary_backend.read_stream(transferred_path) as src:
+                            backend.write_stream(dest_file, src)
+                    log.info(f"[Rmt]已镜像到后端 {backend_id}: {dest_file}")
+                except Exception as e:  # noqa: BLE001
+                    log.warn(f"[Rmt]镜像到后端 {backend_id} 失败: {e}")
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[Rmt]多后端镜像失败: {e}")
 
     def _record_fail(self, file_item, reg_path, target_dir, operation, udf_flag, alert_messages, msg):
         self.progress.update(ptype=ProgressKey.FileTransfer, text=msg)

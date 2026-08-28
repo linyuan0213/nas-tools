@@ -349,6 +349,27 @@ class TransferPathResolver:
         self._backend_cache[backend_id] = backend
         return backend
 
+    def list_enabled_dest_backends(self, mtype: MediaType) -> list[tuple[str, Any]]:
+        """返回媒体类型下已启用（且非本地）的目标目录与后端实例列表，用于多后端镜像"""
+        if mtype == MediaType.MOVIE:
+            dest_paths = self._movie_path
+            backend_ids = self._movie_backend
+        elif mtype == MediaType.TV:
+            dest_paths = self._tv_path
+            backend_ids = self._tv_backend
+        else:
+            dest_paths = self._anime_path
+            backend_ids = self._anime_backend
+        result: list[tuple[str, Any]] = []
+        for idx, dest_path in enumerate(dest_paths or []):
+            backend_id = backend_ids[idx] if idx < len(backend_ids or []) else "local"
+            if not backend_id or backend_id == "local":
+                continue
+            backend = self.resolve_backend_by_id(backend_id)
+            if backend and getattr(backend.config, "enabled", True):
+                result.append((dest_path, backend))
+        return result
+
     # ---------- 格式化 ----------
 
     def get_format_dict(self, media, media_service=None) -> dict:
