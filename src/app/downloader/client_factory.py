@@ -407,13 +407,4 @@ class DownloadClientFactory:
                     return {"path": best.get("save_path"), "category": best.get("category"), "label": best.get("label")}
                 c = candidates[0]
                 return {"path": c.get("save_path"), "category": c.get("category"), "label": c.get("label")}
-            # 无类型/分类匹配时回退到下载器第一个已配置目录，
-            # 避免 download_dir 为空导致下载器(如 qBittorrent 自动管理)落入服务器默认路径
-            for attr in downloaddir or []:
-                if attr and isinstance(attr, dict) and (attr.get("save_path") or attr.get("label")):
-                    log.warn(
-                        f"[Downloader]下载目录未匹配媒体类型({media.type.value}/{media.type.display_name})，"
-                        f"回退到目录：{attr.get('save_path')}"
-                    )
-                    return {"path": attr.get("save_path"), "category": attr.get("category"), "label": attr.get("label")}
         return {"path": None, "category": None, "label": None}

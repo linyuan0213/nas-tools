@@ -184,3 +184,39 @@ class TestQbittorrentSync:
         assert len(tasks) == 1
         assert tasks[0]["id"] == "hash1"
         assert tasks[0]["path"] == "/downloads/movie.mkv"
+
+
+class TestQbittorrentAddTorrent:
+    """qBittorrent 添加任务：传入下载目录时必须尊重该目录."""
+
+    @pytest.fixture
+    def client(self):
+        with patch.object(Qbittorrent, "connect"):
+            with patch.object(Qbittorrent, "init_torrent_management"):
+                with patch("qbittorrentapi.Client") as mock_qbc_cls:
+                    mock_qbc = MagicMock()
+                    mock_qbc_cls.return_value = mock_qbc
+                    qb = Qbittorrent(
+                        config={
+                            "host": "127.0.0.1",
+                            "port": "8080",
+                            "username": "admin",
+                            "password": "adminadmin",
+                            "torrent_management": "auto",
+                        }
+                    )
+                    qb.qbc = mock_qbc
+                    return qb, mock_qbc
+
+    def test_add_torrent_honors_download_dir(self, client):
+        """即使下载器配置了自动管理，传入 download_dir 也必须强制 is_auto=False 并透传 save_path."""
+        qb, mock_qbc = client
+        mock_qbc.torrents_add.return_value = "Ok."
+        ret = qb.add_torrent(
+            content=b"torrent-bytes",
+            download_dir="/做种2",
+        )
+        assert ret is True
+        _, kwargs = mock_qbc.torrents_add.call_args
+        assert kwargs.get("save_path") == "/做种2"
+        assert kwargs.get("use_auto_torrent_management") is False

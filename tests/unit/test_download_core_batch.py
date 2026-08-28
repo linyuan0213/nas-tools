@@ -323,14 +323,6 @@ class TestGetDownloadDirInfo:
         info = DownloadClientFactory.get_download_dir_info(media, dirs)
         assert info["path"] == "/data/ok"
 
-    def test_type_mismatch_falls_back_to_first_dir(self):
-        from app.downloader.client_factory import DownloadClientFactory
-
-        media = self._media(MediaType.MOVIE)
-        dirs = [{"type": "tv", "save_path": "/data/tv"}]
-        info = DownloadClientFactory.get_download_dir_info(media, dirs)
-        assert info["path"] == "/data/tv"
-
     def test_empty_dir_returns_none(self):
         from app.downloader.client_factory import DownloadClientFactory
 
