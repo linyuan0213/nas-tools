@@ -155,28 +155,38 @@ class OpenListStorageBackend(StorageBackend):
             raise NotImplementedError("OpenList 后端未启用写入")
         src_dir = posixpath.dirname(src.rstrip("/"))
         dst_dir = posixpath.dirname(dst.rstrip("/"))
+        name = posixpath.basename(src.rstrip("/"))
         self._api(
             "copy",
             json={
                 "src_dir": src_dir,
                 "dst_dir": dst_dir,
-                "names": [posixpath.basename(src.rstrip("/"))],
+                "names": [name],
             },
         )
+        # AList copy 仅支持同名复制，目标名不同时需再 rename
+        target = posixpath.basename(dst.rstrip("/"))
+        if target and target != name:
+            self._api("rename", json={"path": f"{dst_dir.rstrip('/')}/{name}", "name": target})
 
     def move(self, src: str, dst: str) -> None:
         if not self._write_enabled:
             raise NotImplementedError("OpenList 后端未启用写入")
         src_dir = posixpath.dirname(src.rstrip("/"))
         dst_dir = posixpath.dirname(dst.rstrip("/"))
+        name = posixpath.basename(src.rstrip("/"))
         self._api(
             "move",
             json={
                 "src_dir": src_dir,
                 "dst_dir": dst_dir,
-                "names": [posixpath.basename(src.rstrip("/"))],
+                "names": [name],
             },
         )
+        # AList move 仅支持同名移动，目标名不同时需再 rename
+        target = posixpath.basename(dst.rstrip("/"))
+        if target and target != name:
+            self._api("rename", json={"path": f"{dst_dir.rstrip('/')}/{name}", "name": target})
 
     def health_check(self) -> tuple[bool, str]:
         try:

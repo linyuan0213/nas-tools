@@ -11,6 +11,7 @@ from smbclient import (
     open_file,
     register_session,
     remove,
+    rename,
     rmdir,
     scandir,
 )
@@ -145,7 +146,8 @@ class SMBStorageBackend(StorageBackend):
         copyfile(self._path(src), self._path(dst))
 
     def move(self, src: str, dst: str) -> None:
-        shutil.move(self._path(src), self._path(dst))
+        # 服务端重命名（标准 shutil.move 无法处理 UNC 路径）
+        rename(self._path(src), self._path(dst))
 
     def health_check(self) -> tuple[bool, str]:
         try:
