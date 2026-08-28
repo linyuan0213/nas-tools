@@ -113,6 +113,7 @@ class RenameUdfRequest(BaseModel):
     episode_offset: str | None = None
     min_filesize: int | None = None
     src_backend_id: str | None = None
+    dst_backend_id: str | None = None
 
 
 class RunDirectorySyncRequest(BaseModel):
@@ -344,6 +345,7 @@ def rename_udf(
 ):
     inpath = req.inpath
     src_backend_id = req.src_backend_id or "local"
+    dst_backend_id = req.dst_backend_id or ""
     if src_backend_id == "local":
         if not os.path.exists(inpath or ""):
             return fail(code=ErrorCode.PARAM_VALIDATION_FAILED, msg="输入路径不存在")
@@ -375,6 +377,7 @@ def rename_udf(
         tmdbid=tmdbid,
         season=season,
         src_backend_id=src_backend_id,
+        dst_backend_id=dst_backend_id,
     )
     if result.success:
         return success(message="转移成功")

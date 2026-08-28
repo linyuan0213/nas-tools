@@ -377,3 +377,33 @@ class TestSyncServiceSameBackend:
 
         service._stage_remote_source.assert_called_once()
         assert result.success
+
+
+class TestSyncServiceDstBackendId:
+    def test_explicit_dst_backend_id_used(self, service):
+        """显式指定 dst_backend_id 时优先使用，不再查 sync path"""
+        from app.storage.backends.base import StorageConfig, StorageType
+
+        service._filetransfer.get_sync_backend_by_dest = MagicMock(return_value="local")
+        backend = MagicMock()
+        backend.id = "7"
+        service._storage_backend_repo = MagicMock()
+        entity = MagicMock()
+        entity.id = 7
+        entity.name = "s3"
+        entity.type = "s3"
+        entity.enabled = True
+        entity.config = {}
+        service._storage_backend_repo.get_by_id.return_value = entity
+
+        with (
+            patch(
+                "app.services.sync_service.StorageBackendFactory.get_config_info",
+                return_value=(StorageType.S3, StorageConfig),
+            ),
+            patch("app.services.sync_service.StorageBackendFactory.create", return_value=backend),
+        ):
+            result = service._resolve_dst_backend_by_dest("/data/media", "7")
+
+        assert result is backend
+        service._filetransfer.get_sync_backend_by_dest.assert_not_called()

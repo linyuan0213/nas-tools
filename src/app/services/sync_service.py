@@ -192,6 +192,7 @@ class SyncService:
         season: int | None = None,
         need_fix_all: bool = False,
         src_backend_id: str = "local",
+        dst_backend_id: str = "",
     ) -> ManualTransferResultDTO:
         """
         手工转移文件
@@ -202,7 +203,7 @@ class SyncService:
         if outpath:
             outpath = os.path.normpath(outpath)
         # 目标后端（用于判断是否同源后端）
-        dst_backend_obj = self._resolve_dst_backend_by_dest(outpath or "")
+        dst_backend_obj = self._resolve_dst_backend_by_dest(outpath or "", dst_backend_id or None)
         if src_backend_id and src_backend_id != "local":
             src_backend = self._resolve_backend(src_backend_id)
             if not src_backend or not src_backend.exists(inpath):
@@ -296,9 +297,14 @@ class SyncService:
 
         return ManualTransferResultDTO(success=True, message="转移任务已提交，正在后台执行")
 
-    def _resolve_dst_backend_by_dest(self, dest: str):
-        """根据目的目录查找对应同步配置的目标后端实例"""
-        dst_backend_id = self._filetransfer.get_sync_backend_by_dest(dest)
+    def _resolve_dst_backend_by_dest(self, dest: str, dst_backend_id: str | None = None):
+        """根据目的目录查找对应同步配置的目标后端实例；dst_backend_id 显式指定时优先使用"""
+        if dst_backend_id:
+            dst_backend_id = str(dst_backend_id)
+            if dst_backend_id == "local":
+                return None
+        else:
+            dst_backend_id = self._filetransfer.get_sync_backend_by_dest(dest)
         if dst_backend_id == "local":
             return None
         try:
