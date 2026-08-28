@@ -21,6 +21,9 @@ class SyncPathEntity:
     rename: bool
     enabled: bool
     note: str | None
+    operation: str | None = None
+    src_backend: str | None = None
+    dst_backend: str | None = None
 
     _VALID_MODES = {"copy", "move", "link", "softlink"}
 
@@ -72,6 +75,9 @@ class SyncPathEntity:
             rename=bool(orm_model.RENAME),
             enabled=bool(orm_model.ENABLED),
             note=orm_model.NOTE,
+            operation=getattr(orm_model, "OPERATION", None),
+            src_backend=getattr(orm_model, "SRC_BACKEND", None),
+            dst_backend=getattr(orm_model, "DST_BACKEND", None),
         )
 
     _ORM_FIELD_MAP = {}

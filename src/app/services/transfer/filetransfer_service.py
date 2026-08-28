@@ -353,7 +353,9 @@ class FileTransferService:
             if not tmdb_info:
                 tmdb_info, media_type, dl_season, dl_episode = self._lookup_download_record(in_path)
 
-            medias = self.media.get_media_info_on_files(file_list, tmdb_info, media_type, season, episode[0])
+            medias = self.media.get_media_info_on_files(
+                file_list, tmdb_info, media_type, season, episode[0], backend=src_backend
+            )
             if not medias:
                 return self._finish_transfer(False, "搜索媒体信息出错")
 

@@ -1,5 +1,6 @@
 """WebDAV 存储后端（基于 httpx 自实现）。"""
 
+import posixpath
 from collections.abc import Iterator
 from email.utils import parsedate_to_datetime
 from typing import BinaryIO
@@ -27,7 +28,7 @@ class WebDAVStorageBackend(StorageBackend):
                     getattr(config, "username", ""),
                     getattr(config, "password", ""),
                 ),
-                default_headers={"Depth": "1"},
+                default_headers={"Depth": "0"},
             )
         )
 
@@ -42,11 +43,11 @@ class WebDAVStorageBackend(StorageBackend):
         """WebDAV href → 相对挂载根的路径（去服务器前缀 + URL 解码）"""
         href = unquote(href or "")
         if href.startswith(self._url):
-            href = href[len(self._url):]
+            href = href[len(self._url) :]
         else:
             base = urlparse(self._url).path.rstrip("/")
             if base and href.startswith(base):
-                href = href[len(base):]
+                href = href[len(base) :]
         return href.strip("/")
 
     def exists(self, path: str) -> bool:
@@ -132,10 +133,18 @@ class WebDAVStorageBackend(StorageBackend):
         self._req("DELETE", path)
 
     def copy(self, src: str, dst: str) -> None:
-        self._req("COPY", src, headers={"Destination": self._url_for(dst)})
+        # 服务端 COPY 要求目标父目录已存在，先递归建目录
+        parent = posixpath.dirname(dst)
+        if parent and not self.exists(parent):
+            self.mkdir(parent, parents=True)
+        # COPY/MOVE 不允许 Depth: 1（SabreDAV 返回 400），显式覆盖为 0
+        self._req("COPY", src, headers={"Destination": self._url_for(dst), "Depth": "0"})
 
     def move(self, src: str, dst: str) -> None:
-        self._req("MOVE", src, headers={"Destination": self._url_for(dst)})
+        parent = posixpath.dirname(dst)
+        if parent and not self.exists(parent):
+            self.mkdir(parent, parents=True)
+        self._req("MOVE", src, headers={"Destination": self._url_for(dst), "Depth": "0"})
 
     def health_check(self) -> tuple[bool, str]:
         try:

@@ -55,6 +55,11 @@ class StorageBackend(ABC):
     def __init__(self, config: StorageConfig) -> None:
         self.config = config
 
+    @property
+    def id(self) -> str:
+        """后端唯一标识（来自配置 ID）"""
+        return str(getattr(self.config, "id", ""))
+
     # ---------- 路径与元信息 ----------
 
     @abstractmethod
