@@ -1,6 +1,7 @@
 """TMDb API 核心 — 基于 HttpClient 重写."""
 
 import os
+import threading
 
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
@@ -10,6 +11,10 @@ from app.utils.config_tools import get_proxies
 
 from .as_obj import AsObj
 from .exceptions import TMDbError
+
+# 语言必须线程隔离：TMDB_LANGUAGE 原用全局环境变量，多线程并发（转移/识别/别名补取）
+# 会相互覆盖，导致转移重命名拿到英文标题。改为线程本地，各线程互不影响。
+_tmdb_local = threading.local()
 
 
 def _proxy_url_from_settings() -> str | None:
@@ -29,8 +34,8 @@ class TMDb:
         self._session = session
         self._remaining = 40
         self._reset = None
-        if os.environ.get(self.TMDB_LANGUAGE) is None:
-            os.environ[self.TMDB_LANGUAGE] = "zh"
+        if not getattr(_tmdb_local, "language", None):
+            _tmdb_local.language = "zh"
         if not os.environ.get(self.TMDB_DOMAIN):
             os.environ[self.TMDB_DOMAIN] = "https://api.themoviedb.org/3"
 
@@ -74,11 +79,11 @@ class TMDb:
 
     @property
     def language(self):
-        return os.environ.get(self.TMDB_LANGUAGE)
+        return getattr(_tmdb_local, "language", "zh")
 
     @language.setter
     def language(self, language):
-        os.environ[self.TMDB_LANGUAGE] = language
+        _tmdb_local.language = language
 
     @staticmethod
     def _get_obj(result, key="results", all_details=False):
