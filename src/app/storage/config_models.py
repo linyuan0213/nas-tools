@@ -79,7 +79,7 @@ class S3StorageConfig(StorageConfig):
             {"key": "region", "label": "Region", "placeholder": "us-east-1"},
             {"key": "access_key", "label": "Access Key", "placeholder": "AKIAXXXXXX", "required": True},
             {"key": "secret_key", "label": "Secret Key", "placeholder": "******", "required": True},
-            {"key": "secure", "label": "HTTPS", "placeholder": "true"},
+            {"key": "secure", "label": "HTTPS", "type": "bool", "placeholder": "是否使用 HTTPS"},
         ]
 
 
@@ -113,5 +113,5 @@ class OpenListStorageConfig(StorageConfig):
             {"key": "username", "label": "用户名", "placeholder": "admin"},
             {"key": "password", "label": "密码", "placeholder": "******"},
             {"key": "api_token", "label": "API Token", "placeholder": "直接填 token 可跳过登录"},
-            {"key": "write_enabled", "label": "允许写入", "placeholder": "false"},
+            {"key": "write_enabled", "label": "允许写入", "type": "bool", "placeholder": "是否允许向该后端写入文件"},
         ]
