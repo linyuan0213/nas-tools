@@ -110,7 +110,9 @@ class TestFileTransferServiceConcurrent:
         media2.type = "tv"
         medias = {"/src/a.mkv": media1, "/src/b.mkv": media2}
 
-        service._path_resolver.get_best_target_path.side_effect = lambda mtype, in_path, size: f"/dst/{mtype}"
+        service._path_resolver.get_best_target_path.side_effect = (
+            lambda mtype, in_path, size, media=None, media_service=None: f"/dst/{mtype}"
+        )
 
         def fake_submit(func, *args, **kwargs):
             future = Future()
@@ -137,7 +139,7 @@ class TestFileTransferServiceConcurrent:
                 "exist_filenum": 0,
             },
         ) as mock_loop:
-            service._transfer_files(medias, "WEB", "/src", "copy", None, None, None, (None, False), False, None)
+            service._transfer_files(medias, "WEB", "/src", "copy", None, None, None, (None, False), False, None, None)
             assert mock_loop.call_count == 2
 
     def test_transfer_files_bluray_falls_back_to_serial(self, service):
@@ -159,6 +161,6 @@ class TestFileTransferServiceConcurrent:
             },
         ) as mock_loop:
             service._transfer_files(
-                medias, "WEB", "/src", "copy", None, None, "/src/bluray", (None, False), False, None
+                medias, "WEB", "/src", "copy", None, None, "/src/bluray", (None, False), False, None, None
             )
             assert mock_loop.call_count == 1

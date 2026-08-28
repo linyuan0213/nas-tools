@@ -127,7 +127,9 @@ class Telegram(_IMessageClient):
         self._admin_ids = cfg.get("admin_ids") or []
         self._user_ids = cfg.get("user_ids") or []
         self._domain = get_domain()
-        self._api_key = self._apikey_service.get_or_create_system_key("MessageWebhook")
+        self._api_key = (
+            self._apikey_service.get_or_create_system_key("MessageWebhook") if self._apikey_service else None
+        )
         self._webhook_url = f"{self._domain}/telegram?apikey={self._api_key}"
         admin_ids = cfg.get("admin_ids")
         if admin_ids and not isinstance(admin_ids, list):
