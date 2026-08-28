@@ -72,11 +72,11 @@ def list_embedding_models(provider_name: str, api_url: str = "", api_key: str = 
         if provider_name == "gemini":
             return list(_CURATED_EMBEDDING_MODELS["gemini"])
         # OpenAI 兼容（含 DashScope）：尝试 /v1/models 过滤 embed
-        import httpx  # noqa: PLC0415  # httpx 非直接依赖（仅 Ollama 提供方按需使用）
+        import httpx2  # noqa: PLC0415  # httpx 非直接依赖（仅 Ollama 提供方按需使用）
 
         url = api_url.rstrip("/") + "/models"
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        resp = httpx.get(url, headers=headers, timeout=timeout)
+        resp = httpx2.get(url, headers=headers, timeout=timeout)
         if resp.status_code == 200:
             data = resp.json()
             ids = [m.get("id", "") for m in (data.get("data") or []) if m.get("id")]
