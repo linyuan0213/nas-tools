@@ -1,11 +1,18 @@
 from abc import ABCMeta, abstractmethod
 
+from app.message.registry import register
 from app.message.schema import MessageConfigSchema
 
 
 class _IMessageClient(metaclass=ABCMeta):
     schema: str | None = None
     config_schema: MessageConfigSchema | None = None
+
+    def __init_subclass__(cls, **kwargs):
+        """子类定义时自动注册到消息客户端注册表（避免启动竞态窗口构建出空客户端）"""
+        super().__init_subclass__(**kwargs)
+        if cls.schema:
+            register(cls)
 
     def __init__(self, config: dict, apikey_service=None, message=None):
         self._config = config

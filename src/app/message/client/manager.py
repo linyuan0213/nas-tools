@@ -21,6 +21,7 @@ from app.message.switches import MESSAGE_SWITCHES
 
 
 def init_clients() -> None:
+    """注册内置消息客户端类（幂等，可重复调用）"""
     register(Bark)
     register(Chanify)
     register(Gotify)
