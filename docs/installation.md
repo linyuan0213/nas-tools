@@ -27,6 +27,80 @@
 
 项目根目录的 `docker-compose.yml` 支持多种部署模式（通过 `--profile` 选择）。
 
+### 第一步：先确认容器间网络互通（常见坑）
+
+`docker compose up` 启动后，后端会通过网桥访问 `mysql`、`redis`（服务名即主机名）。**网桥不通、容器连不上 mysql/redis 是最常见的部署失败原因**，表现为后端反复重试数据库连接、一直超时、`unhealthy`。
+
+**0. 先看状态与日志**
+
+```bash
+docker compose ps                 # 查看各容器状态
+docker compose logs backend-mysql | tail -30    # 后端启动日志，看连接报错
+docker compose logs migration-mysql | tail -30  # 迁移服务日志
+```
+
+**1. 验证容器间是否互通**
+
+所有服务都应在同一个自定义网桥 `nexus-media-network` 上。进入后端容器测试能否解析并连接 mysql：
+
+```bash
+docker exec nexus-media getent hosts mysql            # 应解析出容器 IP（如 172.x.x.x）
+docker exec nexus-media wget -qO- http://mysql:3306/  # 能连则返回（即使非 200 也算通）
+```
+
+- `getent hosts mysql` 无输出 → **DNS/网络不通**，见下
+- 能解析但连接超时 → 网络层问题，见下
+
+**2. 检查网络是否残留/冲突（最常见原因）**
+
+compose 显式指定网络名 `nexus-media-network`。如果之前部署过、或不同目录的项目用了同名网络，旧网络/旧容器可能残留：
+
+```bash
+docker network ls                        # 看 nexus-media-network 是否存在
+docker network inspect nexus-media-network --format '{{range .Containers}}{{.Name}} {{end}}'
+```
+
+若网络里只有部分容器、或容器没加入，先清理后重新启动：
+
+```bash
+docker compose down                      # 停掉本次 compose 的容器（不删数据卷）
+docker network rm nexus-media-network    # 删掉残留网络（若仍被占用先停对应容器）
+docker compose --profile basic-mysql up -d
+```
+
+**3. 检查旧容器残留**
+
+同名容器（`nexus-media`、`nexus-media-mysql` 等）若残留自旧部署，`up` 会报 `name already in use` 或挂到旧网络：
+
+```bash
+docker ps -a | grep nexus
+docker rm -f nexus-media nexus-media-mysql nexus-media-redis nexus-media-web nexus-media-migration
+docker compose --profile basic-mysql up -d
+```
+
+**4. 确认启动顺序（migration 未完成会卡住）**
+
+`backend-mysql` 依赖 `migration-mysql` 成功完成才启动；`migration-mysql` 依赖 mysql 健康。任一步失败都会导致后端起不来：
+
+```bash
+docker compose logs migration-mysql | tail -30   # 迁移报错会在这里
+docker compose ps | grep migration               # 看 migration 是否 Completed 而非 Error
+```
+
+迁移失败常见原因：数据库密码与 `migration-mysql`/`backend-mysql` 环境变量不一致。
+
+**常见错误排查**
+
+| 现象 | 原因 | 处理 |
+|------|------|------|
+| `Can't connect to MySQL server ... (Connection refused)` | 后端连不上 mysql 容器 | 按第 1 步验证网络；确认 mysql 已健康（`docker compose ps`） |
+| `getent hosts mysql` 无输出 | 容器不在同一网桥 / DNS 失败 | 按第 2、3 步清理网络与旧容器后重启 |
+| `name already in use` | 旧容器残留 | 按第 3 步 `docker rm -f` 后重启 |
+| 后端反复重试、一直 `unhealthy` | 数据库未就绪或密码不一致 | 看后端日志确认是网络还是认证；核对三处数据库密码一致 |
+| migration 一直不结束/Error | 迁移失败 | `docker compose logs migration-mysql` 看具体报错 |
+
+> **最快恢复路径**：`docker compose down` → 删残留网络与容器（数据卷 `./data`、`./mysql_data` 保留即可）→ 重新 `up -d`。多数"第一步连不上 mysql"问题由此解决。
+
 ### 简单示例（开箱即用）
 
 如果觉得完整 `docker-compose.yml` 复杂，可以直接使用下面两个简化版。

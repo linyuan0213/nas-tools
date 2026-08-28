@@ -17,6 +17,8 @@
 
 项目根目录的 `docker-compose.yml` 提供多种部署模式，通过 `--profile` 切换。
 
+> **容器间网络提示**：所有服务运行在自定义网桥 `nexus-media-network` 上，后端通过服务名（`mysql`、`redis`）互访。若之前部署过，旧网络/旧容器残留会导致容器间互连失败、后端连不上数据库一直超时，先 `docker compose down` 并清理残留网络/容器再启动（详见 `docs/installation.md` 的「第一步：先确认容器间网络互通」）。
+
 ### 基础模式（默认）
 
 包含前端、后端、Redis 和数据库（默认 MySQL，也可切换为 PostgreSQL）。
