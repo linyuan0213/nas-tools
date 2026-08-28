@@ -193,4 +193,7 @@ class OpenListStorageBackend(StorageBackend):
             self._api("list", json={"path": "/", "password": ""})
             return True, "连接成功"
         except Exception as e:
+            # 连接/认证成功但未配置存储挂载时提示而非报错
+            if "storage not found" in str(e):
+                return True, "连接成功（未配置存储挂载）"
             return False, str(e)

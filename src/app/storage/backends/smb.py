@@ -51,53 +51,59 @@ class SMBStorageBackend(StorageBackend):
             return f"{self._base}\\{p}"
         return self._base
 
+    def _kw(self) -> dict:
+        """smbclient 连接参数：显式传递端口（非 445 时必须）"""
+        return {"port": self._port}
+
     def exists(self, path: str) -> bool:
-        return smb_exists(self._path(path))
+        return smb_exists(self._path(path), **self._kw())
 
     def stat(self, path: str) -> FileInfo | None:
         try:
-            st = smb_stat(self._path(path))
+            st = smb_stat(self._path(path), **self._kw())
             return FileInfo(
                 path=path,
                 size=st.st_size,
                 mtime=st.st_mtime,
-                is_dir=isdir(self._path(path)),
+                is_dir=isdir(self._path(path), **self._kw()),
             )
         except Exception:
             return None
 
     def list_dir(self, path: str) -> Iterator[FileInfo]:
         rp = self._path(path)
-        for entry in scandir(rp):
-            st = entry.stat()
+        for entry in scandir(rp, **self._kw()):
+            epath = path.rstrip("/") + "/" + entry.name
+            # entry.stat() 不透传端口（非 445 会连错端口），用后端 stat 取元信息
+            st = self.stat(epath)
             yield FileInfo(
-                path=path.rstrip("/") + "/" + entry.name,
-                size=st.st_size if not entry.is_dir() else 0,
-                mtime=st.st_mtime,
-                is_dir=entry.is_dir(),
+                path=epath,
+                size=st.size if st else 0,
+                mtime=st.mtime if st else 0,
+                is_dir=st.is_dir if st else entry.is_dir(),
             )
 
     def read_stream(self, path: str) -> BinaryIO:
-        return open_file(self._path(path), mode="rb")
+        return open_file(self._path(path), mode="rb", **self._kw())
 
     def write_stream(self, path: str, stream: BinaryIO, size: int = 0, chunk_size: int = 0) -> None:
         rp = self._path(path)
         self._ensure_dir(self._dir(rp))
         # 如果目标路径已存在且是目录（之前失败遗留），强制删除
-        if isdir(rp):
+        if isdir(rp, **self._kw()):
             try:
-                rmdir(rp)
+                rmdir(rp, **self._kw())
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[smb]忽略异常: {e}")
         length = chunk_size if chunk_size > 0 else 1024 * 1024
         try:
-            with open_file(rp, mode="wb") as f:
+            with open_file(rp, mode="wb", **self._kw()) as f:
                 shutil.copyfileobj(stream, f, length=length)
         except Exception as e:
             if "Is a directory" in str(e) or getattr(e, "errno", None) == 21:
                 log.warn(f"SMB 目标路径 {rp} 是目录，强制删除后重试写入")
-                rmtree(rp)
-                with open_file(rp, mode="wb") as f:
+                rmtree(rp, **self._kw())
+                with open_file(rp, mode="wb", **self._kw()) as f:
                     shutil.copyfileobj(stream, f, length=length)
             else:
                 raise
@@ -109,45 +115,45 @@ class SMBStorageBackend(StorageBackend):
         """逐层创建 SMB 目录，避免 makedirs 在 Linux 上处理反斜杠路径的问题。"""
         if not path or path == self._base:
             return
-        if smb_exists(path) and isdir(path):
+        if smb_exists(path, **self._kw()) and isdir(path, **self._kw()):
             return
         # 先确保父目录存在
         parent = self._dir(path)
         if parent and parent != path and parent != self._base:
             self._ensure_dir(parent)
         try:
-            mkdir(path)
+            mkdir(path, **self._kw())
         except Exception:
             # 目录可能已存在（race condition）
-            if not (smb_exists(path) and isdir(path)):
+            if not (smb_exists(path, **self._kw()) and isdir(path, **self._kw())):
                 raise
 
     def mkdir(self, path: str, parents: bool = True) -> None:
         rp = self._path(path)
         if parents:
-            makedirs(rp, exist_ok=True)
+            makedirs(rp, exist_ok=True, **self._kw())
         else:
-            mkdir(rp)
+            mkdir(rp, **self._kw())
 
     def remove(self, path: str, recursive: bool = False) -> None:
         norm = path.replace("\\", "/").strip("/")
         if not norm:
             raise ValueError("不能删除 SMB share 根目录")
         rp = self._path(path)
-        if isdir(rp):
+        if isdir(rp, **self._kw()):
             if recursive:
-                rmtree(rp)
+                rmtree(rp, **self._kw())
             else:
-                rmdir(rp)
+                rmdir(rp, **self._kw())
         else:
-            remove(rp)
+            remove(rp, **self._kw())
 
     def copy(self, src: str, dst: str) -> None:
-        copyfile(self._path(src), self._path(dst))
+        copyfile(self._path(src), self._path(dst), **self._kw())
 
     def move(self, src: str, dst: str) -> None:
         # 服务端重命名（标准 shutil.move 无法处理 UNC 路径）
-        rename(self._path(src), self._path(dst))
+        rename(self._path(src), self._path(dst), **self._kw())
 
     def health_check(self) -> tuple[bool, str]:
         try:

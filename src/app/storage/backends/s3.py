@@ -119,4 +119,13 @@ class S3StorageBackend(StorageBackend):
             self._client.head_bucket(Bucket=self._bucket)
             return True, "连接成功"
         except Exception as e:
+            # 凭据有效但 bucket 不存在（404）时自动创建，其余按连接失败处理
+            resp = getattr(e, "response", None)
+            status_code = resp.get("ResponseMetadata", {}).get("HTTPStatusCode") if isinstance(resp, dict) else None
+            if status_code == 404:
+                try:
+                    self._client.create_bucket(Bucket=self._bucket)
+                    return True, "连接成功（bucket 不存在，已自动创建）"
+                except Exception as ce:  # noqa: BLE001
+                    return False, f"bucket 不存在且创建失败: {ce}"
             return False, str(e)
