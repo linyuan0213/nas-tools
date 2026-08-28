@@ -261,10 +261,13 @@ class ClientManager:
 
     def get_status(self, ctype: Any = None, config: Any = None) -> bool:
         """测试消息设置状态."""
-        if not config or not ctype:
+        if not ctype:
             return False
         built_client = ClientRegistry.build(
-            ctype=ctype, conf=config, apikey_service=self._apikey_service, message=self._message
+            ctype=ctype,
+            conf=config or {},
+            apikey_service=self._apikey_service,
+            message=self._message,
         )
         if not built_client:
             return False
