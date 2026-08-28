@@ -219,22 +219,30 @@ class TransferPathResolver:
                 return True
         return any(PathUtils.is_path_in_path(unknown_path, path) for unknown_path in self._unknown_path)
 
-    def get_best_target_path(self, mtype, in_path=None, size=0):
+    def get_best_target_path(self, mtype, in_path=None, size=0, media=None, media_service=None):
         """查询一个最好的目录返回."""
         if not mtype:
             return None
         if mtype == MediaType.MOVIE:
             dest_paths = self._movie_path
+            backends = self._movie_backend
         elif mtype == MediaType.TV:
             dest_paths = self._tv_path
+            backends = self._tv_backend
         else:
             dest_paths = self._anime_path
+            backends = self._anime_backend
         if not dest_paths:
             return None
         if not isinstance(dest_paths, list):
             return dest_paths
         if isinstance(dest_paths, list) and len(dest_paths) == 1:
             return dest_paths[0]
+        # 多后端集数更新：剧集已存在于某后端时，优先选择该目录，避免同一剧集分散到多个后端
+        if media is not None and mtype in (MediaType.TV, MediaType.ANIME):
+            existing = self._find_existing_media_path(dest_paths, backends, media, media_service)
+            if existing:
+                return existing
         if in_path:
             max_return_path = None
             max_path_len = 0
@@ -254,6 +262,26 @@ class TransferPathResolver:
                 if SystemUtils.get_free_space(path) > NumberUtils.get_size_gb(size):
                     return path
         return dest_paths[0]
+
+    def _find_existing_media_path(self, dest_paths: list, backends: list, media, media_service) -> str | None:
+        """剧集已存在的目标目录（跨多后端）"""
+        for idx, dest_path in enumerate(dest_paths):
+            try:
+                check_path = self.get_dest_path_by_info(dest_path, media, media_service)
+            except Exception as e:  # noqa: BLE001
+                log.debug(f"[PathResolver]计算目标路径失败: {e}")
+                continue
+            if not check_path:
+                continue
+            backend_id = backends[idx] if idx < len(backends) else "local"
+            if backend_id == "local":
+                if os.path.isdir(check_path):
+                    return dest_path
+            else:
+                backend = self.resolve_backend_by_id(backend_id)
+                if backend and backend.exists(check_path):
+                    return dest_path
+        return None
 
     def _get_best_unknown_path(self, in_path):
         """查找最合适的 unknown 目录."""

@@ -486,7 +486,11 @@ class FileTransferService:
         groups = defaultdict(dict)
         for file_item, media in medias.items():
             dist_path = target_dir or self._path_resolver.get_best_target_path(
-                mtype=media.type, in_path=in_path, size=getattr(media, "size", 0)
+                mtype=media.type,
+                in_path=in_path,
+                size=getattr(media, "size", 0),
+                media=media,
+                media_service=self.media,
             )
             if not dist_path:
                 dist_path = ""
@@ -622,7 +626,11 @@ class FileTransferService:
 
                 media.size = os.path.getsize(file_item)
                 dist_path = target_dir or self._path_resolver.get_best_target_path(
-                    mtype=media.type, in_path=in_path, size=media.size
+                    mtype=media.type,
+                    in_path=in_path,
+                    size=media.size,
+                    media=media,
+                    media_service=self.media,
                 )
                 if not dist_path:
                     log.error("[Rmt]文件转移失败，目的路径不存在！")

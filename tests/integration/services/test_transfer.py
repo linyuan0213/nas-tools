@@ -797,3 +797,50 @@ class TestFileTransferService:
         assert result[0] == 1
         assert result[1] == 1
         mock_service._history.insert_transfer_unknown.assert_called_once()
+
+
+class TestTransferPathResolverMultiBackend:
+    def _make_media(self):
+        media = MagicMock()
+        media.type = MediaType.TV
+        media.category = "电视剧"
+        media.title = "测试剧"
+        media.year = 2026
+        media.get_title_string.return_value = "测试剧"
+        media.get_season_string.return_value = "Season 1"
+        media.get_season_list.return_value = [1]
+        return media
+
+    def test_prefer_existing_local_path(self, tmp_path):
+        dest_a = str(tmp_path / "tv_a")
+        dest_b = str(tmp_path / "tv_b")
+        resolver = TransferPathResolver(
+            tv_path=[dest_a, dest_b],
+            tv_backend=["local", "local"],
+        )
+        media = self._make_media()
+        # mock 路径拼装：dest_b 下存在季目录
+        resolver.get_dest_path_by_info = MagicMock(
+            side_effect=lambda dest, m, ms: (
+                f"{dest}/测试剧 (2026)/Season 1" if dest == dest_b else f"{dest}/测试剧 (2026)/Season 1"
+            )
+        )
+        import pathlib
+
+        pathlib.Path(f"{dest_b}/测试剧 (2026)/Season 1").mkdir(parents=True)
+        result = resolver.get_best_target_path(
+            MediaType.TV, in_path="/data/downloads", media=media, media_service=MagicMock()
+        )
+        assert result == dest_b
+
+    def test_no_existing_falls_back_commonpath(self):
+        resolver = TransferPathResolver(
+            tv_path=["/tv1", "/tv2"],
+            tv_backend=["local", "local"],
+        )
+        media = self._make_media()
+        # 无已存在目录 → 走 commonpath（源路径在 /tv1 下）
+        result = resolver.get_best_target_path(
+            MediaType.TV, in_path="/tv1/downloads", media=media, media_service=MagicMock()
+        )
+        assert result == "/tv1"
