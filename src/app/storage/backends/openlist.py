@@ -4,6 +4,7 @@ import datetime
 import posixpath
 from collections.abc import Iterator
 from typing import BinaryIO
+from urllib.parse import quote
 
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
@@ -94,7 +95,7 @@ class OpenListStorageBackend(StorageBackend):
                 "list",
                 json={"path": path, "password": "", "page": page, "per_page": per_page},
             )
-            items = data.get("content", [])
+            items = data.get("content") or []
             for item in items:
                 yield FileInfo(
                     path=posixpath.join(path.rstrip("/"), item.get("name", "")),
@@ -128,7 +129,8 @@ class OpenListStorageBackend(StorageBackend):
         if not self._write_enabled:
             raise NotImplementedError("OpenList 后端未启用写入")
         url = f"{self._base}/api/fs/put"
-        headers = {"File-Path": path}
+        # HTTP 头不支持非 latin1 字符，中文路径需 URL 编码（AList 端会自动解码）
+        headers = {"File-Path": quote(path, safe="/")}
         actual_size = size or self._get_stream_size(stream)
         if actual_size > 0:
             headers["Content-Length"] = str(actual_size)

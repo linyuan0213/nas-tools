@@ -226,7 +226,7 @@ class TransferEngine:
         stack = [dir_path]
         while stack:
             current = stack.pop()
-            for finfo in backend.list_dir(current):
+            for finfo in backend.list_dir(current) or []:
                 if finfo.is_dir:
                     stack.append(finfo.path)
                 else:

@@ -189,6 +189,15 @@ class Scraper:
                     return MediaLibrary.get_tmdbid_from_nfo(tv_nfo)
         return None
 
+    def _exists(self, path: str) -> bool:
+        """后端感知的存在性检查（远程目标用 dst_backend.exists）"""
+        if self._dst_backend is not None:
+            try:
+                return bool(self._dst_backend.exists(path))
+            except Exception:  # noqa: BLE001
+                return False
+        return os.path.exists(path)
+
     def gen_scraper_files(
         self, media, dir_path, file_name, file_ext, force=False, force_nfo=False, force_pic=False, dst_backend=None
     ):
@@ -200,6 +209,7 @@ class Scraper:
             return
         if not self._scraper_nfo and not self._scraper_pic:
             log.warn("[Scraper]刮削配置为空，跳过")
+            return
             return
         self._scraper_nfo = self._scraper_nfo or {}
         self._scraper_pic = self._scraper_pic or {}
@@ -227,7 +237,7 @@ class Scraper:
         scraper_movie_pic = self._scraper_pic.get("movie", {})
 
         if scraper_movie_nfo.get("basic") or scraper_movie_nfo.get("credits"):
-            nfo_exists = os.path.exists(os.path.join(dir_path, "movie.nfo")) or os.path.exists(
+            nfo_exists = self._exists(os.path.join(dir_path, "movie.nfo")) or self._exists(
                 os.path.join(dir_path, f"{file_name}.nfo")
             )
             if force_nfo or not nfo_exists:
@@ -252,7 +262,7 @@ class Scraper:
         tv_root = os.path.dirname(dir_path)
 
         # ---- tvshow.nfo ----
-        if force_nfo or not os.path.exists(os.path.join(tv_root, "tvshow.nfo")):
+        if force_nfo or not self._exists(os.path.join(tv_root, "tvshow.nfo")):
             if scraper_tv_nfo.get("basic") or scraper_tv_nfo.get("credits"):
                 try:
                     doubaninfo = self._fetch_douban(media, scraper_tv_nfo)
@@ -285,7 +295,7 @@ class Scraper:
 
         # ---- season.nfo ----
         if scraper_tv_nfo.get("season_basic"):
-            if force_nfo or not os.path.exists(os.path.join(dir_path, "season.nfo")):
+            if force_nfo or not self._exists(os.path.join(dir_path, "season.nfo")):
                 if seasoninfo:
                     try:
                         self._nfo_gen.gen_season_nfo(seasoninfo, int(media.get_season_seq()), dir_path)
@@ -294,7 +304,7 @@ class Scraper:
 
         # ---- episode.nfo ----
         if scraper_tv_nfo.get("episode_basic") or scraper_tv_nfo.get("episode_credits"):
-            if force_nfo or not os.path.exists(os.path.join(dir_path, f"{file_name}.nfo")):
+            if force_nfo or not self._exists(os.path.join(dir_path, f"{file_name}.nfo")):
                 if seasoninfo:
                     try:
                         self._nfo_gen.gen_episode_nfo(
@@ -363,7 +373,7 @@ class Scraper:
         if scraper_tv_pic.get("episode_thumb"):
             try:
                 episode_thumb = os.path.join(dir_path, file_name + "-thumb.jpg")
-                if force_pic or not os.path.exists(episode_thumb):
+                if force_pic or not self._exists(episode_thumb):
                     episode_image = self.media.get_episode_images(
                         tv_id=media.tmdb_id,
                         season_id=media.get_season_seq(),
