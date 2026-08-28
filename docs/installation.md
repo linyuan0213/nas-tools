@@ -120,6 +120,8 @@ services:
     depends_on:
       - backend
     restart: always
+    networks:
+      - nexus-media-network
 
   backend:
     image: linyuan0213/nexus-media:latest
@@ -145,9 +147,13 @@ services:
       - DATABASE__PASSWORD=nexus_media_password   # 与 mysql 服务保持一致
       - DATABASE__DATABASE=nexus_media
     depends_on:
-      - redis
-      - mysql
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy          # 等 mysql 健康后再启动，避免连不上超时
     restart: always
+    networks:
+      - nexus-media-network
 
   redis:
     image: redis:7-alpine
@@ -156,6 +162,8 @@ services:
       - ./data/redis_data:/data
     command: redis-server --save "" --appendonly no --dir /data
     restart: always
+    networks:
+      - nexus-media-network
 
   mysql:
     image: mysql:8.4
@@ -165,9 +173,23 @@ services:
       - MYSQL_DATABASE=nexus_media
       - MYSQL_USER=nexus_media
       - MYSQL_PASSWORD=nexus_media_password   # 与 backend 保持一致
+      - TZ=Asia/Shanghai
     volumes:
       - ./mysql_data:/var/lib/mysql
     restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - nexus-media-network
+
+networks:
+  nexus-media-network:
+    driver: bridge
+    name: nexus-media-network
 ```
 
 将上面的 YAML 保存为 `docker-compose.simple.yml`（放在项目或任意目录下）后启动：
@@ -191,6 +213,8 @@ services:
     depends_on:
       - backend
     restart: always
+    networks:
+      - nexus-media-network
 
   backend:
     image: linyuan0213/nexus-media:latest
@@ -207,6 +231,13 @@ services:
       - UMASK=000
       - NEXUS_PORT=3000
     restart: always
+    networks:
+      - nexus-media-network
+
+networks:
+  nexus-media-network:
+    driver: bridge
+    name: nexus-media-network
 ```
 
 > 简单示例中后端**不设置 `SKIP_MIGRATION`**，启动时自动执行数据库迁移（`alembic upgrade head`）；完整 `docker-compose.yml` 使用独立 migration 服务，故后端设 `SKIP_MIGRATION=true`。
