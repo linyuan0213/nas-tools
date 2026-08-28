@@ -201,7 +201,39 @@ class SyncService:
         inpath = os.path.normpath(inpath)
         if outpath:
             outpath = os.path.normpath(outpath)
+        # 目标后端（用于判断是否同源后端）
+        dst_backend_obj = self._resolve_dst_backend_by_dest(outpath or "")
         if src_backend_id and src_backend_id != "local":
+            src_backend = self._resolve_backend(src_backend_id)
+            if not src_backend or not src_backend.exists(inpath):
+                return ManualTransferResultDTO(success=False, message="输入路径不存在")
+            # 同后端：无需下载暂存，直接走后端服务端复制
+            if dst_backend_obj is not None and str(getattr(dst_backend_obj, "id", "")) == str(src_backend_id):
+                episode = None
+                if episode_format:
+                    episode = (
+                        EpisodeFormat(episode_format, episode_details or "", episode_part or "", episode_offset or ""),
+                        need_fix_all,
+                    )
+                tmdb_info = None
+                if tmdbid:
+                    tmdb_info = self._media_cache.get_tmdb_info(mtype=media_type or MediaType.MOVIE, tmdbid=tmdbid)
+                    if not tmdb_info:
+                        return ManualTransferResultDTO(success=False, message="识别失败，无法查询到TMDB信息")
+                self._submit_manual_transfer(
+                    inpath,
+                    syncmod,
+                    outpath,
+                    media_type,
+                    episode,
+                    min_filesize,
+                    tmdb_info,
+                    season,
+                    dst_backend_obj,
+                    src_backend=src_backend,
+                )
+                return ManualTransferResultDTO(success=True, message="转移任务已提交，正在后台执行")
+            # 跨后端远程源：暂存到本地临时目录
             staged = self._stage_remote_source(inpath, src_backend_id)
             if not staged:
                 return ManualTransferResultDTO(success=False, message="输入路径不存在")
@@ -223,9 +255,26 @@ class SyncService:
                 return ManualTransferResultDTO(success=False, message="识别失败，无法查询到TMDB信息")
 
         # 根据目的目录查找目标后端
-        dst_backend = self._resolve_dst_backend_by_dest(outpath or "")
+        dst_backend = dst_backend_obj or self._resolve_dst_backend_by_dest(outpath or "")
 
-        # 提交后台线程执行转移，避免 API 超时
+        return self._submit_manual_transfer(
+            inpath, syncmod, outpath, media_type, episode, min_filesize, tmdb_info, season, dst_backend
+        )
+
+    def _submit_manual_transfer(
+        self,
+        inpath: str,
+        syncmod,
+        outpath: str | None,
+        media_type,
+        episode,
+        min_filesize: int | None,
+        tmdb_info,
+        season: int | None,
+        dst_backend,
+        src_backend=None,
+    ) -> ManualTransferResultDTO:
+        """提交后台线程执行转移，避免 API 超时"""
         self._thread_executor.submit(
             self._filetransfer.transfer_media,
             SyncType.MAN,
@@ -241,6 +290,7 @@ class SyncService:
             min_filesize,
             True,
             False,
+            src_backend,
             dst_backend,
         )
 

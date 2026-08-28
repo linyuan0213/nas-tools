@@ -298,11 +298,12 @@ class FileTransferService:
         min_filesize=None,
         udf_flag=False,
         root_path=False,
+        src_backend=None,
         dst_backend=None,
         fallback_episode=None,
     ) -> tuple[bool, str]:
         """识别并转移一个文件、多个文件或者目录."""
-        if not in_path or not os.path.exists(in_path):
+        if not in_path or not (src_backend.exists(in_path) if src_backend is not None else os.path.exists(in_path)):
             return self._finish_transfer(False, f"文件转移失败，目录或文件不存在：{in_path}")
 
         # 分布式锁：多实例同时处理同一文件/目录时互斥
@@ -327,7 +328,7 @@ class FileTransferService:
             episode = episode if episode else (None, False)
 
             # ---------- 阶段 1：发现文件 ----------
-            bluray_disk_dir, file_list = self._discover_files(in_path, files, episode, min_filesize)
+            bluray_disk_dir, file_list = self._discover_files(in_path, files, episode, min_filesize, src_backend)
             if file_list is None:
                 return self._finish_transfer(False, "输入路径错误")
             if not file_list:
@@ -381,6 +382,7 @@ class FileTransferService:
                 bluray_disk_dir,
                 episode,
                 udf_flag,
+                src_backend,
                 dst_backend,
             )
 
@@ -396,11 +398,32 @@ class FileTransferService:
         self.progress.end(ProgressKey.FileTransfer)
         return status, message
 
-    def _discover_files(self, in_path, files, episode, min_filesize):
-        """发现待处理文件列表，返回 (bluray_disk_dir, file_list)."""
+    def _discover_files(self, in_path, files, episode, min_filesize, src_backend=None):
+        """发现待处理文件列表，返回 (bluray_disk_dir, file_list). 支持远程源（src_backend 非空）。"""
         bluray_disk_dir = None
         if not files:
-            if os.path.isdir(in_path):
+            if src_backend is not None:
+                # 远程源：后端目录列举（文件名即媒体标识，无需下载）
+                src_stat = src_backend.stat(in_path)
+                is_dir = src_stat is not None and src_stat.is_dir
+                if is_dir:
+                    now_filesize = self._min_filesize
+                    if str(min_filesize or "0") != "0":
+                        ms_str = str(min_filesize)
+                        if ms_str.isdigit():
+                            now_filesize = int(ms_str) * 1024 * 1024
+                    file_list = self._list_backend_media_files(src_backend, in_path, RMT_MEDIAEXT, now_filesize)
+                    if not file_list:
+                        log.warn(
+                            f"[Rmt]{in_path} 目录下未找到媒体文件，"
+                            f"最小文件大小限制为 {StringUtils.str_filesize(now_filesize)}"
+                        )
+                else:
+                    if os.path.splitext(in_path)[-1].lower() not in RMT_MEDIAEXT:
+                        log.warn(f"[Rmt]不支持的媒体文件格式，不处理：{in_path}")
+                        return None, []
+                    file_list = [in_path]
+            elif os.path.isdir(in_path):
                 if PathUtils.is_invalid_path(in_path):
                     return None, None
                 bluray_disk_dir = PathUtils.get_bluray_dir(in_path)
@@ -433,6 +456,27 @@ class FileTransferService:
         else:
             file_list = files
         return bluray_disk_dir, file_list
+
+    def _list_backend_media_files(self, backend, dir_path: str, exts, min_size: int) -> list[str]:
+        """递归列举后端目录下的媒体文件（按扩展名与最小大小过滤）"""
+        files: list[str] = []
+        try:
+            stack = [dir_path]
+            while stack:
+                current = stack.pop()
+                for finfo in backend.list_dir(current):
+                    if finfo.is_dir:
+                        stack.append(finfo.path)
+                        continue
+                    ext = os.path.splitext(finfo.path)[1].lower()
+                    if exts and ext not in exts:
+                        continue
+                    if min_size and finfo.size and finfo.size < min_size:
+                        continue
+                    files.append(finfo.path)
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[Rmt]后端目录递归列举失败: {e}")
+        return files
 
     def _lookup_download_record(self, in_path):
         download_info = self._history.download_repo.get_download_history_by_path(in_path)
@@ -486,6 +530,7 @@ class FileTransferService:
         bluray_disk_dir,
         episode,
         udf_flag,
+        src_backend,
         dst_backend,
     ):
         """按目标目录分组并发转移，同一目录内串行避免重命名冲突."""
@@ -500,6 +545,7 @@ class FileTransferService:
                 bluray_disk_dir,
                 episode,
                 udf_flag,
+                src_backend,
                 dst_backend,
             )
 
@@ -527,6 +573,7 @@ class FileTransferService:
                 bluray_disk_dir,
                 episode,
                 udf_flag,
+                src_backend,
                 dst_backend,
             )
 
@@ -589,6 +636,7 @@ class FileTransferService:
         bluray_disk_dir,
         episode,
         udf_flag,
+        src_backend,
         dst_backend,
     ):
         failed_count = 0
@@ -625,7 +673,15 @@ class FileTransferService:
                     or not int(media.tmdb_id or 0)
                 ):
                     fc, ac, am = self._handle_unrecognized_file(
-                        file_item, reg_path, in_path, unknown_dir, operation, target_dir, udf_flag, alert_messages
+                        file_item,
+                        reg_path,
+                        in_path,
+                        unknown_dir,
+                        operation,
+                        target_dir,
+                        udf_flag,
+                        alert_messages,
+                        src_backend,
                     )
                     failed_count += fc
                     alert_count += ac
@@ -644,7 +700,11 @@ class FileTransferService:
                         }
                     continue
 
-                media.size = os.path.getsize(file_item)
+                if src_backend is not None:
+                    st = src_backend.stat(file_item)
+                    media.size = st.size if st else 0
+                else:
+                    media.size = os.path.getsize(file_item)
                 dist_path = target_dir or self._path_resolver.get_best_target_path(
                     mtype=media.type,
                     in_path=in_path,
@@ -680,6 +740,7 @@ class FileTransferService:
                     target_dir,
                     udf_flag,
                     alert_messages,
+                    src_backend,
                     resolved_backend,
                 )
                 failed_count += fc
@@ -818,7 +879,16 @@ class FileTransferService:
         )
 
     def _handle_unrecognized_file(
-        self, file_item, reg_path, in_path, unknown_dir, operation, target_dir, udf_flag, alert_messages
+        self,
+        file_item,
+        reg_path,
+        in_path,
+        unknown_dir,
+        operation,
+        target_dir,
+        udf_flag,
+        alert_messages,
+        src_backend=None,
     ):
         file_name = os.path.basename(file_item)
         error = "无法识别媒体信息"
@@ -836,13 +906,13 @@ class FileTransferService:
         if unknown_dir:
             log.warn(f"[Rmt]{file_name} 按原文件名转移到未识别目录：{unknown_dir}")
             new_file = os.path.join(unknown_dir, os.path.basename(file_item))
-            self._engine.transfer(file_item, new_file, operation)
+            self._engine.transfer(file_item, new_file, operation, src_backend=src_backend)
         elif self._path_resolver.unknown_path:
             p = self._path_resolver._get_best_unknown_path(in_path)
             if p:
                 log.warn(f"[Rmt]{file_name} 按原文件名转移到未识别目录：{p}")
                 new_file = os.path.join(p, os.path.basename(file_item))
-                self._engine.transfer(file_item, new_file, operation)
+                self._engine.transfer(file_item, new_file, operation, src_backend=src_backend)
         else:
             log.error(f"[Rmt]{file_name} {error}！")
         return 1, 1, alert_messages
@@ -885,6 +955,7 @@ class FileTransferService:
         target_dir,
         udf_flag,
         alert_messages,
+        src_backend=None,
         dst_backend=None,
     ):
         dir_exist_flag, ret_dir_path, file_exist_flag, ret_file_path = self._existence.is_media_exists(
@@ -933,7 +1004,13 @@ class FileTransferService:
                     new_file = f"{base}{file_ext}"
                     log.info(f"[Rmt]文件 {old} 已存在，覆盖为 {new_file} ...")
                     self._engine.transfer(
-                        file_item, new_file, operation, over_flag=True, old_file=old, dst_backend=dst_backend
+                        file_item,
+                        new_file,
+                        operation,
+                        over_flag=True,
+                        old_file=old,
+                        src_backend=src_backend,
+                        dst_backend=dst_backend,
                     )
                     self._replicate_to_enabled_backends(media, new_file, dst_backend)
                     return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path
@@ -979,7 +1056,9 @@ class FileTransferService:
         else:
             ret_file_path = f"{ret_file_path}{file_ext}"
             new_file = ret_file_path
-            self._engine.transfer(file_item, ret_file_path, operation, over_flag=False, dst_backend=dst_backend)
+            self._engine.transfer(
+                file_item, ret_file_path, operation, over_flag=False, src_backend=src_backend, dst_backend=dst_backend
+            )
         # 多后端镜像：复制到其他已启用且缺失该文件的后端
         self._replicate_to_enabled_backends(media, new_file, dst_backend)
         return 0, 0, alert_messages, exist_filenum, new_file, ret_file_path, ret_dir_path

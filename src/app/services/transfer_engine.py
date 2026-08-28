@@ -26,35 +26,63 @@ class TransferEngine:
         self._local = LocalStorageBackend(StorageConfig(id="local", name="local", type=StorageType.LOCAL))
         self._blacklist = TransferBlacklistRepositoryAdapter()
 
-    def _execute(self, src: str, dst: str, operation: str, dst_backend: StorageBackend | None = None) -> None:
-        backend = dst_backend or self._local
+    def _execute(
+        self,
+        src: str,
+        dst: str,
+        operation: str,
+        src_backend: StorageBackend | None = None,
+        dst_backend: StorageBackend | None = None,
+    ) -> None:
+        src_b = src_backend or self._local
+        dst_b = dst_backend or self._local
         with _lock:
-            if backend is not self._local:
+            if src_b is self._local and dst_b is self._local:
+                if operation == "copy":
+                    self._local.copy(src, dst)
+                elif operation == "move":
+                    self._local.move(src, dst)
+                elif operation == "link":
+                    self._local.hardlink(src, dst)
+                elif operation == "softlink":
+                    self._local.softlink(src, dst)
+                else:
+                    raise ValueError(f"不支持的操作: {operation}")
+                return
+            # 同一远程后端：优先服务端复制（webdav MOVE/COPY 等），避免本地中转
+            if src_b is dst_b:
                 if operation in ("link", "softlink"):
                     log.warn(f"[Rmt]远程后端不支持 {operation}，自动降级为 copy")
                     operation = "copy"
                 if operation == "copy":
-                    cross_copy(self._local, src, backend, dst)
+                    src_b.copy(src, dst)
                 elif operation == "move":
-                    cross_move(self._local, src, backend, dst)
+                    src_b.copy(src, dst)
+                    src_b.remove(src)
                 else:
                     raise ValueError(f"远程后端不支持 {operation}")
                 return
+            # 跨后端（含本地↔远程）：流式传输或服务端快速复制
+            if operation in ("link", "softlink"):
+                log.warn(f"[Rmt]远程后端不支持 {operation}，自动降级为 copy")
+                operation = "copy"
             if operation == "copy":
-                self._local.copy(src, dst)
+                cross_copy(src_b, src, dst_b, dst)
             elif operation == "move":
-                self._local.move(src, dst)
-            elif operation == "link":
-                self._local.hardlink(src, dst)
-            elif operation == "softlink":
-                self._local.softlink(src, dst)
+                cross_move(src_b, src, dst_b, dst)
             else:
-                raise ValueError(f"不支持的操作: {operation}")
+                raise ValueError(f"远程后端不支持 {operation}")
 
     def transfer_subtitles(
-        self, org_name: str, new_name: str, operation: str, dst_backend: StorageBackend | None = None
+        self,
+        org_name: str,
+        new_name: str,
+        operation: str,
+        src_backend: StorageBackend | None = None,
+        dst_backend: StorageBackend | None = None,
     ) -> None:
         backend = dst_backend or self._local
+        src_b = src_backend or self._local
         _zhcn_sub_re = (
             r"([.\[\]](((zh[-_])?(cn|ch[si]|sg|sc))|zho?"
             r"|chinese|(cn|ch[si]|sg|zho?|eng)[-_&](cn|ch[si]|sg|zho?|eng)"
@@ -73,7 +101,11 @@ class TransferEngine:
 
         dir_name = os.path.dirname(org_name)
         file_name = os.path.basename(org_name)
-        file_list = PathUtils.get_dir_level1_files(dir_name, RMT_SUBEXT)
+        file_list = (
+            PathUtils.get_dir_level1_files(dir_name, RMT_SUBEXT)
+            if src_backend is None
+            else self._list_backend_files(src_b, dir_name, RMT_SUBEXT)
+        )
         if not file_list:
             return
 
@@ -92,7 +124,12 @@ class TransferEngine:
 
             new_file_type = self._detect_subtitle_type(file_item, _zhcn_sub_re, _zhtw_sub_re, _eng_sub_re)
             file_ext = os.path.splitext(file_item)[-1]
-            src_size = os.path.getsize(file_item)
+            src_size = 0
+            if src_backend is not None:
+                st = src_b.stat(file_item)
+                src_size = st.size if st else 0
+            else:
+                src_size = os.path.getsize(file_item)
             for tag in [new_file_type] + [f"{new_file_type}.{t}" for t in range(1, 6)]:
                 new_file = os.path.splitext(new_name)[0] + tag + file_ext
                 dst_stat = backend.stat(new_file)
@@ -104,7 +141,7 @@ class TransferEngine:
                     continue
                 try:
                     log.debug(f"[Rmt]正在处理字幕：{os.path.basename(file_item)}")
-                    self._execute(file_item, new_file, operation, dst_backend)
+                    self._execute(file_item, new_file, operation, src_backend, dst_backend)
                     log.info(f"[Rmt]字幕 {os.path.basename(file_item)} {operation}完成")
                     break
                 except Exception as e:
@@ -113,12 +150,24 @@ class TransferEngine:
                     break
 
     def transfer_audio_tracks(
-        self, org_name: str, new_name: str, operation: str, over_flag: bool, dst_backend: StorageBackend | None = None
+        self,
+        org_name: str,
+        new_name: str,
+        operation: str,
+        over_flag: bool,
+        src_backend: StorageBackend | None = None,
+        dst_backend: StorageBackend | None = None,
     ) -> None:
         backend = dst_backend or self._local
+        src_b = src_backend or self._local
         dir_name = os.path.dirname(org_name)
         file_pre = os.path.splitext(os.path.basename(org_name))[0]
-        for track_file in PathUtils.get_dir_level1_files(dir_name, RMT_AUDIO_TRACK_EXT):
+        track_files = (
+            PathUtils.get_dir_level1_files(dir_name, RMT_AUDIO_TRACK_EXT)
+            if src_backend is None
+            else self._list_backend_files(src_b, dir_name, RMT_AUDIO_TRACK_EXT)
+        )
+        for track_file in track_files:
             if os.path.splitext(os.path.basename(track_file))[0] != file_pre:
                 continue
             new_track = os.path.splitext(new_name)[0] + os.path.splitext(track_file)[1].lower()
@@ -128,8 +177,23 @@ class TransferEngine:
                     continue
                 backend.remove(new_track)
             log.info(f"[Rmt]正在转移音轨文件：{track_file} 到 {new_track}")
-            self._execute(track_file, new_track, operation, dst_backend)
+            self._execute(track_file, new_track, operation, src_backend, dst_backend)
             log.info(f"[Rmt]音轨文件 {os.path.basename(track_file)} {operation}完成")
+
+    def _list_backend_files(self, backend: StorageBackend, dir_path: str, exts: list) -> list[str]:
+        """列取后端目录下匹配扩展名的文件（一级）"""
+        files = []
+        try:
+            for finfo in backend.list_dir(dir_path):
+                if finfo.is_dir:
+                    continue
+                ext = os.path.splitext(finfo.path)[1].lower()
+                if exts and ext not in exts:
+                    continue
+                files.append(finfo.path)
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"[Rmt]后端目录列举失败: {e}")
+        return files
 
     def transfer_dir(
         self,
@@ -164,26 +228,27 @@ class TransferEngine:
         operation: str,
         over_flag: bool = False,
         old_file: str | None = None,
+        src_backend: StorageBackend | None = None,
         dst_backend: StorageBackend | None = None,
     ) -> None:
-        backend = dst_backend or self._local
-        if not over_flag and backend.exists(dst):
+        dst_b = dst_backend or self._local
+        if not over_flag and dst_b.exists(dst):
             log.warn(f"[Rmt]文件已存在：{dst}")
             return
         if over_flag and old_file:
-            old_backend = self._local
+            old_backend = src_backend or self._local
             if old_backend.exists(old_file):
                 st = old_backend.stat(old_file)
                 if st and not st.is_dir:
                     old_backend.remove(old_file)
 
         log.info(f"[Rmt]正在转移文件：{os.path.basename(src)} 到 {dst}")
-        self._execute(src, dst, operation, dst_backend)
+        self._execute(src, dst, operation, src_backend, dst_backend)
         log.info(f"[Rmt]文件 {os.path.basename(src)} {operation}完成")
         self._blacklist.insert(src)
 
-        self.transfer_subtitles(src, dst, operation, dst_backend)
-        self.transfer_audio_tracks(src, dst, operation, over_flag, dst_backend)
+        self.transfer_subtitles(src, dst, operation, src_backend, dst_backend)
+        self.transfer_audio_tracks(src, dst, operation, over_flag, src_backend, dst_backend)
 
     @staticmethod
     def _subtitle_match(file_name: str, sub_name: str, meta, sub_meta) -> bool:

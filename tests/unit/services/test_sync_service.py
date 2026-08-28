@@ -7,6 +7,7 @@ import pytest
 
 from app.core.exceptions import ValidationError
 from app.domain.mediatypes import MediaType
+from app.schemas.sync import ManualTransferResultDTO
 from app.services.sync_service import SyncService
 
 
@@ -338,3 +339,41 @@ class TestSyncServiceRemoteSource:
         backend.exists.return_value = False
         mock_resolve.return_value = backend
         assert service._stage_remote_source("/missing", "5") == ""
+
+
+class TestSyncServiceSameBackend:
+    def test_same_backend_no_staging(self, service):
+        """同后端转移：不暂存，直接提交 src_backend"""
+        src_backend = MagicMock()
+        src_backend.id = "5"
+        src_backend.exists.return_value = True
+        dst_backend = MagicMock()
+        dst_backend.id = "5"
+        service._resolve_backend = MagicMock(return_value=src_backend)
+        service._resolve_dst_backend_by_dest = MagicMock(return_value=dst_backend)
+        service._stage_remote_source = MagicMock(return_value="/tmp/staged")
+        service._submit_manual_transfer = MagicMock(return_value=ManualTransferResultDTO(success=True, message="ok"))
+
+        result = service.manual_transfer(inpath="/remote/tv/剧", syncmod="copy", src_backend_id="5")
+
+        assert result.success
+        service._stage_remote_source.assert_not_called()
+        call_args = service._submit_manual_transfer.call_args
+        assert call_args.kwargs["src_backend"] is src_backend
+        assert call_args.args[8] is dst_backend
+
+    def test_cross_backend_stages(self, service):
+        """跨后端远程源：暂存到本地"""
+        src_backend = MagicMock()
+        src_backend.id = "5"
+        src_backend.exists.return_value = True
+        dst_backend = MagicMock()
+        dst_backend.id = "6"
+        service._resolve_backend = MagicMock(return_value=src_backend)
+        service._resolve_dst_backend_by_dest = MagicMock(return_value=dst_backend)
+        service._stage_remote_source = MagicMock(return_value="/tmp/staged")
+
+        result = service.manual_transfer(inpath="/remote/tv/剧", syncmod="copy", src_backend_id="5")
+
+        service._stage_remote_source.assert_called_once()
+        assert result.success
