@@ -22,6 +22,7 @@ def _refresh_site_data_now_threaded(thread_executor, site_userinfo):
 # load_default_jobs 注册的默认定时任务 ID（配置热重载时先移除再按新配置注册）
 DEFAULT_JOB_IDS = (
     "SiteUserInfo.refresh_site_data_now",
+    "SiteUserInfo.refresh_site_data_now_periodic",
     "SubscriptionMonitor.run",
     "MediaServer.sync_mediaserver",
     "Sync.transfer_mon_files",
@@ -42,6 +43,13 @@ def reload_default_jobs(scheduler, **deps) -> None:
             scheduler.remove_job(job_id)
         except Exception as e:
             log.debug(f"[Scheduler]移除任务 {job_id} 失败: {e}")
+        # 多时间点 cron 会注册为 {job_id}_t0/_t1... 后缀，一并清理
+        try:
+            for job in scheduler.get_jobs() or []:
+                if job.id.startswith(f"{job_id}_t"):
+                    scheduler.remove_job(job.id)
+        except Exception as e:
+            log.debug(f"[Scheduler]移除多时间任务 {job_id} 失败: {e}")
     load_default_jobs(scheduler, **deps)
     log.info("[Scheduler]默认定时任务已按新配置重新注册")
 
@@ -86,7 +94,8 @@ def load_default_jobs(
     _jobstore = "default"
 
     if _pt:
-        # 数据统计
+        # 数据统计：每日 00:05 抓取"日界快照"作为当天历史基准（对齐自然日），
+        # 使前一天/当天增量精确（见 insert_site_statistics_history）
         ptrefresh_date_cron = _pt.get("ptrefresh_date_cron")
         if ptrefresh_date_cron:
             tz = pytz.timezone(os.environ.get("TZ") or "UTC")
@@ -99,6 +108,15 @@ def load_default_jobs(
                 next_run_time=datetime.datetime.now(tz) + datetime.timedelta(minutes=1),
                 jobstore=_jobstore,
             )
+        # 实时数据周期刷新：保持当天实时值（SITE_USER_INFO_STATS）接近最新，
+        # 不覆盖当天日界快照（insert_site_statistics_history 已跳过）
+        scheduler.register_interval(
+            job_id="SiteUserInfo.refresh_site_data_now_periodic",
+            func=lambda: _refresh_site_data_now_threaded(thread_executor, site_userinfo),
+            name="站点数据周期刷新",
+            seconds=6 * 3600,
+            jobstore=_jobstore,
+        )
 
     # 订阅监控（统一调度器）— 聚合 RSS 轮询、主动搜索、队列搜索
     # 外部调度周期使用三者中最小的 queue_interval（秒），默认 300s

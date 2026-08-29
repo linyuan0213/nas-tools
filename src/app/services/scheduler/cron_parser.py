@@ -127,30 +127,37 @@ class CronParser:
             except Exception as e:
                 log.info(f"{func_desc}时间 时间范围随机模式 配置格式错误：{cron} {str(e)}")
         elif ":" in cron:
+            # 支持多个固定时间，逗号分隔，如 00:05,12:00,18:00
+            # APScheduler 的 hour/minute 逗号为集合匹配（笛卡尔积），
+            # 因此为每个时间分别注册一个 cron job，避免多触发
             try:
-                hour = int(cron.split(":")[0])
-                minute = int(cron.split(":")[1])
+                times = [t.strip() for t in cron.split(",") if t.strip()]
+                parsed = []
+                for t in times:
+                    hour, minute = t.split(":")
+                    parsed.append((int(hour), int(minute)))
             except (ServiceError, RepositoryError):
                 raise
             except Exception as e:
                 log.info(f"{func_desc}时间 配置格式错误：{str(e)}")
-                hour = minute = 0
-            job = self._core._scheduler.add_job(
-                func,
-                "cron",
-                args=args or (),
-                kwargs=kwargs or {},
-                id=job_id,
-                name=name,
-                hour=hour,
-                minute=minute,
-                next_run_time=next_run_time,
-                replace_existing=True,
-                jobstore=jobstore,
-                max_instances=max_instances,
-                misfire_grace_time=misfire_grace_time,
-                coalesce=coalesce,
-            )
+                parsed = [(0, 0)]
+            for idx, (hour, minute) in enumerate(parsed):
+                job = self._core._scheduler.add_job(
+                    func,
+                    "cron",
+                    args=args or (),
+                    kwargs=kwargs or {},
+                    id=f"{job_id}_t{idx}" if len(parsed) > 1 else job_id,
+                    name=name,
+                    hour=hour,
+                    minute=minute,
+                    next_run_time=next_run_time,
+                    replace_existing=True,
+                    jobstore=jobstore,
+                    max_instances=max_instances,
+                    misfire_grace_time=misfire_grace_time,
+                    coalesce=coalesce,
+                )
             log.info(f"{func_desc}服务启动")
         else:
             try:
