@@ -152,7 +152,7 @@ def update_config(indexer_statistics_repo=None):
     try:
         if "ptrefresh_date_cron" not in _config.get("pt", {}):
             _config.setdefault("pt", {})
-            _config["pt"]["ptrefresh_date_cron"] = "6"
+            _config["pt"]["ptrefresh_date_cron"] = "00:05"
             overwrite_config = True
     except Exception as e:
         ExceptionUtils.exception_traceback(e)

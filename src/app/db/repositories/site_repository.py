@@ -394,6 +394,11 @@ class SiteRepository(BaseRepository):
         """
         插入站点数据
         使用批量插入/更新提高性能
+
+        精确统计前一天/当天：每日第一个快照（00:05 日界）作为当天历史基准，
+        后续周期刷新只更新实时表 SITE_USER_INFO_STATS，不再覆盖当天历史行。
+        这样 前一天增量 = 当天日界值 - 前一天日界值（自然日），
+            当天增量 = 实时值 - 当天日界值。
         """
         if not site_user_infos:
             return
@@ -412,9 +417,11 @@ class SiteRepository(BaseRepository):
                 existing_records = {r[0] for r in records}
 
             insert_mappings = []
-            update_mappings = []
 
             for site_user_info in site_user_infos:
+                if site_user_info.site_url in existing_records:
+                    # 当天已存在日界快照，跳过不覆盖，保持前一天/当天边界精确
+                    continue
                 data = {
                     "SITE": site_user_info.site_name,
                     "USER_LEVEL": site_user_info.user_level or "",
@@ -428,20 +435,11 @@ class SiteRepository(BaseRepository):
                     "BONUS": site_user_info.bonus,
                     "URL": site_user_info.site_url,
                 }
-
-                if site_user_info.site_url in existing_records:
-                    update_mappings.append((site_user_info.site_url, data))
-                else:
-                    insert_mappings.append(data)
+                insert_mappings.append(data)
 
             if insert_mappings:
                 db.bulk_insert_mappings(SITESTATISTICSHISTORY, insert_mappings)
                 db.commit()
-
-            for url, data in update_mappings:
-                db.query(SITESTATISTICSHISTORY).filter(
-                    date_now == SITESTATISTICSHISTORY.DATE, url == SITESTATISTICSHISTORY.URL
-                ).update(data)
 
     def get_site_statistics_history(self, site: str, days: int = 30) -> list[SITESTATISTICSHISTORY]:
         """

@@ -147,7 +147,7 @@ class PtConfig(BaseModel):
     pt_check_interval: int = 3600
     search_rss_interval: int = 6
     download_order: str = "seeder"
-    ptrefresh_date_cron: str = "22:36"
+    ptrefresh_date_cron: str = "00:05"
     # 站点配置远程更新源（GitHub release API），留空使用内置默认地址
     sites_update_url: str = ""
 
