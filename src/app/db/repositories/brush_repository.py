@@ -111,10 +111,12 @@ class BrushRepository(BaseRepository):
             if brush_id:
                 return db.query(SITEBRUSHTASK).filter(int(brush_id) == SITEBRUSHTASK.ID).first()
             else:
+                # LEFT JOIN：站点被删除或 ID 不匹配时任务仍须返回，
+                # 否则重启后 load_brushtasks 查不到该任务（新建任务丢失）
                 return (
                     db.query(SITEBRUSHTASK)
-                    .join(CONFIGSITE, cast(SITEBRUSHTASK.SITE, Integer) == CONFIGSITE.ID)
-                    .order_by(cast(CONFIGSITE.PRI, Integer).asc())
+                    .outerjoin(CONFIGSITE, cast(SITEBRUSHTASK.SITE, Integer) == CONFIGSITE.ID)
+                    .order_by(func.coalesce(cast(CONFIGSITE.PRI, Integer), 999999))
                     .all()
                 )
 
