@@ -1,0 +1,14 @@
+{
+  "site_id": "audiences",
+  "type": "browser",
+  "success_markers": [
+    "今天已经签到过了",
+    "签到成功",
+    "请勿重复刷新"
+  ],
+  "already_markers": [
+    "今天已经签到过了",
+    "请勿重复",
+    "今日已签到"
+  ]
+}
