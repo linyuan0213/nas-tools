@@ -153,7 +153,11 @@ class BrushTaskService:
         if not brushtasks:
             return
         for task in brushtasks:
-            self._brush_tasks[str(task.ID)] = self._build_task_dict(task)
+            try:
+                self._brush_tasks[str(task.ID)] = self._build_task_dict(task)
+            except Exception as e:
+                # 单个任务构建失败不能中断整个加载，否则重启后只剩部分任务
+                log.error(f"[Brush]任务 {task.ID} ({task.NAME}) 构建失败，已跳过: {e}")
 
     def _reload_single_task(self, task_id):
         task_rows = self._repo.get_brushtasks(brush_id=task_id)
@@ -162,7 +166,13 @@ class BrushTaskService:
             self._brush_tasks.pop(str(task_id), None)
             return
         task = task_rows[0] if isinstance(task_rows, (list, tuple)) else task_rows
-        task_dict = self._build_task_dict(task)
+        try:
+            task_dict = self._build_task_dict(task)
+        except Exception as e:
+            log.error(f"[Brush]任务 {task.ID} ({task.NAME}) 构建失败，已跳过: {e}")
+            self._stop_task_jobs(task.ID)
+            self._brush_tasks.pop(str(task.ID), None)
+            return
         self._stop_task_jobs(task.ID)
         self._brush_tasks[str(task.ID)] = task_dict
         cron = str(task.INTEVAL).strip()
