@@ -216,7 +216,16 @@ class SiteCache:
     ) -> dict | list[dict]:
         """获取站点配置，与旧 Sites.get_sites() 完全兼容."""
         if siteid:
-            return self._site_by_ids.get(int(siteid)) or {}
+            # 兼容数字 id（DB 主键）与站点配置 id/名称（如 "ttg"/"ourbits"）：
+            # 旧数据/部分路径会存配置 id，int() 转换失败会导致刷流任务加载中断消失
+            try:
+                return self._site_by_ids.get(int(siteid)) or {}
+            except (TypeError, ValueError):
+                siteid = str(siteid)
+                for site in self._site_by_ids.values():
+                    if str(site.get("id")) == siteid or str(site.get("name")) == siteid:
+                        return site
+                return {}
         if siteurl:
             site_def = self._site_engine.get_by_url(siteurl)
             if site_def and site_def.api:
