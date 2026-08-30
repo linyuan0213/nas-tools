@@ -165,7 +165,18 @@ class RBACRoleRepository(BaseRepository):
             )
             db.add(role)
             db.commit()
-            return role
+            # commit 后会话关闭会返回游离实例，懒加载 permissions/menus/users 会报
+            # DetachedInstanceError；重新查询并预加载关系后再返回
+            return (
+                db.query(RBACRole)
+                .options(
+                    selectinload(RBACRole.permissions),
+                    selectinload(RBACRole.menus),
+                    selectinload(RBACRole.users),
+                )
+                .filter(RBACRole.ID == role.ID)
+                .first()
+            )
 
     def update_role(self, role_id: int, **kwargs) -> bool:
         """

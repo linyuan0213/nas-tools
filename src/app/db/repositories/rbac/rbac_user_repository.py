@@ -180,7 +180,18 @@ class RBACUserRepository(BaseRepository):
             )
             db.add(user)
             db.commit()
-            return user
+            # commit 后会话关闭会返回游离实例，懒加载 roles 会报 DetachedInstanceError；
+            # 重新查询并预加载关联后再返回
+            return (
+                db.query(RBACUser)
+                .options(
+                    selectinload(RBACUser.roles).selectinload(RBACRole.permissions),
+                    selectinload(RBACUser.roles).selectinload(RBACRole.menus),
+                    selectinload(RBACUser.roles).selectinload(RBACRole.users),
+                )
+                .filter(RBACUser.ID == user.ID)
+                .first()
+            )
 
     def update_user(self, user_id: int, **kwargs) -> bool:
         """
