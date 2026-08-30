@@ -179,6 +179,9 @@ class LaboratoryConfig(BaseModel):
     search_multi_language: bool = True
     chrome_enabled: bool = True
     chrome_server_host: str = ""
+    # nexus-chrome 访问凭证（API Key / 管理 token）：nexus-chrome 启用
+    # AUTH_PASSWORD 后必填；也可作为 FP_ADMIN_TOKEN 用于画像配置中心推送。
+    chrome_admin_token: str = ""
     # 浏览器自动化默认指纹画像：用户登录同步真实浏览器指纹后写入，
     # 全局后台流程（站点定时刷新 / RSS 自动化等无用户上下文场景）使用该指纹。
     chrome_fp_profile_id: str = ""

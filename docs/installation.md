@@ -270,6 +270,14 @@ networks:
 - 验证码识别：**系统设置 → 基础设置 → 实验室** 中「启用验证码识别服务器」，填 `http://nexus-verify:9300`
 - 网页自动化：**系统设置 → 基础设置 → 实验室** 中「启用网页自动化」，填 `http://nexus-chrome:9850`
 
+**nexus-chrome 认证（可选）**：nexus-chrome 设置 `AUTH_PASSWORD` 环境变量后会启用登录页 + API 鉴权。此时需在实验室「访问凭证（API Key）」中填写凭证，否则所有浏览器请求会被 401 拒绝：
+
+1. 在 nexus-chrome 管理台（`http://<host>:9850/ui/api-keys`）创建 API Key，权限范围建议选「会话」+「画像」
+2. 将生成的 Key（`ncmk_` 前缀）填入实验室「访问凭证（API Key）」
+3. 该配置同时用作指纹画像配置中心的推送凭证（也可直接填 nexus-chrome 的 `FP_ADMIN_TOKEN`）
+
+nexus-chrome 未设置 `AUTH_PASSWORD` 时该字段留空即可（本地模式，不鉴权）。
+
 > nexus-chrome 的浏览器页面可通过 VNC（端口 6080）实时查看。
 > **安全提示**：VNC 密码为必填项，**禁止使用默认值 `password`**。请在项目目录 `.env` 中配置，例如：
 >

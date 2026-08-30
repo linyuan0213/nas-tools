@@ -31,6 +31,18 @@ def get_chrome_server_url() -> str | None:
     return host.rstrip("/") if host else None
 
 
+def get_chrome_api_key() -> str | None:
+    """返回 nexus-chrome 访问凭证（复用 laboratory.chrome_admin_token）。
+
+    nexus-chrome 设置 AUTH_PASSWORD 后启用认证：该配置可填管理端创建的
+    API Key（ncmk_ 前缀，scope 建议 sessions+profiles），或 FP_ADMIN_TOKEN。
+    未配置则不携带凭证（仅适用于 nexus-chrome 本地模式）。
+    """
+    lab = settings.get("laboratory") or {}
+    token = str(lab.get("chrome_admin_token") or "").strip()
+    return token or None
+
+
 def build_browser_mode(
     site_info: dict,
     site_key: str,
@@ -66,6 +78,7 @@ def build_browser_mode(
         user_agent=site_info.get("ua"),
         proxy_url=proxy_url,
         render_html=render_html if render_html is not None else bool(site_info.get("browser_render")),
+        api_key=get_chrome_api_key(),
     )
     browser.session_key = make_session_key(site_key, browser)
     return browser

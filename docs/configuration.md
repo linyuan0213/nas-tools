@@ -124,6 +124,8 @@ WEB 服务端口、HTTPS 证书、代理等基础运行配置。
 | 多语言搜索 | 提高资源匹配率 |
 | 启用验证码识别服务器 | 用于站点签到，需配置 OCR 服务地址 |
 | 启用网页自动化 | 用于浏览器自动化登录，需配置 Chrome 服务地址 |
+| 网页自动化服务器 | nexus-chrome 服务地址，如 `http://nexus-chrome:9850` |
+| 网页自动化访问凭证（API Key） | nexus-chrome 启用 `AUTH_PASSWORD` 认证后必填；在其管理台 `/ui/api-keys` 创建（scope 建议 `sessions` + `profiles`）。也可填 nexus-chrome 的 `FP_ADMIN_TOKEN`（画像配置中心管理凭证）。nexus-chrome 未启用认证时留空即可 |
 
 ## 自定义识别词
 

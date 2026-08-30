@@ -31,9 +31,10 @@ def _make_session_key(site_key: str, browser: BrowserModeConfig) -> str:
 class _ChromeServerClient:
     """对 Chrome 服务器的独立简化 HTTP 客户端, 避免复用 HttpClient 造成递归."""
 
-    def __init__(self, server_url: str, timeout: float = 60.0):
+    def __init__(self, server_url: str, timeout: float = 60.0, api_key: str | None = None):
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
+        self._api_key = api_key
         self._client = httpx2.Client(timeout=timeout, follow_redirects=True)
 
     def _request(
@@ -45,6 +46,10 @@ class _ChromeServerClient:
         **kwargs: Any,
     ) -> dict[str, Any]:
         url = f"{self.server_url}{path}"
+        if self._api_key:
+            headers = dict(kwargs.pop("headers", {}) or {})
+            headers["Authorization"] = f"Bearer {self._api_key}"
+            kwargs["headers"] = headers
         response = self._client.request(method, url, **kwargs)
         if raise_for_status:
             try:
@@ -113,7 +118,11 @@ class _BaseChromeTransport:
     def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):
         self._browser = browser
         self._session_key = browser.session_key or _make_session_key(browser.site_key, browser)
-        self._server = _ChromeServerClient(browser.server_url, timeout=max(60.0, browser.navigate_timeout + 10))
+        self._server = _ChromeServerClient(
+            browser.server_url,
+            timeout=max(60.0, browser.navigate_timeout + 10),
+            api_key=browser.api_key,
+        )
         self._limits = limits
 
     def _build_response(self, request: httpx2.Request, payload: dict[str, Any]) -> httpx2.Response:

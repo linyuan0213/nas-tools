@@ -11,6 +11,7 @@ from typing import Any
 import httpx2
 
 import log
+from app.utils.browser_mode import get_chrome_api_key
 
 
 class _BaseBrowserSession:
@@ -26,6 +27,7 @@ class _BaseBrowserSession:
         proxy_url: str | None = None,
         fp_profile_id: str | None = None,
         timeout: float = 60.0,
+        api_key: str | None = None,
     ):
         self.site_key = site_key
         self.server_url = server_url.rstrip("/")
@@ -35,6 +37,12 @@ class _BaseBrowserSession:
         self.fp_profile_id = fp_profile_id
         self.timeout = timeout
         self.session_id = site_key
+        # 未显式传入时读取全局配置（laboratory.chrome_admin_token）
+        self._api_key = api_key if api_key is not None else get_chrome_api_key()
+
+    def _auth_headers(self) -> dict[str, str]:
+        """认证请求头：nexus-chrome 启用 AUTH_PASSWORD 时必须携带。"""
+        return {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
 
     def _session_url(self, path: str) -> str:
         return f"{self.server_url}{path}"
@@ -54,7 +62,7 @@ class BrowserSession(_BaseBrowserSession):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._client = httpx2.Client(timeout=self.timeout, follow_redirects=True)
+        self._client = httpx2.Client(timeout=self.timeout, follow_redirects=True, headers=self._auth_headers())
 
     def __enter__(self) -> BrowserSession:
         self._ensure_session()
@@ -140,7 +148,7 @@ class AsyncBrowserSession(_BaseBrowserSession):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._client = httpx2.AsyncClient(timeout=self.timeout, follow_redirects=True)
+        self._client = httpx2.AsyncClient(timeout=self.timeout, follow_redirects=True, headers=self._auth_headers())
 
     async def __aenter__(self) -> AsyncBrowserSession:
         await self._ensure_session()

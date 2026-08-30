@@ -21,6 +21,8 @@ class BrowserModeConfig:
     auto_navigate_on_challenge: bool = True
     browser_fetch_on_challenge: bool = True
     render_html: bool = False
+    # nexus-chrome 认证凭证（API Key / 管理 token），AUTH_PASSWORD 启用时必配
+    api_key: str | None = None
 
 
 @dataclass
