@@ -1,5 +1,15 @@
 # 版本历史
 
+## v4.11.4 (2026-08-30)
+
+### 新增
+- **nexus-chrome 认证支持**：nexus-chrome 启用 `AUTH_PASSWORD` 后，浏览器自动化请求自动携带凭证（API Key / 管理 token）。凭证统一读取实验室配置 `chrome_admin_token`（复用该字段，同时兼作画像配置中心推送凭证）
+- 实验室设置新增「访问凭证（API Key）」配置项（系统设置 → 基础设置 → 实验室）
+- 文档：configuration/installation 补充凭证配置说明
+
+### 修复
+- 设置模型补 `chrome_admin_token` 字段（此前保存实验室配置时该值会被丢弃）
+
 ## v4.11.3 (2026-08-29)
 
 ### 变更
