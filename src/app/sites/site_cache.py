@@ -40,6 +40,7 @@ class SiteCache:
         self._indexer_site_config_repo = indexer_site_config_repo or IndexerSiteConfigRepositoryAdapter()
         self._site_by_ids: dict[int, dict] = {}
         self._site_by_urls: dict[str, dict] = {}
+        self._site_by_keys: dict[str, dict] = {}
         self._rss_sites: list[dict] = []
         self._brush_sites: list[dict] = []
         self._statistic_sites: list[dict] = []
@@ -51,6 +52,7 @@ class SiteCache:
         self._seed_public_sites()
         self._site_by_ids = {}
         self._site_by_urls = {}
+        self._site_by_keys = {}
         self._rss_sites = []
         self._brush_sites = []
         self._statistic_sites = []
@@ -61,6 +63,11 @@ class SiteCache:
             site_info = self._build_site_info(entity)
             sid = site_info["id"]
             self._site_by_ids[sid] = site_info
+            # 统一标识索引：配置 id 与站点名均可解析到同一 site_info
+            if site_info.get("site_key"):
+                self._site_by_keys[str(site_info["site_key"])] = site_info
+            if entity.name:
+                self._site_by_keys.setdefault(str(entity.name), site_info)
 
             strict_url = site_info.get("strict_url")
             if strict_url:
@@ -169,6 +176,7 @@ class SiteCache:
 
         site_info = {
             "id": entity.id,
+            "site_key": site_def.id if site_def else "",
             "name": entity.name,
             "pri": entity.pri or 0,
             "rssurl": site_rssurl,
@@ -216,16 +224,11 @@ class SiteCache:
     ) -> dict | list[dict]:
         """获取站点配置，与旧 Sites.get_sites() 完全兼容."""
         if siteid:
-            # 兼容数字 id（DB 主键）与站点配置 id/名称（如 "ttg"/"ourbits"）：
-            # 旧数据/部分路径会存配置 id，int() 转换失败会导致刷流任务加载中断消失
-            try:
-                return self._site_by_ids.get(int(siteid)) or {}
-            except (TypeError, ValueError):
-                siteid = str(siteid)
-                for site in self._site_by_ids.values():
-                    if str(site.get("id")) == siteid or str(site.get("name")) == siteid:
-                        return site
-                return {}
+            # 统一标识解析：数字 id → DB 主键；否则 → 配置 id/站点名
+            key = str(siteid)
+            if key.isdigit():
+                return self._site_by_ids.get(int(key)) or {}
+            return self._site_by_keys.get(key) or {}
         if siteurl:
             site_def = self._site_engine.get_by_url(siteurl)
             if site_def and site_def.api:
