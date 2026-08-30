@@ -52,7 +52,7 @@ class BrushTaskService:
         self._brush_rule_repo = brush_rule_repo
         self._media_service = media_service
         self._brush_tasks: dict = {}
-        self._torrents_cache: set = set()
+        self._torrents_cache: dict[str, float] = {}
 
         self._helper = BrushTaskHelper(
             repo=self._repo,

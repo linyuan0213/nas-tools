@@ -1,6 +1,7 @@
 """Brush RSS checker - RSS 刷流选种逻辑."""
 
 import threading
+import time
 from typing import Any
 
 import log
@@ -12,6 +13,9 @@ from app.media import MediaService
 from app.services.rss_processor import RssHelper
 from app.sites import SiteConf
 from app.utils import ExceptionUtils, JsonUtils
+
+# 已处理种子缓存 TTL：拒绝原因（优惠/做种人数等）可能随时间变化，过期后允许重新评估
+_PROCESSED_CACHE_TTL = 3600
 
 
 class BrushRssChecker:
@@ -27,7 +31,7 @@ class BrushRssChecker:
         sites,
         rsshelper: RssHelper,
         siteconf: SiteConf,
-        torrents_cache: set | None = None,
+        torrents_cache: dict[str, float] | None = None,
         torrent_lifecycle=None,
     ):
         self._helper = helper
@@ -35,9 +39,26 @@ class BrushRssChecker:
         self._rsshelper = rsshelper
         self._sites = sites
         self._siteconf = siteconf
-        self._torrents_cache = torrents_cache or set()
+        self._torrents_cache = torrents_cache if torrents_cache is not None else {}
         self._cache_lock = threading.Lock()
         self._torrent_lifecycle = torrent_lifecycle
+
+    def _mark_or_skip_processed(self, enclosure: str) -> bool:
+        """标记种子已处理；TTL 内已处理过返回 True（跳过）。
+
+        优惠/做种人数等状态可能随时间变化，TTL 过期后放行重新评估。
+        """
+        with self._cache_lock:
+            now = time.time()
+            cached_at = self._torrents_cache.get(enclosure)
+            if cached_at is not None and now - cached_at < _PROCESSED_CACHE_TTL:
+                return True
+            if len(self._torrents_cache) >= 10000:
+                oldest = sorted(self._torrents_cache, key=lambda k: self._torrents_cache[k])[:5000]
+                for key in oldest:
+                    del self._torrents_cache[key]
+            self._torrents_cache[enclosure] = now
+            return False
 
     @staticmethod
     def _rss_rule_needs_torrent_attr(rss_rule: dict) -> bool:
@@ -184,14 +205,9 @@ class BrushRssChecker:
                 if not enclosure:
                     continue
 
-                with self._cache_lock:
-                    if enclosure not in self._torrents_cache:
-                        if len(self._torrents_cache) >= 10000:
-                            self._torrents_cache = set(list(self._torrents_cache)[5000:])
-                        self._torrents_cache.add(enclosure)
-                    else:
-                        log.debug(f"[Brush]{torrent_name} 已处理过")
-                        continue
+                if self._mark_or_skip_processed(enclosure):
+                    log.debug(f"[Brush]{torrent_name} 已处理过")
+                    continue
 
                 if self._helper.is_torrent_handled(enclosure=enclosure):
                     log.info(f"[Brush]{torrent_name} 已在刷流任务中")
