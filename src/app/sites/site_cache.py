@@ -40,7 +40,6 @@ class SiteCache:
         self._indexer_site_config_repo = indexer_site_config_repo or IndexerSiteConfigRepositoryAdapter()
         self._site_by_ids: dict[int, dict] = {}
         self._site_by_urls: dict[str, dict] = {}
-        self._site_by_keys: dict[str, dict] = {}
         self._rss_sites: list[dict] = []
         self._brush_sites: list[dict] = []
         self._statistic_sites: list[dict] = []
@@ -52,7 +51,6 @@ class SiteCache:
         self._seed_public_sites()
         self._site_by_ids = {}
         self._site_by_urls = {}
-        self._site_by_keys = {}
         self._rss_sites = []
         self._brush_sites = []
         self._statistic_sites = []
@@ -64,10 +62,6 @@ class SiteCache:
             sid = site_info["id"]
             self._site_by_ids[sid] = site_info
             # 统一标识索引：配置 id 与站点名均可解析到同一 site_info
-            if site_info.get("site_key"):
-                self._site_by_keys[str(site_info["site_key"])] = site_info
-            if entity.name:
-                self._site_by_keys.setdefault(str(entity.name), site_info)
 
             strict_url = site_info.get("strict_url")
             if strict_url:
@@ -176,7 +170,6 @@ class SiteCache:
 
         site_info = {
             "id": entity.id,
-            "site_key": site_def.id if site_def else "",
             "name": entity.name,
             "pri": entity.pri or 0,
             "rssurl": site_rssurl,
@@ -224,11 +217,8 @@ class SiteCache:
     ) -> dict | list[dict]:
         """获取站点配置，与旧 Sites.get_sites() 完全兼容."""
         if siteid:
-            # 统一标识解析：数字 id → DB 主键；否则 → 配置 id/站点名
-            key = str(siteid)
-            if key.isdigit():
-                return self._site_by_ids.get(int(key)) or {}
-            return self._site_by_keys.get(key) or {}
+            # 运行时统一使用 DB 主键 id；配置 id/名称仅用于迁移与静态定义
+            return self._site_by_ids.get(int(siteid)) or {}
         if siteurl:
             site_def = self._site_engine.get_by_url(siteurl)
             if site_def and site_def.api:
@@ -268,6 +258,16 @@ class SiteCache:
     def get_sites_by_name(self, name: str) -> list[dict]:
         """根据站点名称获取站点配置."""
         return [site for site in self._site_by_ids.values() if site.get("name") == name]
+
+    def resolve_site_db_id(self, site_key: str) -> int | None:
+        """将站点配置 id 或名称解析为 DB 主键 id（兼容历史脏数据迁移）."""
+        site_key = str(site_key)
+        for site_def in self._site_engine.all_sites():
+            if str(site_def.id) == site_key or site_def.name == site_key:
+                for site_info in self._site_by_ids.values():
+                    if site_info.get("name") == site_def.name:
+                        return site_info["id"]
+        return None
 
     def get_max_site_pri(self) -> int:
         """获取最大站点优先级."""

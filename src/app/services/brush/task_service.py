@@ -158,6 +158,23 @@ class BrushTaskService:
             except Exception as e:
                 # 单个任务构建失败不能中断整个加载，否则重启后只剩部分任务
                 log.error(f"[Brush]任务 {task.ID} ({task.NAME}) 构建失败，已跳过: {e}")
+        # 一次性数据迁移：把 SITE 为配置 id/名称的任务修正为 DB 主键 id
+        self._migrate_site_ids(brushtasks)
+
+    def _migrate_site_ids(self, tasks) -> None:
+        """兼容历史数据：SITE 存了站点配置 id/名称（如 "ttg"）的任务统一修正为 DB 主键 id."""
+        for task in tasks:
+            site = str(task.SITE or "")
+            if not site or site.isdigit():
+                continue
+            db_id = self._sites.resolve_site_db_id(site)
+            if not db_id:
+                continue
+            try:
+                self._repo.update_brushtask_site(task.ID, str(db_id))
+                log.info(f"[Brush]任务 {task.NAME} 站点标识已从 {site} 修正为 DB id {db_id}")
+            except Exception as e:
+                log.warn(f"[Brush]任务 {task.NAME} 站点标识修正失败: {e}")
 
     def _reload_single_task(self, task_id):
         task_rows = self._repo.get_brushtasks(brush_id=task_id)

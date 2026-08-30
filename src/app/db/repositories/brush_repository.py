@@ -139,6 +139,11 @@ class BrushRepository(BaseRepository):
             )
             return ret[0] or 0 if ret else 0
 
+    def update_brushtask_site(self, brush_id: int, site_id: str) -> None:
+        """修正刷流任务站点标识为 DB 主键 id（历史配置 id 数据迁移）."""
+        with self.session() as db:
+            db.query(SITEBRUSHTASK).filter(int(brush_id) == SITEBRUSHTASK.ID).update({"SITE": site_id})
+
     def update_brushtask_state(self, state: str, tid: int | None = None) -> None:
         """
         改变刷流任务的状态

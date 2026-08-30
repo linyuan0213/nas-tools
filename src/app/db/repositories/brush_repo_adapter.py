@@ -67,6 +67,9 @@ class BrushTaskRepositoryAdapter:
     def update_brushtask_state(self, state: str, tid: int | None = None) -> None:
         self._repo.update_brushtask_state(state, tid)
 
+    def update_brushtask_site(self, brush_id: int, site_id: str) -> None:
+        self._repo.update_brushtask_site(brush_id, site_id)
+
     def add_brushtask_download_count(self, brush_id: int) -> None:
         self._repo.add_brushtask_download_count(brush_id)
 
