@@ -34,11 +34,13 @@ class StringUtils:
         if text.isdigit():
             return int(text)
         text = text.replace(",", "").replace(" ", "").upper()
+        # 非大小格式（如站点页面捕获到日期时间等）直接返回 0，不记录错误
+        if not re.match(r"^\d+(\.\d+)?[KMGTPI]*B?$", text):
+            return 0
         size = re.sub(r"[KMGTPI]*B?", "", text, flags=re.IGNORECASE)
         try:
             size = float(size)
-        except Exception as e:
-            ExceptionUtils.exception_traceback(e)
+        except Exception:
             return 0
         if text.find("PB") != -1 or text.find("PIB") != -1 or text.endswith("P"):
             size *= 1024**5
