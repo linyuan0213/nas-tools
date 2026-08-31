@@ -288,6 +288,16 @@ nexus-chrome 未设置 `AUTH_PASSWORD` 时该字段留空即可（本地模式�
 >
 > 未设置 `VNC_PASSWORD` 时 `docker compose up` 会直接报错并提示，避免默认弱口令暴露 VNC 远程桌面。
 
+**nexus-chrome 数据持久化**：指纹配置中心数据库（`fp_config_center.db`）、会话记录（`sessions.json`）、指纹画像、浏览器用户数据（Cookie/登录态）统一存放在容器 `/app/data`，compose 已将其挂载到宿主机 `./data/chrome`，重建/升级容器不会丢失数据。
+
+> **旧版本升级**：旧版 nexus-chrome 曾将数据映射为 `./data:/var/lib/chromium/user_data`（仅 Chrome 用户数据）。若升级前已使用该部署并需保留数据，先迁移到新目录再 `docker compose --profile full-mysql up -d --force-recreate`：
+>
+> ```bash
+> mkdir -p ./data/chrome
+> cp -r ./data/* ./data/chrome/
+> docker compose --profile full-mysql up -d --force-recreate
+> ```
+
 ### 1. 修改 docker-compose.yml
 
 克隆项目后，按需修改 `docker-compose.yml`：
@@ -588,6 +598,7 @@ compose 已配置好 MySQL（默认）或 PostgreSQL 模式，后端通过 `DATA
 |----------|------|
 | `/data` | 配置文件（config.yaml）、数据库、插件数据（必须挂载） |
 | `/data/redis_data` | Redis 持久化数据（compose 内） |
+| `/data/chrome` | nexus-chrome 数据（指纹数据库、会话、指纹画像、浏览器用户数据） |
 | `/nexus-media` | 应用代码目录 |
 | `/media` | 媒体库目录（需自行映射，例如 `/mnt/media:/media`） |
 

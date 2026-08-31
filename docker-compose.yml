@@ -230,10 +230,18 @@ services:
       # 安全提示：VNC 密码必填，禁止使用默认值 password。
       # 请在项目目录 .env 中配置，例如：VNC_PASSWORD=你的强密码
       - VNC_PASSWORD=${VNC_PASSWORD:?请先在 .env 中设置 VNC_PASSWORD（禁止使用默认密码 password）}
+      # nexus-chrome API 鉴权（可选）：设置后需在实验室「访问凭证（API Key）」中填写凭证，否则请求被 401 拒绝
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-}
       - SESSION_TTL=1800
       - SESSION_CLEANUP_INTERVAL=60
+      # 数据目录统一挂载到 ./data（fp_config_center.db / sessions.json / 指纹画像 / Chrome 用户数据均持久化在这里）
+      - DATA_DIR=/app/data
+      - PROFILE_DATA_DIR=/app/data/profiles
+      - USER_DATA_PATH=/app/data/user_data
+      - FP_CENTER_DB=/app/data/fp_config_center.db
     volumes:
-      - ./data:/var/lib/chromium/user_data
+      # 持久化全部应用数据（数据库、会话、指纹画像、浏览器用户数据），重建容器不丢失
+      - ./data/chrome:/app/data
     ports:
       - 9850:9850
       - 6080:6080
