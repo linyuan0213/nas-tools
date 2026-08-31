@@ -1,0 +1,35 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_serverchan",
+  "name": "ServerChan 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "ServerChan 消息推送渠道。启用后在消息中心出现 ServerChan 渠道。",
+  "category": "system",
+  "tags": [
+    "ServerChan",
+    "消息",
+    "通知"
+  ],
+  "icon": "/api/plugin-framework/plugins/msg_serverchan/assets/serverchan.png",
+  "color": "#64748b",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgServerChanPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [
+      "serverchan-sdk>=1.0.6"
+    ],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

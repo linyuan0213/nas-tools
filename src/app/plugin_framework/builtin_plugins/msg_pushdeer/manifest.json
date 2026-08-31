@@ -1,0 +1,35 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_pushdeer",
+  "name": "PushDeer 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "PushDeer 消息推送渠道。启用后在消息中心出现 PushDeer 渠道。",
+  "category": "system",
+  "tags": [
+    "PushDeer",
+    "消息",
+    "通知"
+  ],
+  "icon": "/api/plugin-framework/plugins/msg_pushdeer/assets/pushdeer.png",
+  "color": "#64748b",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgPushDeerClientPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [
+      "pypushdeer>=0.0.3"
+    ],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

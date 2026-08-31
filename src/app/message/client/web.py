@@ -13,7 +13,7 @@ class WebMessage(_IMessageClient):
     schema = "web"
     config_schema = MessageConfigSchema(
         name="内置消息页",
-        icon_url="/static/img/message/web.png",
+        icon_url="/static/img/message/web.svg",
         fields=[],
     )
 

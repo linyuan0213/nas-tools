@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_bark",
+  "name": "Bark 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "Bark 消息推送渠道（iOS）。启用后在消息中心出现 Bark 渠道。",
+  "category": "system",
+  "tags": ["Bark", "消息", "通知"],
+  "icon": "/api/plugin-framework/plugins/msg_bark/assets/bark.webp",
+  "color": "#FFB62E",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgBarkPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

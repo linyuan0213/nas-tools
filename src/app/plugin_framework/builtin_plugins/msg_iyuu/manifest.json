@@ -1,0 +1,33 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_iyuu",
+  "name": "IyuuMsg 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "IyuuMsg 消息推送渠道。启用后在消息中心出现 IyuuMsg 渠道。",
+  "category": "system",
+  "tags": [
+    "IyuuMsg",
+    "消息",
+    "通知"
+  ],
+  "icon": "/api/plugin-framework/plugins/msg_iyuu/assets/iyuu.png",
+  "color": "#64748b",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgIyuuMsgPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}
