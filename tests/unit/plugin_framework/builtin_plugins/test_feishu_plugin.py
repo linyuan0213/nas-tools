@@ -97,13 +97,9 @@ class TestFeishuPluginCallback:
 
     def test_on_enable_registers_channel_class(self):
         plugin = self._plugin()
-        with (
-            patch("app.plugin_framework.builtin_plugins.feishu.backend.plugin.register") as mock_reg,
-            patch("app.plugin_framework.builtin_plugins.feishu.backend.plugin.ensure_channel_record") as mock_ensure,
-        ):
+        with patch("app.plugin_framework.builtin_plugins.feishu.backend.plugin.register") as mock_reg:
             plugin.on_enable()
             mock_reg.assert_called_once()
-            mock_ensure.assert_called_once_with(plugin._message, "feishu", "飞书", interactive=1)
 
     def test_callback_rejects_missing_apikey(self):
         plugin = self._plugin()

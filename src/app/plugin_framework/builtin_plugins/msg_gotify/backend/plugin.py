@@ -5,7 +5,6 @@ from typing import Any
 from app.message.registry import register, unregister
 from app.plugin_framework.builtin_plugins._msg_common.channel_lifecycle import (
     disable_channel_record,
-    ensure_channel_record,
 )
 from app.plugin_framework.builtin_plugins.msg_gotify.backend.message_client import Gotify
 from app.plugin_framework.context import PluginContext
@@ -20,7 +19,6 @@ class MsgGotifyPlugin:
 
     def on_enable(self):
         register(Gotify)
-        ensure_channel_record(self._message, "gotify", "Gotify")
         self._message.reload_by_type("gotify")
         self.ctx.info("消息渠道插件已启用")
 

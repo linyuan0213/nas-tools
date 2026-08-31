@@ -6,7 +6,6 @@ from app.message.registry import register, unregister
 from app.plugin_framework.builtin_plugins._msg_common.callback import InteractiveCallbackMixin
 from app.plugin_framework.builtin_plugins._msg_common.channel_lifecycle import (
     disable_channel_record,
-    ensure_channel_record,
     stop_interactive,
 )
 from app.plugin_framework.builtin_plugins.msg_slack.backend.event_parser import parse_event
@@ -33,7 +32,6 @@ class MsgSlackPlugin(InteractiveCallbackMixin):
     def on_enable(self):
         register(Slack)
         self._register_callback()
-        ensure_channel_record(self._message, _CHANNEL_TYPE, "Slack", interactive=1)
         self._message.reload_by_type(_CHANNEL_TYPE)
         self.ctx.info("Slack 消息渠道插件已启用")
 

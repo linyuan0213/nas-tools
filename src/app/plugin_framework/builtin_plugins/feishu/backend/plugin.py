@@ -12,7 +12,6 @@ from app.message.registry import register, unregister
 from app.plugin_framework.builtin_plugins._msg_common.callback import InteractiveCallbackMixin
 from app.plugin_framework.builtin_plugins._msg_common.channel_lifecycle import (
     disable_channel_record,
-    ensure_channel_record,
     stop_interactive,
 )
 from app.plugin_framework.builtin_plugins.feishu.backend.message_client import Feishu
@@ -42,7 +41,6 @@ class FeishuPlugin(InteractiveCallbackMixin):
     def on_enable(self):
         register(Feishu)  # 显式注册飞书渠道类（schema=feishu，供消息中心识别与构建）
         self._register_callback()
-        ensure_channel_record(self._message, _CHANNEL_TYPE, "飞书", interactive=1)
         self._message.reload_by_type(_CHANNEL_TYPE)
         self.ctx.info("飞书消息插件已启用")
 

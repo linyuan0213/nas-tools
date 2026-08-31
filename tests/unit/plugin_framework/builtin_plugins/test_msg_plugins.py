@@ -28,17 +28,13 @@ class TestMsgPluginManifest:
 
 
 class TestMsgBarkLifecycle:
-    def test_on_enable_registers_and_ensures_record(self):
+    def test_on_enable_registers_channel(self):
         from app.plugin_framework.builtin_plugins.msg_bark.backend.plugin import MsgBarkPlugin
 
         plugin = MsgBarkPlugin(MagicMock(), message=MagicMock())
-        with (
-            patch("app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.register") as mock_reg,
-            patch("app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.ensure_channel_record") as mock_ensure,
-        ):
+        with patch("app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.register") as mock_reg:
             plugin.on_enable()
             mock_reg.assert_called_once()
-            mock_ensure.assert_called_once_with(plugin._message, "bark", "Bark")
             plugin._message.reload_by_type.assert_called_once_with("bark")
 
     def test_on_disable_unregisters(self):
@@ -47,8 +43,9 @@ class TestMsgBarkLifecycle:
         plugin = MsgBarkPlugin(MagicMock(), message=MagicMock())
         with (
             patch("app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.unregister") as mock_unreg,
-            patch("app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.disable_channel_record")
-            as mock_disable,
+            patch(
+                "app.plugin_framework.builtin_plugins.msg_bark.backend.plugin.disable_channel_record"
+            ) as mock_disable,
         ):
             plugin.on_disable()
             mock_unreg.assert_called_once_with("bark")
