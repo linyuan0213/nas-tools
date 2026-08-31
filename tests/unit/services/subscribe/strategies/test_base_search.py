@@ -60,6 +60,16 @@ class TestBaseSearchStrategy:
         strategy._search_movies()
         strategy._movie_repo.update_state.assert_not_called()
 
+    def test_search_movies_batch_limit(self, strategy):
+        subs = {str(i): {"id": i, "name": f"Movie{i}"} for i in range(1, 51)}
+        strategy._service.get_subscribe_movies.return_value = subs
+        strategy._movie_repo = MagicMock()
+        processed = []
+        with patch.object(strategy, "_get_media_info", side_effect=lambda *a, **k: processed.append(a) or _MediaInfo()):
+            with patch.object(strategy, "_get_batch_limit", return_value=10):
+                strategy._search_movies()
+        assert len(processed) == 10
+
     def test_search_movies_tmdb_fail(self, strategy):
         strategy._service.get_subscribe_movies.return_value = {"1": {"id": 1, "name": "Movie"}}
         strategy._movie_repo = MagicMock()

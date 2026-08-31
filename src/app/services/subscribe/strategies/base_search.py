@@ -15,6 +15,7 @@ from app.core.exceptions import (
     RepositoryError,
     ServiceError,
 )
+from app.core.settings import settings
 from app.db.repositories.subscribe_repo_adapter import (
     SubscribeMovieRepositoryAdapter,
     SubscribeTvEpisodeRepositoryAdapter,
@@ -37,6 +38,9 @@ from app.services.filter_service import FilterService as Filter
 from app.services.search_service import Searcher
 from app.services.subscribe.coordinator import DownloadCoordinator
 from app.sites.torrent import Torrent
+
+# 订阅搜索每轮处理上限（subscribe.batch_limit 可覆盖）
+_SUBSCRIBE_BATCH_DEFAULT = 20
 
 
 class BaseSearchStrategy:
@@ -91,6 +95,14 @@ class BaseSearchStrategy:
     def set_coordinator(self, coordinator: DownloadCoordinator | None) -> None:
         """设置下载协调器（用于 SubscriptionMonitor 注入）."""
         self._coordinator = coordinator
+
+    @staticmethod
+    def _get_batch_limit() -> int:
+        """订阅搜索每轮处理上限（subscribe.batch_limit，默认 20）."""
+        try:
+            return max(1, int((settings.get("subscribe") or {}).get("batch_limit") or _SUBSCRIBE_BATCH_DEFAULT))
+        except (ValueError, TypeError):
+            return _SUBSCRIBE_BATCH_DEFAULT
 
     def search_pending(self) -> None:
         """触发一次队列搜索（处理 PENDING 订阅），供事件处理器调用."""
@@ -262,8 +274,14 @@ class BaseSearchStrategy:
                     except Exception as update_err:
                         log.debug(f"[Subscribe]设置 ERROR 状态失败 rssid={rid}: {update_err}")
 
+        batch_limit = self._get_batch_limit()
+        if len(rss_movies) > batch_limit:
+            log.info(
+                f"[Subscribe]订阅数 {len(rss_movies)} 超过单轮上限 {batch_limit}，"
+                f"本轮流处理前 {batch_limit} 个，其余保持 PENDING 下一轮继续"
+            )
         with ThreadPoolExecutor(max_workers=5) as executor:
-            list(executor.map(_process_one, list(rss_movies.values())))
+            list(executor.map(_process_one, list(rss_movies.values())[:batch_limit]))
 
     def _search_tvs(self, state: str = SubscribeState.PENDING.value, rssid: int | None = None) -> None:
         if rssid:
@@ -445,8 +463,14 @@ class BaseSearchStrategy:
                     title=None, year=None, season=None, rssid=rid, state=SubscribeState.ERROR.value
                 )
 
+        batch_limit = self._get_batch_limit()
+        if len(rss_tvs) > batch_limit:
+            log.info(
+                f"[Subscribe]订阅数 {len(rss_tvs)} 超过单轮上限 {batch_limit}，"
+                f"本轮流处理前 {batch_limit} 个，其余保持 PENDING 下一轮继续"
+            )
         with ThreadPoolExecutor(max_workers=5) as executor:
-            list(executor.map(_process_one, list(rss_tvs.values())))
+            list(executor.map(_process_one, list(rss_tvs.values())[:batch_limit]))
 
     def _get_media_info(self, tmdbid, name, year, mtype, cache=True):
         """综合返回媒体信息；对空 tmdbid 的 name/year/mtype 组合做进程内缓存."""
