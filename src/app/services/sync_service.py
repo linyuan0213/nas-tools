@@ -414,6 +414,10 @@ class SyncService:
                     path = unknowninfo.path
                     dest_dir = str(unknowninfo.dest or "")
                     operation = unknowninfo.mode or ""
+                    # 路径已不存在（已转移/已删除）的未识别项直接跳过，避免无效识别
+                    if not path or not os.path.exists(path):
+                        log.info(f"[ReIdentify]未识别项路径不存在，跳过：{path}")
+                        return
                 elif flag == "history":
                     transinfo = self._filetransfer.get_transfer_info_by_id(wid)
                     if not transinfo:
@@ -446,11 +450,13 @@ class SyncService:
 
         def _do_re_identify():
             try:
+                # 去重，避免同一路径重复识别
+                unique_ids = list(dict.fromkeys(ids))
                 if self._thread_executor is None:
-                    for wid in ids:
+                    for wid in unique_ids:
                         _do_one(wid)
                 else:
-                    futures = [self._thread_executor.submit(_do_one, wid) for wid in ids]
+                    futures = [self._thread_executor.submit(_do_one, wid) for wid in unique_ids]
 
                     wait(futures)
             finally:

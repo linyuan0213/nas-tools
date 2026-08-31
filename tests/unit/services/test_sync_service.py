@@ -139,6 +139,58 @@ class TestSyncServiceReIdentify:
         # 外层任务 + 内层并发任务都走同一 executor
         assert len(called) == 3  # _do_re_identify + 2 x _do_one
 
+    def test_re_identify_skips_missing_path(self, service, monkeypatch):
+        from concurrent.futures import Future
+
+        submitted = []
+
+        def fake_submit(func, *args, **kwargs):
+            submitted.append(args)
+            future = Future()
+            try:
+                future.set_result(func(*args, **kwargs))
+            except Exception as e:  # noqa: BLE001
+                future.set_exception(e)
+            return future
+
+        service._thread_executor.submit.side_effect = fake_submit
+        service._filetransfer.get_unknown_info_by_id.return_value = MagicMock(
+            path="/gone/movie.mkv", dest="/dst", mode="copy"
+        )
+        monkeypatch.setattr(os.path, "exists", lambda p: False)
+
+        with self._patch_lock_manager(True):
+            result = service.re_identify_items("unidentification", [1])
+        assert result.success
+        service._filetransfer.transfer_media.assert_not_called()
+        assert len(submitted) == 2  # _do_re_identify + _do_one
+
+    def test_re_identify_dedupes_ids(self, service, monkeypatch):
+        from concurrent.futures import Future
+
+        submitted = []
+
+        def fake_submit(func, *args, **kwargs):
+            submitted.append(args)
+            future = Future()
+            try:
+                future.set_result(func(*args, **kwargs))
+            except Exception as e:  # noqa: BLE001
+                future.set_exception(e)
+            return future
+
+        service._thread_executor.submit.side_effect = fake_submit
+        service._filetransfer.get_unknown_info_by_id.return_value = MagicMock(
+            path="/src/movie.mkv", dest="/dst", mode="copy"
+        )
+        monkeypatch.setattr(os.path, "exists", lambda p: True)
+
+        with self._patch_lock_manager(True):
+            result = service.re_identify_items("unidentification", [1, 1, 2])
+        assert result.success
+        # 去重后只提交 2 个 _do_one（_do_re_identify 外层提交不计入）
+        assert len(submitted) == 3  # _do_re_identify + 2 x _do_one
+
     def test_get_sub_path_concurrent(self, service):
         from concurrent.futures import Future
 
