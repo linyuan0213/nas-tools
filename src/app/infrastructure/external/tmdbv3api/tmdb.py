@@ -109,8 +109,8 @@ class TMDb:
             url,
             data=data,
             rate_limit_key="tmdb:api",
-            rate_limit_rate="2.5/s",
-            rate_limit_timeout=30,
+            rate_limit_rate="4/s",
+            rate_limit_timeout=60,
         )
 
         headers = req.headers

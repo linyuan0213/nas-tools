@@ -1,8 +1,58 @@
 """TMDB lookup 工具函数测试."""
 
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.domain.mediatypes import MediaType
+from app.infrastructure.cache_system import get_cache_manager
 from app.media.lookup.tmdb_lookup import TmdbLookup
 from app.media.models import MediaInfo
+from app.media.parser import RegexParser
+
+
+class TestNegativeLookupCache:
+    """未命中结果应被负缓存，避免每次重复查 TMDB."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_cache(self):
+        cache = get_cache_manager().get("tmdb_lookup")
+        if cache is not None:
+            cache.clear()
+
+    def test_not_found_is_cached(self):
+        parser = RegexParser()
+        lookup = TmdbLookup(client=MagicMock())
+        parsed = parser.parse("NegativeCacheOnlyTitle 1999")
+        assert parsed is not None
+
+        with patch.object(lookup, "_lookup_tmdb", return_value=None) as mock_lookup:
+            assert lookup.lookup(parsed) is None
+            assert mock_lookup.call_count >= 1
+            first_call_count = mock_lookup.call_count
+
+            # 第二次应命中负缓存，不再发起查询
+            assert lookup.lookup(parsed) is None
+            assert mock_lookup.call_count == first_call_count
+
+    def test_negative_cache_expires(self):
+        parser = RegexParser()
+        lookup = TmdbLookup(client=MagicMock())
+        parsed = parser.parse("NegativeCacheExpireTitle 2001")
+        assert parsed is not None
+
+        with patch.object(lookup, "_lookup_tmdb", return_value=None) as mock_lookup:
+            assert lookup.lookup(parsed) is None
+            first_call_count = mock_lookup.call_count
+
+            # 直接改写缓存 TTL 为 0 模拟过期
+            key = (
+                f"lookup:{parsed.title_cn or ''}|{parsed.title_en or ''}|{parsed.year or ''}"
+                f"|{parsed.season or ''}|{parsed.type.value if parsed.type else ''}|"
+            )
+            lookup._lookup_cache.set(key, False, ttl=0)
+            assert lookup.lookup(parsed) is None
+            assert mock_lookup.call_count > first_call_count
 
 
 class TestMergeMediaInfo:

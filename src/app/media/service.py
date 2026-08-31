@@ -523,7 +523,7 @@ class MediaService:
         lookup_results = {}
         if unique_keys:
             log.info(f"[MediaService]批量识别 {len(items)} 条，去重后 {len(unique_keys)} 条需查 TMDB")
-            max_workers = min(len(unique_keys), 2)
+            max_workers = min(len(unique_keys), 8)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key
@@ -674,7 +674,7 @@ class MediaService:
         if not groups:
             return results
 
-        max_workers = min(len(groups), 2)
+        max_workers = min(len(groups), 8)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_key = {
                 executor.submit(self._identify_group, group, language): group["_cache_key"] for group in groups
@@ -958,7 +958,7 @@ class MediaService:
 
         lookup_results = {}
         if unique_keys:
-            max_workers = min(len(unique_keys), 2)
+            max_workers = min(len(unique_keys), 8)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_key = {
                     executor.submit(self._lookup.lookup, parsed, language=language or ""): key

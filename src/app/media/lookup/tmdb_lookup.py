@@ -1,4 +1,5 @@
 import re
+import threading
 
 import log
 from app.domain.media_type_utils import MediaTypeMapper
@@ -17,6 +18,13 @@ from app.utils import StringUtils
 
 _BATCH_KEYWORDS_RE = re.compile(r"(?i)\b(COMPLETE|全集|合集|全季|BATCH|PACK|COLLECTION|SEASON)\b")
 
+# 识别结果缓存：redis 持久化（重启不丢），7 天；未命中结果缓存 1 天，避免新入库条目长期被负缓存
+_LOOKUP_CACHE_TTL = 7 * 24 * 3600
+_NEGATIVE_CACHE_TTL = 24 * 3600
+
+# 全局并发上限：避免大批量识别时大量线程同时打 TMDB 触发限流等待/超时重试
+_TMDB_LOOKUP_SEMAPHORE = threading.Semaphore(8)
+
 
 class TmdbLookup(BaseLookup):
     """TMDB 查询器 — 组合所有子模块"""
@@ -28,7 +36,9 @@ class TmdbLookup(BaseLookup):
         self.season = TmdbSeason(self.client)
         self.person = TmdbPerson(self.client)
         self.discover = TmdbDiscover(self.client)
-        self._lookup_cache = get_cache_manager().get_or_create("tmdb_lookup", "memory", maxsize=500, ttl=3600)
+        self._lookup_cache = get_cache_manager().get_or_create(
+            "tmdb_lookup", "tiered", maxsize=500, ttl=_LOOKUP_CACHE_TTL
+        )
 
     def lookup(
         self, parsed, hint_type: MediaType | None = None, strict: bool | None = None, language: str | None = None
@@ -38,58 +48,65 @@ class TmdbLookup(BaseLookup):
 
         cache_key = (
             f"lookup:{parsed.title_cn or ''}|{parsed.title_en or ''}|{parsed.year or ''}"
-            f"|{parsed.season or ''}|{parsed.type.value if parsed.type else ''}"
+            f"|{parsed.season or ''}|{parsed.type.value if parsed.type else ''}|{(language or '').lower()}"
         )
         cached = self._lookup_cache.get(cache_key)
         if cached is not None:
             return cached if cached else None
 
-        if language:
-            self.client.set_language(language or "")
-        search_type = hint_type or parsed.type or MediaType.UNKNOWN
+        with _TMDB_LOOKUP_SEMAPHORE:
+            # 双检：并发场景下同一标题仅执行一次网络查询
+            cached = self._lookup_cache.get(cache_key)
+            if cached is not None:
+                return cached if cached else None
 
-        # 优先使用中文名搜索（中文搜索结果通常更精确，避免外传/主系列混淆）
-        result = None
-        org_title = parsed.org_string or ""
-        try:
-            if parsed.title_cn:
-                result = self._lookup_tmdb(
-                    name=parsed.title_cn,
-                    search_type=search_type,
-                    first_year=parsed.year,
-                    media_year=parsed.year,
-                    season_number=parsed.season,
-                    episode=parsed.episode,
-                    strict=strict,
-                    original_title=org_title,
-                )
-            # 中文名搜索失败时，使用英文名搜索
-            if not result and parsed.title_en:
-                result = self._lookup_tmdb(
-                    name=parsed.title_en,
-                    search_type=search_type,
-                    first_year=parsed.year,
-                    media_year=parsed.year,
-                    season_number=parsed.season,
-                    episode=parsed.episode,
-                    strict=strict,
-                    original_title=org_title,
-                )
-        except HttpRateLimitError as err:
-            log.warn(f"[Meta]{parsed.title_cn or parsed.title_en} 查询被限流，中止降级链: {err}")
+            if language:
+                self.client.set_language(language or "")
+            search_type = hint_type or parsed.type or MediaType.UNKNOWN
+
+            # 优先使用中文名搜索（中文搜索结果通常更精确，避免外传/主系列混淆）
             result = None
-        if not result:
+            org_title = parsed.org_string or ""
+            try:
+                if parsed.title_cn:
+                    result = self._lookup_tmdb(
+                        name=parsed.title_cn,
+                        search_type=search_type,
+                        first_year=parsed.year,
+                        media_year=parsed.year,
+                        season_number=parsed.season,
+                        episode=parsed.episode,
+                        strict=strict,
+                        original_title=org_title,
+                    )
+                # 中文名搜索失败时，使用英文名搜索
+                if not result and parsed.title_en:
+                    result = self._lookup_tmdb(
+                        name=parsed.title_en,
+                        search_type=search_type,
+                        first_year=parsed.year,
+                        media_year=parsed.year,
+                        season_number=parsed.season,
+                        episode=parsed.episode,
+                        strict=strict,
+                        original_title=org_title,
+                    )
+            except HttpRateLimitError as err:
+                log.warn(f"[Meta]{parsed.title_cn or parsed.title_en} 查询被限流，中止降级链: {err}")
+                result = None
+            if not result:
+                if language:
+                    self.client.set_language()
+                # 未命中缓存 False 哨兵：None 会被 get 视为"未缓存"而无法命中
+                self._lookup_cache.set(cache_key, False, ttl=_NEGATIVE_CACHE_TTL)
+                return None
+            if not result.get("genres"):
+                result = self.detail.get_detail(result.get("id"), result.get("media_type", search_type))
             if language:
                 self.client.set_language()
-            self._lookup_cache.set(cache_key, None)
-            return None
-        if not result.get("genres"):
-            result = self.detail.get_detail(result.get("id"), result.get("media_type", search_type))
-        if language:
-            self.client.set_language()
-        final = self._to_lookup_result(result)
-        self._lookup_cache.set(cache_key, final)
-        return final
+            final = self._to_lookup_result(result)
+            self._lookup_cache.set(cache_key, final)
+            return final
 
     def _match_tmdb_candidate(self, name: str, item: dict, mtype) -> bool:
         """判断种子标题是否匹配 TMDB 候选：中文名/原名/全部别名/英文名."""
