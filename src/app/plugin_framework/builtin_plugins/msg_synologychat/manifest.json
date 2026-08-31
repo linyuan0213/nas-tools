@@ -3,7 +3,7 @@
   "id": "msg_synologychat",
   "name": "Synology Chat 消息",
   "version": "1.0.0",
-  "author": "Nexus Media",
+  "author": "linyuan0213",
   "description": "Synology Chat 消息渠道，支持交互。启用后在消息中心出现 Synology Chat 渠道。",
   "category": "system",
   "tags": ["Synology", "消息", "通知", "交互"],

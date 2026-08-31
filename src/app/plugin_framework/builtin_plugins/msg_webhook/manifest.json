@@ -3,7 +3,7 @@
   "id": "msg_webhook",
   "name": "Webhook 消息",
   "version": "1.0.0",
-  "author": "Nexus Media",
+  "author": "linyuan0213",
   "description": "Webhook 消息推送渠道。启用后在消息中心出现 Webhook 渠道。",
   "category": "system",
   "tags": [

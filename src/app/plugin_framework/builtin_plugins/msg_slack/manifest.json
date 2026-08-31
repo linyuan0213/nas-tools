@@ -3,7 +3,7 @@
   "id": "msg_slack",
   "name": "Slack 消息",
   "version": "1.0.0",
-  "author": "Nexus Media",
+  "author": "linyuan0213",
   "description": "Slack 消息渠道，支持双向交互（Socket Mode）。启用后在消息中心出现 Slack 渠道。",
   "category": "system",
   "tags": ["Slack", "消息", "通知", "交互"],

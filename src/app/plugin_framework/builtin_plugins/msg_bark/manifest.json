@@ -3,7 +3,7 @@
   "id": "msg_bark",
   "name": "Bark 消息",
   "version": "1.0.0",
-  "author": "Nexus Media",
+  "author": "linyuan0213",
   "description": "Bark 消息推送渠道（iOS）。启用后在消息中心出现 Bark 渠道。",
   "category": "system",
   "tags": ["Bark", "消息", "通知"],

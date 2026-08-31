@@ -3,7 +3,7 @@
   "id": "msg_ntfy",
   "name": "Ntfy 消息",
   "version": "1.0.0",
-  "author": "Nexus Media",
+  "author": "linyuan0213",
   "description": "Ntfy 消息推送渠道。启用后在消息中心出现 Ntfy 渠道。",
   "category": "system",
   "tags": [
