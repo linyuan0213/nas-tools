@@ -18,6 +18,7 @@ from app.indexer.indexer import Indexer
 from app.indexer.registry import get_all_clients
 from app.infrastructure.cache_system import TokenCache
 from app.mediaserver import MediaServer
+from app.mediaserver.registry import get_all_clients as get_all_mediaserver_clients
 from app.schemas.system import (
     ConfigUpdateResultDTO,
     IndexerConfigResultDTO,
@@ -252,10 +253,8 @@ class MediaServerConfigService:
         TokenCache.delete("index")
         if test:
             try:
-                schemas = SubmoduleLoader.import_submodules(
-                    "app.mediaserver.client", filter_func=lambda _, obj: hasattr(obj, "client_id")
-                )
-                for schema in schemas:
+                # 遍历注册表（含插件注册的媒体服务器客户端），而非仅扫描内置目录
+                for schema in get_all_mediaserver_clients():
                     if schema.match(name):
                         client = schema(config)
                         status = client.get_status()

@@ -11,6 +11,11 @@ def register(cls: T) -> T:
     return cls
 
 
+def unregister(client_id: str) -> None:
+    """注销媒体服务器客户端类（插件卸载/禁用时调用）"""
+    _registry.pop(client_id, None)
+
+
 def get_client_class(client_id: str) -> type | None:
     return _registry.get(client_id)
 
