@@ -3,18 +3,20 @@ from typing import Any
 
 from app.core.exceptions import InfrastructureError, NetworkError
 from app.downloader.client._base import _IDownloadClient
-from app.downloader.client._pyaria2 import PyAria2
 from app.downloader.schema import ConfigField, DownloaderConfigSchema
 from app.downloader.strategy import RemoveStrategy
 from app.infrastructure.http.client import HttpClient
 from app.schemas.download import Torrent, TorrentStatus
 from app.utils import ExceptionUtils
 
+from .pyaria2 import PyAria2
+
 
 class Aria2(_IDownloadClient):
     client_id = "aria2"
     client_type = "aria2"
     client_name = "Aria2"
+    supports_pt = False  # Aria2 不支持 PT 私有站点种子
 
     config_schema = DownloaderConfigSchema(
         name="Aria2",

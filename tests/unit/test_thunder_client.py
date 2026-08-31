@@ -3,7 +3,9 @@
 from unittest.mock import MagicMock, patch
 
 from app.domain.mediatypes import MediaType
-from app.downloader.client.thunder import Thunder
+from app.plugin_framework.builtin_plugins.dl_thunder.backend.download_client import Thunder
+
+_PY_THUNDER = "app.plugin_framework.builtin_plugins.dl_thunder.backend.download_client.PyThunder"
 
 
 class MockMediaInfo:
@@ -52,7 +54,7 @@ class TestThunderGetTaskById:
         mock_pythunder.get_downloading_tasks.return_value = [{"id": "task-1", "name": "Task 1"}]
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client._get_task_by_id("task-1")
             assert result == {"id": "task-1", "name": "Task 1"}
@@ -62,7 +64,7 @@ class TestThunderGetTaskById:
         mock_pythunder.get_downloading_tasks.return_value = []
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client._get_task_by_id("non-existent")
             assert result is None
@@ -85,7 +87,7 @@ class TestThunderGetFiles:
             ]
         }
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             files = client.get_files("task-1")
             assert files is not None
@@ -100,7 +102,7 @@ class TestThunderGetFiles:
         mock_pythunder.get_downloading_tasks.return_value = []
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             files = client.get_files("task-1")
             assert files is None
@@ -112,7 +114,7 @@ class TestThunderGetFiles:
         ]
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             files = client.get_files("task-1")
             assert files is None
@@ -120,7 +122,7 @@ class TestThunderGetFiles:
     def test_get_files_tid_none(self):
         mock_pythunder = MagicMock()
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             files = client.get_files(None)
             assert files is None
@@ -140,7 +142,7 @@ class TestThunderSetFileSelection:
         mock_pythunder.download.return_value = {"id": "task-2"}
         mock_pythunder.delete_task.return_value = True
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.set_file_selection("task-1", {0: True, 1: False, 2: True})
             assert result is True
@@ -155,7 +157,7 @@ class TestThunderSetFileSelection:
         mock_pythunder.get_downloading_tasks.return_value = []
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.set_file_selection("task-1", {0: True})
             assert result is False
@@ -170,7 +172,7 @@ class TestThunderSetFileSelection:
         ]
         mock_pythunder.get_complete_tasks.return_value = []
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.set_file_selection("task-1", {0: False, 1: False})
             assert result is False
@@ -188,7 +190,7 @@ class TestThunderSetFileSelection:
         mock_pythunder.download.return_value = {}  # 无 id
         mock_pythunder.delete_task.return_value = True
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.set_file_selection("task-1", {0: True})
             assert result is False
@@ -196,7 +198,7 @@ class TestThunderSetFileSelection:
     def test_set_file_selection_tid_none(self):
         mock_pythunder = MagicMock()
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.set_file_selection(None, {0: True})
             assert result is True
@@ -208,7 +210,7 @@ class TestThunderAddTorrentWithFileIndices:
         mock_pythunder._resolve_folder_id.return_value = "folder-1"
         mock_pythunder.download.return_value = {"id": "task-1"}
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.add_torrent_and_get_id(
                 "magnet:test", download_dir="/downloads", file_indices="0,1,2", file_names="a.mkv,b.mkv"
@@ -224,7 +226,7 @@ class TestThunderAddTorrentWithFileIndices:
         mock_pythunder._resolve_folder_id.return_value = "folder-1"
         mock_pythunder.download.return_value = {"id": "task-1"}
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             result = client.add_torrent_and_get_id("magnet:test", download_dir="/downloads")
             assert result == "task-1"
@@ -238,7 +240,7 @@ class TestThunderOperationsWithResolvedTid:
         mock_pythunder = MagicMock()
         mock_pythunder.resume_task.return_value = True
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             client._recreated_tasks["old-task"] = "new-task"
             result = client.start_torrents("old-task")
@@ -249,7 +251,7 @@ class TestThunderOperationsWithResolvedTid:
         mock_pythunder = MagicMock()
         mock_pythunder.pause_task.return_value = True
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             client._recreated_tasks["old-task"] = "new-task"
             result = client.stop_torrents("old-task")
@@ -260,7 +262,7 @@ class TestThunderOperationsWithResolvedTid:
         mock_pythunder = MagicMock()
         mock_pythunder.delete_task.return_value = True
 
-        with patch("app.downloader.client.thunder.PyThunder", return_value=mock_pythunder):
+        with patch(_PY_THUNDER, return_value=mock_pythunder):
             client = Thunder(config={"host": "127.0.0.1", "port": "2345"})
             client._recreated_tasks["old-task"] = "new-task"
             result = client.delete_torrents(ids="old-task")

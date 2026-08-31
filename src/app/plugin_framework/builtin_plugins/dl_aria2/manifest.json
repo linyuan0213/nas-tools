@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "dl_aria2",
+  "name": "Aria2 下载器",
+  "version": "1.0.0",
+  "author": "linyuan0213",
+  "description": "Aria2 下载器。启用后在下载器设置页出现 Aria2 类型。不支持 PT 私有站点种子（私有站点种子将被拦截）。",
+  "category": "download",
+  "tags": ["下载器", "Aria2"],
+  "icon": "/api/plugin-framework/plugins/dl_aria2/assets/aria2.png",
+  "color": "#0EA5E9",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:DlAria2Plugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

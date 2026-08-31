@@ -4,17 +4,19 @@ from typing import Any
 import log
 from app.core.exceptions import InfrastructureError, NetworkError
 from app.downloader.client._base import _IDownloadClient
-from app.downloader.client._pythunder import PyThunder
 from app.downloader.schema import ConfigField, DownloaderConfigSchema
 from app.downloader.strategy import RemoveStrategy
 from app.schemas.download import Torrent, TorrentStatus
 from app.utils import ExceptionUtils
+
+from .pythunder import PyThunder
 
 
 class Thunder(_IDownloadClient):
     client_id = "thunder"
     client_type = "thunder"
     client_name = "迅雷"
+    supports_pt = False  # 迅雷不支持 PT 私有站点种子
 
     config_schema = DownloaderConfigSchema(
         name="迅雷",

@@ -140,6 +140,13 @@ class DownloadPipeline:
         if download_info.get("label"):
             tags.append(download_info.get("label"))
 
+        # ---------- PT 拦截：目标下载器不支持 PT 时拒绝私有站点种子 ----------
+        if not getattr(downloader, "supports_pt", True) and self._is_pt_torrent(site_info, content):
+            msg = f"下载器 {downloader_name} 不支持 PT 私有站点种子，已拒绝下载"
+            log.warn(f"[DownloadPipeline]{msg}: {title}")
+            self._fail(media_info, in_from, msg)
+            return downloader_id, None, msg
+
         # ---------- 阶段3：添加任务 ----------
         download_id = self._stage_add(
             downloader=downloader,
@@ -516,6 +523,20 @@ class DownloadPipeline:
                     file_names[:5],
                 )
             )
+
+    @staticmethod
+    def _is_pt_torrent(site_info: dict, content) -> bool:
+        """判断种子是否来自私有站点（PT）.
+
+        优先用站点定义的 public 标志；字符串内容（magnet/URL）按私密 tracker 特征兜底。
+        """
+        if site_info and site_info.get("public") is False:
+            return True
+        if isinstance(content, str):
+            for keyword in ("passkey=", "secure=", "announce?uid=", "totheglory", "credential="):
+                if keyword in content:
+                    return True
+        return False
 
     def _fail(self, media_info, in_from, reason):
         self._event_bus.publish(

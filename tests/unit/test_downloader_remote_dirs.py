@@ -3,9 +3,9 @@
 from unittest.mock import MagicMock, patch
 
 from app.downloader.client._base import _IDownloadClient
-from app.downloader.client.aria2 import Aria2
 from app.downloader.client.qbittorrent import Qbittorrent
 from app.downloader.client_factory import DownloadClientFactory
+from app.plugin_framework.builtin_plugins.dl_aria2.backend.download_client import Aria2
 from app.schemas.download import Torrent
 
 

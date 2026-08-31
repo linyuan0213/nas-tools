@@ -13,6 +13,8 @@ class _IDownloadClient(metaclass=ABCMeta):
     client_id = ""
     client_type = ""
     client_name = ""
+    # 是否支持 PT（私有站点）种子下载。aria2/迅雷等不支持时，私有站点种子将被拦截
+    supports_pt: bool = True
 
     _client_config: dict = {}
     download_dir: list = []

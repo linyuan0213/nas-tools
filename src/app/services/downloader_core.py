@@ -61,6 +61,13 @@ class DownloaderCore:
 
     # ---------- 生命周期（由外部 SystemLifecycleService 控制） ----------
 
+    def refresh_downloaders(self) -> None:
+        """刷新下载器配置缓存（插件注册/注销下载器客户端后调用）"""
+        try:
+            self._client_factory._refresh()
+        except Exception as e:  # noqa: BLE001
+            log.error(f"[Downloader]刷新下载器缓存失败: {e}")
+
     def start_service(self):
         """启动转移任务调度"""
         self._transfer_coordinator.start_service(self.transfer)

@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "dl_thunder",
+  "name": "迅雷下载器",
+  "version": "1.0.0",
+  "author": "linyuan0213",
+  "description": "迅雷 NAS 下载器。启用后在下载器设置页出现迅雷类型。不支持 PT 私有站点种子（私有站点种子将被拦截）。",
+  "category": "download",
+  "tags": ["下载器", "迅雷", "Thunder"],
+  "icon": "/api/plugin-framework/plugins/dl_thunder/assets/thunder.png",
+  "color": "#FFC20E",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:DlThunderPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}
