@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_slack",
+  "name": "Slack 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "Slack 消息渠道，支持双向交互（Socket Mode）。启用后在消息中心出现 Slack 渠道。",
+  "category": "system",
+  "tags": ["Slack", "消息", "通知", "交互"],
+  "icon": "/api/plugin-framework/plugins/msg_slack/assets/slack.png",
+  "color": "#4A154B",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgSlackPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": ["slack-bolt>=1.22.0"],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_synologychat",
+  "name": "Synology Chat 消息",
+  "version": "1.0.0",
+  "author": "Nexus Media",
+  "description": "Synology Chat 消息渠道，支持交互。启用后在消息中心出现 Synology Chat 渠道。",
+  "category": "system",
+  "tags": ["Synology", "消息", "通知", "交互"],
+  "icon": "/api/plugin-framework/plugins/msg_synologychat/assets/synologychat.png",
+  "color": "#E8862D",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgSynologychatPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": [],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}

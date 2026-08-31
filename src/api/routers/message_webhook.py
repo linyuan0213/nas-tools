@@ -6,6 +6,7 @@
 import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from starlette.responses import RedirectResponse
 
 import log
 from api.deps import get_apikey_service, get_app_context, get_message
@@ -63,10 +64,6 @@ def _get_user_id_from_update(update: dict, channel: SearchType) -> str:
         return str(user.get("id", ""))
     if channel == SearchType.WX:
         return update.get("FromUserName", "")
-    if channel == SearchType.SYNOLOGY:
-        return update.get("user_id", "")
-    if channel == SearchType.SLACK:
-        return update.get("user", "")
     return ""
 
 
@@ -87,14 +84,6 @@ def _get_text_from_update(update: dict, channel: SearchType) -> str:
         return text
     if channel == SearchType.WX:
         return update.get("Content", "")
-    if channel == SearchType.SYNOLOGY:
-        return update.get("text", "")
-    if channel == SearchType.SLACK:
-        # Slack 消息可能 text 为空，用 blocks 或 command
-        text = update.get("text", "")
-        if not text:
-            text = update.get("command", "")
-        return text
     return ""
 
 
@@ -224,31 +213,21 @@ async def wechat_webhook(
     return Response(content="success", media_type="text/plain")
 
 
-@router.post("/synologychat", summary="Synology Chat Webhook")
-async def synologychat_webhook(
-    request: Request,
-    service: APIKeyService = Depends(get_apikey_service),
-    app_context: AppContext = Depends(get_app_context),
-    message: Message = Depends(get_message),
-):
-    """Synology Chat Webhook"""
-    _verify_apikey(request, service)
-    _verify_webhook_ip(SearchType.SYNOLOGY, request, message)
-    data = await request.json()
-    return await asyncio.to_thread(_handle_webhook, data, SearchType.SYNOLOGY, app_context, message)
+def _legacy_interactive_redirect(request: Request, plugin_id: str) -> Response:
+    """旧交互回调地址 307 重定向到插件公开回调（保留 method/body/query）"""
+    url = f"/api/plugin-framework/webhooks/{plugin_id}/callback"
+    if request.url.query:
+        url += f"?{request.url.query}"
+    return RedirectResponse(url=url, status_code=307)
 
 
-@router.post("/slack", summary="Slack Webhook")
-async def slack_webhook(
-    request: Request,
-    service: APIKeyService = Depends(get_apikey_service),
-    app_context: AppContext = Depends(get_app_context),
-    message: Message = Depends(get_message),
-):
-    """Slack Event/Webhook"""
-    _verify_apikey(request, service)
-    _verify_webhook_ip(SearchType.SLACK, request, message)
-    data = await request.json()
-    if data.get("type") == "url_verification":
-        return {"challenge": data.get("challenge")}
-    return await asyncio.to_thread(_handle_webhook, data, SearchType.SLACK, app_context, message)
+@router.post("/slack", include_in_schema=False, summary="Slack Webhook（已迁移到插件）")
+async def slack_webhook_legacy(request: Request):
+    """Slack 回调地址已迁移到 msg_slack 插件公开回调，307 重定向引导"""
+    return _legacy_interactive_redirect(request, "msg_slack")
+
+
+@router.post("/synologychat", include_in_schema=False, summary="Synology Chat Webhook（已迁移到插件）")
+async def synologychat_webhook_legacy(request: Request):
+    """Synology Chat 回调地址已迁移到 msg_synologychat 插件公开回调，307 重定向引导"""
+    return _legacy_interactive_redirect(request, "msg_synologychat")
