@@ -1,0 +1,32 @@
+{
+  "manifest_version": "1.0",
+  "id": "feishu",
+  "name": "飞书消息",
+  "version": "1.0.0",
+  "author": "linyuan0213",
+  "author_url": "https://github.com/linyuan0213",
+  "description": "接入飞书消息通知，支持双向交互（搜索/订阅/下载/卡片按钮）。配置在消息中心维护。",
+  "category": "system",
+  "tags": ["飞书", "消息", "通知", "交互"],
+  "icon": "/api/plugin-framework/plugins/feishu/assets/feishu.svg",
+  "color": "#3370FF",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:FeishuPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": ["lark-oapi>=1.7.3"],
+    "hooks": [
+      "plugin.config_changed"
+    ],
+    "supports_run": true
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}
