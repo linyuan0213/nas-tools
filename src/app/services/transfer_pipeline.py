@@ -10,8 +10,8 @@ from app.db.repositories.storage_backend_repo_adapter import StorageBackendRepos
 from app.db.repositories.transfer_repo_adapter import TransferBlacklistRepositoryAdapter
 from app.domain.entities.transfer_task import SourceType, TransferTask
 from app.domain.enums import SyncType
-from app.media.scraper import Scraper
 from app.services.filetransfer_service import FileTransferService
+from app.services.scrape_queue_service import ScrapeQueueService
 from app.storage.backends.base import StorageBackend, StorageType
 from app.storage.config_models import LocalStorageConfig
 from app.storage.factory import StorageBackendFactory
@@ -35,12 +35,12 @@ class TransferPipeline:
     def __init__(
         self,
         filetransfer: FileTransferService,
-        scraper: Scraper,
+        scrape_queue_service: ScrapeQueueService,
         blacklist_repo: TransferBlacklistRepositoryAdapter,
         backend_repo: StorageBackendRepositoryAdapter,
     ):
         self._filetransfer = filetransfer
-        self._scraper = scraper
+        self._scrape_queue_service = scrape_queue_service
         self._blacklist = blacklist_repo
         self._backend_repo = backend_repo
 
@@ -116,14 +116,14 @@ class TransferPipeline:
         # ---------- 写入黑名单（所有来源统一） ----------
         self._blacklist.insert(file_path)
 
-        # ---------- 刮削（仅目录同步来源，下载器来源已在 FileTransferService 内部完成） ----------
+        # ---------- 刮削（异步提交，转移不阻塞；下载器来源由 FileTransferService 异步刮削） ----------
         if task.source_type == SourceType.DIRECTORY and task.target_dir:
             self._scrape_after_transfer(task.target_dir, task, dst_backend)
 
         return True, msg
 
     def _scrape_after_transfer(self, target_path: str, task: TransferTask, dst_backend: StorageBackend | None) -> None:
-        """转移成功后触发刮削（仅在目录同步场景使用，下载器来源刮削由 FileTransferService 内部完成）。"""
+        """转移成功后触发异步刮削（仅目录同步场景使用）."""
         scrape_path = target_path
         if os.path.isfile(scrape_path):
             scrape_path = os.path.dirname(scrape_path)
@@ -132,15 +132,7 @@ class TransferPipeline:
         if not self._is_media_library_path(scrape_path):
             return
 
-        try:
-            self._scraper.folder_scraper(
-                path=scrape_path,
-                mode="force_all",
-                dst_backend=dst_backend,
-            )
-            log.info(f"[Pipeline]刮削完成：{scrape_path}")
-        except Exception as e:
-            log.error(f"[Pipeline]刮削失败：{scrape_path}，{e}")
+        self._scrape_queue_service.submit_folder_scrape(path=scrape_path, mode="force_all", dst_backend=dst_backend)
 
     def _is_media_library_path(self, path: str) -> bool:
         """检查路径是否属于媒体库。"""

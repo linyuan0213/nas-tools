@@ -63,6 +63,7 @@ from app.services.rss_automation.task_service import RssTaskService
 from app.services.rss_automation.userrss_service import UserRssService
 from app.services.rss_processor import RssHelper
 from app.services.scheduler_service import SchedulerService
+from app.services.scrape_queue_service import ScrapeQueueService
 from app.services.search_intent_resolver import IntentResolverChain
 from app.services.search_orchestrator import SearchOrchestrator
 from app.services.search_result_service import SearchResultService
@@ -139,11 +140,12 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
     )
 
     shared_scraper = Scraper(media_service=media_service)
+    scrape_queue_service = ScrapeQueueService(scraper=shared_scraper)
 
     filetransfer_service = FileTransferService(
         media_service=media_service,
         message=message,
-        scraper=shared_scraper,
+        scrape_queue_service=scrape_queue_service,
         thread_executor=thread_executor,
         history_manager=history_manager,
         progress=ProgressTracker(),
@@ -157,7 +159,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
 
     transfer_pipeline = TransferPipeline(
         filetransfer=filetransfer_service,
-        scraper=shared_scraper,
+        scrape_queue_service=scrape_queue_service,
         blacklist_repo=TransferBlacklistRepositoryAdapter(),
         backend_repo=StorageBackendRepositoryAdapter(),
     )

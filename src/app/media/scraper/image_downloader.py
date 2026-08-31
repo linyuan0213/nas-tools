@@ -3,6 +3,7 @@
 import io
 import mimetypes
 import os
+import threading
 
 import log
 from app.infrastructure.http import HttpClientError
@@ -12,6 +13,9 @@ from app.storage.backends.base import StorageBackend
 from app.utils import ExceptionUtils
 from app.utils.commons import retry
 from app.utils.config_tools import get_proxies
+
+# 全局图片下载并发上限：转移异步刮削/整库刮削并发时避免图片 CDN 请求突发
+_IMAGE_DOWNLOAD_SEMAPHORE = threading.Semaphore(4)
 
 
 def _proxy_url_from_settings() -> str | None:
@@ -57,9 +61,10 @@ class ImageDownloader:
             return
         try:
             log.info(f"[Scraper]正在下载{itype}图片：{url} ...")
-            r = HttpClient(config=HttpClientConfig(proxy_url=_proxy_url_from_settings())).get(
-                url=url, raise_exception=True
-            )
+            with _IMAGE_DOWNLOAD_SEMAPHORE:
+                r = HttpClient(config=HttpClientConfig(proxy_url=_proxy_url_from_settings())).get(
+                    url=url, raise_exception=True
+                )
             if r:
                 resolved_path = self._resolve_extension(image_path, r.headers.get("content-type", ""))
                 if self._dst_backend:

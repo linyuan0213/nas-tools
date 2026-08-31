@@ -13,7 +13,7 @@ def service():
     svc = FileTransferService(
         media_service=MagicMock(),
         message=MagicMock(),
-        scraper=MagicMock(),
+        scrape_queue_service=MagicMock(),
         thread_executor=MagicMock(),
         history_manager=MagicMock(),
         progress=MagicMock(),

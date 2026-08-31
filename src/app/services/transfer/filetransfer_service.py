@@ -35,11 +35,12 @@ from app.infrastructure.distributed_lock.lock_manager import get_lock_manager
 from app.infrastructure.progress import ProgressTracker
 from app.infrastructure.queue.memory_queue import MemoryMessageQueue
 from app.infrastructure.thread import ThreadExecutor
-from app.media import MediaService, Scraper
+from app.media import MediaService
 from app.media import meta_info as meta_info_fn
 from app.media.parser import RegexParser
 from app.message import Message
 from app.schemas.media import TransferMediaDTO
+from app.services.scrape_queue_service import ScrapeQueueService
 from app.services.transfer.cleanup_service import TransferCleanupService
 from app.services.transfer.existence_checker import MediaExistenceChecker
 from app.services.transfer.history_manager import TransferHistoryManager
@@ -72,7 +73,7 @@ class FileTransferService:
         self,
         media_service: MediaService,
         message: Message,
-        scraper: Scraper,
+        scrape_queue_service: ScrapeQueueService,
         thread_executor: ThreadExecutor,
         history_manager: TransferHistoryManager,
         progress: ProgressTracker,
@@ -85,7 +86,7 @@ class FileTransferService:
     ):
         self.media = media_service
         self.message = message
-        self.scraper = scraper
+        self._scrape_queue_service = scrape_queue_service
         self._thread_executor = thread_executor
         self.progress = progress
         self._event_bus = event_bus
@@ -822,7 +823,8 @@ class FileTransferService:
                         message_medias[message_key].total_episodes += media.total_episodes
                         message_medias[message_key].size += media.size
 
-                self.scraper.gen_scraper_files(
+                # 刮削异步化：提交到后台队列，转移不再等待 NFO/图片/FFmpeg
+                self._scrape_queue_service.submit_file_scrape(
                     media=media,
                     dir_path=ret_dir_path,
                     file_name=os.path.basename(ret_file_path or ret_dir_path or ""),
