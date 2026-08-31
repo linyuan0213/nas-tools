@@ -148,5 +148,13 @@ class MessageDispatcher:
         return False
 
     def get_search_types(self) -> list:
-        """获取支持搜索交互的渠道类型."""
-        return [SearchType.WX, SearchType.TG, SearchType.SLACK, SearchType.SYNOLOGY, SearchType.API, SearchType.PLUGIN]
+        """获取支持搜索交互的渠道标识：已启用交互渠道动态推导 + 系统保留标识.
+
+        直接读内存缓存（不触发 _ensure_loaded 的全量 DB 查询），
+        保留内置交互渠道标识以避免存量渠道行为回归。
+        """
+        types = list(self._client_manager._active_interactive_clients.keys())  # noqa: SLF001
+        for builtin in ("WX", "TG", "SLACK", "SYNOLOGY", "API", "PLUGIN"):
+            if builtin not in types:
+                types.append(builtin)
+        return types

@@ -3,10 +3,13 @@ Plugin Framework Router - FastAPI
 插件框架 v2 API 路由
 """
 
+import asyncio
+import inspect
 import json
 import os
 import tempfile
 import threading
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from fastapi.responses import FileResponse
@@ -424,3 +427,62 @@ def get_plugin_asset(
         target,
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
+
+
+_MAX_CALLBACK_BODY = 1 * 1024 * 1024
+
+
+@router.post("/webhooks/{plugin_id}/{webhook_path:path}", summary="插件公开回调")
+async def plugin_public_webhook(plugin_id: str, webhook_path: str, request: Request):
+    """插件公开回调（免鉴权），供飞书/Telegram 等外部平台 webhook 回调.
+
+    处理器由插件通过 PluginContext.register_public_webhook(path, handler) 注册，
+    约定 handler(params: dict) -> dict。来源校验由插件回调内自行完成（如 apikey）。
+    query 参数与 JSON body 合并后一并传入 handler。
+    """
+    handler = api_registry.get_webhook_handler(plugin_id, webhook_path)
+    if not handler:
+        return _webhook_response({"code": -1, "msg": "回调接口不存在"})
+    # 先按 Content-Length 预检，再流式读取累计，超限即中断（防大 body 内存 DoS）
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > _MAX_CALLBACK_BODY:
+                return _webhook_response({"code": -1, "msg": "请求体过大"})
+        except ValueError:
+            pass
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > _MAX_CALLBACK_BODY:
+            return _webhook_response({"code": -1, "msg": "请求体过大"})
+        chunks.append(chunk)
+    raw = b"".join(chunks)
+    params: dict = dict(request.query_params)
+    if raw:
+        try:
+            body = json.loads(raw)
+            if isinstance(body, dict):
+                params.update(body)
+        except ValueError:
+            pass
+    # _client_ip 为真实来源 IP，禁止被 query/body 覆盖（防伪造绕过白名单）
+    params.pop("_client_ip", None)
+    params["_client_ip"] = request.client.host if request.client else ""
+    try:
+        if inspect.iscoroutinefunction(handler):
+            result = await handler(params)
+        else:
+            result = await asyncio.to_thread(handler, params)
+    except Exception as e:
+        log.error(f"[PluginAPI] 插件回调异常 {plugin_id}/{webhook_path}: {e}")
+        return _webhook_response({"code": -1, "msg": f"回调处理异常: {e!s}"})
+    if result is None:
+        result = {"code": 0, "msg": "success"}
+    return _webhook_response(result)
+
+
+def _webhook_response(data: Any) -> Response:
+    """构造插件回调 JSON 响应"""
+    return Response(content=json.dumps(data, ensure_ascii=False), media_type="application/json")

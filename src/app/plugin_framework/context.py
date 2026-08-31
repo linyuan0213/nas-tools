@@ -253,3 +253,14 @@ class PluginContext:
     def unregister_all_apis(self) -> None:
         """注销该插件的所有自定义 API"""
         api_registry.unregister_plugin_apis(self._plugin_id)
+
+    def register_public_webhook(self, path: str, handler: Callable[[dict], object]) -> None:
+        """注册插件公开回调（免鉴权），供飞书/Telegram 等外部平台 webhook 回调：
+        POST /api/plugin-framework/webhooks/{plugin_id}/{path}
+        """
+        api_registry.register_public_webhook(self._plugin_id, path, handler)
+
+    @property
+    def message(self) -> Any:
+        """消息业务 Facade"""
+        return self._message

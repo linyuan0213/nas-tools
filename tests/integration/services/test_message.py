@@ -297,10 +297,17 @@ class TestMessageDispatcher:
         client_mgr.get_interactive_client.assert_called_once_with(SearchType.TG)
 
     def test_get_search_types(self):
-        dispatcher = MessageDispatcher(MagicMock(), MagicMock())
+        client_mgr = MagicMock()
+        client_mgr._active_interactive_clients = {"TG": {"id": 1}, "FEISHU": {"id": 2}}
+        dispatcher = MessageDispatcher(client_mgr, MagicMock())
         types = dispatcher.get_search_types()
-        assert SearchType.WX in types
-        assert SearchType.TG in types
+        assert "TG" in types
+        assert "FEISHU" in types
+        assert "WX" in types
+        assert "SLACK" in types
+        assert "SYNOLOGY" in types
+        assert "API" in types
+        assert "PLUGIN" in types
 
     def test_sendmsg_no_client(self):
         dispatcher = MessageDispatcher(MagicMock(), MagicMock())

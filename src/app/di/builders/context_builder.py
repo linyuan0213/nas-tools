@@ -102,5 +102,8 @@ def build_app_context() -> AppContext:
         identity_builder=identity.identity_builder,
         episode_remapper=identity.episode_remapper,
     )
+    # 回填 PluginSandbox 的应用上下文（供插件构造命令处理器等装配对象）
+    if context.plugin_sandbox is not None:
+        context.plugin_sandbox._app_context = context
     log.info("[DI]对象图构建完成")
     return context

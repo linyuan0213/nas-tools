@@ -126,7 +126,14 @@ class ClientManager:
             ),
         }
         client_instance = client_entry["client"]
-        if hasattr(client_instance, "setup"):
+        if client_instance is None:
+            log.warn(
+                f"[Message]渠道类型未注册，跳过加载: {client_config.TYPE}"
+                "（若为插件化渠道请启用对应 msg_* 插件，否则该渠道通知将无法发送）"
+            )
+            return
+        # 仅交互渠道启动入站服务（与交互路由门控一致，INTERACTIVE=0 不启动）
+        if client_config.INTERACTIVE and hasattr(client_instance, "setup"):
             ThreadExecutor(name="msg_setup").submit(client_instance.setup)
         self._active_clients.append(client_entry)
         if client_config.INTERACTIVE:
@@ -148,6 +155,16 @@ class ClientManager:
 
     def _remove_client(self, cid):
         cid = str(cid)
+        for c in self._active_clients:
+            if str(c.get("id")) == cid:
+                instance = c.get("client")
+                if instance and hasattr(instance, "stop_service"):
+                    try:
+                        # 异步停止入站服务，避免阻塞当前（API 请求）线程
+                        ThreadExecutor(name="msg_stop").submit(instance.stop_service)
+                    except Exception as e:  # noqa: BLE001
+                        log.warn(f"[Message]客户端停止服务失败: {e}")
+                break
         self._active_clients = [c for c in self._active_clients if str(c.get("id")) != cid]
         keys_to_remove = [k for k, v in self._active_interactive_clients.items() if str(v.get("id")) == cid]
         for k in keys_to_remove:
@@ -271,6 +288,15 @@ class ClientManager:
         )
         if not built_client:
             return False
+        # 渠道可提供专用连接测试方法（如仅校验凭证），否则回退为发送测试消息
+        # 检查类层面的方法，避免实例属性（如 Mock 自动生成）误命中
+        status_method = getattr(type(built_client), "get_status", None)
+        if callable(status_method):
+            try:
+                return bool(status_method(built_client))
+            except Exception as e:  # noqa: BLE001
+                log.error(f"[Message]{ctype} 连接测试异常：%s" % e)
+                return False
         state, ret_msg = built_client.send_msg(
             title="测试", text="这是一条测试消息", url="https://github.com/linyuan0213/nexus-media"
         )

@@ -16,7 +16,7 @@ from typing import Any
 import log
 from app.core.exceptions import RepositoryError, ServiceError
 from app.core.settings import settings
-from app.domain.enums import ProgressKey, SearchType
+from app.domain.enums import ProgressKey, SearchType, channel_key, channel_name
 from app.domain.interfaces.download_repo import IDownloadHistoryRepository
 from app.domain.interfaces.search_repo import ISearchRepository
 from app.domain.mediatypes import MediaType
@@ -315,7 +315,7 @@ class Searcher:
                     key_word=key_word,
                     media_info=match_media.to_dict() if match_media else None,
                     filter_args=filter_args,
-                    search_type=in_from.value if in_from else None,
+                    search_type=channel_name(in_from) if in_from else None,
                 ),
             )
         )
@@ -401,7 +401,7 @@ class Searcher:
 
         if self.message is None:
             return None, no_exists, len(media_list), 0
-        if in_from in self.message.get_search_types():
+        if channel_key(in_from) in self.message.get_search_types():
             # 排序并入库（排序尊重下载优先规则：做种数优先时做种数在前）
             download_order = (settings.get("pt") or {}).get("download_order")
             media_list = processor.sort_results(media_list, download_order=download_order)

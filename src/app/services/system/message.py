@@ -3,7 +3,7 @@
 import json
 from typing import cast
 
-from app.domain.enums import SearchType
+from app.domain.enums import SearchType, channel_name
 from app.events import Event
 from app.events.constants import MESSAGE_INCOMING
 from app.events.payloads import MessageIncomingPayload
@@ -223,7 +223,9 @@ class MessageCommandHandler:
             return False
         return True
 
-    def handle_message_job(self, msg, in_from=SearchType.OT, user_id=None, user_name=None, user_permissions=None):
+    def handle_message_job(
+        self, msg, in_from: SearchType | str = SearchType.OT, user_id=None, user_name=None, user_permissions=None
+    ):
         """处理消息事件（user_permissions: Web 用户权限列表，None=webhook 渠道放行）"""
         if not msg:
             return
@@ -233,7 +235,7 @@ class MessageCommandHandler:
                 Event(
                     event_type=MESSAGE_INCOMING,
                     payload=MessageIncomingPayload(
-                        channel=in_from.value, user_id=user_id, user_name=user_name, message=msg
+                        channel=channel_name(in_from), user_id=user_id, user_name=user_name, message=msg
                     ),
                 )
             )

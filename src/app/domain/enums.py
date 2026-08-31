@@ -149,3 +149,13 @@ class SwitchState(Enum):
 
     ON = "Y"
     OFF = "N"
+
+
+def channel_name(channel) -> str:
+    """将渠道标识规范化为展示名（与 SearchType.value 语义一致）"""
+    return channel.value if isinstance(channel, SearchType) else (channel or "")
+
+
+def channel_key(channel) -> str:
+    """将渠道标识规范化为路由标识（与交互渠道 search_type 匹配，对应枚举名）"""
+    return channel.name if isinstance(channel, SearchType) else (channel or "")

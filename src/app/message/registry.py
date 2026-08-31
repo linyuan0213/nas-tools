@@ -11,6 +11,11 @@ def register(cls: T) -> T:
     return cls
 
 
+def unregister(schema: str) -> None:
+    """注销消息渠道类（插件卸载时调用）"""
+    _registry.pop(schema, None)
+
+
 def get_client_class(schema: str) -> type | None:
     return _registry.get(schema)
 

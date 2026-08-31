@@ -4,13 +4,32 @@
 """
 
 import os
+import re
 import subprocess
+import sys
 
 import log
+
+# 依赖说明符白名单：仅允许 包名+版本运算符 形式，拒绝 -/URL/git+/file:// 等注入
+_DEPENDENCY_RE = re.compile(r"^[\w\-.]+(==|>=|<=|~=)[\w.\-]+$")
 
 
 class PluginDependencyManager:
     """插件依赖管理器"""
+
+    @staticmethod
+    def _validate_dependency(spec: str) -> str | None:
+        """校验依赖说明符是否合法，返回错误信息（None 表示合法）"""
+        spec = spec.strip()
+        if not spec:
+            return "空依赖"
+        if spec.startswith("-") or spec.startswith("@"):
+            return f"依赖以非法前缀开头: {spec}"
+        if any(marker in spec for marker in ("://", "git+", "file:", "extras", "{", "}", "[", "]")):
+            return f"依赖含非法说明符: {spec}"
+        if not _DEPENDENCY_RE.match(spec):
+            return f"依赖格式非法: {spec}"
+        return None
 
     @staticmethod
     def install_dependencies(
@@ -42,6 +61,13 @@ class PluginDependencyManager:
                         if line and not line.startswith("#"):
                             reqs.append(line)
 
+        # 3. 校验依赖说明符（白名单，防参数/供应链注入）
+        for req in reqs:
+            err = PluginDependencyManager._validate_dependency(req)
+            if err:
+                log.error(f"[PluginDeps] 插件 {plugin_id} 依赖校验失败: {err}")
+                return False, f"依赖校验失败: {err}"
+
         if not reqs:
             return True, ""
 
@@ -53,8 +79,8 @@ class PluginDependencyManager:
 
         log.info(f"[PluginDeps] 插件 {plugin_id} 需要安装依赖: {missing}")
 
-        # 3. 使用 uv pip install 安装缺失依赖
-        cmd = ["uv", "pip", "install", "--python", ".venv/bin/python"] + missing
+        # 4. 使用 uv pip install 安装缺失依赖（python 路径取当前解释器，避免依赖 CWD）
+        cmd = ["uv", "pip", "install", "--python", sys.executable] + missing
         try:
             result = subprocess.run(  # nosec B603
                 cmd,

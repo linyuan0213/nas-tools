@@ -11,7 +11,7 @@ from typing import Any
 
 import log
 from app.core.settings import settings
-from app.domain.enums import ProgressKey, SearchType
+from app.domain.enums import ProgressKey, SearchType, channel_name
 from app.domain.interfaces.download_repo import IDownloadHistoryRepository
 from app.domain.interfaces.intent import IntentResolver
 from app.domain.interfaces.search_repo import ISearchRepository
@@ -219,7 +219,7 @@ class SearchOrchestrator:
                         key_word=key_word,
                         media_info=match_media.to_dict() if match_media else None,
                         filter_args=filter_args,
-                        search_type=in_from.value,
+                        search_type=channel_name(in_from),
                     ),
                 )
             )
@@ -285,9 +285,7 @@ class SearchOrchestrator:
             failed = [s for s in sites if s.get("status") in ("error", "timeout")]
             if not failed:
                 return ""
-            return "；失败站点：" + "、".join(
-                f"{s['name']}({s.get('error') or s['status']})" for s in failed
-            )
+            return "；失败站点：" + "、".join(f"{s['name']}({s.get('error') or s['status']})" for s in failed)
         except Exception as e:  # noqa: BLE001
             log.debug(f"[Orchestrator]失败站点汇总失败: {e}")
             return ""

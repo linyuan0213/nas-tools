@@ -9,7 +9,7 @@ import re
 import log
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.core.settings import settings
-from app.domain.enums import SearchType
+from app.domain.enums import SearchType, channel_key
 from app.domain.interfaces.chat import ChatPort
 from app.domain.mediatypes import MediaType
 from app.media import meta_info
@@ -375,7 +375,7 @@ class MessageSearchService:
         if code == 0:
             log.info(f"[Web]{media_info.type.value} {media_info.get_title_string()} 已添加订阅")
         else:
-            if in_from in self._message.get_search_types():
+            if channel_key(in_from) in self._message.get_search_types():
                 log.info(f"[Web]{media_info.title} 添加订阅失败：{msg}")
                 self._message.send_channel_msg(
                     channel=in_from, title=f"{media_info.title} 添加订阅失败：{msg}", user_id=str(user_id or "")
