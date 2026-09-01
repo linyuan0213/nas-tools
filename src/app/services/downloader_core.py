@@ -301,8 +301,8 @@ class DownloaderCore:
     def get_downloader_conf(self, did=None):
         return self._client_factory.get_downloader_conf(did=did)
 
-    def get_downloader_conf_simple(self):
-        return self._client_factory.get_downloader_conf_simple()
+    def get_downloader_conf_simple(self, brush: bool = False):
+        return self._client_factory.get_downloader_conf_simple(brush=brush)
 
     def get_downloader(self, downloader_id=None):
         return self._client_factory.get_client(did=downloader_id)

@@ -27,6 +27,7 @@ from app.core.exceptions import (
     ServiceError,
     ValidationError,
 )
+from app.downloader.client_factory import DownloadClientFactory
 from app.downloader.registry import get_all_clients
 from app.downloader.status import TORRENT_STATUS_LABELS
 from app.events.constants import DOWNLOAD_FAILED
@@ -132,6 +133,7 @@ class GetDownloadSettingRequest(BaseModel):
 
 class GetDownloadersRequest(BaseModel):
     did: str | None = None
+    brush: bool = False
 
 
 class SetDefaultDownloaderRequest(BaseModel):
@@ -454,15 +456,21 @@ def get_downloaders(
     user: str = Depends(require_any_permission("download:view", "download:manage")),
     svc: Downloader = Depends(get_downloader_service),
 ):
-    return success(data=svc.get_downloader_conf(did=req.did))
+    data = svc.get_downloader_conf(did=req.did)
+    data = data or {}
+    if req.brush:
+        # 刷流仅支持 PT 站，过滤不支持 PT 的下载器（aria2/thunder 等）
+        data = {k: v for k, v in data.items() if DownloadClientFactory._supports_brush(v.get("type"))}
+    return success(data=data)
 
 
 @router.post("/downloaders/simple", response_model=CommonResponse, summary="获取下载器列表")
 def get_downloaders_simple(
     user: str = Depends(require_any_permission("download:view", "download:manage")),
     svc: Downloader = Depends(get_downloader_service),
+    brush: int = 0,
 ):
-    data = svc.get_downloader_conf_simple()
+    data = svc.get_downloader_conf_simple(brush=bool(brush))
     return success(data=[{"id": v["id"], "name": v["name"]} for v in data.values()])
 
 

@@ -21,7 +21,7 @@ from app.db.repositories.config_repo_adapter import DownloaderRepositoryAdapter
 from app.db.repositories.download_repo_adapter import DownloadSettingRepositoryAdapter
 from app.domain.enums import SystemConfigKey
 from app.downloader.client._base import _IDownloadClient
-from app.downloader.registry import get_all_clients
+from app.downloader.registry import get_all_clients, get_client_class
 from app.utils import ExceptionUtils, NumberUtils, StringUtils, SystemUtils
 from app.utils.json_utils import JsonUtils
 
@@ -266,10 +266,12 @@ class DownloadClientFactory:
             conf["is_default"] = str(conf.get("id")) == str(default_id)
         return conf
 
-    def get_downloader_conf_simple(self):
-        """获取简化下载器配置"""
+    def get_downloader_conf_simple(self, brush: bool = False):
+        """获取简化下载器配置；brush=True 时仅返回支持 PT（可用于刷流）的下载器"""
         ret_dict = {}
         for downloader_conf in (self.get_downloader_conf() or {}).values():
+            if brush and not self._supports_brush(downloader_conf.get("type")):
+                continue
             ret_dict[str(downloader_conf.get("id"))] = {
                 "id": downloader_conf.get("id"),
                 "name": downloader_conf.get("name"),
@@ -277,6 +279,14 @@ class DownloadClientFactory:
                 "enabled": downloader_conf.get("enabled"),
             }
         return ret_dict
+
+    @staticmethod
+    def _supports_brush(ctype) -> bool:
+        """下载器是否支持刷流（刷流针对 PT 站，复用 supports_pt 标志）"""
+        if not ctype:
+            return False
+        cls = get_client_class(ctype)
+        return bool(getattr(cls, "supports_pt", True)) if cls else False
 
     def get_download_setting(self, sid=None):
         """获取下载设置，返回数据中包含 is_default 标记"""
