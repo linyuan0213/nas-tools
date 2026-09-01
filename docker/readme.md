@@ -19,7 +19,7 @@
 
 | 文件 | 场景 | 启动 |
 |---|---|---|
-| `docker-compose.yml` | 仅前后端（SQLite，开箱即用） | `docker compose up -d` |
+| `docker-compose.yml` | 前后端 + Redis（SQLite，开箱即用） | `docker compose up -d` |
 | `docker-compose.mysql.yml` | MySQL 完整版（+Redis+OCR+Chrome） | `docker compose -f docker-compose.mysql.yml up -d` |
 | `docker-compose.postgresql.yml` | PostgreSQL 完整版 | `docker compose -f docker-compose.postgresql.yml up -d` |
 
@@ -27,7 +27,7 @@
 
 > **容器间网络提示**：所有服务运行在自定义网桥 `nexus-media-network` 上，后端通过服务名（`mysql`/`postgresql`/`redis`）互访，前端经网络别名 `backend` 访问后端。若之前部署过，旧网络/旧容器残留会导致容器间互连失败，先 `docker compose down` 并清理残留网络/容器再启动。
 
-### 基础版（SQLite，开箱即用）
+### 基础版（SQLite + Redis，开箱即用）
 
 ```bash
 docker compose up -d
@@ -167,7 +167,7 @@ compose 中 Redis 服务已配置（无密码、使用 `./data/redis_data` 持�
 
 ## 数据库配置
 
-- **基础版（SQLite）** 使用 SQLite，无需配置数据库（数据在 `./data/db/`）
+- **基础版（SQLite + Redis）** 使用 SQLite，无需配置数据库（数据在 `./data/db/`）
 - **MySQL / PostgreSQL 版** 由 compose 自动配置，后端启动时自动执行 `alembic upgrade head` 迁移（幂等，无需独立 migration 容器）
 - 使用外部数据库时设置 `DATABASE__*` 指向外部实例，后端启动时同样自动迁移
 

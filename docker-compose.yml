@@ -1,4 +1,4 @@
-# Nexus Media 基础版：仅前后端，使用 SQLite（无 Redis / 外部数据库）
+# Nexus Media 基础版：前后端 + Redis，使用 SQLite（无需外部数据库）
 # 启动：docker compose up -d
 services:
   frontend:
@@ -35,12 +35,28 @@ services:
       PGID: "0"
       UMASK: "000"
       NEXUS_MEDIA_DATA: /data
+      REDIS__HOST: redis
+      REDIS__PORT: "6379"
+      REDIS__DB: "0"
+    depends_on:
+      redis:
+        condition: service_started
     healthcheck:
       test: "wget -qO- http://localhost:8080/health || exit 1"
       interval: 30s
       timeout: 30s
       retries: 3
       start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-media-redis
+    restart: always
+    networks:
+      - nexus-media-network
+    volumes:
+      - ./data/redis_data:/data
+    command: redis-server --save "" --appendonly no --dir /data
 
 networks:
   nexus-media-network:

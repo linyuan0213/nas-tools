@@ -29,7 +29,7 @@
 
 | 文件 | 场景 | 启动 |
 |---|---|---|
-| `docker-compose.yml` | 仅前后端（SQLite，开箱即用） | `docker compose up -d` |
+| `docker-compose.yml` | 前后端 + Redis（SQLite，开箱即用） | `docker compose up -d` |
 | `docker-compose.mysql.yml` | MySQL 完整版（+Redis+OCR+Chrome） | `docker compose -f docker-compose.mysql.yml up -d` |
 | `docker-compose.postgresql.yml` | PostgreSQL 完整版 | `docker compose -f docker-compose.postgresql.yml up -d` |
 
@@ -255,11 +255,11 @@ networks:
 
 | 文件 | 场景 | 启动命令 |
 |------|------|------|
-| `docker-compose.yml` | 仅前后端（SQLite） | `docker compose up -d` |
+| `docker-compose.yml` | 前后端 + Redis（SQLite） | `docker compose up -d` |
 | `docker-compose.mysql.yml` | 前端 + 后端 + Redis + MySQL + OCR + Chrome | `docker compose -f docker-compose.mysql.yml up -d` |
 | `docker-compose.postgresql.yml` | 前端 + 后端 + Redis + PostgreSQL + OCR + Chrome | `docker compose -f docker-compose.postgresql.yml up -d` |
 
-> 三个文件互斥，只选一个部署。MySQL/PostgreSQL 版已包含完整组件；基础版（SQLite）无需 Redis/数据库。
+> 三个文件互斥，只选一个部署。MySQL/PostgreSQL 版已包含完整组件；基础版（SQLite + Redis）无需外部数据库。
 
 ### 可选组件：nexus-verify 与 nexus-chrome
 
@@ -321,7 +321,7 @@ VNC_PASSWORD=你的Chrome VNC密码
 ### 2. 启动服务
 
 ```bash
-# 基础版（SQLite）
+# 基础版（SQLite + Redis）
 docker compose up -d
 
 # 或 MySQL 完整版
@@ -496,9 +496,9 @@ compose 中 Redis 服务已配置好（无密码、使用 `/data/redis_data` 持
 
 ## 数据库配置
 
-### 基础版（仅前后端 / SQLite）
+### 基础版（SQLite + Redis）
 
-`docker-compose.yml`（基础版）使用 SQLite，无需配置数据库与 Redis：
+`docker-compose.yml`（基础版）使用 SQLite + Redis（compose 自带），无需外部数据库：
 
 ```bash
 docker compose up -d
