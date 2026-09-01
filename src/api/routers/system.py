@@ -6,11 +6,12 @@ System Router — FastAPI 迁移
 import asyncio
 import json
 import os
+import time
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 import log
@@ -62,6 +63,7 @@ from app.schemas.common import CommonResponse
 from app.services.auth_service import AuthService
 from app.services.config_reloader import ConfigReloader
 from app.services.indexer_service import IndexerService
+from app.services.log_search_service import LogSearchService
 from app.services.log_streaming_service import LogStreamingService
 from app.services.site_config_updater import SiteConfigUpdater
 from app.services.system.config import IndexerConfigService
@@ -930,6 +932,58 @@ def get_logs(
     if req.limit and req.limit > 0:
         logs = logs[-req.limit :]
     return success(data=logs)
+
+
+class LogsSearchRequest(BaseModel):
+    keyword: str | None = None
+    level: str | None = None
+    source: str | None = None
+    page: int = 1
+    page_size: int = 1000
+
+
+@router.post("/logs/search", response_model=CommonResponse, summary="全文搜索日志")
+def search_logs(
+    req: LogsSearchRequest,
+    user: str = Depends(require_permission("log:view")),
+):
+    """搜索磁盘日志文件（含轮转文件）中的全部日志，支持分页."""
+    result = LogSearchService().search(
+        keyword=req.keyword,
+        level=req.level,
+        source=req.source,
+        page=req.page,
+        page_size=req.page_size,
+    )
+    return success(data=result)
+
+
+@router.post("/logs/sources", response_model=CommonResponse, summary="获取日志来源列表")
+def list_log_sources(
+    req: EmptyRequest = EmptyRequest(),
+    user: str = Depends(require_permission("log:view")),
+):
+    """返回日志中出现过的全部来源，供前端来源下拉框使用."""
+    return success(data=LogSearchService().list_sources())
+
+
+@router.post("/logs/export", response_model=None, summary="导出日志")
+def export_logs(
+    req: LogsSearchRequest,
+    user: str = Depends(require_permission("log:view")),
+):
+    """导出全部匹配日志为文本文件下载."""
+    text = LogSearchService().export_text(
+        keyword=req.keyword,
+        level=req.level,
+        source=req.source,
+    )
+    filename = f"nexus-media-logs-{time.strftime('%Y%m%d-%H%M%S')}.txt"
+    return Response(
+        content=text,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/processes", response_model=CommonResponse, summary="获取进程列表")
