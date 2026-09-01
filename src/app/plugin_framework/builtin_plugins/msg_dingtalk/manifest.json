@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0",
+  "id": "msg_dingtalk",
+  "name": "钉钉消息",
+  "version": "1.0.0",
+  "author": "linyuan0213",
+  "description": "钉钉消息渠道，支持双向交互（Stream 模式）与机器人单聊通知。配置方式：钉钉开放平台创建企业内部应用，事件订阅选 Stream 模式；参数获取与消息中心配置见插件 README。",
+  "category": "system",
+  "tags": ["钉钉", "消息", "通知", "交互"],
+  "icon": "/api/plugin-framework/plugins/msg_dingtalk/assets/dingtalk.svg",
+  "color": "#0B80FF",
+  "min_app_version": "3.0.0",
+  "backend": {
+    "entry": "backend.plugin:MsgDingtalkPlugin",
+    "api_prefix": "",
+    "permissions": [],
+    "dependencies": ["dingtalk-stream>=0.24.1"],
+    "hooks": [],
+    "supports_run": false
+  },
+  "frontend": {
+    "routes": [],
+    "settings": {
+      "component": "SettingsPage",
+      "fields": []
+    },
+    "slots": []
+  }
+}
