@@ -89,14 +89,11 @@ class SQLAdapter:
         if not match:
             return sql
 
-        rest = match.group(1)
+        rest = match.group(1).rstrip().rstrip(";")
 
         if self.is_mysql:
             return f"INSERT IGNORE INTO {rest.replace(chr(34), '`')}"
         elif self.is_postgresql:
-            # PostgreSQL 需要使用 ON CONFLICT DO NOTHING
-            # 简单处理：直接返回 INSERT INTO，依赖唯一约束
-            # 更复杂的处理需要解析表名和约束
             return f"INSERT INTO {rest} ON CONFLICT DO NOTHING"
         else:
             # SQLite 保持原样

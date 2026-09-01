@@ -9,6 +9,7 @@ import log
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.core.module_config import ModuleConf
 from app.db.repositories.config_repo_adapter import FilterGroupRepositoryAdapter, FilterRuleRepositoryAdapter
+from app.db.sql_adapter import adapt_sql_for_engine
 from app.domain.mediatypes import MediaType
 from app.media import ReleaseGroupsMatcher, meta_info
 from app.utils import StringUtils
@@ -453,7 +454,7 @@ class FilterService:
             for init_rulegroup in init_rulegroups:
                 if str(init_rulegroup.get("id")) == groupid:
                     for sql in init_rulegroup.get("sql", []):
-                        self._filter_group_repo._repo._execute_raw(sql)
+                        self._filter_group_repo._repo._execute_raw(adapt_sql_for_engine(sql))
 
     def get_filterrules(self, script_path: str):
         """获取所有过滤规则及初始规则"""
