@@ -65,7 +65,7 @@ def _extract_user_from_api_key(
             status=1,
         )
     except Exception as e:  # noqa: BLE001
-        log.debug(f"[deps]忽略异常: {e}")
+        log.debug(f"[API]忽略异常: {e}")
 
     # 查询创建用户的权限，API Key 继承创建者权限
     permissions = []
@@ -85,9 +85,9 @@ def _extract_user_from_api_key(
                     perms = rbac_service.get_user_permissions(created_by)
                     permissions = list(perms) if perms else []
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[deps]忽略异常: {e}")
+                    log.debug(f"[API]忽略异常: {e}")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[deps]忽略异常: {e}")
+            log.debug(f"[API]忽略异常: {e}")
 
     return UserContext(
         user_id=created_by,

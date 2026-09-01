@@ -230,7 +230,7 @@ class BrushTaskService:
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[task_service]加载规则模板 {rule_id}/{field_name} 失败: {e}")
+            log.debug(f"[Brush]加载规则模板 {rule_id}/{field_name} 失败: {e}")
         return default
 
     def _build_task_dict(self, task) -> dict:

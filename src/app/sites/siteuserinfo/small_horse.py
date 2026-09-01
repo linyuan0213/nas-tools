@@ -49,4 +49,4 @@ def parse(ins: ConfigHtmlUserInfo) -> None:
                 (tmps[4].xpath("li")[6].xpath("text()")[0]).split(":")[1].replace("[", "")  # type: ignore[reportArgumentType]
             )
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[small_horse]忽略异常: {e}")
+            log.debug(f"[Sites]忽略异常: {e}")

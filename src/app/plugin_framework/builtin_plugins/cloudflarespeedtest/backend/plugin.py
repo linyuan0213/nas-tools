@@ -112,7 +112,7 @@ class CloudflareSpeedTestPlugin:
             self.ctx.remove_schedule("speedtest")
             self.ctx.remove_schedule("speedtest_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
 
     def _do_speedtest(self, manual=False):
         config = self._get_config()

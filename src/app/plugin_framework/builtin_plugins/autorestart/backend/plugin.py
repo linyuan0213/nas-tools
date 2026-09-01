@@ -57,7 +57,7 @@ class AutoRestartPlugin:
             self.ctx.remove_schedule("restart")
             self.ctx.remove_schedule("restart_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
 
     def _do_restart(self):
         config = self._get_config()

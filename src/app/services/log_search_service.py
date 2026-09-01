@@ -11,10 +11,9 @@ from typing import Any, Iterator
 
 import log
 from app.core.settings import settings
+from log._source import extract_source
 
 __all__ = ["LogSearchService"]
-
-_SOURCE_PATTERN = re.compile(r"^\[(.*?)\]")
 
 # 人类可读格式：2026-09-01 13:15:43.327 |INFO    | service.py : service.__init__:  42 | - [MediaService]xxx
 _HUMAN_LINE_PATTERN = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \|([A-Za-z]+)\s*\| .*? \| - (.*)$")
@@ -54,11 +53,8 @@ class LogSearchService:
 
     @staticmethod
     def _extract_source(text: str) -> tuple[str, str]:
-        """从日志文本提取来源标签，与内存缓冲保持一致."""
-        match = _SOURCE_PATTERN.match(text)
-        if match:
-            return match.group(1), text[len(match.group(0)) :].lstrip()
-        return "System", text
+        """从日志文本提取来源，与内存缓冲保持一致（共用归一化逻辑）."""
+        return extract_source(text)
 
     @classmethod
     def _parse_human_line(cls, line: str) -> dict[str, Any] | None:

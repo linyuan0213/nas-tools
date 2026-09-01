@@ -129,7 +129,7 @@ def cached_with_lock(
                 if found:
                     return result
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[decorators]忽略异常: {e}")
+                log.debug(f"[Cache]忽略异常: {e}")
 
             # 加锁后再次检查（防止并发穿透）
             with lock:
@@ -138,7 +138,7 @@ def cached_with_lock(
                     if found:
                         return result
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[decorators]忽略异常: {e}")
+                    log.debug(f"[Cache]忽略异常: {e}")
 
                 # 执行函数
                 result = func(*args, **kwargs)

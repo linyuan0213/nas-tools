@@ -103,7 +103,7 @@ class AutoGenRssPlugin:
             self.ctx.remove_schedule("gen_rss")
             self.ctx.remove_schedule("gen_rss_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
 
     def _do_gen_rss(self, manual=False):
         if not self._get_config().get("enabled") and not manual:

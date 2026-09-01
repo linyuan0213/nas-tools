@@ -54,7 +54,7 @@ class MediaRecommendationService:
                                 genre_map[int(gid)] = str(gname or "")
                 self._genre_cache[key] = genre_map
             except Exception as e:
-                log.debug(f"[media_recommendation_service]获取类型映射失败: {e}")
+                log.debug(f"[MediaService]获取类型映射失败: {e}")
                 self._genre_cache[key] = {}
         return self._genre_cache[key]
 
@@ -221,7 +221,7 @@ class MediaRecommendationService:
                 if res.get("image"):
                     res["image"] = ImageProxy.get_proxy_image_url(res["image"], use_proxy=True)
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[media_recommendation_service]忽略异常: {e}")
+            log.debug(f"[MediaService]忽略异常: {e}")
 
         return res_list
 

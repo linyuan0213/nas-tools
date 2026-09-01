@@ -11,6 +11,7 @@ from ._buffer_proxy import LOG_BUFFER, LogBufferProxy, get_log_buffer
 from ._compat import LOG_INDEX, LOG_QUEUE
 from ._intercept import InterceptHandler
 from ._logger_manager import Logger, get_logger_instance
+from ._source import extract_source, normalize_source
 
 # 抑制第三方库日志噪音
 logging.getLogger("werkzeug").setLevel(logging.ERROR)
@@ -24,8 +25,12 @@ logging.getLogger("charset_normalizer").setLevel(logging.WARNING)
 # 抑制 Agent SDK 的 HTTP 请求 DEBUG 日志
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx2").setLevel(logging.WARNING)
+logging.getLogger("httpcore2").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+# 抑制 websockets 协议帧/keepalive DEBUG 日志（> PING/< PONG 刷屏）
+logging.getLogger("websockets").setLevel(logging.WARNING)
 
 __all__ = [
     # API
@@ -42,6 +47,9 @@ __all__ = [
     "LOG_BUFFER",
     "LogBufferProxy",
     "get_log_buffer",
+    # 来源提取/归一化
+    "extract_source",
+    "normalize_source",
     # 兼容别名
     "LOG_QUEUE",
     "LOG_INDEX",

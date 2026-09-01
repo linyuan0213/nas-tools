@@ -74,7 +74,7 @@ class TorrentTransferPlugin:
             self.ctx.remove_schedule("transfer_once")
             self.ctx.remove_schedule("check_recheck")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
         self._event.clear()
 
     def _get_state(self):
@@ -325,7 +325,7 @@ class TorrentTransferPlugin:
             if save_path.startswith(from_root):
                 return save_path.replace(from_root, to_root, 1)
         except Exception as e:
-            log.debug(f"[plugin]路径转换异常: {e}")
+            log.debug(f"[Plugin]路径转换异常: {e}")
         return save_path
 
     def _load_history(self):
@@ -334,7 +334,7 @@ class TorrentTransferPlugin:
             try:
                 return JsonUtils.loads(content)
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[plugin]忽略异常: {e}")
+                log.debug(f"[Plugin]忽略异常: {e}")
         return {}
 
     def _save_history(self, key, value):

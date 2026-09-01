@@ -22,7 +22,7 @@ def init_rbac_permissions(
                 module=perm_data["module"],
             )
             created_count += 1
-            log.info(f"[RBAC初始化]创建权限: {perm_data['name']}")
+            log.info(f"[RBAC]创建权限: {perm_data['name']}")
 
-    log.info(f"[RBAC初始化]权限初始化完成，新增 {created_count} 个权限")
+    log.info(f"[RBAC]权限初始化完成，新增 {created_count} 个权限")
     return created_count

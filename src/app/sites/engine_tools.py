@@ -158,7 +158,7 @@ def _call_endpoint(
             res = client.get(url=url, params=params, headers=headers, auth=auth, **rl_kwargs)
         return res.json()
     except Exception as e:
-        log.error(f"[_call_endpoint]请求异常 {url}: {e}")
+        log.error(f"[SiteEngine]请求异常 {url}: {e}")
         return None
 
 
@@ -168,7 +168,7 @@ def _resolve_auth_token(engine: Any, site: Any, user_config: dict, token_type: s
         return engine._auth_cache[cache_key]
     if token_type == "csrf":
         token = _fetch_csrf_token(engine, site, user_config)
-        log.debug(f"[_resolve_auth_token]{site.name} CSRF token: {'OK' if token else 'FAIL'}")
+        log.debug(f"[SiteEngine]{site.name} CSRF token: {'OK' if token else 'FAIL'}")
     elif token_type == "passkey":
         token = _fetch_passkey(engine, site, user_config)
     else:
@@ -196,7 +196,7 @@ def _fetch_csrf_token(engine: Any, site: Any, user_config: dict) -> str | None:
             rate_limiter=rate_limiter_engine,
         ).get(url=csrf_url, headers={"User-Agent": ua}, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
     except Exception as e:
-        log.warn(f"[_fetch_csrf_token]{site.name} 获取CSRF失败: {e!r}")
+        log.warn(f"[SiteEngine]{site.name} 获取CSRF失败: {e!r}")
         return None
     selector = auth.get("csrf_selector", "")
     selector_type = auth.get("csrf_selector_type", "regex")

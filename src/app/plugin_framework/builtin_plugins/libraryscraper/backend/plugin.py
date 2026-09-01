@@ -65,7 +65,7 @@ class LibraryScraperPlugin:
             self.ctx.remove_schedule("scrape")
             self.ctx.remove_schedule("scrape_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
         self._event.clear()
 
     def _do_scrape(self):

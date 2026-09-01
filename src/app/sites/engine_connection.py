@@ -35,7 +35,7 @@ def test_html_connection(engine, site, user_config, base_url=None):
         ).get(url=domain, headers=headers, **rl_kwargs)
     except Exception as e:
         latency = round(time.time() - start, 3)
-        log.error(f"[test_html_connection]请求异常 {domain}: {e}")
+        log.error(f"[SiteEngine]请求异常 {domain}: {e}")
         return False, "无法打开网站", latency
     latency = round(time.time() - start, 3)
     if not is_logged_in(res.text):

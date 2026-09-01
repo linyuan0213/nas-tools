@@ -88,7 +88,7 @@ class DoubanRankPlugin:
             self.ctx.remove_schedule("refresh")
             self.ctx.remove_schedule("refresh_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
         self._event.clear()
 
     def _load_history(self):
@@ -97,7 +97,7 @@ class DoubanRankPlugin:
             try:
                 return JsonUtils.loads(content)
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[plugin]忽略异常: {e}")
+                log.debug(f"[Plugin]忽略异常: {e}")
         return {}
 
     def _save_history(self, data):

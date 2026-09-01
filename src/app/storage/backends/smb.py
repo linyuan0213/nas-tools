@@ -94,7 +94,7 @@ class SMBStorageBackend(StorageBackend):
             try:
                 rmdir(rp, **self._kw())
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[smb]忽略异常: {e}")
+                log.debug(f"[SMB]忽略异常: {e}")
         length = chunk_size if chunk_size > 0 else 1024 * 1024
         try:
             with open_file(rp, mode="wb", **self._kw()) as f:

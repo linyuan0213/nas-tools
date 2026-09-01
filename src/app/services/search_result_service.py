@@ -110,7 +110,7 @@ class SearchResultService:
                 try:
                     poster_url = ImageProxy.get_proxy_image_url(item.POSTER, use_proxy=True)
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[search_result_service]忽略异常: {e}")
+                    log.debug(f"[Search]忽略异常: {e}")
                 search_results_dict[title_string] = {
                     "key": item.ID,
                     "title": item.TITLE,

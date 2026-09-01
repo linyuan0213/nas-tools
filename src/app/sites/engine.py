@@ -383,7 +383,7 @@ class SiteEngine:
         ret = {"free": False, "2xfree": False, "hr": False, "peer_count": 0, "labels": ""}
         site = self.get_by_url(torrent_url)
         if not site:
-            log.debug(f"[engine]resolve_torrent_attr 未匹配站点, url={torrent_url[:100]}")
+            log.debug(f"[SiteEngine]resolve_torrent_attr 未匹配站点, url={torrent_url[:100]}")
             return ret
         user_config = {
             "cookie": cookie or "",
@@ -397,7 +397,7 @@ class SiteEngine:
         if site.api and site.torrent_attr:
             tid = self._extract_tid(torrent_url, site)
             if not tid:
-                log.debug(f"[engine]resolve_torrent_attr TID提取失败, url={torrent_url[:100]}")
+                log.debug(f"[SiteEngine]resolve_torrent_attr TID提取失败, url={torrent_url[:100]}")
                 return ret
             cfg = site.torrent_attr
             base = site.api.base_url.rstrip("/")
@@ -480,7 +480,7 @@ class SiteEngine:
                     else:
                         ret["peer_count"] = int(val) if val else 0
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[engine]忽略异常: {e}")
+                log.debug(f"[SiteEngine]忽略异常: {e}")
             return ret
 
         if site.html and site.html.conf:

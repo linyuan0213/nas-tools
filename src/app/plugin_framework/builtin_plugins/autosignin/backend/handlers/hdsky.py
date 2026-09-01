@@ -59,7 +59,7 @@ class HDSky(SiteSigninHandler):
                 self._plugin_ctx.debug(f"获取{site}验证码失败，重试次数 {res_times}")
                 time.sleep(1)
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[hdsky]忽略异常: {e}")
+                log.debug(f"[Sites]忽略异常: {e}")
 
         if not img_hash:
             return SigninResult.fail(site, "未获取到验证码")

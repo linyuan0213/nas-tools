@@ -329,7 +329,7 @@ class Telegram(_IMessageClient):
                     _webhook_set = True
                     log.info(f"[Telegram]Webhook 设置成功：{self._webhook_url}")
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[telegram]忽略异常: {e}")
+                log.debug(f"[Telegram]忽略异常: {e}")
 
     def _get_webhook_status(self):
         url = f"https://api.telegram.org/bot{self.token}/getWebhookInfo"
@@ -346,7 +346,7 @@ class Telegram(_IMessageClient):
                     return 2
                 return 0
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[telegram]忽略异常: {e}")
+            log.debug(f"[Telegram]忽略异常: {e}")
         return 0
 
     def _del_webhook(self):
@@ -357,4 +357,4 @@ class Telegram(_IMessageClient):
             HttpClient(config=HttpClientConfig(proxy_url=proxy_url)).get(url)
             log.info("[Telegram]Webhook 已删除")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[telegram]忽略异常: {e}")
+            log.debug(f"[Telegram]忽略异常: {e}")

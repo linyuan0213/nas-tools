@@ -101,7 +101,7 @@ def _clean_old_cache():
                         stat = os.stat(filepath)
                         files.append((filepath, stat.st_mtime, stat.st_size))
                     except Exception as e:  # noqa: BLE001
-                        log.debug(f"[core]忽略异常: {e}")
+                        log.debug(f"[ImageProxy]忽略异常: {e}")
             files.sort(key=lambda x: x[1])
             for filepath, _mtime, size in files:
                 if total_size <= MAX_CACHE_SIZE:
@@ -111,7 +111,7 @@ def _clean_old_cache():
                     total_size -= size
                     log.debug(f"[ImageProxy]删除旧缓存释放空间: {filepath}")
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[core]忽略异常: {e}")
+                    log.debug(f"[ImageProxy]忽略异常: {e}")
     except Exception as e:
         log.error(f"[ImageProxy]清理缓存失败: {e!s}")
 

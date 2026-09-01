@@ -69,7 +69,7 @@ class WeworkIPChangePlugin:
             try:
                 self._session.close()
             except Exception as e:
-                log.debug(f"[wework] 关闭 BrowserSession 失败: {e}")
+                log.debug(f"[Wework] 关闭 BrowserSession 失败: {e}")
             self._session = None
 
     def on_hook(self, event, data):
@@ -128,7 +128,7 @@ class WeworkIPChangePlugin:
             self.ctx.remove_schedule("change_ip")
             self.ctx.remove_schedule("change_ip_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
 
     def login_by_code(self, data=None) -> bool:
         session = self._ensure_session()

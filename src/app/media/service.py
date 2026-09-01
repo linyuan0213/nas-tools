@@ -324,7 +324,7 @@ class MediaService:
                 # 文件年份早于 TMDB 首播 5 年以上 → 可能错配，拒绝
                 and int(original_year) < int(result.year) - 5
             ):
-                log.info(f"[service]年份冲突 种子={original_year} TMDB={result.year} → 尝试补充搜索")
+                log.info(f"[MediaService]年份冲突 种子={original_year} TMDB={result.year} → 尝试补充搜索")
                 if parsed.title_en:
                     combined = f"{parsed.title_cn or ''} {parsed.title_en}".strip()
                     if combined != (parsed.title_cn or ""):
@@ -422,7 +422,7 @@ class MediaService:
                     if cn_title and StringUtils.is_chinese(cn_title):
                         info.cn_name = cn_title
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[service]忽略异常: {e}")
+                log.debug(f"[MediaService]忽略异常: {e}")
 
         # 7. 集数映射（动漫合并季 / 绝对集号）
         if info.begin_episode:
@@ -1214,7 +1214,7 @@ class MediaService:
                 if en_title and en_title != media_info.title and en_title != media_info.original_title:
                     media_info.en_name = en_title
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[service]补全英文名失败: {e}")
+                log.debug(f"[MediaService]补全英文名失败: {e}")
 
     def get_tmdb_zhtw_title(self, media_info):
         return self._lookup.get_tmdb_zhtw_title(media_info)

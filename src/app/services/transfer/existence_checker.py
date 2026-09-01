@@ -45,7 +45,7 @@ class MediaExistenceChecker:
                         continue
                 files.append(finfo.path)
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[existence_checker]忽略异常: {e}")
+            log.debug(f"[FileTransfer]忽略异常: {e}")
         return files
 
     def is_media_exists(self, media_dest, media, dst_backend=None):

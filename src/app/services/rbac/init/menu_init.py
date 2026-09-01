@@ -54,9 +54,9 @@ def init_rbac_menus(menu_repo: Any = None, force_defaults: bool = False):
         try:
             menu_repo.delete_menu(menu.ID)
             deleted_count += 1
-            log.info(f"[RBAC初始化]删除旧菜单: {menu.MENU_NAME} ({menu.MENU_CODE})")
+            log.info(f"[RBAC]删除旧菜单: {menu.MENU_NAME} ({menu.MENU_CODE})")
         except Exception as e:
-            log.warn(f"[RBAC初始化]删除旧菜单失败: {menu.MENU_CODE} - {e}")
+            log.warn(f"[RBAC]删除旧菜单失败: {menu.MENU_CODE} - {e}")
 
     # 3. 递归创建/更新菜单
     created_count = 0
@@ -105,9 +105,9 @@ def init_rbac_menus(menu_repo: Any = None, force_defaults: bool = False):
                 try:
                     menu_repo.update_menu(existing.ID, **updates)
                     updated_count += 1
-                    log.info(f"[RBAC初始化]同步菜单: {menu_data['name']}")
+                    log.info(f"[RBAC]同步菜单: {menu_data['name']}")
                 except Exception as e:
-                    log.warn(f"[RBAC初始化]更新菜单失败: {menu_data['name']} - {e}")
+                    log.warn(f"[RBAC]更新菜单失败: {menu_data['name']} - {e}")
             menu_id = existing.ID
         else:
             # 用户删除过的内置菜单（墓碑）：跳过重建（含其子菜单），实现删除后重启不恢复
@@ -135,13 +135,13 @@ def init_rbac_menus(menu_repo: Any = None, force_defaults: bool = False):
 
                 if menu:
                     created_count += 1
-                    log.info(f"[RBAC初始化]创建菜单: {menu_data['name']}")
+                    log.info(f"[RBAC]创建菜单: {menu_data['name']}")
                     menu_id = menu.ID
                 else:
-                    log.error(f"[RBAC初始化]创建菜单失败: {menu_data['name']}")
+                    log.error(f"[RBAC]创建菜单失败: {menu_data['name']}")
                     return
             except Exception as e:
-                log.error(f"[RBAC初始化]创建菜单失败: {menu_data['name']} - {e}")
+                log.error(f"[RBAC]创建菜单失败: {menu_data['name']} - {e}")
                 return
 
         if "children" in menu_data:
@@ -151,5 +151,5 @@ def init_rbac_menus(menu_repo: Any = None, force_defaults: bool = False):
     for menu_data in DEFAULT_MENUS:
         sync_menu_recursive(menu_data)
 
-    log.info(f"[RBAC初始化]菜单同步完成，新增 {created_count} 个，更新 {updated_count} 个，删除 {deleted_count} 个")
+    log.info(f"[RBAC]菜单同步完成，新增 {created_count} 个，更新 {updated_count} 个，删除 {deleted_count} 个")
     return created_count + updated_count

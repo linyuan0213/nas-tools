@@ -324,7 +324,7 @@ class SyncService:
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[sync_service]忽略异常: {e}")
+            log.debug(f"[Sync]忽略异常: {e}")
         return None
 
     def _resolve_backend(self, backend_id: str):
@@ -341,7 +341,7 @@ class SyncService:
                     setattr(config, k, v)
             return StorageBackendFactory.create(config)
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[sync_service]解析存储后端失败: {e}")
+            log.debug(f"[Sync]解析存储后端失败: {e}")
         return None
 
     def remote_path_exists(self, path: str, backend_id: str) -> bool:
@@ -352,7 +352,7 @@ class SyncService:
         try:
             return bool(backend.exists(path))
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[sync_service]远程路径检查失败: {e}")
+            log.debug(f"[Sync]远程路径检查失败: {e}")
         return False
 
     def _stage_remote_source(self, remote_path: str, backend_id: str) -> str:
@@ -374,7 +374,7 @@ class SyncService:
             self._stage_remote_dir(backend, remote_path, local_target)
             return local_target
         except Exception as e:  # noqa: BLE001
-            log.error(f"[sync_service]远程源暂存失败: {e}")
+            log.error(f"[Sync]远程源暂存失败: {e}")
         return ""
 
     def _stage_remote_dir(self, backend, remote_path: str, local_dir: str) -> None:
@@ -601,7 +601,7 @@ class SyncService:
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[sync_service]忽略异常: {e}")
+            log.debug(f"[Sync]忽略异常: {e}")
         return None
 
     @classmethod

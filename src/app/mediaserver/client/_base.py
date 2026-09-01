@@ -25,7 +25,7 @@ class _IMediaClient(metaclass=ABCMeta):
             try:
                 return JsonUtils.loads(str(item.CONFIG))
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[_base]忽略异常: {e}")
+                log.debug(f"[MediaServer]忽略异常: {e}")
         return settings.get(name)
 
     @classmethod
@@ -218,7 +218,7 @@ class _IMediaClient(metaclass=ABCMeta):
                         return f"{domain}{proxy_url}"
                 return proxy_url
         except Exception as e:
-            log.error(f"[get_nt_image_url]处理图片代理失败: {str(e)}")
+            log.error(f"[MediaServer]处理图片代理失败: {str(e)}")
 
         # 默认使用旧的 Redis 缓存代理
         if remote:

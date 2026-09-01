@@ -96,7 +96,7 @@ class Bangumi:
                 if settings.get("app").get("enable_image_proxy", True):
                     image = f"/img/bgm/{urllib.parse.quote(image, safe='')}"
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[bangumi]忽略异常: {e}")
+                log.debug(f"[Bangumi]忽略异常: {e}")
         summary = item.get("summary")
         return {
             "id": f"BG:{bid}",

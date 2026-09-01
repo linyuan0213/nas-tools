@@ -548,7 +548,7 @@ class SiteUserInfo:
             res = client.get(url=url, headers={"User-Agent": ua or "Mozilla/5.0"})
             site_user_info.site_favicon = base64.b64encode(res.content).decode()
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[site_userinfo]忽略异常: {e}")
+            log.debug(f"[SiteUserInfo]忽略异常: {e}")
 
     @staticmethod
     def __format_filesize(size_bytes):

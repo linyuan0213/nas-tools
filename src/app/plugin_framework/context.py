@@ -129,25 +129,25 @@ class PluginContext:
             self._log_repo.insert(self._plugin_id, level, msg)
 
     def log_info(self, msg: str) -> None:
-        log.info(f"[Plugin:{self._plugin_id}] {msg}")
+        log.info(f"[{self._plugin_id}] {msg}")
         self._write_db_log("info", msg)
 
     info = log_info
 
     def log_warn(self, msg: str) -> None:
-        log.warn(f"[Plugin:{self._plugin_id}] {msg}")
+        log.warn(f"[{self._plugin_id}] {msg}")
         self._write_db_log("warn", msg)
 
     warn = log_warn
 
     def log_error(self, msg: str) -> None:
-        log.error(f"[Plugin:{self._plugin_id}] {msg}")
+        log.error(f"[{self._plugin_id}] {msg}")
         self._write_db_log("error", msg)
 
     error = log_error
 
     def log_debug(self, msg: str) -> None:
-        log.debug(f"[Plugin:{self._plugin_id}] {msg}")
+        log.debug(f"[{self._plugin_id}] {msg}")
         self._write_db_log("debug", msg)
 
     debug = log_debug

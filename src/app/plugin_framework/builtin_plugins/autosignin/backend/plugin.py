@@ -104,7 +104,7 @@ class AutoSignInPlugin:
             self.ctx.remove_schedule("signin")
             self.ctx.remove_schedule("signin_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
 
     def _load_history(self):
         content = self.ctx.read_data("history.json")
@@ -112,7 +112,7 @@ class AutoSignInPlugin:
             try:
                 return JsonUtils.loads(content)
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[plugin]忽略异常: {e}")
+                log.debug(f"[Plugin]忽略异常: {e}")
         return {}
 
     def _save_history(self, data):

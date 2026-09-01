@@ -238,7 +238,7 @@ def _parse_seeding_html(ins: ConfigHtmlUserInfo, doc: Any, html_text: str) -> No
                 ins.seeding += 1
                 info.append([seeders, size])
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[nexus_php]忽略异常: {e}")
+                log.debug(f"[Sites]忽略异常: {e}")
         ins.seeding_info = JsonUtils.dumps(info)
         return
     table_prefix = (

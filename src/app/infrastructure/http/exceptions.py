@@ -28,7 +28,7 @@ class HttpClientError(Exception):
             try:
                 response_text = exc.response.text[:500]
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[exceptions]忽略异常: {e}")
+                log.debug(f"[HTTP]忽略异常: {e}")
 
         original = str(exc)
         message = original

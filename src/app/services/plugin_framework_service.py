@@ -259,7 +259,7 @@ class PluginFrameworkService:
             try:
                 return JsonUtils.loads(str(orm_model.CONFIG))
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[plugin_framework_service]忽略异常: {e}")
+                log.debug(f"[PluginFrameworkService]忽略异常: {e}")
         return {}
 
     def get_config_fields(self, plugin_id: str) -> list[dict]:

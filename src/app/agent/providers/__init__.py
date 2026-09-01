@@ -87,7 +87,7 @@ def list_embedding_models(provider_name: str, api_url: str = "", api_key: str = 
                 return ids[:30]
         return list(_CURATED_EMBEDDING_MODELS.get(provider_key, _CURATED_EMBEDDING_MODELS["openai"]))
     except Exception as e:
-        log.warn(f"[list_embedding_models]拉取失败，回退精选: {e}")
+        log.warn(f"[EmbeddingService]拉取失败，回退精选: {e}")
         return list(_CURATED_EMBEDDING_MODELS.get(provider_key, _CURATED_EMBEDDING_MODELS["openai"]))
 
 

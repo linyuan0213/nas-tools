@@ -299,7 +299,7 @@ class DouBan:
                     if settings.get("app").get("enable_image_proxy", True):
                         cover_url = f"/img/douban/{urllib.parse.quote(cover_url, safe='')}"
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[douban]忽略异常: {e}")
+                    log.debug(f"[Douban]忽略异常: {e}")
                 ret_media["cover_url"] = cover_url
             # 评分
             rating = web_info.get("rate")
@@ -467,7 +467,7 @@ class DouBan:
                     if settings.get("app").get("enable_image_proxy", True):
                         poster_path = f"/img/douban/{urllib.parse.quote(poster_path, safe='')}"
                 except Exception as e:  # noqa: BLE001
-                    log.debug(f"[douban]忽略异常: {e}")
+                    log.debug(f"[Douban]忽略异常: {e}")
             elif poster_filter:
                 continue
 

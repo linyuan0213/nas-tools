@@ -59,7 +59,7 @@ class TorrentMarkPlugin:
             self.ctx.remove_schedule("mark")
             self.ctx.remove_schedule("mark_once")
         except Exception as e:  # noqa: BLE001
-            log.debug(f"[plugin]忽略异常: {e}")
+            log.debug(f"[Plugin]忽略异常: {e}")
         self._event.clear()
 
     def _do_mark(self, manual=False):

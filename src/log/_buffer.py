@@ -1,10 +1,11 @@
 """线程安全的内存日志缓冲区."""
 
-import re
 import threading
 import time
 from collections import deque
 from typing import Any
+
+from ._source import extract_source
 
 
 class LogBuffer:
@@ -13,8 +14,6 @@ class LogBuffer:
     通过单调递增计数器解决 maxlen 场景下无法识别新增日志的问题。
     """
 
-    _SOURCE_PATTERN = re.compile(r"^\[(.*?)\]")
-
     def __init__(self, maxlen: int = 200):
         self._queue: deque[dict[str, Any]] = deque(maxlen=maxlen)
         self._lock = threading.Lock()
@@ -22,12 +21,7 @@ class LogBuffer:
 
     def append(self, level: str, text: str) -> int:
         """添加一条日志记录，返回当前计数器值。"""
-        match = self._SOURCE_PATTERN.match(text)
-        if match:
-            source = match.group(1)
-            text = text[len(match.group(0)) :].lstrip()
-        else:
-            source = "System"
+        source, text = extract_source(text)
 
         log_entry = {
             "time": time.strftime("%H:%M:%S", time.localtime(time.time())),

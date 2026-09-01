@@ -253,7 +253,7 @@ class RedisCacheAdapter(CacheAdapter):
                 if self._redis.is_available():
                     return True
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[adapters]忽略异常: {e}")
+                log.debug(f"[Cache]忽略异常: {e}")
             self._redis = None
         # 尝试重连
         self._init_redis()
@@ -352,7 +352,7 @@ class RedisCacheAdapter(CacheAdapter):
             try:
                 return self._redis.exists(self._redis_key(key))
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[adapters]忽略异常: {e}")
+                log.debug(f"[Cache]忽略异常: {e}")
         return self._fallback.exists(key)
 
     def clear(self) -> bool:
@@ -391,7 +391,7 @@ class RedisCacheAdapter(CacheAdapter):
             try:
                 return self._redis.ttl(self._redis_key(key))
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[adapters]忽略异常: {e}")
+                log.debug(f"[Cache]忽略异常: {e}")
         return self._fallback.ttl(key)
 
     def expire(self, key: str, seconds: int) -> bool:
