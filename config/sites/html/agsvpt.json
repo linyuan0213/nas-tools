@@ -2,6 +2,9 @@
   "id": "agsvpt",
   "name": "末日种子库",
   "domain": "https://www.agsvpt.com",
+  "domain_aliases": [
+    "https://pt.agsvpt.cn"
+  ],
   "encoding": "UTF-8",
   "public": false,
   "html": {

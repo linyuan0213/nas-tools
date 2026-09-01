@@ -71,6 +71,12 @@ class SiteCache:
 
             if site_info.get("rss_enable"):
                 self._rss_sites.append(site_info)
+                # 用户配置的 RSS 域名（与主站不一致时）注册到引擎匹配，供 RSS 种子识别
+                rssurl = site_info.get("rssurl") or ""
+                if rssurl:
+                    rss_domain = StringUtils.get_url_domain(rssurl)
+                    if rss_domain:
+                        self._site_engine.register_rss_domain(site_info.get("name") or "", rss_domain)
             if site_info.get("brush_enable"):
                 self._brush_sites.append(site_info)
             if site_info.get("statistic_enable"):

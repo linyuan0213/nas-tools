@@ -84,6 +84,8 @@ class SiteDefinition:
     name: str = ""
     domain: str = ""
     domain_aliases: list[str] = field(default_factory=list)
+    # RSS 专用域名（仅用于识别 RSS 种子归属，功能访问仍走主站 domain）
+    rss_domains: list[str] = field(default_factory=list)
     tid_pattern: str = r"\d+"
     encoding: str = "UTF-8"
     public: bool = False
@@ -108,7 +110,9 @@ class SiteDefinition:
         domain_stripped = domain_lower.replace("www.", "")
         if domain_stripped in url_stripped or url_stripped in domain_stripped:
             return True
-        return any(alias.lower() in url_lower or url_lower in alias.lower() for alias in self.domain_aliases)
+        if any(alias.lower() in url_lower or url_lower in alias.lower() for alias in self.domain_aliases):
+            return True
+        return any(rss.lower() in url_lower or url_lower in rss.lower() for rss in self.rss_domains)
 
     @classmethod
     def from_dict(cls, data: dict) -> "SiteDefinition":
@@ -117,6 +121,7 @@ class SiteDefinition:
         d.name = data.get("name", data.get("id", ""))
         d.domain = data.get("domain", "")
         d.domain_aliases = data.get("domain_aliases", [])
+        d.rss_domains = data.get("rss_domains", [])
         d.tid_pattern = data.get("tid_pattern", r"\d+")
         d.encoding = data.get("encoding", "UTF-8")
         d.public = data.get("public", False)
@@ -260,6 +265,23 @@ class SiteEngine:
             self._domain_index[site_def.domain.lower()] = site_def
             for alias in site_def.domain_aliases:
                 self._domain_index[alias.lower()] = site_def
+            for rss in site_def.rss_domains:
+                self._domain_index[rss.lower()] = site_def
+
+    def register_rss_domain(self, site_key: str, rss_domain: str) -> None:
+        """注册用户配置的 RSS 域名到站点匹配索引（RSS 种子识别用）.
+
+        用户站点配置的 RSS 链接域名与主站不一致时，RSS 种子 URL 据此识别站点归属；
+        功能访问（搜索/详情/属性解析）仍走站点定义的主站 domain。
+        """
+        if not rss_domain:
+            return
+        site = self.get_by_name(site_key) or self._sites.get(site_key)
+        if not site:
+            return
+        self._domain_index[rss_domain.lower()] = site
+        if rss_domain not in site.rss_domains:
+            site.rss_domains.append(rss_domain)
 
     def register(self, site_def: SiteDefinition):
         self._sites[site_def.id] = site_def
