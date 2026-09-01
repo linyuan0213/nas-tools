@@ -7,7 +7,7 @@
 - 内嵌 nginx 反代，后端容器统一 **8080** 端口对外（内部服务监听 3000）
 - 非 root 用户运行（nexus:nexus，UID 911，可用 PUID/PGID 覆盖）
 - s6-overlay 进程管理，支持优雅退出
-- 数据库迁移由 compose 独立的 migration 服务执行（`alembic upgrade head`），后端通过 `SKIP_MIGRATION=true` 跳过
+- 数据库迁移在容器启动时自动执行（`alembic upgrade head`，幂等，无需独立 migration 容器）
 
 ## 端口约定
 
@@ -15,57 +15,50 @@
 
 ## 快速开始
 
-项目根目录的 `docker-compose.yml` 提供多种部署模式，通过 `--profile` 切换。
+项目根目录提供 **3 个独立 compose 文件**，按部署场景选一个：
 
-> **容器间网络提示**：所有服务运行在自定义网桥 `nexus-media-network` 上，后端通过服务名（`mysql`、`redis`）互访。若之前部署过，旧网络/旧容器残留会导致容器间互连失败、后端连不上数据库一直超时，先 `docker compose down` 并清理残留网络/容器再启动（详见 `docs/installation.md` 的「第一步：先确认容器间网络互通」）。
+| 文件 | 场景 | 启动 |
+|---|---|---|
+| `docker-compose.yml` | 仅前后端（SQLite，开箱即用） | `docker compose up -d` |
+| `docker-compose.mysql.yml` | MySQL 完整版（+Redis+OCR+Chrome） | `docker compose -f docker-compose.mysql.yml up -d` |
+| `docker-compose.postgresql.yml` | PostgreSQL 完整版 | `docker compose -f docker-compose.postgresql.yml up -d` |
 
-### 基础模式（默认）
+> 三个文件**互斥**（`container_name`/端口/网络名相同），只选一个部署。
 
-包含前端、后端、Redis 和数据库（默认 MySQL，也可切换为 PostgreSQL）。
+> **容器间网络提示**：所有服务运行在自定义网桥 `nexus-media-network` 上，后端通过服务名（`mysql`/`postgresql`/`redis`）互访，前端经网络别名 `backend` 访问后端。若之前部署过，旧网络/旧容器残留会导致容器间互连失败，先 `docker compose down` 并清理残留网络/容器再启动。
 
-**MySQL**
+### 基础版（SQLite，开箱即用）
 
 ```bash
-docker compose --profile basic-mysql up -d
+docker compose up -d
 ```
 
-**PostgreSQL**
+### MySQL 完整版
 
 ```bash
-docker compose --profile basic-postgresql up -d
+docker compose -f docker-compose.mysql.yml up -d
 ```
 
-### 完整模式
-
-在基础模式之上增加 OCR（nexus-verify）和 Chrome（nexus-chrome）组件。
-
-**MySQL**
+### PostgreSQL 完整版
 
 ```bash
-docker compose --profile full-mysql up -d
-```
-
-**PostgreSQL**
-
-```bash
-docker compose --profile full-postgresql up -d
-```
-
-### 仅前后端（SQLite）
-
-只启动前端和后端，后端使用 SQLite，无需 Redis 和数据库。
-
-```bash
-docker compose --profile app-only up -d
+docker compose -f docker-compose.postgresql.yml up -d
 ```
 
 ### 修改配置
 
-部署前按需修改 `docker-compose.yml`：
+1. **媒体目录挂载**：修改所选 compose 文件中后端的 `- /mnt/media:/media` 为你的媒体库目录
+2. **密码**：MySQL/PostgreSQL 版的密码在项目根目录 `.env` 中设置（`docker compose` 自动读取），必填项缺失会启动报错提示：
 
-1. **媒体目录挂载**（`x-backend-common` 卷）：将 `/mnt/media:/media` 替换为你的媒体库目录
-2. **数据库密码**：MySQL 服务与 `migration-mysql` / `backend-mysql` 三处的 `MYSQL_PASSWORD` / `DATABASE__PASSWORD` 保持一致
-3. **Chrome VNC 密码**（完整模式）：修改 `nexus-chrome` 的 `VNC_PASSWORD`
+   ```bash
+   # .env
+   MYSQL_ROOT_PASSWORD=你的root密码
+   MYSQL_PASSWORD=你的应用密码
+   POSTGRES_PASSWORD=你的PostgreSQL密码   # PostgreSQL 版
+   VNC_PASSWORD=你的Chrome VNC密码         # 完整版
+   ```
+
+3. **数据库迁移**：后端启动时自动执行 `alembic upgrade head`，无需手动迁移
 
 ### 访问
 
@@ -162,7 +155,7 @@ compose 中 Redis 服务已配置（无密码、使用 `./data/redis_data` 持�
     command: redis-server --save "" --appendonly no --dir /data
 ```
 
-后端通过 `REDIS__*` 环境变量连接（compose 的 `x-env-db-common` 已设置 `REDIS__HOST=nexus-media-redis`）。使用外部 Redis 时，覆盖这些变量即可：
+后端通过 `REDIS__*` 环境变量连接（compose 的 MySQL/PostgreSQL 版已设置 `REDIS__HOST=redis`，用服务名）。使用外部 Redis 时，覆盖这些变量即可：
 
 ```yaml
     environment:
@@ -174,9 +167,9 @@ compose 中 Redis 服务已配置（无密码、使用 `./data/redis_data` 持�
 
 ## 数据库配置
 
-- **app-only** 模式使用 SQLite，无需配置数据库（数据在 `./data/db/`）
-- **MySQL / PostgreSQL** 模式由 compose 自动配置，迁移由独立的 `migration-*` 服务执行，后端 `SKIP_MIGRATION=true`
-- 使用外部数据库时设置 `DATABASE__*` 指向外部实例，并手动执行 `alembic upgrade head` 迁移
+- **基础版（SQLite）** 使用 SQLite，无需配置数据库（数据在 `./data/db/`）
+- **MySQL / PostgreSQL 版** 由 compose 自动配置，后端启动时自动执行 `alembic upgrade head` 迁移（幂等，无需独立 migration 容器）
+- 使用外部数据库时设置 `DATABASE__*` 指向外部实例，后端启动时同样自动迁移
 
 ## 环境变量
 
@@ -192,7 +185,7 @@ compose 中 Redis 服务已配置（无密码、使用 `./data/redis_data` 持�
 | `PGID` | 0 | 运行用户 GID |
 | `UMASK` | 000 | 文件权限掩码 |
 | `NEXUS_PORT` | 3000 | 容器内部 nexus-media 服务端口（nginx 反代到该端口） |
-| `SKIP_MIGRATION` | false | 设为 `true` 跳过启动时数据库迁移（compose 由独立 migration 服务执行） |
+| `SKIP_MIGRATION` | false | 设为 `true` 跳过启动时数据库迁移（默认自动执行） |
 | `TZ` | Asia/Shanghai | 时区 |
 | `NEXUS_MEDIA_DATA` | /data | 数据目录（config.yaml、数据库、插件数据） |
 | `NEXUS_MEDIA_CONFIG` | /data/config.yaml | 配置文件路径 |

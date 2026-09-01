@@ -7,7 +7,7 @@
 - 内嵌 nginx 反代，后端容器统一 **8080** 端口对外（内部服务监听 3000）
 - 非 root 用户运行（nexus:nexus，UID 911，可用 PUID/PGID 覆盖）
 - s6-overlay 进程管理，支持优雅退出
-- 数据库迁移由 compose 独立的 migration 服务执行（`alembic upgrade head`），后端通过 `SKIP_MIGRATION=true` 跳过
+- 数据库迁移在容器启动时自动执行（`alembic upgrade head`，幂等，无需独立 migration 容器）
 
 ## 端口约定（重要）
 
@@ -25,18 +25,25 @@
 
 ## Docker Compose 安装（推荐）
 
-项目根目录的 `docker-compose.yml` 支持多种部署模式（通过 `--profile` 选择）。
+项目根目录提供 **3 个独立 compose 文件**，按部署场景选一个：
+
+| 文件 | 场景 | 启动 |
+|---|---|---|
+| `docker-compose.yml` | 仅前后端（SQLite，开箱即用） | `docker compose up -d` |
+| `docker-compose.mysql.yml` | MySQL 完整版（+Redis+OCR+Chrome） | `docker compose -f docker-compose.mysql.yml up -d` |
+| `docker-compose.postgresql.yml` | PostgreSQL 完整版 | `docker compose -f docker-compose.postgresql.yml up -d` |
+
+> 三个文件**互斥**（`container_name`/端口/网络名相同），只选一个部署。
 
 ### 第一步：先确认容器间网络互通（常见坑）
 
-`docker compose up` 启动后，后端会通过网桥访问 `mysql`、`redis`（服务名即主机名）。**网桥不通、容器连不上 mysql/redis 是最常见的部署失败原因**，表现为后端反复重试数据库连接、一直超时、`unhealthy`。
+`docker compose up` 启动后，后端会通过网桥访问 `mysql`/`postgresql`、`redis`（服务名即主机名）。**网桥不通、容器连不上数据库/redis 是最常见的部署失败原因**，表现为后端反复重试数据库连接、一直超时、`unhealthy`。
 
 **0. 先看状态与日志**
 
 ```bash
-docker compose ps                 # 查看各容器状态
-docker compose logs backend-mysql | tail -30    # 后端启动日志，看连接报错
-docker compose logs migration-mysql | tail -30  # 迁移服务日志
+docker compose -f docker-compose.mysql.yml ps          # 查看各容器状态
+docker compose -f docker-compose.mysql.yml logs backend | tail -30    # 后端启动日志，看连接报错
 ```
 
 **1. 验证容器间是否互通**
@@ -63,9 +70,9 @@ docker network inspect nexus-media-network --format '{{range .Containers}}{{.Nam
 若网络里只有部分容器、或容器没加入，先清理后重新启动：
 
 ```bash
-docker compose down                      # 停掉本次 compose 的容器（不删数据卷）
+docker compose -f docker-compose.mysql.yml down        # 停掉本次 compose 的容器（不删数据卷）
 docker network rm nexus-media-network    # 删掉残留网络（若仍被占用先停对应容器）
-docker compose --profile basic-mysql up -d
+docker compose -f docker-compose.mysql.yml up -d
 ```
 
 **3. 检查旧容器残留**
@@ -74,20 +81,20 @@ docker compose --profile basic-mysql up -d
 
 ```bash
 docker ps -a | grep nexus
-docker rm -f nexus-media nexus-media-mysql nexus-media-redis nexus-media-web nexus-media-migration
-docker compose --profile basic-mysql up -d
+docker rm -f nexus-media nexus-media-mysql nexus-media-redis nexus-media-web
+docker compose -f docker-compose.mysql.yml up -d
 ```
 
-**4. 确认启动顺序（migration 未完成会卡住）**
+**4. 确认启动顺序**
 
-`backend-mysql` 依赖 `migration-mysql` 成功完成才启动；`migration-mysql` 依赖 mysql 健康。任一步失败都会导致后端起不来：
+`backend` 依赖 `mysql`/`postgresql` 健康后才启动（`depends_on: service_healthy`），数据库未就绪会导致后端起不来：
 
 ```bash
-docker compose logs migration-mysql | tail -30   # 迁移报错会在这里
-docker compose ps | grep migration               # 看 migration 是否 Completed 而非 Error
+docker compose -f docker-compose.mysql.yml logs backend | tail -30   # 数据库连接/迁移报错在这里
+docker compose -f docker-compose.mysql.yml ps | grep mysql           # 看 mysql 是否 healthy
 ```
 
-迁移失败常见原因：数据库密码与 `migration-mysql`/`backend-mysql` 环境变量不一致。
+迁移失败常见原因：数据库密码与 `.env` 配置不一致。
 
 **常见错误排查**
 
@@ -96,10 +103,10 @@ docker compose ps | grep migration               # 看 migration 是否 Complete
 | `Can't connect to MySQL server ... (Connection refused)` | 后端连不上 mysql 容器 | 按第 1 步验证网络；确认 mysql 已健康（`docker compose ps`） |
 | `getent hosts mysql` 无输出 | 容器不在同一网桥 / DNS 失败 | 按第 2、3 步清理网络与旧容器后重启 |
 | `name already in use` | 旧容器残留 | 按第 3 步 `docker rm -f` 后重启 |
-| 后端反复重试、一直 `unhealthy` | 数据库未就绪或密码不一致 | 看后端日志确认是网络还是认证；核对三处数据库密码一致 |
-| migration 一直不结束/Error | 迁移失败 | `docker compose logs migration-mysql` 看具体报错 |
+| 后端反复重试、一直 `unhealthy` | 数据库未就绪或密码不一致 | 看后端日志确认是网络还是认证；核对 `.env` 密码 |
+| 启动报错提示密码必填 | `.env` 未配置 | 按「完整 compose 文件」章节在 `.env` 设置密码 |
 
-> **最快恢复路径**：`docker compose down` → 删残留网络与容器（数据卷 `./data`、`./mysql_data` 保留即可）→ 重新 `up -d`。多数"第一步连不上 mysql"问题由此解决。
+> **最快恢复路径**：`docker compose -f <文件> down` → 删残留网络与容器（数据卷 `./data`、`./mysql_data` 保留即可）→ 重新 `up -d`。多数"第一步连不上 mysql"问题由此解决。
 
 ### 简单示例（开箱即用）
 
@@ -240,25 +247,23 @@ networks:
     name: nexus-media-network
 ```
 
-> 简单示例中后端**不设置 `SKIP_MIGRATION`**，启动时自动执行数据库迁移（`alembic upgrade head`）；完整 `docker-compose.yml` 使用独立 migration 服务，故后端设 `SKIP_MIGRATION=true`。
+> 简单示例中后端**不设置 `SKIP_MIGRATION`**，启动时自动执行数据库迁移（`alembic upgrade head`）；项目自带的完整 compose 文件同样由后端启动时自动迁移，无需独立 migration 容器。
 
-### 完整 docker-compose.yml（profile 模式）
+### 完整 compose 文件（3 个独立文件）
 
-如需数据库密码自定义、OCR/Chrome 组件、PostgreSQL 支持，使用项目根目录的完整 `docker-compose.yml`：
+需要 OCR/Chrome 组件、PostgreSQL、密码自定义时，使用项目根目录的 compose 文件：
 
-| 模式 | 说明 | 命令 |
+| 文件 | 场景 | 启动命令 |
 |------|------|------|
-| 基础 MySQL（默认） | 前端 + 后端 + Redis + MySQL + 迁移 | `docker compose --profile basic-mysql up -d` |
-| 基础 PostgreSQL | 前端 + 后端 + Redis + PostgreSQL + 迁移 | `docker compose --profile basic-postgresql up -d` |
-| 完整 MySQL | 基础模式 + OCR（nexus-verify）+ Chrome（nexus-chrome） | `docker compose --profile full-mysql up -d` |
-| 完整 PostgreSQL | 基础模式 + OCR + Chrome | `docker compose --profile full-postgresql up -d` |
-| 仅前后端 | 前端 + 后端 + SQLite，无需 Redis/DB | `docker compose --profile app-only up -d` |
+| `docker-compose.yml` | 仅前后端（SQLite） | `docker compose up -d` |
+| `docker-compose.mysql.yml` | 前端 + 后端 + Redis + MySQL + OCR + Chrome | `docker compose -f docker-compose.mysql.yml up -d` |
+| `docker-compose.postgresql.yml` | 前端 + 后端 + Redis + PostgreSQL + OCR + Chrome | `docker compose -f docker-compose.postgresql.yml up -d` |
 
-> 不带 `--profile` 时默认启用基础 MySQL 模式（`""` 空 profile 命中的服务）。
+> 三个文件互斥，只选一个部署。MySQL/PostgreSQL 版已包含完整组件；基础版（SQLite）无需 Redis/数据库。
 
 ### 可选组件：nexus-verify 与 nexus-chrome
 
-`full-mysql` / `full-postgresql` profile 会额外启动两个可选组件：
+MySQL / PostgreSQL 完整版已随 compose 自动启动两个可选组件：
 
 | 组件 | 镜像 | 端口 | 作用 |
 |------|------|------|------|
@@ -290,48 +295,43 @@ nexus-chrome 未设置 `AUTH_PASSWORD` 时该字段留空即可（本地模式�
 
 **nexus-chrome 数据持久化**：指纹配置中心数据库（`fp_config_center.db`）、会话记录（`sessions.json`）、指纹画像、浏览器用户数据（Cookie/登录态）统一存放在容器 `/app/data`，compose 已将其挂载到宿主机 `./data/chrome`，重建/升级容器不会丢失数据。
 
-> **旧版本升级**：旧版 nexus-chrome 曾将数据映射为 `./data:/var/lib/chromium/user_data`（仅 Chrome 用户数据）。若升级前已使用该部署并需保留数据，先迁移到新目录再 `docker compose --profile full-mysql up -d --force-recreate`：
->
-> ```bash
-> mkdir -p ./data/chrome
-> cp -r ./data/* ./data/chrome/
-> docker compose --profile full-mysql up -d --force-recreate
-> ```
+### 1. 修改配置
 
-### 1. 修改 docker-compose.yml
+克隆项目后，按需修改所选 compose 文件与 `.env`：
 
-克隆项目后，按需修改 `docker-compose.yml`：
-
-**目录挂载**（`x-backend-common` 卷）：
+**目录挂载**（后端服务）：
 
 ```yaml
-x-backend-common:
-  volumes:
-    - ./data:/data                # 配置、数据库、插件数据（必须）
-    # 替换为你的实际媒体目录：
-    # - /mnt/media:/media          # 媒体库目录（必须，否则无法转移）
+    volumes:
+      - ./data:/data                # 配置、数据库、插件数据（必须）
+      # 替换为你的实际媒体目录：
+      # - /mnt/media:/media          # 媒体库目录（必须，否则无法转移）
 ```
 
-**数据库密码**（MySQL 服务与 `migration-mysql` / `backend-mysql` 三处需保持一致）：
+**密码**（MySQL / PostgreSQL 版）：项目根目录 `.env` 中设置，`docker compose` 自动读取，必填项缺失会报错提示：
 
-```yaml
-  mysql:
-    environment:
-      - MYSQL_ROOT_PASSWORD=你的root密码
-      - MYSQL_DATABASE=nexus_media
-      - MYSQL_USER=nexus_media
-      - MYSQL_PASSWORD=你的数据库密码
+```bash
+# .env
+MYSQL_ROOT_PASSWORD=你的root密码
+MYSQL_PASSWORD=你的应用密码
+POSTGRES_PASSWORD=你的PostgreSQL密码    # PostgreSQL 版
+VNC_PASSWORD=你的Chrome VNC密码
 ```
 
 ### 2. 启动服务
 
 ```bash
-# 基础 MySQL 模式
-docker compose --profile basic-mysql up -d
+# 基础版（SQLite）
+docker compose up -d
 
-# 或完整模式（含 OCR + Chrome）
-docker compose --profile full-mysql up -d
+# 或 MySQL 完整版
+docker compose -f docker-compose.mysql.yml up -d
+
+# 或 PostgreSQL 完整版
+docker compose -f docker-compose.postgresql.yml up -d
 ```
+
+数据库迁移由后端启动时自动执行（`alembic upgrade head`），无需单独操作。
 
 ### 3. 访问
 
@@ -496,35 +496,35 @@ compose 中 Redis 服务已配置好（无密码、使用 `/data/redis_data` 持
 
 ## 数据库配置
 
-### 模式 3（仅前后端 / SQLite）
+### 基础版（仅前后端 / SQLite）
 
-`app-only` profile 使用 SQLite，无需配置数据库与 Redis：
+`docker-compose.yml`（基础版）使用 SQLite，无需配置数据库与 Redis：
 
 ```bash
-docker compose --profile app-only up -d
+docker compose up -d
 ```
 
 数据文件保存在 `./data/db/`（由 `NEXUS_MEDIA_DATA=/data` 决定）。
 
 ### MySQL / PostgreSQL（compose 模式）
 
-compose 已配置好 MySQL（默认）或 PostgreSQL 模式，后端通过 `DATABASE__*` 环境变量连接：
+MySQL / PostgreSQL 版 compose 已配置好，后端通过 `DATABASE__*` 环境变量连接（服务名即主机名）：
 
 ```yaml
     environment:
-      - DATABASE__TYPE=mysql            # 或 postgresql
-      - DATABASE__HOST=mysql            # 或 postgresql（compose 服务名）
-      - DATABASE__PORT=3306             # 或 5432
+      - DATABASE__TYPE=postgresql      # 或 mysql
+      - DATABASE__HOST=postgresql      # 或 mysql（compose 服务名）
+      - DATABASE__PORT=5432            # mysql 为 3306
       - DATABASE__USERNAME=nexus_media
-      - DATABASE__PASSWORD=nexus_media_password
+      - DATABASE__PASSWORD=${POSTGRES_PASSWORD}   # 从 .env 读取
       - DATABASE__DATABASE=nexus_media
 ```
 
-迁移由独立的 `migration-mysql` / `migration-postgresql` 服务在启动时执行（`alembic upgrade head`），后端使用 `SKIP_MIGRATION=true` 跳过迁移。
+数据库迁移由后端启动时自动执行（`alembic upgrade head`），无需独立 migration 服务。
 
 ### 外部数据库
 
-单独部署后端使用外部数据库时，设置 `DATABASE__*` 指向外部实例，并手动执行迁移（或设置 `SKIP_MIGRATION=false` 让启动时自动迁移）。
+单独部署后端使用外部数据库时，设置 `DATABASE__*` 指向外部实例，后端启动时同样自动迁移（如需跳过可设 `SKIP_MIGRATION=true` 后手动执行）。
 
 ## 环境变量
 
@@ -540,7 +540,7 @@ compose 已配置好 MySQL（默认）或 PostgreSQL 模式，后端通过 `DATA
 | `PGID` | 0 | 运行用户 GID |
 | `UMASK` | 000 | 文件权限掩码 |
 | `NEXUS_PORT` | 3000 | 容器内部 nexus-media 服务端口（nginx 反代到该端口） |
-| `SKIP_MIGRATION` | false | 设为 `true` 跳过启动时数据库迁移（compose 由独立 migration 服务执行迁移） |
+| `SKIP_MIGRATION` | false | 设为 `true` 跳过启动时数据库迁移（默认自动执行，幂等） |
 | `TZ` | Asia/Shanghai | 时区 |
 | `NEXUS_MEDIA_DATA` | /data | 数据目录（config.yaml、数据库、插件数据） |
 | `NEXUS_MEDIA_CONFIG` | /data/config.yaml | 配置文件路径（可选，默认自动发现 `data/config.yaml`） |
