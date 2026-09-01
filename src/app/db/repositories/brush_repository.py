@@ -6,7 +6,7 @@ Handles brush task and torrent related database operations.
 import time
 from typing import Any
 
-from sqlalchemy import Integer, and_, case, cast, func, or_
+from sqlalchemy import BigInteger, Integer, and_, case, cast, func, or_
 
 from app.db.models import BRUSHEVENTLOG, CONFIGSITE, SITEBRUSHRULE, SITEBRUSHTASK, SITEBRUSHTORRENTS
 from app.db.repositories.base_repository import BaseRepository
@@ -128,7 +128,7 @@ class BrushRepository(BaseRepository):
             return 0
         with self.session() as db:
             ret = (
-                db.query(func.sum(cast(SITEBRUSHTORRENTS.TORRENT_SIZE, Integer)))
+                db.query(func.sum(cast(SITEBRUSHTORRENTS.TORRENT_SIZE, BigInteger)))
                 .filter(
                     cast(SITEBRUSHTORRENTS.TASK_ID, Integer) == brush_id,
                     SITEBRUSHTORRENTS.DOWNLOAD_ID != "0",
