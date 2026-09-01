@@ -3,6 +3,10 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("lark_oapi")
+
 from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
 from lark_oapi.event.callback.model.p2_card_action_trigger import P2CardActionTrigger
 

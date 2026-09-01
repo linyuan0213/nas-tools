@@ -4,6 +4,10 @@ import json
 import os
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("slack_bolt")
+
 from app.message import registry as msg_registry
 from app.plugin_framework.builtin_plugins.msg_slack.backend.event_parser import parse_event as slack_parse
 from app.plugin_framework.builtin_plugins.msg_slack.backend.plugin import MsgSlackPlugin

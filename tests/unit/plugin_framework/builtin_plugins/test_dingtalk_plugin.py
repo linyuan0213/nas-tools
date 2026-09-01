@@ -2,6 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("dingtalk_stream")
+
 from app.plugin_framework.builtin_plugins.msg_dingtalk.backend.event_parser import parse_chatbot_message
 from app.plugin_framework.builtin_plugins.msg_dingtalk.backend.plugin import MsgDingtalkPlugin
 from app.plugin_framework.builtin_plugins.msg_dingtalk.backend.signer import gen_sign

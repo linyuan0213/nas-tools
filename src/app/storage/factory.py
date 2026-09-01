@@ -1,6 +1,6 @@
 """存储后端工厂 — 注册表模式。"""
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from app.storage.backends.base import StorageBackend, StorageConfig, StorageType
 from app.storage.backends.local import LocalStorageBackend
@@ -22,13 +22,13 @@ from app.storage.config_models import (
 class StorageBackendFactory:
     """存储后端工厂，同时管理后端类与配置类的注册。"""
 
-    _registry: ClassVar[dict[StorageType, type[StorageBackend]]] = {}
-    _config_registry: ClassVar[dict[str, tuple[StorageType, type[StorageConfig], list[dict], str]]] = {}
+    _registry: ClassVar[dict[StorageType | str, type[StorageBackend]]] = {}
+    _config_registry: ClassVar[dict[str, tuple[StorageType | str, type[StorageConfig], list[dict], str]]] = {}
 
     @classmethod
     def register(
         cls,
-        stype: StorageType,
+        stype: StorageType | str,
         backend_cls: type[StorageBackend],
         config_cls: type[StorageConfig] | None = None,
         type_key: str | None = None,
@@ -37,7 +37,7 @@ class StorageBackendFactory:
         """
         注册存储后端。
 
-        :param stype: StorageType 枚举值
+        :param stype: StorageType 枚举值或插件自定义字符串标识（如 "plugin_backend"）
         :param backend_cls: StorageBackend 实现类
         :param config_cls: 对应的 StorageConfig 子类（可选）
         :param type_key: 数据库/配置中使用的类型字符串（如 "s3" "alist"）
@@ -49,14 +49,22 @@ class StorageBackendFactory:
             cls._config_registry[type_key] = (stype, config_cls, fields, icon)
 
     @classmethod
+    def unregister(cls, stype: StorageType | str, type_key: str | None = None) -> None:
+        """注销存储后端（插件禁用时调用）"""
+        cls._registry.pop(stype, None)
+        if type_key:
+            cls._config_registry.pop(type_key, None)
+
+    @classmethod
     def get_type_schema(cls) -> list[dict]:
         """获取所有注册类型的完整 schema（含字段定义和图标）。"""
         result = []
         for type_key, (stype, _config_cls, fields, icon) in cls._config_registry.items():
+            label = stype.name if isinstance(stype, StorageType) else stype
             result.append(
                 {
                     "key": type_key,
-                    "label": stype.name,
+                    "label": label,
                     "fields": fields,
                     "icon": icon,
                 }
@@ -64,7 +72,7 @@ class StorageBackendFactory:
         return result
 
     @classmethod
-    def get_config_info(cls, type_key: str):
+    def get_config_info(cls, type_key: str) -> tuple[Any, type[StorageConfig]] | None:
         """根据类型字符串获取 (StorageType, ConfigClass)。"""
         info = cls._config_registry.get(type_key)
         if info:
@@ -85,7 +93,7 @@ class StorageBackendFactory:
         return backend_cls(config)
 
     @classmethod
-    def list_supported_types(cls) -> list[StorageType]:
+    def list_supported_types(cls) -> list[StorageType | str]:
         return list(cls._registry.keys())
 
     @classmethod

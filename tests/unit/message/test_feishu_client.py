@@ -2,6 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("lark_oapi")
+
 from app.plugin_framework.builtin_plugins.feishu.backend.message_client import (
     Feishu,
     build_card,

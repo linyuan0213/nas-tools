@@ -41,6 +41,8 @@ jobs:
           python-version: "3.11"
       - name: Sync dependencies
         run: uv sync --dev
+      - name: Install plugin dependencies
+        run: uv pip install lark-oapi slack-bolt "dingtalk-stream>=0.24.1"
       - name: Pyright
         run: uv run pyright tests/
 
@@ -59,6 +61,8 @@ jobs:
           python-version: "3.11"
       - name: Sync dependencies
         run: uv sync --dev
+      - name: Install plugin dependencies
+        run: uv pip install lark-oapi slack-bolt "dingtalk-stream>=0.24.1"
       - name: Prepare config
         run: |
           mkdir -p data
