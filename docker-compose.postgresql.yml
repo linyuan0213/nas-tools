@@ -1,0 +1,128 @@
+# Nexus Media PostgreSQL 完整版：前后端 + Redis + PostgreSQL + OCR + Chrome
+# 启动：docker compose -f docker-compose.postgresql.yml up -d
+# 必填：.env 中设置 POSTGRES_PASSWORD、VNC_PASSWORD（禁止使用默认密码）
+services:
+  frontend:
+    image: linyuan0213/nexus-media-web:latest
+    ports:
+      - 8080:8080
+    restart: always
+    container_name: nexus-media-web
+    networks:
+      - nexus-media-network
+    depends_on:
+      backend:
+        condition: service_healthy
+        required: false
+
+  # 后端：PostgreSQL，启动时自动执行 alembic 迁移（镜像内置）
+  backend:
+    image: linyuan0213/nexus-media:latest
+    ports:
+      - 3000:8080
+    volumes:
+      - ./data:/data
+      # 替换为你的实际媒体目录，例如：
+      # - /mnt/media:/media
+    restart: always
+    hostname: nexus-media
+    container_name: nexus-media
+    networks:
+      nexus-media-network:
+        aliases:
+          - backend
+    environment:
+      PUID: "0"
+      PGID: "0"
+      UMASK: "000"
+      NEXUS_MEDIA_DATA: /data
+      DATABASE__TYPE: postgresql
+      DATABASE__HOST: postgresql
+      DATABASE__PORT: "5432"
+      DATABASE__USERNAME: nexus_media
+      DATABASE__PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD（禁止使用默认密码）}
+      DATABASE__DATABASE: nexus_media
+      REDIS__HOST: nexus-media-redis
+      REDIS__PORT: "6379"
+      REDIS__DB: "0"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: "wget -qO- http://localhost:8080/health || exit 1"
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-media-redis
+    restart: always
+    networks:
+      - nexus-media-network
+    volumes:
+      - ./data/redis_data:/data
+    command: redis-server --save "" --appendonly no --dir /data
+
+  postgresql:
+    image: postgres:17-alpine
+    container_name: nexus-media-postgresql
+    restart: always
+    networks:
+      - nexus-media-network
+    environment:
+      - POSTGRES_USER=nexus_media
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD（禁止使用默认密码）}
+      - POSTGRES_DB=nexus_media
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # OCR / 站点验证（可选）
+  nexus-verify:
+    image: linyuan0213/nexus-verify:latest
+    container_name: nexus-verify
+    restart: always
+    networks:
+      - nexus-media-network
+    ports:
+      - 9300:9300
+
+  # Chrome 自动化（可选）
+  nexus-chrome:
+    image: linyuan0213/nexus-chrome:latest
+    container_name: nexus-chrome
+    restart: always
+    networks:
+      - nexus-media-network
+    shm_size: 2g
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:?请在 .env 中设置 VNC_PASSWORD（禁止使用默认密码 password）}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-}
+      - SESSION_TTL=1800
+      - SESSION_CLEANUP_INTERVAL=60
+      - DATA_DIR=/app/data
+      - PROFILE_DATA_DIR=/app/data/profiles
+      - USER_DATA_PATH=/app/data/user_data
+      - FP_CENTER_DB=/app/data/fp_config_center.db
+    volumes:
+      - ./data/chrome:/app/data
+    ports:
+      - 9850:9850
+      - 6080:6080
+
+networks:
+  nexus-media-network:
+    driver: bridge
+    name: nexus-media-network

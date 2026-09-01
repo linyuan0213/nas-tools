@@ -1,56 +1,5 @@
-x-logging: &logging
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
-
-x-backend-common: &backend-common
-  image: linyuan0213/nexus-media:latest
-  ports:
-    - 3000:8080
-  volumes:
-    - ./data:/data
-    # 替换为你的实际媒体目录，例如：
-    # - /mnt/media:/media
-  restart: always
-  hostname: nexus-media
-  container_name: nexus-media
-  networks:
-    nexus-media-network:
-      aliases:
-        - backend
-  logging: *logging
-  healthcheck:
-    test: "wget -qO- http://localhost:8080/health || exit 1"
-    interval: 30s
-    timeout: 30s
-    retries: 3
-    start_period: 40s
-
-x-migration-common: &migration-common
-  image: linyuan0213/nexus-media:latest
-  volumes:
-    - ./data:/data
-  entrypoint: ["/nexus-media/.venv/bin/alembic"]
-  command: ["upgrade", "head"]
-  restart: "no"
-  container_name: nexus-media-migration
-  networks:
-    - nexus-media-network
-
-x-env-backend-common: &env-backend-common
-  PUID: "0"
-  PGID: "0"
-  UMASK: "000"
-  NEXUS_MEDIA_DATA: /data
-
-x-env-db-common: &env-db-common
-  <<: *env-backend-common
-  SKIP_MIGRATION: "true"
-  REDIS__HOST: nexus-media-redis
-  REDIS__PORT: "6379"
-  REDIS__DB: "0"
-
+# Nexus Media 基础版：仅前后端，使用 SQLite（无 Redis / 外部数据库）
+# 启动：docker compose up -d
 services:
   frontend:
     image: linyuan0213/nexus-media-web:latest
@@ -58,196 +7,40 @@ services:
       - 8080:8080
     restart: always
     container_name: nexus-media-web
-    logging: *logging
     networks:
       - nexus-media-network
     depends_on:
       backend:
-        condition: service_started
-        required: false
-      backend-mysql:
-        condition: service_started
-        required: false
-      backend-postgresql:
-        condition: service_started
+        condition: service_healthy
         required: false
 
-  # 模式 3：仅前后端（SQLite，无需 Redis / 数据库）
+  # 后端：启动时自动执行 alembic 迁移（镜像内置，无需独立 migration 容器）
   backend:
-    <<: *backend-common
-    profiles: ["app-only"]
-    environment:
-      <<: *env-backend-common
-
-  # Redis（基础/完整模式共用）
-  redis:
-    profiles: ["", "basic-mysql", "basic-postgresql", "full-mysql", "full-postgresql"]
-    image: redis:7-alpine
-    container_name: nexus-media-redis
-    logging: *logging
-    volumes:
-      - ./data/redis_data:/data
-    command: redis-server --save "" --appendonly no --dir /data
-    restart: always
-    networks:
-      - nexus-media-network
-
-  # MySQL（基础/完整模式）
-  mysql:
-    profiles: ["", "basic-mysql", "full-mysql"]
-    image: mysql:8.4
-    container_name: nexus-media-mysql
-    logging: *logging
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - MYSQL_DATABASE=nexus_media
-      - MYSQL_USER=nexus_media
-      - MYSQL_PASSWORD=nexus_media_password
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./mysql_data:/var/lib/mysql
+    image: linyuan0213/nexus-media:latest
     ports:
-      - 3306:3306
+      - 3000:8080
+    volumes:
+      - ./data:/data
+      # 替换为你的实际媒体目录，例如：
+      # - /mnt/media:/media
     restart: always
+    hostname: nexus-media
+    container_name: nexus-media
     networks:
-      - nexus-media-network
+      nexus-media-network:
+        aliases:
+          - backend
+    environment:
+      PUID: "0"
+      PGID: "0"
+      UMASK: "000"
+      NEXUS_MEDIA_DATA: /data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-
-  migration-mysql:
-    <<: *migration-common
-    profiles: ["", "basic-mysql", "full-mysql"]
-    environment:
-      DATABASE__TYPE: mysql
-      DATABASE__HOST: mysql
-      DATABASE__PORT: "3306"
-      DATABASE__USERNAME: nexus_media
-      DATABASE__PASSWORD: nexus_media_password
-      DATABASE__DATABASE: nexus_media
-    depends_on:
-      mysql:
-        condition: service_healthy
-
-  backend-mysql:
-    <<: *backend-common
-    profiles: ["", "basic-mysql", "full-mysql"]
-    environment:
-      <<: *env-db-common
-      DATABASE__TYPE: mysql
-      DATABASE__HOST: mysql
-      DATABASE__PORT: "3306"
-      DATABASE__USERNAME: nexus_media
-      DATABASE__PASSWORD: nexus_media_password
-      DATABASE__DATABASE: nexus_media
-    depends_on:
-      migration-mysql:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-
-  # PostgreSQL（基础/完整模式）
-  postgresql:
-    profiles: ["basic-postgresql", "full-postgresql"]
-    image: postgres:17-alpine
-    container_name: nexus-media-postgresql
-    logging: *logging
-    environment:
-      - POSTGRES_USER=nexus_media
-      - POSTGRES_PASSWORD=nexus_media_password
-      - POSTGRES_DB=nexus_media
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
-    restart: always
-    networks:
-      - nexus-media-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  migration-postgresql:
-    <<: *migration-common
-    profiles: ["basic-postgresql", "full-postgresql"]
-    environment:
-      DATABASE__TYPE: postgresql
-      DATABASE__HOST: postgresql
-      DATABASE__PORT: "5432"
-      DATABASE__USERNAME: nexus_media
-      DATABASE__PASSWORD: nexus_media_password
-      DATABASE__DATABASE: nexus_media
-    depends_on:
-      postgresql:
-        condition: service_healthy
-
-  backend-postgresql:
-    <<: *backend-common
-    profiles: ["basic-postgresql", "full-postgresql"]
-    environment:
-      <<: *env-db-common
-      DATABASE__TYPE: postgresql
-      DATABASE__HOST: postgresql
-      DATABASE__PORT: "5432"
-      DATABASE__USERNAME: nexus_media
-      DATABASE__PASSWORD: nexus_media_password
-      DATABASE__DATABASE: nexus_media
-    depends_on:
-      migration-postgresql:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-
-  # OCR / Verify（仅完整模式）
-  nexus-verify:
-    profiles: ["full-mysql", "full-postgresql"]
-    image: linyuan0213/nexus-verify:latest
-    container_name: nexus-verify
-    logging: *logging
-    ports:
-      - 9300:9300
-    restart: always
-    networks:
-      - nexus-media-network
-
-  nexus-chrome:
-    profiles: ["full-mysql", "full-postgresql"]
-    image: linyuan0213/nexus-chrome:latest
-    container_name: nexus-chrome
-    logging: *logging
-    shm_size: 2g
-    environment:
-      # 安全提示：VNC 密码必填，禁止使用默认值 password。
-      # 请在项目目录 .env 中配置，例如：VNC_PASSWORD=你的强密码
-      - VNC_PASSWORD=${VNC_PASSWORD:?请先在 .env 中设置 VNC_PASSWORD（禁止使用默认密码 password）}
-      # nexus-chrome API 鉴权（可选）：设置后需在实验室「访问凭证（API Key）」中填写凭证，否则请求被 401 拒绝
-      - AUTH_PASSWORD=${AUTH_PASSWORD:-}
-      - SESSION_TTL=1800
-      - SESSION_CLEANUP_INTERVAL=60
-      # 数据目录统一挂载到 ./data（fp_config_center.db / sessions.json / 指纹画像 / Chrome 用户数据均持久化在这里）
-      - DATA_DIR=/app/data
-      - PROFILE_DATA_DIR=/app/data/profiles
-      - USER_DATA_PATH=/app/data/user_data
-      - FP_CENTER_DB=/app/data/fp_config_center.db
-    volumes:
-      # 持久化全部应用数据（数据库、会话、指纹画像、浏览器用户数据），重建容器不丢失
-      - ./data/chrome:/app/data
-    ports:
-      - 9850:9850
-      - 6080:6080
-    restart: always
-    networks:
-      - nexus-media-network
+      test: "wget -qO- http://localhost:8080/health || exit 1"
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 40s
 
 networks:
   nexus-media-network:
