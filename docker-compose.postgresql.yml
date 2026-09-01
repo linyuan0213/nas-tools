@@ -42,7 +42,7 @@ services:
       DATABASE__USERNAME: nexus_media
       DATABASE__PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD（禁止使用默认密码）}
       DATABASE__DATABASE: nexus_media
-      REDIS__HOST: nexus-media-redis
+      REDIS__HOST: redis
       REDIS__PORT: "6379"
       REDIS__DB: "0"
     depends_on:
