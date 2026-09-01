@@ -23,6 +23,16 @@ def disable_channel_record(message: Any, channel_type: str) -> None:
         log.error(f"[Plugin]禁用渠道记录失败 {channel_type}: {e}")
 
 
+def reload_channel_if_needed(message: Any, channel_type: str, search_type: str) -> None:
+    """仅当渠道尚未加载时重新加载（避免插件启停时重复构建导致双连接）"""
+    try:
+        entry = message.get_interactive_client(search_type)
+        if not entry or not entry.get("client"):
+            message.reload_by_type(channel_type)
+    except Exception as e:  # noqa: BLE001
+        log.error(f"[Plugin]渠道加载检查失败 {channel_type}: {e}")
+
+
 def stop_interactive(message: Any, search_type: str) -> None:
     """停止当前渠道实例的入站交互服务（长连接/Socket 模式）"""
     try:

@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "author": "linyuan0213",
   "author_url": "https://github.com/linyuan0213",
-  "description": "接入飞书消息通知，支持双向交互（搜索/订阅/下载/卡片按钮）。配置在消息中心维护。",
+  "description": "飞书消息渠道，支持双向交互（长连接）与带图通知。配置方式：飞书开放平台创建企业自建应用，事件订阅选 WebSocket（长连接）模式；参数获取与消息中心配置见插件 README。",
   "category": "system",
   "tags": ["飞书", "消息", "通知", "交互"],
   "icon": "/api/plugin-framework/plugins/feishu/assets/feishu.svg",

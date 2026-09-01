@@ -62,6 +62,7 @@ class TestSlackPlugin:
 
     def test_on_enable_registers_webhook(self):
         plugin = self._plugin()
+        plugin._message.get_interactive_client.return_value = {"client": None}
         with patch("app.plugin_framework.builtin_plugins.msg_slack.backend.plugin.register"):
             plugin.on_enable()
             plugin.ctx.register_public_webhook.assert_called_once()  # type: ignore[attr-defined]

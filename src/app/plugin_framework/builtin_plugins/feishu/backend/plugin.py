@@ -12,6 +12,7 @@ from app.message.registry import register, unregister
 from app.plugin_framework.builtin_plugins._msg_common.callback import InteractiveCallbackMixin
 from app.plugin_framework.builtin_plugins._msg_common.channel_lifecycle import (
     disable_channel_record,
+    reload_channel_if_needed,
     stop_interactive,
 )
 from app.plugin_framework.builtin_plugins.feishu.backend.message_client import Feishu
@@ -41,7 +42,7 @@ class FeishuPlugin(InteractiveCallbackMixin):
     def on_enable(self):
         register(Feishu)  # 显式注册飞书渠道类（schema=feishu，供消息中心识别与构建）
         self._register_callback()
-        self._message.reload_by_type(_CHANNEL_TYPE)
+        reload_channel_if_needed(self._message, _CHANNEL_TYPE, _CHANNEL_SEARCH_TYPE)
         self.ctx.info("飞书消息插件已启用")
 
     def on_disable(self):
@@ -73,7 +74,7 @@ class FeishuPlugin(InteractiveCallbackMixin):
     def _reload_channel(self):
         """渠道配置变更后重建渠道实例（读取新配置并重启交互服务）"""
         stop_interactive(self._message, _CHANNEL_SEARCH_TYPE)
-        self._message.reload_by_type(_CHANNEL_TYPE)
+        reload_channel_if_needed(self._message, _CHANNEL_TYPE, _CHANNEL_SEARCH_TYPE)
 
     # ---------- 公开回调（回调事件已由 ws_server 解析为 user_id/text）----------
 
