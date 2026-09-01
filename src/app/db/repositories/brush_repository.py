@@ -279,7 +279,14 @@ class BrushRepository(BaseRepository):
         if not enclosure:
             return None
         with self.session() as db:
-            return db.query(SITEBRUSHTORRENTS).filter(enclosure == SITEBRUSHTORRENTS.ENCLOSURE).first()
+            return (
+                db.query(SITEBRUSHTORRENTS)
+                .filter(
+                    enclosure == SITEBRUSHTORRENTS.ENCLOSURE,
+                    SITEBRUSHTORRENTS.DOWNLOAD_ID != "0",
+                )
+                .first()
+            )
 
     def get_brushtask_torrents_by_domain(self, domain: str) -> list[SITEBRUSHTORRENTS]:
         """
@@ -288,7 +295,14 @@ class BrushRepository(BaseRepository):
         if not domain:
             return []
         with self.session() as db:
-            return db.query(SITEBRUSHTORRENTS).filter(SITEBRUSHTORRENTS.ENCLOSURE.like(f"%{domain}%")).all()
+            return (
+                db.query(SITEBRUSHTORRENTS)
+                .filter(
+                    SITEBRUSHTORRENTS.ENCLOSURE.like(f"%{domain}%"),
+                    SITEBRUSHTORRENTS.DOWNLOAD_ID != "0",
+                )
+                .all()
+            )
 
     def is_brushtask_torrent_exists(self, brush_id: int | None, title: str, enclosure: str) -> bool:
         """
@@ -303,6 +317,7 @@ class BrushRepository(BaseRepository):
                     cast(SITEBRUSHTORRENTS.TASK_ID, Integer) == brush_id,
                     title == SITEBRUSHTORRENTS.TORRENT_NAME,
                     enclosure == SITEBRUSHTORRENTS.ENCLOSURE,
+                    SITEBRUSHTORRENTS.DOWNLOAD_ID != "0",
                 )
                 .count()
             )

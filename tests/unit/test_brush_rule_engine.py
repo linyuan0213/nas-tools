@@ -281,9 +281,14 @@ class TestCheckRemoveRule:
         assert dtype == BrushDeleteType.ALIVETIME
 
     def test_hr_time_rule(self):
+        # 非 HR 种子跳过 hr_time 规则（不触发删种）
         rule = {"hr_time": "gt#1", "mode": "or"}
-        params = {"seeding_time": 4000}
-        need, dtype = BrushRuleEngine.check_remove_rule(rule, params)
+        params = {"seeding_time": 4000, "torrent_attr": {"hr": False}}
+        need, _ = BrushRuleEngine.check_remove_rule(rule, params)
+        assert need is False
+        # HR 种子按做种时间评估
+        params_hr = {"seeding_time": 4000, "torrent_attr": {"hr": True}}
+        need, dtype = BrushRuleEngine.check_remove_rule(rule, params_hr)
         assert need is True
         assert dtype == BrushDeleteType.HRSEEDTIME
 

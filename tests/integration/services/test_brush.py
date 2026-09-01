@@ -142,7 +142,8 @@ class TestBrushTaskHelper:
         downloader = MagicMock()
         downloader.get_downloading_torrents.return_value = None
         helper = BrushTaskHelper(MagicMock(), downloader, MagicMock(), MagicMock(), MagicMock(), MagicMock())
-        assert helper.get_downloading_count(1) == 0
+        # 下载器不可达时返回 None（调用方据此提前中止，而非当作 0 放行）
+        assert helper.get_downloading_count(1) is None
 
     def test_download_torrent_no_enclosure(self):
         helper = BrushTaskHelper(MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())

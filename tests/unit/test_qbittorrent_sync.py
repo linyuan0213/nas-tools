@@ -220,3 +220,34 @@ class TestQbittorrentAddTorrent:
         _, kwargs = mock_qbc.torrents_add.call_args
         assert kwargs.get("save_path") == "/做种2"
         assert kwargs.get("use_auto_torrent_management") is False
+
+
+class TestGetDownloadingTorrents:
+    def test_get_downloading_excludes_completed(self):
+        """已完成（progress=1，pausedUP 等）的任务不应计入正在下载数"""
+        from app.downloader.client.qbittorrent import Qbittorrent
+        from app.schemas.download import Torrent, TorrentStatus
+        
+
+        downloading = Torrent()
+        downloading.progress = 0.5
+        downloading.status = TorrentStatus.Downloading
+        completed_paused = Torrent()
+        completed_paused.progress = 1.0
+        completed_paused.status = TorrentStatus.Paused
+
+        qb = Qbittorrent.__new__(Qbittorrent)
+        qb.qbc = MagicMock()
+        with patch.object(Qbittorrent, "get_torrents", return_value=([downloading, completed_paused], False)):
+            result = qb.get_downloading_torrents()
+        assert result is not None
+        assert len(result) == 1
+        assert result[0].progress == 0.5
+
+    def test_get_downloading_returns_none_on_error(self):
+        from app.downloader.client.qbittorrent import Qbittorrent
+
+        qb = Qbittorrent.__new__(Qbittorrent)
+        qb.qbc = MagicMock()
+        with patch.object(Qbittorrent, "get_torrents", return_value=([], True)):
+            assert qb.get_downloading_torrents() is None

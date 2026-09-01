@@ -30,7 +30,10 @@ def _calc_alive_hours(add_time: str | None) -> float | None:
         return None
     try:
         dt = dateutil.parser.parse(str(add_time))
-        return (datetime.now(pytz.utc) - dt).total_seconds() / 3600
+        if dt.tzinfo is None:
+            # naive 视为服务器本地时间，统一转 aware 后与 UTC now 相减
+            dt = dt.replace(tzinfo=datetime.now().astimezone().tzinfo)
+        return (datetime.now(pytz.utc) - dt.astimezone(pytz.utc)).total_seconds() / 3600
     except Exception:
         return None
 
@@ -270,7 +273,7 @@ class BrushRuleEngine:
                 lambda value, rv: not value if rv == "FREE" else value if rv == "NORMAL" else True,
             ),
             "hr": (BrushDeleteType.HR, lambda value, rv: value if rv == "HR" else not value if rv == "NOHR" else True),
-            "alive_time": (BrushDeleteType.ALIVETIME, lambda value, rv: cls.check_range_rule(value, rv, 3600)),
+            "alive_time": (BrushDeleteType.ALIVETIME, lambda value, rv: cls.check_range_rule(value, rv, 1)),
             "upspeed": (BrushDeleteType.UPSPEED, lambda value, rv: cls.check_range_rule(value, rv, 1024)),
             "tracker_error": (
                 BrushDeleteType.TRACKERERROR,
@@ -289,6 +292,11 @@ class BrushRuleEngine:
         for rule, (delete_type, check_func) in rule_checks.items():
             rule_value = remove_rule.get(rule)
             if rule_value in ("#", SwitchState.OFF.value, None, ""):
+                continue
+
+            # hr_time 规则仅对 HR 种子生效，非 HR 种子在两种模式下都跳过
+            if rule == "hr_time" and not params.get("torrent_attr", {}).get("hr"):
+                log.info("[删种规则] hr_time 仅对 HR 种子生效，跳过非 HR 种子")
                 continue
 
             value = values.get(rule)

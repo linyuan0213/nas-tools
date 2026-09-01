@@ -3,6 +3,7 @@
 import ast
 import json
 import re
+import threading
 import time
 from datetime import datetime
 from datetime import time as dtime
@@ -12,6 +13,7 @@ from urllib.parse import urlsplit
 import log
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.domain.engine.brush_rule_engine import BrushRuleEngine
+from app.downloader.registry import get_client_class
 from app.media import meta_info
 from app.message import Message
 from app.sites import SiteConf
@@ -25,6 +27,9 @@ class BrushTaskHelper:
     刷流任务辅助工具类
     封装 RSS 检查、删种、停种等子流程共享的辅助方法。
     """
+
+    # 下载器级互斥锁（类级共享；download_torrent 锁内重查 dlcount 防并发超额）
+    _dl_locks: dict = {}
 
     def __init__(
         self,
@@ -42,6 +47,8 @@ class BrushTaskHelper:
         self._message: Message = message
         self._site_engine = site_engine
         self._hr_counts: dict[int, int] = {}
+        self._dl_stats: dict = {}
+        self._dl_locks: dict = {}
 
     def add_hr_count(self, task_id: int) -> None:
         self._hr_counts[task_id] = self._hr_counts.get(task_id, 0) + 1
@@ -64,7 +71,19 @@ class BrushTaskHelper:
         )
 
     def _get_downloader_hr_count(self, downloader_id: str, taskinfo: dict) -> int:
-        return self._hr_counts.get(taskinfo.get("id") or 0, 0)
+        """当前下载器中带 HR 标签的做种种子数（实时统计，不依赖下载器 tag 过滤能力）"""
+        try:
+            torrents = self._downloader.get_torrents(downloader_id=downloader_id) or []
+            return len(
+                [
+                    t
+                    for t in torrents
+                    if "HR" in (getattr(t, "labels", None) or [])
+                    and getattr(t, "progress", 0) >= 1.0
+                ]
+            )
+        except Exception:
+            return 0
 
     @staticmethod
     def parse_json_rule(val, default=None):
@@ -196,6 +215,11 @@ class BrushTaskHelper:
         downloader_name = taskinfo.get("downloader_name")
         total_size = self._repo.get_brushtask_totalsize(taskinfo.get("id"))
 
+        # 下载器不支持 PT（无法刷流）时禁止新增下载
+        if not self._downloader_supports_brush(downloader_id):
+            log.warn(f"[Brush]任务 {task_name} 下载器 {downloader_name} 不支持刷流（不适用于 PT 站），暂不添加下载")
+            return False
+
         if torrent_size and seed_size:
             if float(torrent_size) + int(total_size) >= (float(seed_size) + 5) * 1024**3:
                 log.warn(
@@ -211,21 +235,21 @@ class BrushTaskHelper:
                 )
                 return False
 
-        if dlcount:
-            downloading_count = self.get_downloading_count(downloader_id)
-            if downloading_count is None:
-                log.error(f"[Brush]任务 {task_name} 下载器 {downloader_name} 无法连接")
-                return False
-            if int(downloading_count) >= int(dlcount):
-                log.warn(
-                    f"[Brush]下载器 {downloader_name} 正在下载任务数：{downloading_count}，超过设定上限，暂不添加下载"
-                )
-                return False
+        dlstats = self._get_downloader_stats(downloader_id)
+        if dlstats is None:
+            log.error(f"[Brush]任务 {task_name} 下载器 {downloader_name} 无法连接")
+            return False
+
+        if dlcount and int(dlstats["downloading"]) >= int(dlcount):
+            log.warn(
+                f"[Brush]下载器 {downloader_name} 正在下载任务数：{dlstats['downloading']}，超过设定上限，暂不添加下载"
+            )
+            return False
 
         max_seeding = taskinfo.get("max_seeding") or ""
         if max_seeding and max_seeding.isdigit() and int(max_seeding) > 0:
-            all_count = self.get_downloader_total_count(downloader_id)
-            if all_count is not None and all_count >= int(max_seeding):
+            all_count = dlstats["total"]
+            if all_count >= int(max_seeding):
                 log.warn(
                     f"[Brush]下载器 {downloader_name} 当前做种数：{all_count}，超过设定上限 {max_seeding}，暂不添加下载"
                 )
@@ -233,7 +257,7 @@ class BrushTaskHelper:
 
         hr_limit = taskinfo.get("hr_limit") or ""
         if hr_limit and hr_limit.isdigit() and int(hr_limit) > 0:
-            hr_count = self._get_downloader_hr_count(downloader_id, taskinfo)
+            hr_count = dlstats["hr"]
             if hr_count >= int(hr_limit):
                 log.warn(
                     f"[Brush]下载器 {downloader_name} H&R 做种数：{hr_count}，超过设定上限 {hr_limit}，暂不添加下载"
@@ -248,8 +272,49 @@ class BrushTaskHelper:
             return False
         return True
 
+    def _downloader_supports_brush(self, downloader_id) -> bool:
+        """下载器是否支持刷流（复用 supports_pt 标志）"""
+        try:
+            conf = self._downloader.get_downloader_conf(downloader_id) or {}
+            cls = get_client_class(conf.get("type") or "")
+            return bool(getattr(cls, "supports_pt", True)) if cls else False
+        except Exception:
+            return False
+
+    def _get_downloader_stats(self, downloader_id):
+        """下载器种子统计（30s 周期缓存，避免刷流循环内每种子一次全量拉取）.
+
+        返回 {downloading: 未完成数, hr: HR标签做种数, total: 总种子数}，下载器不可达返回 None。
+        """
+        now = time.time()
+        cache_key = f"dl_stats:{downloader_id}"
+        cached = self._dl_stats.get(cache_key)
+        if cached and now - cached[0] < 30:
+            return cached[1]
+        try:
+            torrents = self._downloader.get_torrents(downloader_id=downloader_id)
+        except Exception:
+            return None
+        if torrents is None:
+            return None
+        stats = {
+            "downloading": len([t for t in torrents if getattr(t, "progress", 0) < 1.0]),
+            "hr": len(
+                [
+                    t
+                    for t in torrents
+                    if "HR" in (getattr(t, "labels", None) or []) and getattr(t, "progress", 0) >= 1.0
+                ]
+            ),
+            "total": len(torrents),
+        }
+        self._dl_stats[cache_key] = (now, stats)
+        return stats
+
     def get_downloading_count(self, downloader_id):
-        torrents = self._downloader.get_downloading_torrents(downloader_id=downloader_id) or []
+        torrents = self._downloader.get_downloading_torrents(downloader_id=downloader_id)
+        if torrents is None:
+            return None
         return len(torrents)
 
     def get_downloader_total_count(self, downloader_id):
@@ -279,22 +344,35 @@ class BrushTaskHelper:
                 _, torrent_attr = self.get_torrent_attr(site_info, enclosure)
             if torrent_attr.get("hr"):
                 hr_tag = ["HR"]
-                self.add_hr_count(taskid)
         tag = taskinfo.get("label").split(",") if taskinfo.get("label") else []
         if not transfer:
             tag = tag + ["已整理"] + hr_tag if tag else ["已整理"] + hr_tag
 
         mi = meta_info(title=title)
         mi.set_torrent_info(site=site_info.get("name"), enclosure=enclosure, size=size)
-        _, download_id, retmsg = self._downloader.download(
-            media_info=mi,
-            tag=tag,
-            downloader_id=downloader_id,
-            download_dir=download_dir,
-            download_setting="-2",
-            download_limit=download_limit,
-            upload_limit=upload_limit,
-        )
+        # 下载器级互斥：锁内重查 dlcount（防多任务共享下载器时并发超额），再执行下载
+        dl_lock = self._dl_locks.setdefault(str(downloader_id), threading.Lock())
+        with dl_lock:
+            dlcount = rss_rule.get("dlcount")
+            if dlcount:
+                stats = self._get_downloader_stats(downloader_id)
+                if stats is None:
+                    log.error(f"[Brush]{taskname} 下载器 {downloader_id} 无法连接，跳过下载")
+                    return False
+                if stats["downloading"] >= int(dlcount):
+                    log.warn(
+                        f"[Brush]{taskname} 下载器 {downloader_id} 下载中任务数达上限 {dlcount}，跳过下载"
+                    )
+                    return False
+            _, download_id, retmsg = self._downloader.download(
+                media_info=mi,
+                tag=tag,
+                downloader_id=downloader_id,
+                download_dir=download_dir,
+                download_setting="-2",
+                download_limit=download_limit,
+                upload_limit=upload_limit,
+            )
         if not download_id:
             if retmsg:
                 log.warn(f"[Brush]{taskname} 添加下载任务出错：{title}，错误原因：{retmsg}，种子链接：{enclosure}")

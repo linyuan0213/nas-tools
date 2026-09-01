@@ -43,21 +43,23 @@ class BrushRssChecker:
         self._cache_lock = threading.Lock()
         self._torrent_lifecycle = torrent_lifecycle
 
-    def _mark_or_skip_processed(self, enclosure: str) -> bool:
-        """标记种子已处理；TTL 内已处理过返回 True（跳过）。
+    def _mark_or_skip_processed(self, task_id: int, enclosure: str) -> bool:
+        """标记种子已处理（按任务隔离）；TTL 内已处理过返回 True（跳过）。
 
         优惠/做种人数等状态可能随时间变化，TTL 过期后放行重新评估。
+        缓存键含 task_id，避免任务 A 拒绝的种子影响任务 B。
         """
+        cache_key = f"{task_id}:{enclosure}"
         with self._cache_lock:
             now = time.time()
-            cached_at = self._torrents_cache.get(enclosure)
+            cached_at = self._torrents_cache.get(cache_key)
             if cached_at is not None and now - cached_at < _PROCESSED_CACHE_TTL:
                 return True
             if len(self._torrents_cache) >= 10000:
                 oldest = sorted(self._torrents_cache, key=lambda k: self._torrents_cache[k])[:5000]
                 for key in oldest:
                     del self._torrents_cache[key]
-            self._torrents_cache[enclosure] = now
+            self._torrents_cache[cache_key] = now
             return False
 
     @staticmethod
@@ -148,7 +150,7 @@ class BrushRssChecker:
         log.info(f"[Brush]开始站点 {site_name} 的刷流任务：{task_name}...")
         # 先清理已删除的种子记录，避免保种体积虚高阻止进种
         if self._torrent_lifecycle:
-            self._torrent_lifecycle.remove_task_torrents(taskid=None, taskinfo=taskinfo)
+            self._torrent_lifecycle.remove_task_torrents(taskid=taskid, taskinfo=taskinfo)
         if not self._helper.is_allow_new_torrent(taskinfo=taskinfo, dlcount=rss_rule.get("dlcount")):
             return
 
@@ -203,10 +205,6 @@ class BrushRssChecker:
                 )
 
                 if not enclosure:
-                    continue
-
-                if self._mark_or_skip_processed(enclosure):
-                    log.debug(f"[Brush]{torrent_name} 已处理过")
                     continue
 
                 if self._helper.is_torrent_handled(enclosure=enclosure):

@@ -67,15 +67,9 @@ class BrushTorrentLifecycle:
             all_ids = {t.id for t in all_torrents}
             absent_ids = set(torrent_ids) - all_ids
 
-            # 按状态分组：已完成的做种 vs 仍在下载中
-            downloading_statuses = {
-                TorrentStatus.Downloading,
-                TorrentStatus.Queued,
-                TorrentStatus.Checking,
-                TorrentStatus.Pending,
-            }
-            completed = [t for t in all_torrents if t.status not in downloading_statuses]
-            downloading = [t for t in all_torrents if t.status in downloading_statuses]
+            # 按完成状态分组：未完成（含暂停 pausedDL/stoppedDL）→ 下载中，已完成 → 做种
+            downloading = [t for t in all_torrents if getattr(t, "progress", 0) < 1.0]
+            completed = [t for t in all_torrents if getattr(t, "progress", 0) >= 1.0]
 
             # 对做种/暂停/已完成的种子评估删种规则
             total_uploaded, total_downloaded, delete_ids, update_torrents = self._process_torrents(
@@ -113,6 +107,7 @@ class BrushTorrentLifecycle:
                 for rid in absent_ids:
                     self._repo.delete_brushtask_torrent(taskid or 0, rid)
 
+            removed_count = 0
             if delete_ids:
                 daily_limit = self._apply_daily_delete_limit(taskid or 0, taskinfo, delete_ids)
                 if daily_limit and not delete_ids:
@@ -122,22 +117,23 @@ class BrushTorrentLifecycle:
                 time.sleep(5)
                 torrents = self._downloader.get_torrents(downloader_id, delete_ids)
                 if torrents is None:
-                    delete_ids = []
-                    update_torrents = []
+                    # 下载器不可达无法确认结果，保守视为全部删除失败（避免误标失管）
+                    failed = set(delete_ids)
                 else:
-                    for torrent in torrents:
-                        if torrent.id in delete_ids:
-                            delete_ids.remove(torrent.id)
-
+                    # 删除后仍存在的为失败种子
+                    failed = {t.id for t in torrents}
+                # 成功删除数 = 待删数 - 失败数
+                removed_count = len([tid for tid in delete_ids if tid not in failed])
                 if update_torrents:
-                    update_torrents = [t for t in update_torrents if t[2] not in delete_ids]
+                    # 仅成功删除的种子落库（t[2]=download_id），失败的保留
+                    update_torrents = [t for t in update_torrents if t[2] not in failed]
                 if update_torrents:
                     self._repo.update_brushtask_torrent_state(update_torrents)
                 else:
                     log.info(f"[Brush]任务 {task_name} 本次检查未删除下载任务")
 
             self._repo.add_brushtask_upload_count(
-                taskid or 0, total_uploaded, total_downloaded, len(delete_ids) + len(absent_ids)
+                taskid or 0, total_uploaded, total_downloaded, removed_count + len(absent_ids)
             )
         except (ServiceError, RepositoryError, DomainError):
             raise

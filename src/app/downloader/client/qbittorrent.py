@@ -347,6 +347,8 @@ class Qbittorrent(_IDownloadClient):
             TorrentStatus.Pending,
         ]
         torrents, error = self.get_torrents(ids=ids, status=statuses, tag=tag)
+        # 排除已完成任务（pausedUP/stoppedUP 等会被映射为 Paused），只统计真正下载中的
+        torrents = [t for t in torrents if t.progress < 1.0]
         return None if error else torrents or []
 
     def remove_torrents_tag(self, ids: list[str] | str, tag: str) -> bool:
