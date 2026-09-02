@@ -22,7 +22,7 @@ import pytz
 import log
 from app.domain.enums import BrushDeleteType, BrushStopType, SwitchState
 from app.domain.mediatypes import MediaType
-from app.utils import ExceptionUtils, StringUtils
+from app.utils import ExceptionUtils, JsonUtils, StringUtils
 
 
 def _calc_alive_hours(add_time: str | None) -> float | None:
@@ -187,14 +187,32 @@ class BrushRuleEngine:
         # 匹配电视剧
         elif rss_tvs:
             for rss_info in rss_tvs.values():
-                rss_sites = rss_info.get("rss_sites")
-                if rss_sites and media_info.site not in rss_sites:
+                rss_sites = BrushRuleEngine._parse_rss_sites(rss_info.get("rss_sites"))
+                # media_info.site 为空时无法按站点过滤（站点未知不误排除，交由名称匹配决定）
+                if media_info.site and rss_sites and media_info.site not in rss_sites:
                     continue
                 if BrushRuleEngine._match_media(media_info, rss_info, is_tv=True):
                     match_flag = True
                     break
 
         return match_flag
+
+    @staticmethod
+    def _parse_rss_sites(rss_sites: Any) -> list:
+        """兼容订阅 rss_sites 的多种存储格式：JSON 数组字符串 / 逗号分隔字符串 / 列表"""
+        if not rss_sites:
+            return []
+        if isinstance(rss_sites, list):
+            return [str(s) for s in rss_sites]
+        if isinstance(rss_sites, str):
+            try:
+                parsed = JsonUtils.loads(rss_sites)
+                if isinstance(parsed, list):
+                    return [str(s) for s in parsed]
+            except (ValueError, TypeError):
+                pass
+            return [s.strip() for s in rss_sites.split(",") if s.strip()]
+        return [str(rss_sites)]
 
     @staticmethod
     def _match_media(media_info, rss_info: dict, is_tv: bool = False) -> bool:

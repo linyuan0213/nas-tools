@@ -492,6 +492,78 @@ class TestCheckRssRule:
         rss_rule = {"exclude_subscribe": SwitchState.ON.value}
         assert BrushRuleEngine.check_rss_rule(rss_rule, "test", 1024, None, {}) is True
 
+    def test_exclude_subscribe_json_sites_no_crash(self):
+        """订阅 rss_sites 存 JSON 字符串 + media_info.site 为 None 时不应崩溃（原为 TypeError）"""
+        from app.domain.mediatypes import MediaType
+
+        class _MI:
+            type = MediaType.TV
+            site = None
+            tmdb_id = "123"
+            year = "2026"
+            title = "测试剧"
+            rev_string = ""
+
+            def get_season_string(self):
+                return "S01"
+
+        rss_tvs = {
+            1: {
+                "name": "测试剧",
+                "year": "2026",
+                "tmdbid": "123",
+                "fuzzy_match": None,
+                "season": "S01",
+                "rss_sites": '["M-Team"]',
+            }
+        }
+        result = BrushRuleEngine.check_rss_rule(
+            {"exclude_subscribe": SwitchState.ON.value},
+            "测试剧 S01E01",
+            1024,
+            None,
+            {},
+            media_info=_MI(),
+            rss_tvs=rss_tvs,
+        )
+        assert result is False  # 站点未知不崩溃，按名称/ID 匹配到订阅 → 排除
+
+    def test_exclude_subscribe_other_site_not_excluded(self):
+        """订阅仅限 M-Team，但当前种子来自其他站点时不应排除"""
+        from app.domain.mediatypes import MediaType
+
+        class _MI:
+            type = MediaType.TV
+            site = "OtherSite"
+            tmdb_id = "123"
+            year = "2026"
+            title = "测试剧"
+            rev_string = ""
+
+            def get_season_string(self):
+                return "S01"
+
+        rss_tvs = {
+            1: {
+                "name": "测试剧",
+                "year": "2026",
+                "tmdbid": "123",
+                "fuzzy_match": None,
+                "season": "S01",
+                "rss_sites": '["M-Team"]',
+            }
+        }
+        result = BrushRuleEngine.check_rss_rule(
+            {"exclude_subscribe": SwitchState.ON.value},
+            "测试剧 S01E01",
+            1024,
+            None,
+            {},
+            media_info=_MI(),
+            rss_tvs=rss_tvs,
+        )
+        assert result is True
+
 
 # =========================================================================
 # get_rss_reject_reason

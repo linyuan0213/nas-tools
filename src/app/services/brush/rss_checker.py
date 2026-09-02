@@ -12,6 +12,7 @@ from app.domain.entities.brush import BrushTaskState
 from app.media import MediaService
 from app.services.rss_processor import RssHelper
 from app.sites import SiteConf
+from app.sites.engine import TorrentAttrFetchError
 from app.utils import ExceptionUtils, JsonUtils
 
 # 已处理种子缓存 TTL：拒绝原因（优惠/做种人数等）可能随时间变化，过期后允许重新评估
@@ -91,15 +92,20 @@ class BrushRssChecker:
             log.debug("[Brush]page_url 为空，跳过 torrent_attr 检查")
             return {}
         log.debug(f"[Brush]开始检查 torrent_attr, page_url={page_url[:80]}")
-        return self._siteconf.check_torrent_attr(
-            torrent_url=page_url,
-            cookie=cookie,
-            api_key=api_key,
-            bearer_token=bearer_token,
-            ua=ua,
-            headers=headers,
-            proxy=site_proxy,
-        )
+        try:
+            return self._siteconf.check_torrent_attr(
+                torrent_url=page_url,
+                cookie=cookie,
+                api_key=api_key,
+                bearer_token=bearer_token,
+                ua=ua,
+                headers=headers,
+                proxy=site_proxy,
+            )
+        except TorrentAttrFetchError as e:
+            # 详情抓取失败 → 视为无此属性（规则如 free=FREE 将判为不满足，不下载，宁可不选不误下）
+            log.warn(f"[Brush]种子属性抓取失败({page_url[:60]}): {e}")
+            return {}
 
     def check_task_rss(self, taskid: int | None, taskinfo: dict) -> None:
         if not taskid or not taskinfo:
@@ -226,6 +232,8 @@ class BrushRssChecker:
                 media_info = None
                 if rss_movies is not None or rss_tvs is not None:
                     media_info = media_service.get_media_info(title=torrent_name)
+                    if media_info:
+                        media_info.site = site_info.get("name") if isinstance(site_info, dict) else None
 
                 if not BrushRuleEngine.check_rss_rule(
                     rss_rule=rss_rule,

@@ -29,6 +29,13 @@ class BrushTorrentLifecycle:
         self._message = message
         self._daily_deletes: dict[int, dict] = {}  # task_id → {"date": date, "count": int}
 
+    @staticmethod
+    def _remove_rule_needs_torrent_attr(remove_rule: dict | None) -> bool:
+        """删种规则是否依赖种子详情页属性（free/hr），避免对每颗种子做无谓详情请求消耗站点限流."""
+        if not remove_rule:
+            return False
+        return any(remove_rule.get(key) not in ("#", "N", None, "") for key in ("freestatus", "hr", "hr_time"))
+
     def remove_task_torrents(self, taskid: int | None, taskinfo: dict) -> None:
         if taskinfo.get("state") != BrushTaskState.RUNNING.value:
             return
@@ -162,6 +169,7 @@ class BrushTorrentLifecycle:
         downloader_id = taskinfo.get("downloader")
         download_dir = taskinfo.get("savepath")
 
+        need_attr = self._remove_rule_needs_torrent_attr(remove_rule)
         for torrent in torrents:
             torrent_id = torrent.id
             total_uploaded += torrent.uploaded
@@ -169,10 +177,15 @@ class BrushTorrentLifecycle:
 
             enclosure = torrent_id_maps.get(torrent_id)
             torrent_url, torrent_attr = (None, {})
-            if enclosure:
+            if enclosure and need_attr:
                 torrent_url, torrent_attr = self._helper.get_torrent_attr(
                     site_info if isinstance(site_info, dict) else {}, enclosure
                 )
+                if torrent_attr is None:
+                    # 详情属性抓取失败（限流/网络等）：不能据此判定“免费到期”而误删，
+                    # 本轮跳过该种子，下个周期再评估
+                    log.warn(f"[Brush]任务 {task_name} 种子 {torrent.name} 属性未知（详情抓取失败），跳过本轮删种判断")
+                    continue
 
             torrent_params = {
                 "seeding_time": torrent.seeding_time,
@@ -289,6 +302,10 @@ class BrushTorrentLifecycle:
                     torrent_url, torrent_attr = self._helper.get_torrent_attr(
                         site_info if isinstance(site_info, dict) else {}, enclosure
                     )
+                    if torrent_attr is None:
+                        # 属性未知（抓取失败）：不据此执行停种，等待下轮
+                        log.warn(f"[Brush]{torrent_name} 属性未知（详情抓取失败），跳过本轮停种判断")
+                        continue
                     log.debug(f"[Brush]{torrent_url} 解析详情 {torrent_attr}")
 
                 need_stop, stop_type = BrushRuleEngine.check_stop_rule(
@@ -359,6 +376,10 @@ class BrushTorrentLifecycle:
             torrent_url, torrent_attr = self._helper.get_torrent_attr(
                 site_info if isinstance(site_info, dict) else {}, enclosure
             )
+            if torrent_attr is None:
+                # 属性未知（抓取失败）：暂不启动，等待下轮确认
+                log.warn(f"[Brush]{torrent.name} 属性未知（详情抓取失败），暂不自动启动")
+                continue
             if torrent_attr.get("free"):
                 self._downloader.start_torrents(downloader_id, [torrent.id])
                 log.info(f"[Brush]{torrent.name} 已恢复免费，自动启动")

@@ -17,7 +17,7 @@ from app.downloader.registry import get_client_class
 from app.media import meta_info
 from app.message import Message
 from app.sites import SiteConf
-from app.sites.engine import SiteEngine, get_tid_by_url
+from app.sites.engine import SiteEngine, TorrentAttrFetchError, get_tid_by_url
 from app.sites.site_cache import SiteCache
 from app.utils import JsonUtils, StringUtils
 
@@ -193,16 +193,21 @@ class BrushTaskHelper:
         else:
             torrent_url = f"{site_base_url}{resolved}"
 
-        torrent_attr = self._siteconf.check_torrent_attr(
-            torrent_url=torrent_url,
-            cookie=site_cookie,
-            api_key=site_info.get("api_key"),
-            bearer_token=site_info.get("bearer_token"),
-            ua=ua,
-            headers=headers,
-            proxy=bool(site_proxy),
-            chrome=bool(site_info.get("chrome")),
-        )
+        try:
+            torrent_attr = self._siteconf.check_torrent_attr(
+                torrent_url=torrent_url,
+                cookie=site_cookie,
+                api_key=site_info.get("api_key"),
+                bearer_token=site_info.get("bearer_token"),
+                ua=ua,
+                headers=headers,
+                proxy=bool(site_proxy),
+                chrome=bool(site_info.get("chrome")),
+            )
+        except TorrentAttrFetchError as e:
+            # 详情抓取失败 → 属性未知（返回 None），调用方不得按“非免费/非HR”误删
+            log.warn(f"[Brush]种子属性抓取失败，视为未知: {e}")
+            return torrent_url, None
         return torrent_url, torrent_attr
 
     def is_allow_new_torrent(self, taskinfo, dlcount, torrent_size=None):
@@ -339,6 +344,10 @@ class BrushTaskHelper:
         if rss_rule.get("hr"):
             if not torrent_attr:
                 _, torrent_attr = self.get_torrent_attr(site_info, enclosure)
+            if torrent_attr is None:
+                # HR 属性未知（抓取失败）：不冒 HR 风险下载
+                log.warn(f"[Brush]{title} HR 属性未知（详情抓取失败），暂停下载")
+                return False
             if torrent_attr.get("hr"):
                 hr_tag = ["HR"]
         tag = taskinfo.get("label").split(",") if taskinfo.get("label") else []

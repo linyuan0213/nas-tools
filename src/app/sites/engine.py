@@ -27,6 +27,15 @@ from app.utils import JsonUtils
 from app.utils.browser_mode import build_browser_mode
 from app.utils.config_tools import get_proxies
 
+
+class TorrentAttrFetchError(Exception):
+    """种子详情属性抓取失败（网络错误/限流/页面为空等）。
+
+    调用方应把属性视为“未知”，不得当作“非免费/非HR”处理，
+    以免在抓取失败时误判（如把仍免费的种子判定为免费到期而删种）。
+    """
+
+
 # ---- 数据模型 ----
 
 
@@ -487,8 +496,12 @@ class SiteEngine:
                         ret["labels"] = ",".join(str(x) for x in labels_val if x)
                     elif labels_val:
                         ret["labels"] = str(labels_val)
+            except TorrentAttrFetchError:
+                raise
             except Exception as e:  # noqa: BLE001
-                log.debug(f"[SiteEngine]忽略异常: {e}")
+                # 抓取异常：属性视为“未知”，交由上层决定（避免误判为“非免费”）
+                log.debug(f"[SiteEngine]种子属性抓取异常: {e}")
+                raise TorrentAttrFetchError(f"种子详情抓取失败: {e}") from e
             return ret
 
         if site.html and site.html.conf:
@@ -501,7 +514,7 @@ class SiteEngine:
                 detail_url = torrent_url
             html_txt = self._fetch_page(detail_url, user_config)
             if not html_txt:
-                return ret
+                raise TorrentAttrFetchError(f"种子详情页抓取为空, url={detail_url[:120]}")
             if JsonUtils.is_valid_json(html_txt):
                 for xp in conf.get("2XFREE", []):
                     if str(JsonUtils.get_json_object(html_txt, xp.split("=")[0])) == xp.split("=")[1]:

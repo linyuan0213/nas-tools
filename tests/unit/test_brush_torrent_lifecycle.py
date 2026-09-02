@@ -125,3 +125,65 @@ def test_pending_torrent_waiting_too_short_not_deleted():
     lc = _lifecycle([_pending_torrent(1 * HOUR)])
     lc.remove_task_torrents(1, _task({"pending_time": "gt#3", "mode": "or"}))
     assert lc._downloader.deleted == []
+
+
+class _AttrTrackingHelper:
+    """记录 get_torrent_attr 调用次数，验证详情页请求仅在规则需要时发起"""
+
+    def __init__(self):
+        self.calls = 0
+
+    def get_torrent_attr(self, site_info, enclosure):
+        self.calls += 1
+        return enclosure, {"free": True, "hr": False}
+
+
+class _RepoWithEnclosure:
+    """跟踪种子带真实下载链接，用于验证 need_attr 守卫"""
+
+    def __init__(self, torrent_ids):
+        self._ids = torrent_ids
+
+    def get_brushtask_torrents(self, taskid):
+        return [
+            type(
+                "T",
+                (),
+                {"DOWNLOAD_ID": i, "ENCLOSURE": f"https://site/download/{i}", "PAGE_URL": f"https://site/detail/{i}"},
+            )()
+            for i in self._ids
+        ]
+
+
+def test_remove_rule_without_attr_does_not_fetch_torrent_attr():
+    """空删种规则/纯下载器指标规则：不应为每颗种子抓取详情页（避免消耗站点限流）"""
+    torrent = Torrent(
+        id="A", name="做种", download_time=1 * HOUR, iatime=1 * HOUR, status=TorrentStatus.Uploading, progress=1.0
+    )
+    helper = _AttrTrackingHelper()
+    lc = BrushTorrentLifecycle(
+        helper=helper,
+        repo=_RepoWithEnclosure([torrent.id]),
+        downloader=_Downloader([torrent]),
+        sites=cast(SiteCache, _Sites()),
+        message=cast(Message, _Message()),
+    )
+    lc.remove_task_torrents(1, _task({"ratio": "lt#3", "mode": "or"}))
+    assert helper.calls == 0
+
+
+def test_remove_rule_needing_attr_fetches_torrent_attr():
+    """含 freestatus/hr 的删种规则：需要抓取详情页判断免费/HR 状态"""
+    torrent = Torrent(
+        id="A", name="做种", download_time=1 * HOUR, iatime=1 * HOUR, status=TorrentStatus.Uploading, progress=1.0
+    )
+    helper = _AttrTrackingHelper()
+    lc = BrushTorrentLifecycle(
+        helper=helper,
+        repo=_RepoWithEnclosure([torrent.id]),
+        downloader=_Downloader([torrent]),
+        sites=cast(SiteCache, _Sites()),
+        message=cast(Message, _Message()),
+    )
+    lc.remove_task_torrents(1, _task({"freestatus": "NORMAL", "mode": "or"}))
+    assert helper.calls == 1
