@@ -195,6 +195,7 @@ class SiteCache:
             "parse": bool(note.get("parse")),
             "unread_msg_notify": bool(note.get("message")),
             "chrome": bool(note.get("chrome")),
+            "browser_persistent": bool(note.get("browser_persistent")),
             "proxy": bool(note.get("proxy")),
             "subtitle": bool(note.get("subtitle")),
             "tag": bool(note.get("tag")),

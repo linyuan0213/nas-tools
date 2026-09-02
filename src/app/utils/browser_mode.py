@@ -79,6 +79,7 @@ def build_browser_mode(
         proxy_url=proxy_url,
         render_html=render_html if render_html is not None else bool(site_info.get("browser_render")),
         api_key=get_chrome_api_key(),
+        persistent_session=bool(site_info.get("browser_persistent")),
     )
     browser.session_key = make_session_key(site_key, browser)
     return browser

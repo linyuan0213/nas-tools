@@ -12,6 +12,7 @@ from app.core.exceptions import InfrastructureError, NetworkError
 from app.downloader.client._base import _IDownloadClient
 from app.downloader.schema import ConfigField, DownloaderConfigSchema
 from app.downloader.strategy import RemoveStrategy
+from app.infrastructure.cache_system.decorators import cached
 from app.schemas.download import Torrent, TorrentStatus
 from app.utils import ExceptionUtils
 
@@ -273,6 +274,9 @@ class Qbittorrent(_IDownloadClient):
                     if not tags_set.intersection(labels):
                         continue
                 torrent_list.append(self._torrent_from_sync(t_hash, t_data))
+            # sync 数据无 up_speed_avg：从 properties API 补准确的平均上传速度（带缓存）
+            for torrent in torrent_list:
+                torrent.avg_upload_speed = self._get_torrent_avg_upload_speed(torrent.id)
             return torrent_list or [], False
         except (InfrastructureError, NetworkError):
             raise
@@ -312,7 +316,8 @@ class Qbittorrent(_IDownloadClient):
         return torrent_list or [], False
 
     def _torrent_from_sync(self, t_hash: str, t_data: dict) -> Torrent:
-        """从 sync/maindata 数据构造 Torrent（仅填充必要字段，避免额外 API 调用）."""
+        """从 sync/maindata 数据构造 Torrent（填充刷流/规则所需字段，避免额外 API 调用）."""
+        date_now = int(time.time())
         torrent_obj = Torrent()
         torrent_obj.id = t_hash
         torrent_obj.name = t_data.get("name")
@@ -324,6 +329,16 @@ class Qbittorrent(_IDownloadClient):
         torrent_obj.progress = float(t_data.get("progress") or 0)
         torrent_obj.download_speed = int(t_data.get("dlspeed") or 0)
         torrent_obj.upload_speed = int(t_data.get("upspeed") or 0)
+        added_on = t_data.get("added_on") or 0
+        torrent_obj.download_time = date_now - added_on if added_on else 0
+        completion_on = t_data.get("completion_on") or 0
+        torrent_obj.seeding_time = date_now - completion_on if completion_on > 0 else 0
+        torrent_obj.ratio = t_data.get("ratio") or 0
+        torrent_obj.uploaded = t_data.get("uploaded") or 0
+        torrent_obj.downloaded = int(t_data.get("downloaded") or 0)
+        torrent_obj.add_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(added_on)) if added_on else ""
+        last_activity = t_data.get("last_activity") or 0
+        torrent_obj.iatime = date_now - last_activity if last_activity else 0
         return torrent_obj
 
     def get_completed_torrents(
@@ -907,6 +922,24 @@ class Qbittorrent(_IDownloadClient):
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
             return
+
+    # 平均上传速度缓存 TTL（秒）：up_speed_avg 为长期平均值，变化缓慢；10 分钟刷新一次足够
+    _UP_AVG_CACHE_TTL = 600
+
+    @cached(
+        cache_instance="downloader_up_avg",
+        key_func=lambda self, torrent_hash: f"up_avg:{torrent_hash}",
+        ttl=_UP_AVG_CACHE_TTL,
+    )
+    def _get_torrent_avg_upload_speed(self, torrent_hash: str) -> float:
+        """获取种子平均上传速度（带缓存，避免 completed 种子多时逐种拉取 properties）."""
+        avg = 0.0
+        props = self._get_torrent_generic_properties(torrent_hash)
+        if props:
+            up_avg = props.get("up_speed_avg")
+            if isinstance(up_avg, (int, float)):
+                avg = float(up_avg)
+        return avg
 
     def torrent_properties(self, torrent: dict) -> Torrent:
         date_now = int(time.time())

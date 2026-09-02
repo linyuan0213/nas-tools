@@ -193,11 +193,13 @@ class _BaseChromeTransport:
         return self._build_response(request, payload)
 
     def close(self) -> None:
-        # 关闭时删除 chrome 会话，释放对应浏览器标签页，避免会话长时间残留
-        try:
-            self._server.delete_session(self._session_key)
-        except Exception as e:  # noqa: BLE001
-            log.debug(f"[ChromeTransport] 关闭会话 {self._session_key} 失败: {e}")
+        # 持久会话：保留浏览器会话（含挑战/2FA 认证态），供后续请求复用；
+        # 非持久会话在关闭时删除，释放浏览器标签页
+        if not self._browser.persistent_session:
+            try:
+                self._server.delete_session(self._session_key)
+            except Exception as e:  # noqa: BLE001
+                log.debug(f"[ChromeTransport] 关闭会话 {self._session_key} 失败: {e}")
         self._server.close()
 
 

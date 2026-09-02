@@ -77,6 +77,8 @@ _cache_manager.create_memory_cache("token", maxsize=512)
 _cache_manager.create_memory_cache("config_load", maxsize=1)
 _cache_manager.create_memory_cache("category_load", maxsize=2)
 _cache_manager.create_memory_cache("site_info", maxsize=100)
+# 下载器种子平均上传速度缓存：up_speed_avg 为长期平均值，避免 completed 种子多时逐种拉取 properties
+_cache_manager.create_memory_cache("downloader_up_avg", maxsize=10000, ttl=600)
 _cache_manager.create_redis_cache("tmdb")
 
 # OpenAI 会话缓存使用分层缓存：L1 内存 + L2 Redis
