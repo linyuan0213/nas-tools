@@ -610,7 +610,10 @@ class Qbittorrent(_IDownloadClient):
                 use_auto_torrent_management=is_auto,
                 cookie=cookie,
             )
-            return bool(qbc_ret and str(qbc_ret).find("Ok") != -1)
+            ret_ok = bool(qbc_ret and str(qbc_ret).find("Ok") != -1)
+            if not ret_ok and qbc_ret is not None:
+                log.warn(f"[{self.client_name}]{self.name} 添加种子失败，qBittorrent 返回: {qbc_ret}")
+            return ret_ok
         except (InfrastructureError, NetworkError):
             raise
         except Exception as err:
