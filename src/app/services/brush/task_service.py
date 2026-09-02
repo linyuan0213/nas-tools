@@ -160,6 +160,45 @@ class BrushTaskService:
                 log.error(f"[Brush]任务 {task.ID} ({task.NAME}) 构建失败，已跳过: {e}")
         # 一次性数据迁移：把 SITE 为配置 id/名称的任务修正为 DB 主键 id
         self._migrate_site_ids(brushtasks)
+        # 自动清理孤儿任务：站点已被删除的刷流任务（无法运行、列表中不可见）
+        self._cleanup_orphan_tasks()
+
+    def _cleanup_orphan_tasks(self) -> None:
+        """清理“站点已删除”的刷流任务：此类任务无法运行且列表中不可见，
+        删除后也不会再于重启时被注册进调度。仅在确有其他任务正常加载时执行，避免误删。"""
+        if not self._brush_tasks:
+            return
+        try:
+            rows = self._repo.get_brushtasks()
+            if not rows:
+                return
+        except Exception as e:
+            log.warn(f"[Brush]孤儿任务清理查询失败，跳过: {e}")
+            return
+        cleaned = 0
+        for task in rows:
+            tid = task.ID
+            if str(tid) in self._brush_tasks:
+                continue  # 能正常构建（站点存在），不属于孤儿
+            site = str(task.SITE or "")
+            site_id = site if site.isdigit() else self._sites.resolve_site_db_id(site)
+            try:
+                exists = bool(site_id and self._sites.get_sites(siteid=site_id))
+            except Exception as e:
+                log.warn(f"[Brush]孤儿任务 {tid} 站点检查异常，跳过清理: {e}")
+                continue
+            if exists:
+                continue  # 站点仍在但构建失败（如下载器缺失）——保留，避免误删
+            try:
+                self._repo.delete_brushtask(tid)
+                self._stop_task_jobs(tid)
+                self._brush_tasks.pop(str(tid), None)
+                cleaned += 1
+                log.warn(f"[Brush]检测到刷流任务 {tid} ({task.NAME}) 的站点已删除，自动清理该任务及其种子/事件记录")
+            except Exception as e:
+                log.warn(f"[Brush]自动清理孤儿任务 {tid} 失败: {e}")
+        if cleaned:
+            log.info(f"[Brush]启动时自动清理了 {cleaned} 个站点已删除的刷流任务")
 
     def _migrate_site_ids(self, tasks) -> None:
         """兼容历史数据：SITE 存了站点配置 id/名称（如 "ttg"）的任务统一修正为 DB 主键 id."""
