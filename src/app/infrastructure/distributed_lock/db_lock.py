@@ -31,7 +31,6 @@ class DbDistributedLock(DistributedLock):
             )
             if result:
                 self._owned = True
-                log.debug(f"[DbLock]获取锁成功: {self._lock_key}")
             else:
                 log.debug(f"[DbLock]锁已被占用: {self._lock_key}")
             return result
@@ -47,7 +46,6 @@ class DbDistributedLock(DistributedLock):
             return
         try:
             self._repo.release(self._lock_key, self._token)
-            log.debug(f"[DbLock]释放锁成功: {self._lock_key}")
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:

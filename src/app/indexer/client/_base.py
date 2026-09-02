@@ -120,7 +120,7 @@ class _IIndexClient(metaclass=ABCMeta):
                 log.warn(f"[Indexer]写入统计失败: {e!s}")
 
         if len(result_array) == 0:
-            log.warn(f"[{self.index_type}]{indexer.name} 关键词 {key_word} 未搜索到数据")
+            log.debug(f"[{self.index_type}]{indexer.name} 关键词 {key_word} 未搜索到数据")
             if self.progress:
                 self.progress.update(ptype=progress_key, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
             return []

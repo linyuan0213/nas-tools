@@ -43,13 +43,11 @@ class ProgressTracker:
         detail = self._process_detail.get(ptype, {})
         enabled = detail.get("enable")
         if not enabled:
-            log.debug(f"[ProgressTracker] update skip (enable=False): key={ptype}")
             return
         if value is not None:
             detail["value"] = value
         if text is not None:
             detail["text"] = text
-        log.debug(f"[ProgressTracker] update: key={ptype} value={value}")
 
     def update_max(self, value=None, text=None, ptype: ProgressKey | str = ProgressKey.Search):
         """值只增不减的更新 — 多并发写同一 key 时保持进度单调"""
@@ -64,9 +62,5 @@ class ProgressTracker:
             ptype = ptype.value
         detail = self._process_detail.get(ptype)
         if not detail:
-            log.debug(f"[ProgressTracker] get_process None: key={ptype}")
             return None
-        log.debug(
-            f"[ProgressTracker] get_process: key={ptype} value={detail.get('value')} enable={detail.get('enable')}"
-        )
         return detail

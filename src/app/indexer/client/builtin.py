@@ -239,7 +239,7 @@ class BuiltinIndexer(_IIndexClient):
             )
 
         if len(result_array) == 0:
-            log.warn(f"[{self.client_name}]{indexer.name} 关键词 {key_word} 未搜索到数据")
+            log.debug(f"[{self.client_name}]{indexer.name} 关键词 {key_word} 未搜索到数据")
             self._progress.update(ptype=progress_key, text=f"{indexer.name} 关键词 {key_word} 未搜索到数据")
             return []
         else:

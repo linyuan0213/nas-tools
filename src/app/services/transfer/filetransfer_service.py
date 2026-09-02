@@ -345,7 +345,7 @@ class FileTransferService:
             if in_from == SyncType.MON:
                 file_list = list(filter(self._history.is_transfer_notin_blacklist, file_list))
                 if not file_list:
-                    log.info("[Rmt]所有文件均已成功转移过")
+                    log.debug("[Rmt]所有文件均已成功转移过")
                     return self._finish_transfer(True, "没有新文件需要处理")
 
             # ---------- 阶段 3：查下载记录 + 批量识别 ----------

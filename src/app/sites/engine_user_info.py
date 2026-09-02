@@ -62,9 +62,9 @@ def prefetch_user_profile(
             headers.pop("Content-Type", None)
             res = client.get(url=req_url, params=params, headers=headers, auth=auth, **rl_kwargs)
         parsed = res.json()
-        log.warn(f"[SiteEngine]{site_def.name} status={res.status_code} keys={list(parsed.keys())[:5]}")
+        log.debug(f"[SiteEngine]{site_def.name} status={res.status_code} keys={list(parsed.keys())[:5]}")
         if "data" in parsed and isinstance(parsed["data"], dict):
-            log.warn(f"[SiteEngine]{site_def.name} data keys={list(parsed['data'].keys())[:10]}")
+            log.debug(f"[SiteEngine]{site_def.name} data keys={list(parsed['data'].keys())[:10]}")
         return site_def, parsed
     except Exception as e:  # noqa: BLE001
         log.debug(f"[SiteUserInfo]忽略异常: {e}")

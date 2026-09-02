@@ -475,7 +475,7 @@ class Indexer:
     def get_indexer_statistics(self):
         """获取所有索引器统计信息"""
         self._ensure_clients()
-        log.warn(f"[Indexer]统计：已加载客户端 {list(self._clients.keys())}")
+        log.info(f"[Indexer]统计：已加载客户端 {list(self._clients.keys())}")
         stats = []
         for client in self._clients.values():
             rows = self.download_repo.get_indexer_statistics(client.get_client_id())

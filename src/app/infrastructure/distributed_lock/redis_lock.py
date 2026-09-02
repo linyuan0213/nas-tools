@@ -44,7 +44,6 @@ class RedisDistributedLock(DistributedLock):
             result = client.set(self._lock_key, self._token, nx=True, ex=self._ttl_seconds)
             if result:
                 self._owned = True
-                log.debug(f"[RedisLock]获取锁成功: {self._lock_key}")
                 return True
             else:
                 log.debug(f"[RedisLock]锁已被占用: {self._lock_key}")
@@ -68,9 +67,7 @@ class RedisDistributedLock(DistributedLock):
 
         try:
             result = client.eval(self._RELEASE_SCRIPT, 1, self._lock_key, self._token)
-            if result:
-                log.debug(f"[RedisLock]释放锁成功: {self._lock_key}")
-            else:
+            if not result:
                 log.warn(f"[RedisLock]释放锁失败（非持有者）: {self._lock_key}")
         except (ServiceError, RepositoryError, DomainError):
             raise

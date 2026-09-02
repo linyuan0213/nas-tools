@@ -83,9 +83,7 @@ class ApiSiteSearcher:
             fanout_body.update(cat_config)
             body = self._render_template(fanout_body, **template_vars)
             for result in self._execute_request(search_config, body, template_vars, page_size=page_size):
-                key = "".join(
-                    str(result.get(k) or "") for k in ("title", "enclosure", "size")
-                )
+                key = "".join(str(result.get(k) or "") for k in ("title", "enclosure", "size"))
                 if key not in seen:
                     seen.add(key)
                     all_results.append(result)
@@ -164,9 +162,9 @@ class ApiSiteSearcher:
             log.warn(f"[ApiSiteSearcher]{self._site.name} 搜索失败, url={url}, error={e}")
             return []
         result = self._parse_response(resp_data, search_config)
-        log.warn(f"[ApiSiteSearcher]{self._site.name} 返回 {len(result)} 条结果, url={url}")
+        log.debug(f"[ApiSiteSearcher]{self._site.name} 返回 {len(result)} 条结果, url={url}")
         if len(result) == 0:
-            log.warn(f"[ApiSiteSearcher]{self._site.name} raw resp: {str(resp_data)[:200]}")
+            log.debug(f"[ApiSiteSearcher]{self._site.name} raw resp: {str(resp_data)[:200]}")
         return result
 
     def _resolve_auth_tokens(self):

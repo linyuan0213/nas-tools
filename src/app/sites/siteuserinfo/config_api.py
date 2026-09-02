@@ -109,7 +109,7 @@ class ConfigApiUserInfo:
             if val is not None:
                 setattr(self, field_name, val)
 
-        log.warn(
+        log.debug(
             f"[ConfigApiUserInfo]{self.site_name} profile: "
             f"upload={self.upload} download={self.download} seeding={self.seeding} "
             f"bonus={self.bonus} username={self.username}"
@@ -215,7 +215,7 @@ class ConfigApiUserInfo:
         base = self._def.api.base_url if self._def.api else ""
         path = endpoint_cfg.get("path", "").lstrip("/")
         url = f"{base.rstrip('/')}/{path}" if path else base.rstrip("/")
-        log.warn(f"[ConfigApiUserInfo]{self.site_name} _api_call url={url}")
+        log.debug(f"[ConfigApiUserInfo]{self.site_name} _api_call url={url}")
         engine = self._site_engine
         headers, auth = engine._build_auth(
             self._def,
