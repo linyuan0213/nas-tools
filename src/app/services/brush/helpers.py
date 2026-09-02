@@ -341,7 +341,9 @@ class BrushTaskHelper:
         download_dir = taskinfo.get("savepath")
 
         hr_tag = []
-        if rss_rule.get("hr"):
+        hr_rule = (rss_rule.get("hr") or "").strip()
+        # 与选种一致：#/N/空 表示"不限 HR"，此时不抓详情、不因抓取失败阻断下载（多数站点无 HR）
+        if hr_rule and hr_rule not in ("#", "N"):
             if not torrent_attr:
                 _, torrent_attr = self.get_torrent_attr(site_info, enclosure)
             if torrent_attr is None:
