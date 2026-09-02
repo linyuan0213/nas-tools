@@ -217,6 +217,9 @@ class PluginFrameworkService:
                         "is_builtin": bool(orm_model.PATH and "builtin_plugins" in orm_model.PATH),
                         "installed": bool(getattr(orm_model, "INSTALLED", True)),
                         "supports_run": manifest.backend.supports_run,
+                        "has_config": bool(
+                            manifest.frontend and manifest.frontend.settings and manifest.frontend.settings.fields
+                        ),
                         "backend": {
                             "entry": manifest.backend.entry,
                             "api_prefix": manifest.backend.api_prefix,

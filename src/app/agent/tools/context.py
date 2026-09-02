@@ -30,6 +30,12 @@ class ToolContext:
     storage_backend_service: Any = None
     words_service: Any = None
     plugin_framework_service: Any = None
+    message_client_service: Any = None
+    media_server_config_service: Any = None
+    indexer_config_service: Any = None
+    system_config_service: Any = None
+    media_config_service: Any = None
+    sync_service: Any = None
     retriever: Any = None
     conversation_store: Any = None
     semantic_memory: Any = None

@@ -69,8 +69,78 @@ def plugin_run(ctx: ToolContext, plugin_id: str, confirmed: bool = False) -> Too
     return ToolResult(success=True, data={"plugin_id": plugin_id, "message": "运行任务已启动"})
 
 
+def plugin_enable(ctx: ToolContext, plugin_id: str, confirmed: bool = False) -> ToolResult:
+    """启用插件。启用会注册其后台任务/菜单，需用户确认。"""
+    name = _plugin_name(ctx, plugin_id)
+    if name is None:
+        return ToolResult(success=False, error=f"插件不存在: {plugin_id}")
+    if not confirmed:
+        return ToolResult(
+            success=True,
+            need_confirm=True,
+            data={"action": "enable", "plugin_id": plugin_id, "message": f"启用插件「{name}」需确认"},
+        )
+    try:
+        ctx.plugin_framework_service.enable(plugin_id)
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"启用插件失败: {e}")
+    return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」已启用"})
+
+
+def plugin_disable(ctx: ToolContext, plugin_id: str, confirmed: bool = False) -> ToolResult:
+    """禁用插件。禁用会卸载后台任务并移除菜单，需用户确认。"""
+    name = _plugin_name(ctx, plugin_id)
+    if name is None:
+        return ToolResult(success=False, error=f"插件不存在: {plugin_id}")
+    if not confirmed:
+        return ToolResult(
+            success=True,
+            need_confirm=True,
+            data={"action": "disable", "plugin_id": plugin_id, "message": f"禁用插件「{name}」需确认"},
+        )
+    try:
+        ctx.plugin_framework_service.disable(plugin_id)
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"禁用插件失败: {e}")
+    return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」已禁用"})
+
+
+def plugin_config_save(ctx: ToolContext, plugin_id: str, config: dict, confirmed: bool = False) -> ToolResult:
+    """保存插件配置（整体覆盖）。修改生效需用户确认。"""
+    name = _plugin_name(ctx, plugin_id)
+    if name is None:
+        return ToolResult(success=False, error=f"插件不存在: {plugin_id}")
+    if not isinstance(config, dict):
+        return ToolResult(success=False, error="config 参数必须是对象")
+    if not confirmed:
+        return ToolResult(
+            success=True,
+            need_confirm=True,
+            data={"action": "config_save", "plugin_id": plugin_id, "message": f"保存插件「{name}」配置需确认"},
+        )
+    try:
+        ctx.plugin_framework_service.save_config(plugin_id, config)
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"保存插件配置失败: {e}")
+    return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」配置已保存"})
+
+
+def _plugin_name(ctx: ToolContext, plugin_id: str) -> str | None:
+    """查询插件显示名；不存在返回 None"""
+    try:
+        manifest = ctx.plugin_framework_service.get_manifest(plugin_id)
+    except Exception:  # noqa: BLE001
+        return None
+    if not manifest:
+        return None
+    return getattr(manifest, "name", None) or plugin_id
+
+
 HANDLERS = {
     "plugin_list": plugin_list,
     "plugin_info": plugin_info,
     "plugin_run": plugin_run,
+    "plugin_enable": plugin_enable,
+    "plugin_disable": plugin_disable,
+    "plugin_config_save": plugin_config_save,
 }

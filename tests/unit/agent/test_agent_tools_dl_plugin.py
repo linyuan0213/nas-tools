@@ -4,7 +4,14 @@ from typing import cast
 
 from app.agent.tools.context import ToolContext
 from app.agent.tools.handlers.download import download_history_list
-from app.agent.tools.handlers.plugins import plugin_info, plugin_list, plugin_run
+from app.agent.tools.handlers.plugins import (
+    plugin_config_save,
+    plugin_disable,
+    plugin_enable,
+    plugin_info,
+    plugin_list,
+    plugin_run,
+)
 
 
 class _Row:
@@ -36,6 +43,9 @@ class _PluginService:
         self.plugins = plugins
         self.configs = configs or {}
         self.ran = []
+        self.enabled: list[str] = []
+        self.disabled: list[str] = []
+        self.saved: list[tuple] = []
 
     def list_plugins(self):
         return self.plugins
@@ -52,6 +62,15 @@ class _PluginService:
 
     def run_plugin(self, plugin_id):
         self.ran.append(plugin_id)
+
+    def enable(self, plugin_id):
+        self.enabled.append(plugin_id)
+
+    def disable(self, plugin_id):
+        self.disabled.append(plugin_id)
+
+    def save_config(self, plugin_id, config):
+        self.saved.append((plugin_id, config))
 
 
 def _ctx(downloader=None, plugins=None):
@@ -181,3 +200,51 @@ class TestPluginTools:
         result = plugin_run(_ctx(plugins=svc), plugin_id="missing", confirmed=True)
         assert not result.success
         assert "不存在" in result.error
+
+    def test_plugin_enable_requires_confirm(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_enable(_ctx(plugins=svc), plugin_id="autogenrss")
+        assert result.need_confirm
+        assert svc.enabled == []
+
+    def test_plugin_enable_confirmed(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_enable(_ctx(plugins=svc), plugin_id="autogenrss", confirmed=True)
+        assert result.success
+        assert svc.enabled == ["autogenrss"]
+
+    def test_plugin_disable_requires_confirm(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_disable(_ctx(plugins=svc), plugin_id="autogenrss")
+        assert result.need_confirm
+        assert svc.disabled == []
+
+    def test_plugin_disable_confirmed(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_disable(_ctx(plugins=svc), plugin_id="autogenrss", confirmed=True)
+        assert result.success
+        assert svc.disabled == ["autogenrss"]
+
+    def test_plugin_config_save_requires_confirm(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_config_save(_ctx(plugins=svc), plugin_id="autogenrss", config={"interval": 30})
+        assert result.need_confirm
+        assert svc.saved == []
+
+    def test_plugin_config_save_confirmed(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_config_save(_ctx(plugins=svc), plugin_id="autogenrss", config={"interval": 30}, confirmed=True)
+        assert result.success
+        assert svc.saved == [("autogenrss", {"interval": 30})]
+
+    def test_plugin_manage_not_found(self):
+        svc = _PluginService(list(self._PLUGINS))
+        for tool in (plugin_enable, plugin_disable):
+            result = tool(_ctx(plugins=svc), plugin_id="missing", confirmed=True)
+            assert not result.success
+            assert "不存在" in result.error
+
+    def test_plugin_config_save_invalid_config(self):
+        svc = _PluginService(list(self._PLUGINS))
+        result = plugin_config_save(_ctx(plugins=svc), plugin_id="autogenrss", config=cast(dict, "bad"), confirmed=True)
+        assert not result.success

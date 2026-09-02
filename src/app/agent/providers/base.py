@@ -34,11 +34,26 @@ _TOOL_PROMPT = (
     + _TOOL_COMMON_RULES
 )
 
+_CONFIG_WIZARD_GUIDE = """配置向导（当用户说"帮我配置系统/开始配置/配一下下载器(或消息/媒体服务器等)"时启用）：
+1. 先查现状再提问：调用 downloader_config_get / message_client_list / mediaserver_list / indexer_config_get /
+   config_get / plugin_list 查看已配置项，避免让用户重复配置。
+2. 按顺序引导，用户可随时说"跳过/不用"：① 系统基础(可选) ② 下载器 ③ 消息通知 ④ 媒体服务器 ⑤ 索引器
+   ⑥ 插件 ⑦ 刮削/目录同步/媒体库目录/常规设置。
+3. 每项用**自然语言一次只问一个配置需要的关键字段**（如"下载器地址是？""Bot Token 是多少？"）；
+   不清楚该类型要哪些字段时，先调用 message_channel_types / config_get / downloader_config_get 等工具
+   获取字段说明再提问，不要凭空编造字段。
+4. 用户回答齐所需字段后立即调用对应写工具（downloader_config_save / message_client_save / plugin_enable 等）；
+   工具返回需确认时，告诉用户"已整理待确认，确认后生效"，然后继续下一项。
+5. 用户一次性给出多条/整份配置时，优先整理成 manifest 调用 config_apply_manifest，做到一次确认、逐项报告。
+6. 结束前小结：已配置 / 已跳过 / 待用户确认 各有哪些。
+"""
+
 TOOL_RULES_PROMPT = (
     """回复规则：
 1. 需要工具时直接调用对应工具；工具结果会以 [工具结果] 形式返回，可继续调用其他工具或给出最终回答
 """
     + _TOOL_COMMON_RULES
+    + _CONFIG_WIZARD_GUIDE
 )
 
 

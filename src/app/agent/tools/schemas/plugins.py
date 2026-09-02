@@ -44,3 +44,49 @@ class PluginRunTool(BaseTool):
     }
     level = ToolLevel.WRITE
     permission = "plugin:manage"
+
+
+class PluginEnableTool(BaseTool):
+    name = "plugin_enable"
+    description = "启用插件（注册后台任务与菜单）。有副作用，需确认。当用户说'启用/开启某个插件'时调用。"
+    parameters = {
+        "type": "object",
+        "properties": {
+            "plugin_id": {"type": "string", "description": "插件 ID"},
+        },
+        "required": ["plugin_id"],
+    }
+    level = ToolLevel.WRITE
+    permission = "plugin:manage"
+
+
+class PluginDisableTool(BaseTool):
+    name = "plugin_disable"
+    description = "禁用插件（卸载后台任务并移除菜单）。有副作用，需确认。当用户说'禁用/停用某个插件'时调用。"
+    parameters = {
+        "type": "object",
+        "properties": {
+            "plugin_id": {"type": "string", "description": "插件 ID"},
+        },
+        "required": ["plugin_id"],
+    }
+    level = ToolLevel.WRITE
+    permission = "plugin:manage"
+
+
+class PluginConfigSaveTool(BaseTool):
+    name = "plugin_config_save"
+    description = (
+        "保存插件配置（整体覆盖该插件的配置对象，字段请参考 plugin_info 返回的 config）。"
+        "有副作用，需确认。当用户说'保存/设置某个插件的配置'时调用。"
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "plugin_id": {"type": "string", "description": "插件 ID"},
+            "config": {"type": "object", "description": "完整配置对象（覆盖式保存，缺失字段按默认/空处理）"},
+        },
+        "required": ["plugin_id", "config"],
+    }
+    level = ToolLevel.WRITE
+    permission = "plugin:manage"
