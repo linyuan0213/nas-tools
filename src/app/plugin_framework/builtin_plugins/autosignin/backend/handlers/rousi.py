@@ -37,7 +37,8 @@ class RousiSigninHandler(SiteSigninHandler):
         # 1. 获取 CSRF Token
         try:
             session_res = client.get(url=f"{base_url}/api/v1/session", headers=headers, auth=auth)
-        except Exception:
+        except Exception as e:  # noqa: BLE001
+            self._plugin_ctx.warn(f"[{site}]获取 session 异常: {e!r}")
             return SigninResult.fail(site, SigninResult.SITE_UNREACHABLE)
 
         if session_res.status_code == 401:
@@ -70,7 +71,9 @@ class RousiSigninHandler(SiteSigninHandler):
                 headers=api_headers,
                 auth=auth,
             )
-        except Exception:
+        except Exception as e:  # noqa: BLE001
+            # 常见于签到已生效但响应异常（如连接中断/5xx），先记录底层原因便于定位
+            self._plugin_ctx.warn(f"[{site}]签到请求异常: {e!r}")
             return SigninResult.fail(site, SigninResult.REQUEST_FAILED)
 
         if att_res.status_code == 401:
