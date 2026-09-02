@@ -940,6 +940,7 @@ class LogsSearchRequest(BaseModel):
     source: str | None = None
     page: int = 1
     page_size: int = 1000
+    hours: int | None = 24
 
 
 @router.post("/logs/search", response_model=CommonResponse, summary="全文搜索日志")
@@ -947,13 +948,14 @@ def search_logs(
     req: LogsSearchRequest,
     user: str = Depends(require_permission("log:view")),
 ):
-    """搜索磁盘日志文件（含轮转文件）中的全部日志，支持分页."""
+    """搜索磁盘日志文件（含轮转文件）中的日志，支持分页；默认仅检索最近一天."""
     result = LogSearchService().search(
         keyword=req.keyword,
         level=req.level,
         source=req.source,
         page=req.page,
         page_size=req.page_size,
+        hours=req.hours,
     )
     return success(data=result)
 
@@ -963,7 +965,7 @@ def list_log_sources(
     req: EmptyRequest = EmptyRequest(),
     user: str = Depends(require_permission("log:view")),
 ):
-    """返回日志中出现过的全部来源，供前端来源下拉框使用."""
+    """返回日志中出现过的全部来源，供前端来源下拉框使用（默认仅统计最近一天）."""
     return success(data=LogSearchService().list_sources())
 
 
@@ -972,11 +974,12 @@ def export_logs(
     req: LogsSearchRequest,
     user: str = Depends(require_permission("log:view")),
 ):
-    """导出全部匹配日志为文本文件下载."""
+    """导出匹配日志为文本文件下载（默认仅最近一天的日志）."""
     text = LogSearchService().export_text(
         keyword=req.keyword,
         level=req.level,
         source=req.source,
+        hours=req.hours,
     )
     filename = f"nexus-media-logs-{time.strftime('%Y%m%d-%H%M%S')}.txt"
     return Response(

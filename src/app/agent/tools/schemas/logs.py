@@ -6,8 +6,9 @@ from app.agent.tools.base import BaseTool, ToolLevel
 class SystemLogsTool(BaseTool):
     name = "system_logs"
     description = (
-        "查询系统运行日志（最近内存缓冲）。当用户问'为什么X失败/报错/出问题/刚才发生了什么/"
-        "某模块日志'时调用，用于诊断下载失败、转移报错、站点异常等。错误/警告日志优先返回。"
+        "查询系统运行日志（最近内存缓冲；hours 指定时检索磁盘日志文件）。当用户问"
+        "'为什么X失败/报错/出问题/刚才发生了什么/某模块日志/最近几天的日志'时调用，"
+        "用于诊断下载失败、转移报错、站点异常等。错误/警告日志优先返回。"
     )
     parameters = {
         "type": "object",
@@ -29,6 +30,10 @@ class SystemLogsTool(BaseTool):
                 "type": "integer",
                 "description": "可选，返回条数上限（默认 50，最大 200）",
                 "default": 50,
+            },
+            "hours": {
+                "type": "integer",
+                "description": "可选，检索磁盘日志文件最近 N 小时（1-168）；不传则只查内存缓冲",
             },
         },
         "required": [],

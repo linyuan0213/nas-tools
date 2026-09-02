@@ -1,12 +1,15 @@
 """日志文件全文搜索与导出服务。
 
-从磁盘日志文件（含轮转文件）中解析并检索全部日志，
+从磁盘日志文件（含轮转文件）中解析并检索日志，
 供系统日志页面的搜索与导出使用，弥补内存缓冲仅保留最近 N 条的限制。
+默认仅检索最近一天（24h）的日志，避免扫描全部历史文件导致过大/过慢。
 """
 
 import json
 import os
 import re
+import time
+from datetime import datetime, timedelta
 from typing import Any, Iterator
 
 import log
@@ -17,6 +20,9 @@ __all__ = ["LogSearchService"]
 
 # 人类可读格式：2026-09-01 13:15:43.327 |INFO    | service.py : service.__init__:  42 | - [MediaService]xxx
 _HUMAN_LINE_PATTERN = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \|([A-Za-z]+)\s*\| .*? \| - (.*)$")
+
+# 默认搜索时间窗口（小时）：仅检索最近一天，控制读取量与导出体积
+DEFAULT_LOG_WINDOW_HOURS = 24
 
 
 class LogSearchService:
@@ -38,8 +44,8 @@ class LogSearchService:
             return None
         return logpath
 
-    def _list_log_files(self) -> list[str]:
-        """按时间升序返回全部日志文件（最旧在前，当前文件最后）."""
+    def _list_log_files(self, min_mtime: float | None = None) -> list[str]:
+        """按时间升序返回日志文件（最旧在前，当前文件最后）；可跳过修改时间早于 min_mtime 的旧文件."""
         log_dir = self._resolve_log_dir()
         if not log_dir:
             return []
@@ -47,6 +53,8 @@ class LogSearchService:
         for name in os.listdir(log_dir):
             full = os.path.join(log_dir, name)
             if os.path.isfile(full) and name.endswith(".log"):
+                if min_mtime is not None and os.path.getmtime(full) < min_mtime:
+                    continue
                 files.append(full)
         files.sort(key=lambda p: os.path.getmtime(p))
         return files
@@ -107,15 +115,38 @@ class LogSearchService:
                     # 多行消息的续行（如异常堆栈），追加到上一条
                     last_entry["text"] += "\n" + line
 
-    def _iter_entries(self) -> Iterator[dict[str, Any]]:
-        """遍历全部可用日志：优先磁盘文件，无文件时回退内存缓冲."""
-        files = self._list_log_files()
+    def _iter_entries(self, hours: int | None = None) -> Iterator[dict[str, Any]]:
+        """遍历可用日志：优先磁盘文件，无文件时回退内存缓冲。
+
+        hours 非空时仅返回最近 N 小时内的条目，并跳过修改时间更早的旧文件。
+        """
+        min_mtime = None
+        if hours and hours > 0:
+            min_mtime = time.time() - hours * 3600
+        files = self._list_log_files(min_mtime=min_mtime)
         if not files:
             for entry in log.LOG_BUFFER:
-                yield dict(entry)
+                if self._within_window(entry, hours):
+                    yield dict(entry)
             return
         for filepath in files:
-            yield from self._iter_file_entries(filepath)
+            for entry in self._iter_file_entries(filepath):
+                if self._within_window(entry, hours):
+                    yield entry
+
+    @staticmethod
+    def _within_window(entry: dict[str, Any], hours: int | None) -> bool:
+        """判断日志条目是否在最近 N 小时内（hours 为空/非正数时不过滤）."""
+        if not hours or hours <= 0:
+            return True
+        raw = entry.get("time") or ""
+        if len(raw) < 19:
+            return True
+        try:
+            ts = datetime.strptime(raw[:19], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return True
+        return datetime.now() - ts <= timedelta(hours=hours)
 
     @staticmethod
     def _match(entry: dict[str, Any], keyword: str | None, level: str | None, source: str | None) -> bool:
@@ -143,15 +174,16 @@ class LogSearchService:
         source: str | None = None,
         page: int = 1,
         page_size: int = 1000,
+        hours: int | None = DEFAULT_LOG_WINDOW_HOURS,
     ) -> dict[str, Any]:
-        """全文搜索全部日志，返回分页结果."""
+        """全文搜索日志（默认最近 DEFAULT_LOG_WINDOW_HOURS 小时），返回分页结果."""
         page = max(1, int(page or 1))
         page_size = max(1, min(int(page_size or 1000), 10000))
         start = (page - 1) * page_size
         end = start + page_size
         items: list[dict[str, Any]] = []
         total = 0
-        for entry in self._iter_entries():
+        for entry in self._iter_entries(hours=hours):
             if not self._match(entry, keyword, level, source):
                 continue
             if start <= total < end:
@@ -164,10 +196,11 @@ class LogSearchService:
         keyword: str | None = None,
         level: str | None = None,
         source: str | None = None,
+        hours: int | None = DEFAULT_LOG_WINDOW_HOURS,
     ) -> str:
-        """导出全部匹配日志为文本."""
+        """导出匹配日志为文本（默认仅最近 DEFAULT_LOG_WINDOW_HOURS 小时）."""
         lines: list[str] = []
-        for entry in self._iter_entries():
+        for entry in self._iter_entries(hours=hours):
             if not self._match(entry, keyword, level, source):
                 continue
             lines.append(
@@ -180,10 +213,10 @@ class LogSearchService:
             )
         return "\n".join(lines) + ("\n" if lines else "")
 
-    def list_sources(self) -> list[str]:
-        """返回日志中出现过的全部来源（去重排序）."""
+    def list_sources(self, hours: int | None = DEFAULT_LOG_WINDOW_HOURS) -> list[str]:
+        """返回日志中出现过的全部来源（去重排序，默认仅统计最近 DEFAULT_LOG_WINDOW_HOURS 小时）."""
         sources: set[str] = set()
-        for entry in self._iter_entries():
+        for entry in self._iter_entries(hours=hours):
             src = entry.get("source")
             if src:
                 sources.add(src)
