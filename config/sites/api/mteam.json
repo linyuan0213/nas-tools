@@ -110,15 +110,6 @@
                 "NORMAL": 1.0
               }
             },
-            "labels": {
-              "source": "labels",
-              "transform": "split_map",
-              "map": {
-                "1": "DIY",
-                "2": "国配",
-                "4": "中字"
-              }
-            },
             "page_url": {
               "type": "template",
               "value": "https://{domain}/detail/{tid}",
@@ -174,7 +165,8 @@
       "2xfree_key": "data.status.discount",
       "2xfree_value": "FREE_2X",
       "peer_count_key": "data.status.seeders",
-      "peer_count_type": "int"
+      "peer_count_type": "int",
+      "labels_key": "data.labelsNew"
     }
   },
   "subtitle": {

@@ -75,12 +75,7 @@ class BrushTaskHelper:
         try:
             torrents = self._downloader.get_torrents(downloader_id=downloader_id) or []
             return len(
-                [
-                    t
-                    for t in torrents
-                    if "HR" in (getattr(t, "labels", None) or [])
-                    and getattr(t, "progress", 0) >= 1.0
-                ]
+                [t for t in torrents if "HR" in (getattr(t, "labels", None) or []) and getattr(t, "progress", 0) >= 1.0]
             )
         except Exception:
             return 0
@@ -191,7 +186,12 @@ class BrushTaskHelper:
 
         engine = self._get_site_engine()
         tid = get_tid_by_url(enclosure, site_engine=engine)
-        torrent_url = f"{site_base_url}{engine.resolve_detail_url(enclosure, tid or '')}"
+        resolved = engine.resolve_detail_url(enclosure, tid or "")
+        # resolve 可能返回相对路径或完整 URL，避免拼接成 base+https:// 的坏链接
+        if resolved.startswith(("http://", "https://")):
+            torrent_url = resolved
+        else:
+            torrent_url = f"{site_base_url}{resolved}"
 
         torrent_attr = self._siteconf.check_torrent_attr(
             torrent_url=torrent_url,
@@ -201,6 +201,7 @@ class BrushTaskHelper:
             ua=ua,
             headers=headers,
             proxy=bool(site_proxy),
+            chrome=bool(site_info.get("chrome")),
         )
         return torrent_url, torrent_attr
 
@@ -300,11 +301,7 @@ class BrushTaskHelper:
         stats = {
             "downloading": len([t for t in torrents if getattr(t, "progress", 0) < 1.0]),
             "hr": len(
-                [
-                    t
-                    for t in torrents
-                    if "HR" in (getattr(t, "labels", None) or []) and getattr(t, "progress", 0) >= 1.0
-                ]
+                [t for t in torrents if "HR" in (getattr(t, "labels", None) or []) and getattr(t, "progress", 0) >= 1.0]
             ),
             "total": len(torrents),
         }
@@ -360,9 +357,7 @@ class BrushTaskHelper:
                     log.error(f"[Brush]{taskname} 下载器 {downloader_id} 无法连接，跳过下载")
                     return False
                 if stats["downloading"] >= int(dlcount):
-                    log.warn(
-                        f"[Brush]{taskname} 下载器 {downloader_id} 下载中任务数达上限 {dlcount}，跳过下载"
-                    )
+                    log.warn(f"[Brush]{taskname} 下载器 {downloader_id} 下载中任务数达上限 {dlcount}，跳过下载")
                     return False
             _, download_id, retmsg = self._downloader.download(
                 media_info=mi,

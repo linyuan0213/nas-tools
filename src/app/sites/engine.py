@@ -24,6 +24,7 @@ from app.infrastructure.http.config import HttpClientConfig
 from app.sites import engine_connection, engine_download, engine_tools, engine_user_info
 from app.sites.utils import is_logged_in
 from app.utils import JsonUtils
+from app.utils.browser_mode import build_browser_mode
 from app.utils.config_tools import get_proxies
 
 # ---- 数据模型 ----
@@ -370,6 +371,18 @@ class SiteEngine:
 
     # ---- 种子属性检查 ----
 
+    @staticmethod
+    def _match_attr_value(extracted, expected, match_type: str = "exact") -> bool:
+        """按匹配方式判断 API 返回值与期望值是否匹配（exact / contains）."""
+        if match_type == "contains":
+            return bool(expected and expected in str(extracted or ""))
+        if isinstance(extracted, (int, float)):
+            try:
+                return extracted == float(expected)
+            except (TypeError, ValueError):
+                return str(extracted) == expected
+        return str(extracted) == expected
+
     def resolve_torrent_attr(
         self,
         torrent_url,
@@ -379,6 +392,7 @@ class SiteEngine:
         ua=None,
         headers=None,
         proxy=False,
+        chrome=False,
     ):
         ret = {"free": False, "2xfree": False, "hr": False, "peer_count": 0, "labels": ""}
         site = self.get_by_url(torrent_url)
@@ -392,6 +406,7 @@ class SiteEngine:
             "ua": ua or "",
             "proxy": proxy,
             "headers": headers or {},
+            "chrome": chrome,
         }
 
         if site.api and site.torrent_attr:
@@ -444,31 +459,17 @@ class SiteEngine:
                 text = res.text
                 free_path = cfg.get("response", {}).get("free_key", "")
                 free_val = cfg.get("response", {}).get("free_value", "")
+                free_match = cfg.get("response", {}).get("free_match", "exact")
                 if free_path and free_val:
                     extracted = JsonUtils.get_json_object(text, free_path)
-                    if isinstance(extracted, (int, float)):
-                        try:
-                            if extracted == float(free_val):
-                                ret["free"] = True
-                        except ValueError:
-                            if str(extracted) == free_val:
-                                ret["free"] = True
-                    elif str(extracted) == free_val:
+                    if self._match_attr_value(extracted, free_val, free_match):
                         ret["free"] = True
                 free2x_path = cfg.get("response", {}).get("2xfree_key", "")
                 free2x_val = cfg.get("response", {}).get("2xfree_value", "")
+                free2x_match = cfg.get("response", {}).get("2xfree_match", "exact")
                 if free2x_path and free2x_val:
                     extracted2x = JsonUtils.get_json_object(text, free2x_path)
-                    if isinstance(extracted2x, (int, float)):
-                        try:
-                            if extracted2x == float(free2x_val):
-                                ret["free"] = True
-                                ret["2xfree"] = True
-                        except ValueError:
-                            if str(extracted2x) == free2x_val:
-                                ret["free"] = True
-                                ret["2xfree"] = True
-                    elif str(extracted2x) == free2x_val:
+                    if self._match_attr_value(extracted2x, free2x_val, free2x_match):
                         ret["free"] = True
                         ret["2xfree"] = True
                 peer_path = cfg.get("response", {}).get("peer_count_key", "")
@@ -479,6 +480,13 @@ class SiteEngine:
                         ret["peer_count"] = str(val) if val else ""
                     else:
                         ret["peer_count"] = int(val) if val else 0
+                labels_path = cfg.get("response", {}).get("labels_key", "")
+                if labels_path:
+                    labels_val = JsonUtils.get_json_object(text, labels_path)
+                    if isinstance(labels_val, (list, tuple)):
+                        ret["labels"] = ",".join(str(x) for x in labels_val if x)
+                    elif labels_val:
+                        ret["labels"] = str(labels_val)
             except Exception as e:  # noqa: BLE001
                 log.debug(f"[SiteEngine]忽略异常: {e}")
             return ret
@@ -546,9 +554,20 @@ class SiteEngine:
                 auth = CookieAuth(cookie)
         else:
             auth = CookieAuth(cookie) if cookie else None
+        # 站点开启浏览器自动化：HttpClient 挂载 ChromeTransport，
+        # 用实验室指纹画像自动导航，挑战页可绕过；请求携带 cookie（CookieAuth）
+        # render_html=True：让 nexus-chrome 渲染页面后返回，而非挑战页原始 body
+        browser = None
+        if user_config.get("chrome") and site:
+            browser = build_browser_mode(
+                site_info={"chrome": True, "ua": ua, "browser_render": True},
+                site_key=site.id,
+                proxy_url=proxy_url,
+                render_html=True,
+            )
         try:
             res = HttpClient(
-                config=HttpClientConfig(proxy_url=proxy_url),
+                config=HttpClientConfig(proxy_url=proxy_url, browser=browser),
                 rate_limiter=rate_limiter_engine,
             ).get(url=url, headers=headers, auth=auth, **rl_kwargs)
             return res.text
@@ -743,6 +762,14 @@ def get_tid_by_url(url: str, site_engine: SiteEngine) -> str | None:
     """从下载链接提取种子 ID"""
     if not url:
         return None
+    # 优先提取显式 tid 参数：部分站点 RSS 链接同时含 tid 与 uid（如 M-Team dlv2）
+    explicit = re.search(r"(?:[?&])tid=(\d+)", url)
+    if explicit:
+        return explicit.group(1)
+    # 从 URL 路径的数字段取最后一个（种子 id 通常在路径末尾，避免 RSS token/uid 干扰）
+    path_segments = [s for s in urlparse(url).path.split("/") if s.isdigit()]
+    if path_segments:
+        return path_segments[-1]
     site_def = site_engine.get_by_url(url)
     if site_def and site_def.download and site_def.download.type in ("api", "api_chained"):
         pattern = site_def.tid_pattern if site_def.tid_pattern else r"\d+"
