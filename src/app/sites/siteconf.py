@@ -85,6 +85,7 @@ class SiteConf:
         headers=None,
         proxy=False,
         chrome=False,
+        browser_persistent=False,
     ):
         return self._get_site_engine().resolve_torrent_attr(
             torrent_url=torrent_url,
@@ -95,4 +96,5 @@ class SiteConf:
             headers=headers,
             proxy=proxy,
             chrome=chrome,
+            browser_persistent=browser_persistent,
         )

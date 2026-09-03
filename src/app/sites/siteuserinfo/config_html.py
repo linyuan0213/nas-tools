@@ -57,6 +57,7 @@ class ConfigHtmlUserInfo:
         json_data: str | None = None,
         api_key: str | None = None,
         bearer_token: str | None = None,
+        browser_persistent: bool = False,
     ) -> None:
         self.site_name: str = site_name
         self.site_url: str = url
@@ -65,6 +66,7 @@ class ConfigHtmlUserInfo:
         self._headers: dict = site_headers or {}
         self._ua: str = ua
         self._emulate: bool = emulate
+        self._browser_persistent: bool = browser_persistent
         self._proxy: bool = proxy
         self._proxies: Any = get_proxies() if proxy else None
         self._session: Any = session
@@ -397,11 +399,14 @@ class ConfigHtmlUserInfo:
         rl_kwargs = engine_tools._get_rate_limit_kwargs(engine, self._def)
 
         def _request(with_browser=None) -> str | None:
+            # 浏览器模式请求用完即关：非持久会话立即删除，避免 nexus-chrome 会话/标签页堆积
+            client = None
             try:
-                res = HttpClient(
+                client = HttpClient(
                     config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
                     rate_limiter=rate_limiter_engine,
-                ).get(
+                )
+                res = client.get(
                     url=url,
                     headers=headers,
                     auth=CookieAuth(self._cookie) if self._cookie else None,
@@ -413,6 +418,9 @@ class ConfigHtmlUserInfo:
             except Exception as exc:
                 log.debug(f"_fetch_html {self.site_name} 请求失败: {url} ({exc})")
                 return None
+            finally:
+                if client is not None and with_browser is not None:
+                    client.close()
 
         text = _request()
         # 站点开启“浏览器自动化”(emulate) 时：直连失败/疑似挑战页自动降级 chrome 渲染再取一次
@@ -422,7 +430,12 @@ class ConfigHtmlUserInfo:
                 try:
                     text = _request(
                         build_browser_mode(
-                            site_info={"chrome": True, "ua": self._ua, "browser_render": True},
+                            site_info={
+                                "chrome": True,
+                                "ua": self._ua,
+                                "browser_render": True,
+                                "browser_persistent": bool(getattr(self, "_browser_persistent", False)),
+                            },
                             site_key=site_key,
                             proxy_url=proxy_url,
                             render_html=True,
@@ -446,6 +459,7 @@ def _html_config_factory(
     session: Any = None,
     api_key: str | None = None,
     bearer_token: str | None = None,
+    browser_persistent: bool = False,
 ) -> ConfigHtmlUserInfo | None:
     engine = site_engine
     site_def = engine.get_by_url(url)
@@ -465,6 +479,7 @@ def _html_config_factory(
         json_data=html_text,
         api_key=api_key,
         bearer_token=bearer_token,
+        browser_persistent=browser_persistent,
     )
 
 

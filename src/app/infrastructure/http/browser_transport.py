@@ -203,8 +203,12 @@ class _BaseChromeTransport:
         self._server.close()
 
 
-class ChromeTransport(httpx2.BaseTransport, _BaseChromeTransport):
-    """同步 Chrome Transport."""
+class ChromeTransport(_BaseChromeTransport, httpx2.BaseTransport):
+    """同步 Chrome Transport.
+
+    _BaseChromeTransport 需排在 httpx2.BaseTransport 之前：
+    BaseTransport.close() 是空实现，顺序颠倒会让会话删除永远不执行。
+    """
 
     def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):
         httpx2.BaseTransport.__init__(self)
@@ -214,7 +218,7 @@ class ChromeTransport(httpx2.BaseTransport, _BaseChromeTransport):
         return self._handle(request)
 
 
-class AsyncChromeTransport(httpx2.AsyncBaseTransport, _BaseChromeTransport):
+class AsyncChromeTransport(_BaseChromeTransport, httpx2.AsyncBaseTransport):
     """异步 Chrome Transport."""
 
     def __init__(self, browser: BrowserModeConfig, limits: httpx2.Limits | None = None):

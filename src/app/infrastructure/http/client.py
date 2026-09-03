@@ -56,6 +56,7 @@ class _ClientPool:
                 b.user_agent or "",
                 b.proxy_url or "",
                 b.render_html,
+                b.persistent_session,
             )
         return (
             config.proxy_url,

@@ -154,11 +154,14 @@ class HtmlSiteSearcher:
         render = bool(self._user_config.get("browser_render"))
 
         def _request(with_browser):
+            # 浏览器模式请求用完即关：非持久会话立即删除，避免 nexus-chrome 会话/标签页堆积
+            client = None
             try:
-                res = HttpClient(
+                client = HttpClient(
                     config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
                     rate_limiter=rate_limiter_engine,
-                ).get(url=url, headers=headers, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
+                )
+                res = client.get(url=url, headers=headers, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
                 if not res.is_success:
                     self.last_error = f"HTTP {res.status_code}"
                     log.warn(f"[HtmlSiteSearcher]{self._site.name} HTTP {res.status_code}, url={url}")
@@ -169,6 +172,9 @@ class HtmlSiteSearcher:
                 self.last_error = f"{type(e).__name__}"
                 log.warn(f"[HtmlSiteSearcher]{self._site.name} 请求失败: {e}")
                 return None
+            finally:
+                if client is not None and with_browser is not None:
+                    client.close()
 
         # 站点开启浏览器自动化：直连失败/疑似挑战页时自动经 nexus-chrome 渲染再取一次
         html = _request(None)
@@ -176,7 +182,12 @@ class HtmlSiteSearcher:
             if not chrome_enabled:
                 return html
             browser = build_browser_mode(
-                site_info={"chrome": True, "ua": ua, "browser_render": render},
+                site_info={
+                    "chrome": True,
+                    "ua": ua,
+                    "browser_render": render,
+                    "browser_persistent": bool(self._user_config.get("browser_persistent")),
+                },
                 site_key=self._user_config.get("domain") or self._site.domain or "",
                 proxy_url=proxy_url,
                 render_html=render,

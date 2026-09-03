@@ -403,6 +403,7 @@ class SiteEngine:
         headers=None,
         proxy=False,
         chrome=False,
+        browser_persistent=False,
     ):
         ret = {"free": False, "2xfree": False, "hr": False, "peer_count": 0, "labels": ""}
         site = self.get_by_url(torrent_url)
@@ -417,6 +418,7 @@ class SiteEngine:
             "proxy": proxy,
             "headers": headers or {},
             "chrome": chrome,
+            "browser_persistent": bool(browser_persistent),
         }
 
         if site.api and site.torrent_attr:
@@ -573,16 +575,23 @@ class SiteEngine:
         # 用实验室指纹画像自动导航，挑战页可绕过；请求携带 cookie（CookieAuth）
         # render_html=True：让 nexus-chrome 渲染页面后返回，而非挑战页原始 body
         def _request(with_browser) -> str | None:
+            # 浏览器模式请求用完即关（release）：非持久会话立即删除，
+            # 避免 nexus-chrome 会话/标签页在进程退出前持续堆积
+            client = None
             try:
-                res = HttpClient(
+                client = HttpClient(
                     config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
                     rate_limiter=rate_limiter_engine,
-                ).get(url=url, headers=headers, auth=auth, **rl_kwargs)
+                )
+                res = client.get(url=url, headers=headers, auth=auth, **rl_kwargs)
                 if not res.is_success:
                     return None
                 return res.text
             except Exception:
                 return None
+            finally:
+                if client is not None and with_browser is not None:
+                    client.close()
 
         # 站点需开启“浏览器自动化”才会尝试 chrome 降级；否则仅直连
         text = _request(None)
@@ -590,7 +599,12 @@ class SiteEngine:
             try:
                 text = _request(
                     build_browser_mode(
-                        site_info={"chrome": True, "ua": ua, "browser_render": True},
+                        site_info={
+                            "chrome": True,
+                            "ua": ua,
+                            "browser_render": True,
+                            "browser_persistent": bool(user_config.get("browser_persistent")),
+                        },
                         site_key=site.id,
                         proxy_url=proxy_url,
                         render_html=True,
@@ -647,6 +661,7 @@ class SiteEngine:
         session=None,
         api_key=None,
         bearer_token=None,
+        browser_persistent=False,
     ):
         for factory in self._user_info_factories:
             result = factory(
@@ -662,6 +677,7 @@ class SiteEngine:
                 session=session,
                 api_key=api_key,
                 bearer_token=bearer_token,
+                browser_persistent=browser_persistent,
             )
             if result:
                 return result

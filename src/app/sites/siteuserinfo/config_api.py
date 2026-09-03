@@ -335,6 +335,7 @@ def _api_factory(
     session=None,
     api_key=None,
     bearer_token=None,
+    browser_persistent=False,
 ):
     engine = site_engine
     site_def, resp = engine.prefetch_user_profile(

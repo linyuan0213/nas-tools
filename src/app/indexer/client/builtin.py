@@ -373,6 +373,7 @@ class BuiltinIndexer(_IIndexClient):
             "bearer_token": getattr(indexer, "bearer_token", "") or "",
             "chrome": getattr(indexer, "chrome", False),
             "browser_render": getattr(indexer, "browser_render", False),
+            "browser_persistent": getattr(indexer, "browser_persistent", False),
         }
         if indexer.headers and not user_config.get("api_key") and not user_config.get("bearer_token"):
             try:

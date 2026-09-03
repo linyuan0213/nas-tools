@@ -119,6 +119,7 @@ class SiteUserInfo:
                 proxy=proxy,
                 api_key=api_key,
                 bearer_token=bearer_token,
+                browser_persistent=bool(site_info.get("browser_persistent")),
             )
             if site_user_info:
                 log.debug(f"[Sites]站点 {site_name} 开始以 {site_user_info.site_schema()} 模型解析")
@@ -177,6 +178,7 @@ class SiteUserInfo:
         proxy=False,
         api_key=None,
         bearer_token=None,
+        browser_persistent=False,
     ):
         if not site_cookie and not site_headers and not api_key and not bearer_token:
             return None
@@ -206,6 +208,7 @@ class SiteUserInfo:
                 proxy=proxy,
                 api_key=api_key,
                 bearer_token=bearer_token,
+                browser_persistent=browser_persistent,
             ) or _log_error(site_name)
 
         html_text = None
@@ -246,6 +249,7 @@ class SiteUserInfo:
             proxy=proxy,
             api_key=api_key,
             bearer_token=bearer_token,
+            browser_persistent=browser_persistent,
         ) or _log_error(site_name)
 
     def _notify_unread_msg(self, site_name, site_user_info, unread_msg_notify):

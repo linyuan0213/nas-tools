@@ -263,6 +263,7 @@ class DownloadPipeline:
                         ua=site_info.get("ua"),
                         headers=headers,
                         proxy=proxy if proxy is not None else site_info.get("proxy") or False,
+                        browser_persistent=bool(site_info.get("browser_persistent")),
                     )
                 file_path, content, dl_files_folder, dl_files, retmsg = Torrent(self._site_engine).get_torrent_info(
                     url=url,
