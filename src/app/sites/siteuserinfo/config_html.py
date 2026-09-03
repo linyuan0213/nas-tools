@@ -23,8 +23,10 @@ from app.infrastructure.http.auth import CookieAuth
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
 from app.sites import engine_tools
+from app.sites.engine import SiteEngine
 from app.sites.siteuserinfo import discuz, gazelle, nexus_php, small_horse, unit3d
 from app.utils import StringUtils
+from app.utils.browser_mode import build_browser_mode
 from app.utils.config_tools import get_proxies
 from app.utils.json_utils import JsonUtils
 
@@ -393,20 +395,40 @@ class ConfigHtmlUserInfo:
         rate_limiter = getattr(engine, "site_limiter", None)
         rate_limiter_engine = rate_limiter.engine if rate_limiter else None
         rl_kwargs = engine_tools._get_rate_limit_kwargs(engine, self._def)
-        try:
-            res = HttpClient(
-                config=HttpClientConfig(proxy_url=proxy_url),
-                rate_limiter=rate_limiter_engine,
-            ).get(
-                url=url,
-                headers=headers,
-                auth=CookieAuth(self._cookie) if self._cookie else None,
-                **rl_kwargs,
-            )
-            return res.text
-        except Exception as exc:
-            log.debug(f"_fetch_html {self.site_name} 请求失败: {url} ({exc})")
-            return None
+
+        def _request(with_browser=None) -> str | None:
+            try:
+                res = HttpClient(
+                    config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
+                    rate_limiter=rate_limiter_engine,
+                ).get(
+                    url=url,
+                    headers=headers,
+                    auth=CookieAuth(self._cookie) if self._cookie else None,
+                    **rl_kwargs,
+                )
+                return res.text
+            except Exception as exc:
+                log.debug(f"_fetch_html {self.site_name} 请求失败: {url} ({exc})")
+                return None
+
+        text = _request()
+        # 直连失败/疑似反爬拦截时，自动降级 nexus-chrome 渲染再取一次
+        if text is None or SiteEngine._looks_blocked(text):
+            site_key = str(getattr(self._def, "id", "") or "")
+            if site_key:
+                try:
+                    text = _request(
+                        build_browser_mode(
+                            site_info={"chrome": True, "ua": self._ua, "browser_render": True},
+                            site_key=site_key,
+                            proxy_url=proxy_url,
+                            render_html=True,
+                        )
+                    )
+                except Exception:
+                    text = None
+        return text
 
 
 def _html_config_factory(

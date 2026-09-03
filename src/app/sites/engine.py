@@ -567,6 +567,7 @@ class SiteEngine:
                 auth = CookieAuth(cookie)
         else:
             auth = CookieAuth(cookie) if cookie else None
+
         # 站点开启浏览器自动化：HttpClient 挂载 ChromeTransport，
         # 用实验室指纹画像自动导航，挑战页可绕过；请求携带 cookie（CookieAuth）
         # render_html=True：让 nexus-chrome 渲染页面后返回，而非挑战页原始 body
@@ -578,14 +579,52 @@ class SiteEngine:
                 proxy_url=proxy_url,
                 render_html=True,
             )
-        try:
-            res = HttpClient(
-                config=HttpClientConfig(proxy_url=proxy_url, browser=browser),
-                rate_limiter=rate_limiter_engine,
-            ).get(url=url, headers=headers, auth=auth, **rl_kwargs)
-            return res.text
-        except Exception:
-            return None
+
+        def _request(with_browser) -> str | None:
+            try:
+                res = HttpClient(
+                    config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
+                    rate_limiter=rate_limiter_engine,
+                ).get(url=url, headers=headers, auth=auth, **rl_kwargs)
+                return res.text
+            except Exception:
+                return None
+
+        text = _request(browser)
+        # 直连失败或疑似被反爬拦截时，自动降级 nexus-chrome 再取一次（浏览器自动化作 fallback）
+        if (text is None or SiteEngine._looks_blocked(text)) and not browser and site:
+            try:
+                text = _request(
+                    build_browser_mode(
+                        site_info={"chrome": True, "ua": ua, "browser_render": True},
+                        site_key=site.id,
+                        proxy_url=proxy_url,
+                        render_html=True,
+                    )
+                )
+            except Exception:
+                text = None
+        return text
+
+    @staticmethod
+    def _looks_blocked(text: str | None) -> bool:
+        """疑似被反爬/验证码页拦截的轻量识别，命中则值得用浏览器重试。"""
+        if not text:
+            return False
+        low = text.lower()
+        markers = (
+            "just a moment",
+            "cf-challenge",
+            "cf_chl",
+            "verify you are human",
+            "attention required",
+            "cloudflare",
+            "captcha",
+            "访问过于频繁",
+            "请输入验证码",
+            "安全验证",
+        )
+        return any(m in low for m in markers)
 
     # ---- 连接测试 ----
 
