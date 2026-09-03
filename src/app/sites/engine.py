@@ -578,6 +578,8 @@ class SiteEngine:
                     config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
                     rate_limiter=rate_limiter_engine,
                 ).get(url=url, headers=headers, auth=auth, **rl_kwargs)
+                if not res.is_success:
+                    return None
                 return res.text
             except Exception:
                 return None

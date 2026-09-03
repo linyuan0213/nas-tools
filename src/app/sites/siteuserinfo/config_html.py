@@ -407,6 +407,8 @@ class ConfigHtmlUserInfo:
                     auth=CookieAuth(self._cookie) if self._cookie else None,
                     **rl_kwargs,
                 )
+                if not res.is_success:
+                    return None
                 return res.text
             except Exception as exc:
                 log.debug(f"_fetch_html {self.site_name} 请求失败: {url} ({exc})")
