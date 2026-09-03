@@ -101,3 +101,20 @@
 | 周期性执行 | `app/services/brush/scheduler.py` 注册到 `scheduler_core`（APScheduler） |
 
 > 注：本图聚焦任务级状态（运行/停止）；单次异常不改变任务状态、仅日志记录；禁用态（N）作为配置标记存在，可在刷流管理操作，未单独绘制以免引入状态穿越歧义。
+
+## `architecture-plugin.json`（architecture-plugin.html）
+
+| 元素 | 依据 |
+|---|---|
+| 注册表 | `app/plugin_framework/registry.py`（scan/install/uninstall/enable/disable/config） |
+| 依赖与钩子 | `dependency_manager.py`、`hook_system.py`、`api_registry.py`（扩展端点） |
+| 沙箱注入 | `sandbox.py`；宿主服务注入见 `di/builders/services_builder.py`（searcher/downloader/subscribe/media_server/sync_engine/site_cache/filetransfer） |
+
+## `architecture-indexer.json`（architecture-indexer.html）
+
+| 元素 | 依据 |
+|---|---|
+| 搜索编排 | `app/indexer/core/pipeline.py`、`app/indexer/indexer.py`、`app/indexer/registry.py`（配置选择） |
+| 客户端 | `app/indexer/client/_base.py`（search 契约）、`builtin.py`（内置 API/HTML）、`jackett.py`、`prowlarr.py` |
+| 站点直连 | 内置客户端经 `app/sites/engine.py` / `html_searcher.py`（可降级 nexus-chrome） |
+| 结果过滤 | `app/indexer/core/filter_engine.py`、`result_filter.py`、`batch_identifier.py`、`miss_collector.py` |

@@ -6,18 +6,19 @@
     "locale": "zh-CN",
     "quality_profile": "standard",
     "viewBox": [
-      900,
-      620
+      1080,
+      700
     ],
     "views": [
       {
         "id": "main",
         "label": "状态流转",
         "focus": [
-          "stopped",
-          "running"
+          "disabled",
+          "running",
+          "stopped"
         ],
-        "note": "运行中周期执行规则检查，停止/禁用为人工操作。"
+        "note": "运行中周期执行规则检查；停止仍保留任务与做种清理调度。"
       }
     ]
   },
@@ -29,14 +30,14 @@
   ],
   "states": [
     {
-      "id": "stopped",
+      "id": "disabled",
       "type": "start",
-      "label": "已停止",
-      "sublabel": "未执行",
+      "label": "未启用/停用",
+      "sublabel": "站点停用 · 配置不完整",
       "lane": "main",
       "col": 0,
-      "step": "01",
-      "tag": "STOPPED"
+      "step": "00",
+      "tag": "DISABLED"
     },
     {
       "id": "running",
@@ -45,17 +46,35 @@
       "sublabel": "周期调度检查",
       "lane": "main",
       "col": 1,
-      "step": "02",
+      "step": "01",
       "tag": "RUNNING"
+    },
+    {
+      "id": "stopped",
+      "type": "waiting",
+      "label": "已停止",
+      "sublabel": "保留任务 · 可清理",
+      "lane": "main",
+      "col": 2,
+      "step": "02",
+      "tag": "STOPPED"
     }
   ],
   "transitions": [
+    {
+      "id": "enable",
+      "from": "disabled",
+      "to": "running",
+      "label": "启用",
+      "variant": "emphasis",
+      "route": "straight"
+    },
     {
       "id": "start",
       "from": "stopped",
       "to": "running",
       "label": "启动",
-      "variant": "emphasis",
+      "variant": "default",
       "route": "straight",
       "labelDy": -16
     },
@@ -72,10 +91,18 @@
   "cards": [
     {
       "dot": "emerald",
-      "title": "运行",
+      "title": "运行与停止",
       "items": [
         "运行中按规则周期性执行（RSS/做种检查）",
-        "单次异常不改变任务状态，仅记录日志"
+        "停止后任务保留，仍按需执行做种清理调度"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "停用态",
+      "items": [
+        "DISABLED 来自站点停用/未启用（实体判定）",
+        "非启停接口写入，启用后进入运行中"
       ]
     }
   ]
