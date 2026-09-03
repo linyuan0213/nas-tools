@@ -164,6 +164,23 @@
             "free_value": {"type": ["string", "number"]},
             "2xfree_key": {"type": "string"},
             "2xfree_value": {"type": ["string", "number"]},
+            "site_free_key": {
+              "type": "string",
+              "description": "站点级全站 FREE 活动规则的取值 JSON 路径（如 data.status.promotionRule.discount）"
+            },
+            "site_free_value": {"type": ["string", "number"]},
+            "site_free_start_key": {
+              "type": "string",
+              "description": "站点级活动规则开始时间 JSON 路径，配置后需在当前时间之后才算生效"
+            },
+            "site_free_end_key": {
+              "type": "string",
+              "description": "站点级活动规则结束时间 JSON 路径，配置后需在当前时间之前才算失效"
+            },
+            "site_2xfree_key": {"type": "string"},
+            "site_2xfree_value": {"type": ["string", "number"]},
+            "site_2xfree_start_key": {"type": "string"},
+            "site_2xfree_end_key": {"type": "string"},
             "peer_count_key": {"type": "string"},
             "peer_count_type": {"type": "string"}
           }

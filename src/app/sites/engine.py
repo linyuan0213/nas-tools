@@ -11,9 +11,11 @@ import re
 import time
 import traceback
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
+import dateutil.parser
 from lxml import etree
 
 import log
@@ -393,6 +395,38 @@ class SiteEngine:
                 return str(extracted) == expected
         return str(extracted) == expected
 
+    @staticmethod
+    def _attr_rule_active(text: str, resp_cfg: dict, prefix: str) -> bool:
+        """校验站点级活动规则时间窗是否覆盖当前时刻（可选配置）.
+
+        站点级活动（如“全站免费”）可能在种子徽标未更新的情况下生效，
+        是否生效以规则自身的 startTime/endTime 为准：
+        - 未配置 *_start_key / *_end_key 时不校验时间窗；
+        - 配置了但字段缺失或不可解析时视为活动未生效，
+          避免活动结束后遗留规则导致长期误判免费。
+        """
+        start_key = resp_cfg.get(f"{prefix}_start_key", "")
+        end_key = resp_cfg.get(f"{prefix}_end_key", "")
+        if not start_key and not end_key:
+            return True
+        now = datetime.now()
+        try:
+            if start_key:
+                start_val = JsonUtils.get_json_object(text, start_key)
+                if not start_val:
+                    return False
+                if dateutil.parser.parse(str(start_val)).replace(tzinfo=None) > now:
+                    return False
+            if end_key:
+                end_val = JsonUtils.get_json_object(text, end_key)
+                if not end_val:
+                    return False
+                if dateutil.parser.parse(str(end_val)).replace(tzinfo=None) <= now:
+                    return False
+        except Exception:
+            return False
+        return True
+
     def resolve_torrent_attr(
         self,
         torrent_url,
@@ -482,6 +516,37 @@ class SiteEngine:
                 if free2x_path and free2x_val:
                     extracted2x = JsonUtils.get_json_object(text, free2x_path)
                     if self._match_attr_value(extracted2x, free2x_val, free2x_match):
+                        ret["free"] = True
+                        ret["2xfree"] = True
+                resp_cfg = cfg.get("response", {})
+                # 站点级活动（如“全站免费”）：
+                # 部分站点活动期间不逐种更新徽标（如 M-Team 全站 FREE 时多数种子仍显示
+                # 上传者自设的折扣），此时以详情返回的全站活动规则补判免费。
+                if not ret["free"]:
+                    site_free_path = resp_cfg.get("site_free_key", "")
+                    site_free_val = resp_cfg.get("site_free_value", "")
+                    site_free_match = resp_cfg.get("site_free_match", "exact")
+                    if (
+                        site_free_path
+                        and site_free_val
+                        and self._attr_rule_active(text, resp_cfg, "site_free")
+                        and self._match_attr_value(
+                            JsonUtils.get_json_object(text, site_free_path), site_free_val, site_free_match
+                        )
+                    ):
+                        ret["free"] = True
+                if not ret["2xfree"]:
+                    site_2x_path = resp_cfg.get("site_2xfree_key", "")
+                    site_2x_val = resp_cfg.get("site_2xfree_value", "")
+                    site_2x_match = resp_cfg.get("site_2xfree_match", "exact")
+                    if (
+                        site_2x_path
+                        and site_2x_val
+                        and self._attr_rule_active(text, resp_cfg, "site_2xfree")
+                        and self._match_attr_value(
+                            JsonUtils.get_json_object(text, site_2x_path), site_2x_val, site_2x_match
+                        )
+                    ):
                         ret["free"] = True
                         ret["2xfree"] = True
                 peer_path = cfg.get("response", {}).get("peer_count_key", "")
