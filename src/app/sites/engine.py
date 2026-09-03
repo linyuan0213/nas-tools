@@ -572,15 +572,6 @@ class SiteEngine:
         # 站点开启浏览器自动化：HttpClient 挂载 ChromeTransport，
         # 用实验室指纹画像自动导航，挑战页可绕过；请求携带 cookie（CookieAuth）
         # render_html=True：让 nexus-chrome 渲染页面后返回，而非挑战页原始 body
-        browser = None
-        if user_config.get("chrome") and site:
-            browser = build_browser_mode(
-                site_info={"chrome": True, "ua": ua, "browser_render": True},
-                site_key=site.id,
-                proxy_url=proxy_url,
-                render_html=True,
-            )
-
         def _request(with_browser) -> str | None:
             try:
                 res = HttpClient(
@@ -591,9 +582,10 @@ class SiteEngine:
             except Exception:
                 return None
 
-        text = _request(browser)
-        # 直连失败或疑似仍处于挑战页时，自动降级 nexus-chrome 再取一次（浏览器自动化作 fallback）
-        if (text is None or is_challenge(text)) and not browser and site:
+        # 统一策略：先直连（快路径）；失败或疑似挑战页时，自动降级 nexus-chrome 再取一次。
+        # 站点是否开启“浏览器自动化”不影响该降级——直连可用时省掉 chrome 开销。
+        text = _request(None)
+        if (text is None or is_challenge(text)) and site:
             try:
                 text = _request(
                     build_browser_mode(
