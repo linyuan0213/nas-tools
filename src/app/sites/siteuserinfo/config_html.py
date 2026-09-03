@@ -413,8 +413,8 @@ class ConfigHtmlUserInfo:
                 return None
 
         text = _request()
-        # 直连失败/疑似仍处于挑战页时，自动降级 nexus-chrome 渲染再取一次
-        if text is None or is_challenge(text):
+        # 站点开启“浏览器自动化”(emulate) 时：直连失败/疑似挑战页自动降级 chrome 渲染再取一次
+        if (text is None or is_challenge(text)) and self._emulate:
             site_key = str(getattr(self._def, "id", "") or "")
             if site_key:
                 try:

@@ -582,10 +582,9 @@ class SiteEngine:
             except Exception:
                 return None
 
-        # 统一策略：先直连（快路径）；失败或疑似挑战页时，自动降级 nexus-chrome 再取一次。
-        # 站点是否开启“浏览器自动化”不影响该降级——直连可用时省掉 chrome 开销。
+        # 站点需开启“浏览器自动化”才会尝试 chrome 降级；否则仅直连
         text = _request(None)
-        if (text is None or is_challenge(text)) and site:
+        if (text is None or is_challenge(text)) and site and user_config.get("chrome"):
             try:
                 text = _request(
                     build_browser_mode(
