@@ -14,12 +14,37 @@ import log
 from app.core.exceptions import DomainError, RepositoryError, ServiceError
 from app.domain.engine.brush_rule_engine import BrushRuleEngine
 from app.downloader.registry import get_client_class
+from app.infrastructure.cache_system import get_cache_manager
 from app.media import meta_info
 from app.message import Message
 from app.sites import SiteConf
 from app.sites.engine import SiteEngine, TorrentAttrFetchError, get_tid_by_url
 from app.sites.site_cache import SiteCache
 from app.utils import JsonUtils, StringUtils
+
+# 种子详情属性短 TTL 缓存（跨任务/周期共享，走统一缓存系统）：
+# 仅缓存“确定结果”（含真实非免费），抓取失败/未知（None）不入缓存，
+# 避免把瞬时限流冻结成“非免费”造成误判
+_ATTR_CACHE_TTL = 600
+_ATTR_CACHE_NAME = "brush_torrent_attr"
+
+
+def _attr_cache():
+    return get_cache_manager().get_or_create(_ATTR_CACHE_NAME, cache_type="memory", maxsize=2000)
+
+
+def cached_torrent_attr(enclosure: str) -> dict | None:
+    """命中且未过期的缓存返回 dict，否则返回 None（None 表示未命中/不缓存）"""
+    if not enclosure:
+        return None
+    return _attr_cache().get(f"attr:{enclosure}")
+
+
+def store_torrent_attr(enclosure: str, attr: dict | None) -> None:
+    """缓存确定结果；attr 为 None（未知/失败）时不缓存"""
+    if not enclosure or attr is None:
+        return
+    _attr_cache().set(f"attr:{enclosure}", attr, ttl=_ATTR_CACHE_TTL)
 
 
 class BrushTaskHelper:
@@ -169,7 +194,7 @@ class BrushTaskHelper:
             return any(get_tid_by_url(t.ENCLOSURE, site_engine=engine) == tid for t in all_torrents)
         return self._repo.get_brushtask_torrent_by_enclosure(enclosure) is not None
 
-    def get_torrent_attr(self, site_info: dict, enclosure: str):
+    def get_torrent_attr(self, site_info: dict, enclosure: str, use_cache: bool = True):
         if not site_info:
             return None, {}
         ua = site_info.get("ua")
@@ -193,6 +218,13 @@ class BrushTaskHelper:
         else:
             torrent_url = f"{site_base_url}{resolved}"
 
+        # 同一详情页短周期内命中缓存（跨任务/周期共享），避免重复抓取。
+        # 注意：删种/停种/免费自动恢复等“状态变化敏感”场景需 use_cache=False 取最新态
+        if use_cache:
+            cached = cached_torrent_attr(torrent_url)
+            if cached is not None:
+                return torrent_url, cached
+
         try:
             torrent_attr = self._siteconf.check_torrent_attr(
                 torrent_url=torrent_url,
@@ -208,6 +240,8 @@ class BrushTaskHelper:
             # 详情抓取失败 → 属性未知（返回 None），调用方不得按“非免费/非HR”误删
             log.warn(f"[Brush]种子属性抓取失败，视为未知: {e}")
             return torrent_url, None
+        if use_cache:
+            store_torrent_attr(torrent_url, torrent_attr)
         return torrent_url, torrent_attr
 
     def is_allow_new_torrent(self, taskinfo, dlcount, torrent_size=None):

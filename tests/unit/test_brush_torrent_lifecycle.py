@@ -133,7 +133,7 @@ class _AttrTrackingHelper:
     def __init__(self):
         self.calls = 0
 
-    def get_torrent_attr(self, site_info, enclosure):
+    def get_torrent_attr(self, site_info, enclosure, use_cache=True):
         self.calls += 1
         return enclosure, {"free": True, "hr": False}
 

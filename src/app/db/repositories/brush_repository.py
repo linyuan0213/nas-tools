@@ -6,7 +6,7 @@ Handles brush task and torrent related database operations.
 import time
 from typing import Any
 
-from sqlalchemy import BigInteger, Integer, and_, case, cast, func, or_
+from sqlalchemy import BigInteger, Integer, and_, cast, func, or_
 
 from app.db.models import BRUSHEVENTLOG, CONFIGSITE, SITEBRUSHRULE, SITEBRUSHTASK, SITEBRUSHTORRENTS
 from app.db.repositories.base_repository import BaseRepository
@@ -325,22 +325,17 @@ class BrushRepository(BaseRepository):
 
     def update_brushtask_torrent_state(self, ids: list) -> None:
         """
-        更新刷流种子的状态
+        更新刷流种子的状态（删除后标记为已删除：DOWNLOAD_ID 置 0）
+        ids: list of (task_id, download_id) 或 (stat, task_id, download_id)
         """
         if not ids:
             return
         with self.session() as db:
             conditions = [
                 and_(cast(SITEBRUSHTORRENTS.TASK_ID, Integer) == task_id, SITEBRUSHTORRENTS.DOWNLOAD_ID == download_id)
-                for _, task_id, download_id in ids
+                for task_id, download_id in [(x[1], x[2]) for x in ids]
             ]
-            case_stmt = case(
-                *[(cond, torrent_size) for (_, torrent_size), cond in zip(ids, conditions)],
-                else_=SITEBRUSHTORRENTS.TORRENT_SIZE,
-            )
-            db.query(SITEBRUSHTORRENTS).filter(or_(*conditions)).update(
-                {"TORRENT_SIZE": case_stmt, "DOWNLOAD_ID": "0"}, synchronize_session=False
-            )
+            db.query(SITEBRUSHTORRENTS).filter(or_(*conditions)).update({"DOWNLOAD_ID": "0"}, synchronize_session=False)
 
     def delete_brushtask_torrent(self, brush_id: int | None, download_id: str | None) -> None:
         """

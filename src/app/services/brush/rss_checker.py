@@ -2,6 +2,7 @@
 
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import log
@@ -10,6 +11,7 @@ from app.db.repositories.subscribe_repo_adapter import SubscribeMovieRepositoryA
 from app.domain.engine.brush_rule_engine import BrushRuleEngine
 from app.domain.entities.brush import BrushTaskState
 from app.media import MediaService
+from app.services.brush.helpers import cached_torrent_attr, store_torrent_attr
 from app.services.rss_processor import RssHelper
 from app.sites import SiteConf
 from app.sites.engine import TorrentAttrFetchError
@@ -92,8 +94,13 @@ class BrushRssChecker:
             log.debug("[Brush]page_url 为空，跳过 torrent_attr 检查")
             return {}
         log.debug(f"[Brush]开始检查 torrent_attr, page_url={page_url[:80]}")
+
+        cached = cached_torrent_attr(page_url)
+        if cached is not None:
+            return cached
+
         try:
-            return self._siteconf.check_torrent_attr(
+            result = self._siteconf.check_torrent_attr(
                 torrent_url=page_url,
                 cookie=cookie,
                 api_key=api_key,
@@ -106,6 +113,8 @@ class BrushRssChecker:
             # 详情抓取失败 → 视为无此属性（规则如 free=FREE 将判为不满足，不下载，宁可不选不误下）
             log.warn(f"[Brush]种子属性抓取失败({page_url[:60]}): {e}")
             return {}
+        store_torrent_attr(page_url, result)
+        return result
 
     def check_task_rss(self, taskid: int | None, taskinfo: dict) -> None:
         if not taskid or not taskinfo:
@@ -196,6 +205,40 @@ class BrushRssChecker:
             }
 
         media_service = self._media_service
+
+        # 并发预取详情属性：需要属性且未命中缓存的详情页先并行抓取（3 并发），
+        # 主循环再复用缓存，缩短整批串行等待
+        if self._rss_rule_needs_torrent_attr(rss_rule):
+            to_fetch: list[str] = []
+            for res in rss_result:
+                enclosure = res.get("enclosure")
+                page_url = res.get("link")
+                if not enclosure or not page_url:
+                    continue
+                if self._helper.is_torrent_handled(enclosure=enclosure):
+                    continue
+                if cached_torrent_attr(page_url) is None:
+                    to_fetch.append(page_url)
+            if to_fetch:
+
+                def _fetch_one(url: str) -> None:
+                    try:
+                        self._check_torrent_attr_if_needed(
+                            rss_rule=rss_rule,
+                            page_url=url,
+                            cookie=cookie,
+                            api_key=api_key,
+                            bearer_token=bearer_token,
+                            ua=ua,
+                            headers=headers,
+                            site_proxy=bool(site_proxy),
+                        )
+                    except Exception:  # noqa: BLE001, S110
+                        pass  # 抓取失败由下游按“未知”处理
+
+                with ThreadPoolExecutor(max_workers=3) as pool:
+                    list(pool.map(_fetch_one, to_fetch))
+                log.debug(f"[Brush]{len(to_fetch)} 个详情页并发预取完成")
 
         for res in rss_result:
             try:

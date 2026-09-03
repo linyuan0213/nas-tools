@@ -71,3 +71,18 @@ class TestDownloadTorrentExistsNoId:
         helper = _make_helper(download_ret=("1", None, "下载器连接失败"))
         assert _call(helper) is False
         helper._repo.insert_brushtask_torrent.assert_not_called()
+
+
+class TestTorrentAttrCache:
+    def test_cache_store_and_get(self):
+        from app.services.brush.helpers import cached_torrent_attr, store_torrent_attr
+
+        store_torrent_attr("https://site/1", {"free": True, "hr": False})
+        hit = cached_torrent_attr("https://site/1")
+        assert hit == {"free": True, "hr": False}
+
+    def test_cache_unknown_not_stored(self):
+        from app.services.brush.helpers import cached_torrent_attr, store_torrent_attr
+
+        store_torrent_attr("https://site/2", None)
+        assert cached_torrent_attr("https://site/2") is None

@@ -179,7 +179,7 @@ class BrushTorrentLifecycle:
             torrent_url, torrent_attr = (None, {})
             if enclosure and need_attr:
                 torrent_url, torrent_attr = self._helper.get_torrent_attr(
-                    site_info if isinstance(site_info, dict) else {}, enclosure
+                    site_info if isinstance(site_info, dict) else {}, enclosure, use_cache=False
                 )
                 if torrent_attr is None:
                     # 详情属性抓取失败（限流/网络等）：不能据此判定“免费到期”而误删，
@@ -300,7 +300,7 @@ class BrushTorrentLifecycle:
                 torrent_attr = {}
                 if stopfree_enabled:
                     torrent_url, torrent_attr = self._helper.get_torrent_attr(
-                        site_info if isinstance(site_info, dict) else {}, enclosure
+                        site_info if isinstance(site_info, dict) else {}, enclosure, use_cache=False
                     )
                     if torrent_attr is None:
                         # 属性未知（抓取失败）：不据此执行停种，等待下轮
@@ -374,7 +374,7 @@ class BrushTorrentLifecycle:
             if not enclosure:
                 continue
             torrent_url, torrent_attr = self._helper.get_torrent_attr(
-                site_info if isinstance(site_info, dict) else {}, enclosure
+                site_info if isinstance(site_info, dict) else {}, enclosure, use_cache=False
             )
             if torrent_attr is None:
                 # 属性未知（抓取失败）：暂不启动，等待下轮确认
