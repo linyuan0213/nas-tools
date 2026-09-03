@@ -33,9 +33,11 @@ from app.db.repositories.sync_repo_adapter import SyncPathRepositoryAdapter
 from app.db.repositories.transfer_repo_adapter import TransferBlacklistRepositoryAdapter
 from app.db.repositories.word_repo_adapter import CustomWordGroupRepositoryAdapter, CustomWordRepositoryAdapter
 from app.di.models import BusinessFacades, InfrastructureObjects, ServiceObjects
+from app.domain.mediatypes import MediaType
 from app.downloader.client_factory import DownloadClientFactory
 from app.indexer.core.pipeline import SearchPipeline
 from app.indexer.indexer import Indexer
+from app.infrastructure.image_proxy import ImageProxy
 from app.infrastructure.progress.tracker import ProgressTracker
 from app.media import MediaCache
 from app.media.external.bangumi import Bangumi
@@ -458,9 +460,25 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         media_server=media_server,
         subscribe=subscribe_service,
     )
+
+    def _history_poster_resolver(type_value: str, tmdbid: int) -> str:
+        """按 (类型, TMDBID) 解析海报 URL：优先缓存，缺失时回源一次并回填缓存."""
+        try:
+            mtype = MediaType.from_string(type_value)
+            if mtype not in (MediaType.MOVIE, MediaType.TV, MediaType.ANIME) or not tmdbid:
+                return ""
+            info = MediaCache().get_tmdb_info(mtype, tmdbid)
+            if not info:
+                info = media_service.get_tmdb_info(mtype, str(tmdbid), chinese=True)  # type: ignore[union-attr]
+            poster_path = (info or {}).get("poster_path") or ""
+            return ImageProxy.get_tmdbimage_url(poster_path) if poster_path else ""
+        except Exception:
+            return ""
+
     transfer_history_service = TransferHistoryService(
         filetransfer=filetransfer_service,
         sync_service=sync_service,
+        poster_resolver=_history_poster_resolver,
     )
 
     # 回填 PluginSandbox 的服务依赖（供动态加载插件使用）

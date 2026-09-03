@@ -1,4 +1,5 @@
 from math import floor
+from typing import Callable
 
 from app.core.exceptions import DomainError, RepositoryError, ServiceError  # noqa: F401
 from app.domain.mediatypes import MediaType
@@ -18,11 +19,16 @@ class TransferHistoryService:
         filetransfer: FileTransfer,
         sync_service: SyncService,
         cache_ttl: int = 30,
+        poster_resolver: Callable[[str, int], str] | None = None,
     ):
         self._filetransfer = filetransfer
         self._sync_service = sync_service
         self._cache = get_cache_manager().get_or_create("transfer_history_service", cache_type="memory", maxsize=100)
         self._cache_ttl = cache_ttl
+        # (type, tmdbid) -> 海报 URL；None 表示不富化海报
+        self._poster_resolver = poster_resolver
+        # 进程级 memo：同一 (type, tmdbid) 只回源一次，跨页复用
+        self._poster_memo: dict[tuple[str, int], str] = {}
 
     def _cache_key(self, prefix: str, *parts) -> str:
         return f"{prefix}:{':'.join(str(p) for p in parts)}"
@@ -51,6 +57,15 @@ class TransferHistoryService:
             rmt_mode = sync_mode or ""
             history = {k.upper(): v for k, v in history.items()}
             history.update({"SYNC_MODE": sync_mode, "RMT_MODE": rmt_mode})
+            # 海报富化：同 (type, tmdbid) 进程内只解析一次，缺 TMDBID/无解析器则跳过
+            history["image"] = ""
+            if self._poster_resolver:
+                tmdbid = history.get("TMDBID")
+                if tmdbid:
+                    poster_key = (str(history.get("TYPE") or ""), int(tmdbid))
+                    if poster_key not in self._poster_memo:
+                        self._poster_memo[poster_key] = self._poster_resolver(poster_key[0], poster_key[1]) or ""
+                    history["image"] = self._poster_memo[poster_key]
             historys_list.append(history)
         total_page = floor(total_count / page_num) + 1
         dto = TransferHistoryPageDTO(
