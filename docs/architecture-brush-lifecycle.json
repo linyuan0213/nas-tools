@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "刷流任务状态",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [
+      900,
+      620
+    ],
+    "views": [
+      {
+        "id": "main",
+        "label": "状态流转",
+        "focus": [
+          "stopped",
+          "running"
+        ],
+        "note": "运行中周期执行规则检查，停止/禁用为人工操作。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "刷流任务状态"
+    }
+  ],
+  "states": [
+    {
+      "id": "stopped",
+      "type": "start",
+      "label": "已停止",
+      "sublabel": "未执行",
+      "lane": "main",
+      "col": 0,
+      "step": "01",
+      "tag": "STOPPED"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "label": "运行中",
+      "sublabel": "周期调度检查",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "RUNNING"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "start",
+      "from": "stopped",
+      "to": "running",
+      "label": "启动",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -16
+    },
+    {
+      "id": "stop",
+      "from": "running",
+      "to": "stopped",
+      "label": "停止",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": 16
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "运行",
+      "items": [
+        "运行中按规则周期性执行（RSS/做种检查）",
+        "单次异常不改变任务状态，仅记录日志"
+      ]
+    }
+  ]
+}

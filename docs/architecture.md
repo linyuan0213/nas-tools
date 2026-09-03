@@ -4,6 +4,22 @@
 >
 > 技术栈：Python 3.11+ + FastAPI + SQLAlchemy + Alembic + APScheduler
 
+## 0. 架构图（交互式，浏览器打开）
+
+> 图为 Archify 交付物（`.html`），支持主题切换 / 聚焦视图 / 导出；依据与代码映射见 [architecture-evidence.md](./architecture-evidence.md)。
+
+| 文件 | 类型 | 说明 |
+|---|---|---|
+| [architecture.html](./architecture.html) | 完整架构大图 | 接入 → API/装配 → 应用服务 → 外部/消息 → 基础设施；3 个视图 |
+| [architecture-brush-flow.html](./architecture-brush-flow.html) | 数据流 | 刷流/订阅：RSS→匹配→下载→做种保种/识别入库双泳道 |
+| [architecture-scrape.html](./architecture-scrape.html) | 数据流 | 识别后刮削队列：NFO/海报/FFmpeg→写库→完成通知 |
+| [architecture-brush-lifecycle.html](./architecture-brush-lifecycle.html) | 生命周期 | 刷流任务 停止⇄运行 状态流转 |
+| [architecture-agent.html](./architecture-agent.html) | 架构 | AI 助手多步工具循环（providers/工具/记忆/SSE） |
+| [architecture-msg.html](./architecture-msg.html) | 架构 | 消息通知中心 + 插件框架（含 msg_* 渠道） |
+| [architecture-sites.html](./architecture-sites.html) | 架构 | 站点检索与 nexus-chrome 降级 |
+
+每个 `.json` 为对应图的可校验规格（`archify validate --quality standard` 通过），`.html` 为交付产物。
+
 ---
 
 ## 1. 顶层目录结构
