@@ -19,6 +19,7 @@ from lxml import etree
 import log
 from app.domain.media_type_utils import MediaTypeMapper
 from app.domain.mediatypes import MediaType
+from app.infrastructure.chrome.challenge import is_challenge
 from app.infrastructure.http import CookieAuth, HttpClient, HttpClientConfig
 from app.sites import engine_tools
 from app.sites.api_searcher import ApiSiteSearcher
@@ -149,33 +150,39 @@ class HtmlSiteSearcher:
         rate_limiter = getattr(engine, "site_limiter", None)
         rate_limiter_engine = rate_limiter.engine if rate_limiter else None
         rl_kwargs = engine_tools._get_rate_limit_kwargs(engine, self._site)
-        browser = build_browser_mode(
-            site_info={
-                "chrome": self._user_config.get("chrome"),
-                "ua": ua,
-                "browser_render": self._user_config.get("browser_render"),
-            },
-            site_key=self._user_config.get("domain") or self._site.domain or "",
-            proxy_url=proxy_url,
-            render_html=bool(self._user_config.get("browser_render")),
-        )
-        try:
-            res = HttpClient(
-                config=HttpClientConfig(proxy_url=proxy_url, browser=browser),
-                rate_limiter=rate_limiter_engine,
-            ).get(url=url, headers=headers, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
-            if not res.is_success:
-                self.last_error = f"HTTP {res.status_code}"
-                log.warn(f"[HtmlSiteSearcher]{self._site.name} HTTP {res.status_code}, url={url}")
+        chrome_enabled = bool(self._user_config.get("chrome"))
+        render = bool(self._user_config.get("browser_render"))
+
+        def _request(with_browser):
+            try:
+                res = HttpClient(
+                    config=HttpClientConfig(proxy_url=proxy_url, browser=with_browser),
+                    rate_limiter=rate_limiter_engine,
+                ).get(url=url, headers=headers, auth=CookieAuth(cookie) if cookie else None, **rl_kwargs)
+                if not res.is_success:
+                    self.last_error = f"HTTP {res.status_code}"
+                    log.warn(f"[HtmlSiteSearcher]{self._site.name} HTTP {res.status_code}, url={url}")
+                    return None
+                encoding = self._site.encoding or None
+                return res.content.decode(encoding) if encoding else res.text
+            except Exception as e:
+                self.last_error = f"{type(e).__name__}"
+                log.warn(f"[HtmlSiteSearcher]{self._site.name} 请求失败: {e}")
                 return None
-        except Exception as e:
-            self.last_error = f"{type(e).__name__}"
-            log.warn(f"[HtmlSiteSearcher]{self._site.name} 请求失败: {e}")
-            return None
-        encoding = self._site.encoding or None
-        if encoding:
-            return res.content.decode(encoding)
-        return res.text
+
+        # 站点开启浏览器自动化：直连失败/疑似挑战页时自动经 nexus-chrome 渲染再取一次
+        html = _request(None)
+        if html is None or is_challenge(html):
+            if not chrome_enabled:
+                return html
+            browser = build_browser_mode(
+                site_info={"chrome": True, "ua": ua, "browser_render": render},
+                site_key=self._user_config.get("domain") or self._site.domain or "",
+                proxy_url=proxy_url,
+                render_html=render,
+            )
+            html = _request(browser)
+        return html
 
     def _parse_html(self, html_text, is_browse=False):
         html_doc = etree.HTML(html_text)
