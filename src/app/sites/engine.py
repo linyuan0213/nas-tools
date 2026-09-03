@@ -18,6 +18,7 @@ from lxml import etree
 
 import log
 from app.core.root_path import get_project_root
+from app.infrastructure.chrome.challenge import is_challenge
 from app.infrastructure.http.auth import CookieAuth
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
@@ -591,8 +592,8 @@ class SiteEngine:
                 return None
 
         text = _request(browser)
-        # 直连失败或疑似被反爬拦截时，自动降级 nexus-chrome 再取一次（浏览器自动化作 fallback）
-        if (text is None or SiteEngine._looks_blocked(text)) and not browser and site:
+        # 直连失败或疑似仍处于挑战页时，自动降级 nexus-chrome 再取一次（浏览器自动化作 fallback）
+        if (text is None or is_challenge(text)) and not browser and site:
             try:
                 text = _request(
                     build_browser_mode(
@@ -605,26 +606,6 @@ class SiteEngine:
             except Exception:
                 text = None
         return text
-
-    @staticmethod
-    def _looks_blocked(text: str | None) -> bool:
-        """疑似被反爬/验证码页拦截的轻量识别，命中则值得用浏览器重试。"""
-        if not text:
-            return False
-        low = text.lower()
-        markers = (
-            "just a moment",
-            "cf-challenge",
-            "cf_chl",
-            "verify you are human",
-            "attention required",
-            "cloudflare",
-            "captcha",
-            "访问过于频繁",
-            "请输入验证码",
-            "安全验证",
-        )
-        return any(m in low for m in markers)
 
     # ---- 连接测试 ----
 

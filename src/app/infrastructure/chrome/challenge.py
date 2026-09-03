@@ -44,6 +44,11 @@ def _is_challenge(html_text: str) -> bool:
     return any(keyword in title for keyword in CHALLENGE_TITLES)
 
 
+def is_challenge(html_text: str) -> bool:
+    """公共判定：页面是否仍处于挑战/拦截页（供直连降级与等待逻辑复用）"""
+    return _is_challenge(html_text)
+
+
 def has_pending_turnstile(html_text: str) -> bool:
     """页面是否包含待完成的人机验证组件（内嵌 Turnstile）"""
     return bool(html_text) and bool(EMBEDDED_TURNSTILE.search(html_text))

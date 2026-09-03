@@ -19,11 +19,11 @@ from urllib.parse import urljoin
 from lxml import etree
 
 import log
+from app.infrastructure.chrome.challenge import is_challenge
 from app.infrastructure.http.auth import CookieAuth
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
 from app.sites import engine_tools
-from app.sites.engine import SiteEngine
 from app.sites.siteuserinfo import discuz, gazelle, nexus_php, small_horse, unit3d
 from app.utils import StringUtils
 from app.utils.browser_mode import build_browser_mode
@@ -413,8 +413,8 @@ class ConfigHtmlUserInfo:
                 return None
 
         text = _request()
-        # 直连失败/疑似反爬拦截时，自动降级 nexus-chrome 渲染再取一次
-        if text is None or SiteEngine._looks_blocked(text):
+        # 直连失败/疑似仍处于挑战页时，自动降级 nexus-chrome 渲染再取一次
+        if text is None or is_challenge(text):
             site_key = str(getattr(self._def, "id", "") or "")
             if site_key:
                 try:
