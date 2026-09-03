@@ -8,6 +8,7 @@
 """
 
 import datetime
+import os
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
@@ -28,9 +29,34 @@ from app.sites.engine import SiteEngine
 from app.sites.site_cache import SiteCache
 from app.utils import ExceptionUtils, StringUtils
 
-# 站点级搜索超时上下限（秒）：按历史延迟在区间内自适应
-_SITE_TIMEOUT_MIN = 10.0
-_SITE_TIMEOUT_MAX = 30.0
+
+# 站点级搜索超时上下限（秒）：按历史延迟在区间内自适应。
+# 站点延迟样本不足时直接使用上限；样本充足后按 p95*1.5 收敛在 [MIN, MAX]。
+# 上限可用环境变量 NEXUS_MEDIA_INDEXER_TIMEOUT 调大（慢站建议 ≥45）。
+def _env_float(name: str, default: float) -> float:
+    """解析正整数型超时环境变量；缺失/非法/非正数一律回退默认值，避免导入崩溃."""
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        log.warn(f"[Indexer]环境变量 {name} 非法（{raw!r}），回退默认值 {default}")
+        return default
+    return value if value > 0 else default
+
+
+def _clamp_timeouts(min_value: float, max_value: float) -> tuple[float, float]:
+    if min_value > max_value:
+        log.warn(f"[Indexer]索引器搜索超时 MIN({min_value}) 大于 MAX({max_value})，已对齐到 MAX")
+        min_value = max_value
+    return min_value, max_value
+
+
+_SITE_TIMEOUT_MIN, _SITE_TIMEOUT_MAX = _clamp_timeouts(
+    _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT_MIN", 15.0),
+    _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0),
+)
 
 
 class SiteLatencyTracker:

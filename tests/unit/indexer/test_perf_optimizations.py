@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 
 from app.domain.mediatypes import MediaType
-from app.indexer.indexer import SiteLatencyTracker
+from app.indexer.indexer import SiteLatencyTracker, _clamp_timeouts, _env_float
 from app.media.parser.parse_cache import ParseCache
 
 
@@ -53,7 +53,7 @@ class TestSiteLatencyTracker:
         t = self._tracker()
         indexer = MagicMock()
         indexer.name = "SlowSite"
-        assert t.timeout_for(indexer) == 30.0
+        assert t.timeout_for(indexer) == 45.0
 
     def test_adaptive_shrinks_for_fast_site(self):
         t = self._tracker()
@@ -61,7 +61,7 @@ class TestSiteLatencyTracker:
         indexer.name = "FastSite"
         for _ in range(5):
             t.record(indexer, 2.0)
-        assert t.timeout_for(indexer) == 10.0  # p95*1.5=3.0 → clamp 到 MIN
+        assert t.timeout_for(indexer) == 15.0  # p95*1.5=3.0 → clamp 到 MIN
 
     def test_slow_site_gets_less_than_max(self):
         t = self._tracker()
@@ -79,6 +79,31 @@ class TestSiteLatencyTracker:
             t.record(indexer, float(i))
         samples = t._cache.get(f"lat:{indexer.name}")
         assert len(samples or []) == 20
+
+
+class TestSiteTimeoutEnv:
+    def test_missing_env_uses_default(self, monkeypatch):
+        monkeypatch.delenv("NEXUS_MEDIA_INDEXER_TIMEOUT", raising=False)
+        assert _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0) == 45.0
+
+    def test_invalid_env_falls_back(self, monkeypatch):
+        monkeypatch.setenv("NEXUS_MEDIA_INDEXER_TIMEOUT", "abc")
+        assert _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0) == 45.0
+
+    def test_empty_env_falls_back(self, monkeypatch):
+        monkeypatch.setenv("NEXUS_MEDIA_INDEXER_TIMEOUT", "")
+        assert _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0) == 45.0
+
+    def test_non_positive_env_falls_back(self, monkeypatch):
+        monkeypatch.setenv("NEXUS_MEDIA_INDEXER_TIMEOUT", "0")
+        assert _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0) == 45.0
+
+    def test_valid_env_parsed(self, monkeypatch):
+        monkeypatch.setenv("NEXUS_MEDIA_INDEXER_TIMEOUT", "60")
+        assert _env_float("NEXUS_MEDIA_INDEXER_TIMEOUT", 45.0) == 60.0
+
+    def test_min_above_max_aligns_to_max(self):
+        assert _clamp_timeouts(60.0, 45.0) == (45.0, 45.0)
 
 
 class _MemCache:
