@@ -61,7 +61,8 @@ Nexus Media 内置 AI 助手，可在**消息中心**（`/message-center`）以�
 
 ### 确认与危险操作
 
-执行下载、删除订阅等可能影响数据的操作前，助手会弹出**确认卡片**展示工具和参数，确认后才执行。
+下载、删除订阅/种子、修改配置等写入类操作（dangerous 或需确认的 write 工具）执行前会弹出**确认卡片**展示工具与参数，在 **Web 端**确认后才真正执行（`/api/agent/chat/confirm`）。
+注意：IM/消息渠道（飞书、Telegram、微信等）不支持确认卡，触发此类操作会返回“需要二次确认”的提示，请到 Web 端 Agent 对话中确认执行。
 
 ## 能力清单
 
@@ -103,6 +104,8 @@ Nexus Media 内置 AI 助手，可在**消息中心**（`/message-center`）以�
 | `transfer_run` | 手动触发文件转移 |
 | `browser_fetch` / `browser_screenshot` | 浏览器抓取网页 / 截图（需启用网页自动化与 nexus-chrome） |
 
+> 实际注册工具约 **65 个**，除上表外还含：配置读写（`config_set` / `config_apply_manifest`）、下载器/索引器/刮削配置保存、消息客户端、插件管理、识别词管理、站点 Cookie 更新、会话记忆（`memory_clear` / `memory_forget`）、存储/媒体库同步等。完整清单以代码注册为准（`src/app/agent/tools/catalog.py`），会话中也可直接向助手询问支持的工具。
+
 ## 知识库
 
 知识库（`/kb`）按命名空间组织，内置了下载器、站点、刷流、媒体整理、FAQ 等操作文档。可在知识库页面查看内容、触发重建索引。
@@ -139,7 +142,7 @@ agent:
     rerank_top_k: 3
     namespaces: [media_library, messages, faq, operations]
   memory:
-    max_steps: 8            # 工具循环步数上限
+    max_steps: 8            # 单轮工具循环步数上限（对应模型请求次数上限 max_steps+1）
     short_term:
       store: db
       max_tokens: 4000      # 会话 token 预算，超出触发滚动摘要
@@ -148,9 +151,11 @@ agent:
       enabled: false
       top_k: 5
       extraction: on_session_end
+  reasoning_effort: high     # 推理强度：low | high | max
+  disable_thinking: false    # true=关闭思考模式（thinking disabled）
   notify:                   # 通知增强：LLM 重写模板通知
     enabled: false
-    msg_types: [download_start, download_fail, rss_finished, transfer_finished]
+    msg_types: [download_start, download_fail, rss_finished, transfer_finished, transfer_fail, site_signin]
     temperature: 0.3
 ```
 
