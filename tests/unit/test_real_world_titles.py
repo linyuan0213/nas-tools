@@ -831,6 +831,22 @@ TITLES = [
         "1080p",
         "重复命运",
     ),
+    (
+        "[少女怪兽焦糖味].Otome.Kaiju.Kyaramerize.2026.S01E01.1080p.CR.WEB-DL.H264.AAC-UBWEB.mkv",
+        "少女怪兽焦糖味",
+        1,
+        1,
+        "1080p",
+        "CR 全季目录单集（方括号中文前缀+英文名.年份.S01E01）",
+    ),
+    (
+        "［少女怪兽焦糖味］.Otome.Kaiju.Kyaramerize.2026.S01E01.1080p.CR.WEB-DL.H264.AAC-UBWEB.mkv",
+        "少女怪兽焦糖味",
+        1,
+        1,
+        "1080p",
+        "全角方括号中文前缀变体",
+    ),
 ]
 
 
