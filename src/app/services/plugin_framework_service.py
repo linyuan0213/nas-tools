@@ -248,6 +248,44 @@ class PluginFrameworkService:
                 log.error(f"[PluginFrameworkService] 解析插件清单失败: {e}")
         return plugins
 
+    def list_enabled_agent_tools(self) -> list[dict]:
+        """已启用插件声明的 Agent 工具（供 ToolExecutor 动态合并，作为能力清单）"""
+        tools: list[dict] = []
+        try:
+            orm_list = self._repo.get_all_manifests()
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[PluginFrameworkService]读取插件清单失败，插件工具不可用: {e}")
+            return tools
+        for orm_model in orm_list:
+            if not bool(getattr(orm_model, "ENABLED", False)):
+                continue
+            try:
+                manifest = PluginManifest.from_dict(JsonUtils.loads(str(orm_model.MANIFEST_JSON or "{}")))
+            except Exception:  # noqa: BLE001
+                continue
+            for t in manifest.backend.tools:
+                if not t.name:
+                    continue
+                tools.append(
+                    {
+                        "plugin_id": manifest.id,
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters or {},
+                        "level": t.level,
+                        "permission": t.permission,
+                    }
+                )
+        return tools
+
+    def call_agent_tool(self, plugin_id: str, name: str, arguments: dict):
+        """调用插件 backend.agent_tool(name, arguments)
+
+        插件返回约定为 {success: bool, data: …, error: str}（data 缺省视为成功数据），
+        由 ToolExecutor 统一转换为 ToolResult。
+        """
+        return self._plugin_sandbox.call(plugin_id, "agent_tool", name, arguments)
+
     def get_manifest(self, plugin_id: str) -> PluginManifest | None:
         """获取插件完整 manifest"""
         orm_model = self._repo.get_manifest_by_id(plugin_id)

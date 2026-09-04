@@ -105,6 +105,8 @@ Nexus Media 内置 AI 助手，可在**消息中心**（`/message-center`）以�
 | `browser_fetch` / `browser_screenshot` | 浏览器抓取网页 / 截图（需启用网页自动化与 nexus-chrome） |
 
 > 实际注册工具约 **65 个**，除上表外还含：配置读写（`config_set` / `config_apply_manifest`）、下载器/索引器/刮削配置保存、消息客户端、插件管理、识别词管理、站点 Cookie 更新、会话记忆（`memory_clear` / `memory_forget`）、存储/媒体库同步等。完整清单以代码注册为准（`src/app/agent/tools/catalog.py`），会话中也可直接向助手询问支持的工具。
+>
+> **插件工具**：插件可在 manifest `backend.tools` 声明自己的 Agent 工具（name/description/parameters/level/permission），启用后在 `backend.agent_tool(name, arguments)` 实现逻辑即可，由 ToolExecutor 动态合并进会话；写/危险分级、RBAC 与 Web 确认流与内置工具一致。
 
 ## 知识库
 

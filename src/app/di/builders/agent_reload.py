@@ -55,7 +55,20 @@ def rebuild_agent_rag(context: AppContext) -> dict[str, bool]:
         conversation_store=rag.conversation_store,
         semantic_memory=rag.semantic_memory,
     )
-    object.__setattr__(context, "tool_executor", ToolExecutor(ctx=tool_context))
+    plugin_svc = context.plugin_framework_service
+    object.__setattr__(
+        context,
+        "tool_executor",
+        ToolExecutor(
+            ctx=tool_context,
+            plugin_tools_provider=(lambda: plugin_svc.list_enabled_agent_tools()) if plugin_svc else None,
+            plugin_executor=(
+                (lambda plugin_id, name, args: plugin_svc.call_agent_tool(plugin_id, name, args))
+                if plugin_svc
+                else None
+            ),
+        ),
+    )
     context.agent_service.init_chat_agent(context.tool_executor, rag.conversation_store, rag.semantic_memory)
     register_kb_ingest_handler(
         event_bus=context.event_bus,

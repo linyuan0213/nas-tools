@@ -164,7 +164,19 @@ def build_coordinators(
         conversation_store=agent_rag.conversation_store,
         semantic_memory=agent_rag.semantic_memory,
     )
-    tool_executor = ToolExecutor(ctx=tool_context)
+    tool_executor = ToolExecutor(
+        ctx=tool_context,
+        plugin_tools_provider=(
+            (lambda: services.plugin_framework_service.list_enabled_agent_tools())
+            if services.plugin_framework_service
+            else None
+        ),
+        plugin_executor=(
+            (lambda plugin_id, name, args: services.plugin_framework_service.call_agent_tool(plugin_id, name, args))
+            if services.plugin_framework_service
+            else None
+        ),
+    )
     facades.agent_service.init_chat_agent(tool_executor, agent_rag.conversation_store, agent_rag.semantic_memory)
 
     # Agent 通知增强（单流替换模板通知，agent 未启用时零开销）

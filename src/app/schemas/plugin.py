@@ -27,6 +27,36 @@ class PluginInstallResultDTO:
 
 
 @dataclass
+class PluginToolConfig:
+    """插件声明式 Agent 工具定义（由后端在启用时暴露给 Agent）"""
+
+    name: str = ""
+    description: str = ""
+    parameters: dict = field(default_factory=dict)
+    level: str = "read"  # read | write | dangerous
+    permission: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PluginToolConfig":
+        return cls(
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            parameters=data.get("parameters") or {},
+            level=data.get("level", "read"),
+            permission=data.get("permission", ""),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": self.parameters,
+            "level": self.level,
+            "permission": self.permission,
+        }
+
+
+@dataclass
 class PluginBackendConfig:
     entry: str = ""
     api_prefix: str = ""
@@ -34,6 +64,7 @@ class PluginBackendConfig:
     hooks: list[str] = field(default_factory=list)
     supports_run: bool = False
     dependencies: list[str] = field(default_factory=list)
+    tools: list[PluginToolConfig] = field(default_factory=list)
 
 
 @dataclass
@@ -126,6 +157,7 @@ class PluginManifest:
                 hooks=backend_data.get("hooks", []),
                 supports_run=backend_data.get("supports_run", False),
                 dependencies=backend_data.get("dependencies", []),
+                tools=[PluginToolConfig.from_dict(t) for t in backend_data.get("tools", [])],
             ),
             frontend=PluginFrontendConfig(
                 routes=routes,
@@ -160,6 +192,7 @@ class PluginManifest:
                 "hooks": self.backend.hooks,
                 "supports_run": self.backend.supports_run,
                 "dependencies": self.backend.dependencies,
+                "tools": [t.to_dict() for t in self.backend.tools],
             },
             "frontend": {
                 "routes": [
