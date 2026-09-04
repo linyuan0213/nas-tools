@@ -12,11 +12,13 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urljoin, urlparse, urlsplit
 
 import httpx
 
 import log
+from app.services.plugin_package_auditor import PluginPackageAuditor
 
 # 目录式市场索引（catalog.json）的最小必需字段
 _CATALOG_REQUIRED = ("market_version", "id", "plugins")
@@ -85,12 +87,16 @@ class PluginMarketService:
         http_get: Callable[[str], str] | None = None,
         cache: dict[str, MarketCatalog] | None = None,
         resolver: Callable[[str], list[str]] | None = None,
+        http_get_bytes: Callable[[str], bytes] | None = None,
+        auditor: Any | None = None,
     ):
         self._store = store
         self._http_get = http_get or self._default_http_get
+        self._http_get_bytes = http_get_bytes or self._default_http_get_bytes
         self._resolver = resolver or self._default_resolve
         self._catalog_cache: dict[str, MarketCatalog] = cache if cache is not None else {}
         self._detail_cache: dict[tuple[str, str], dict] = {}
+        self._auditor: Any = auditor if auditor is not None else PluginPackageAuditor()
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -290,6 +296,39 @@ class PluginMarketService:
 
         a, b = parse(local), parse(remote)
         return (a > b) - (a < b)
+
+    # ------------------------------------------------------------ 包审计（安装门禁）
+
+    def _default_http_get_bytes(self, url: str) -> bytes:
+        resp = httpx.get(url, timeout=60, follow_redirects=False)
+        resp.raise_for_status()
+        return resp.content
+
+    def audit_plugin(self, source_id: str, plugin_id: str) -> dict:
+        """预检（audit）：下载插件包 → sha256 → 静态扫描，不落盘启用
+
+        返回 {plugin_id, version, sha256, report}；block 级命中 report.passed=False。
+        """
+        detail = self.get_plugin_detail(source_id, plugin_id)
+        catalog = self.get_catalog(source_id)
+        if not catalog:
+            raise ValueError("目录未同步，请先同步市场源")
+        download_url = detail.get("download_url") or ""
+        if not download_url:
+            raise ValueError("插件详情缺少 download_url，无法审计")
+        source_url = catalog.source.url
+        url = self._join_url(source_url, str(download_url))
+        if urlsplit(url).netloc and urlsplit(url).netloc != urlsplit(source_url).netloc:
+            raise ValueError("插件包必须与市场源同源")
+        self._assert_public_http(url)
+        data = self._http_get_bytes(url)
+        report = self._auditor.audit_bytes(data, str(detail.get("sha256") or ""))
+        return {
+            "plugin_id": plugin_id,
+            "version": detail.get("version", ""),
+            "sha256": self._auditor.sha256(data),
+            "report": report.to_dict(),
+        }
 
     def list_plugin_details(self, source_id: str, plugin_ids: list[str]) -> dict[str, dict]:
         """批量拉取详情（用于 /status 只取与已装插件匹配的条目）；单条失败跳过"""

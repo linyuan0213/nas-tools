@@ -113,6 +113,21 @@ def list_plugins(
     return success(data={"total": len(items), "items": items})
 
 
+@router.get("/plugins/{plugin_id}/audit", response_model=CommonResponse, summary="插件包预检（SAST）")
+def audit_plugin(
+    plugin_id: str,
+    source_id: str,
+    _: str = Depends(require_any_permission("plugin:view", "plugin:manage")),
+    svc: PluginMarketService = Depends(get_plugin_market_service),
+):
+    """下载插件包做 sha256 + 静态扫描（不落盘/不启用），返回扫描报告"""
+    try:
+        result = svc.audit_plugin(source_id, plugin_id)
+    except ValueError as e:
+        return fail(msg=str(e))
+    return success(data=result)
+
+
 @router.get("/plugins/{plugin_id}", response_model=CommonResponse, summary="插件详情（懒加载）")
 def get_plugin_detail(
     plugin_id: str,
