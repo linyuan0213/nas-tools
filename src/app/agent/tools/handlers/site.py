@@ -48,9 +48,3 @@ def site_update_cookie(ctx: ToolContext, site_id: int, cookie: str, confirmed: b
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"更新站点 Cookie 失败: {e}")
     return ToolResult(success=True, data={"site_id": site_id, "message": "站点 Cookie 已更新"})
-
-
-HANDLERS = {
-    "site_status": site_status,
-    "site_update_cookie": site_update_cookie,
-}

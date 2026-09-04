@@ -27,8 +27,3 @@ def rss_task_list(ctx: ToolContext) -> ToolResult:
             }
         )
     return ToolResult(success=True, data={"total": len(items), "items": items})
-
-
-HANDLERS = {
-    "rss_task_list": rss_task_list,
-}

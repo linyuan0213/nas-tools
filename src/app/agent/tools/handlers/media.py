@@ -70,10 +70,3 @@ def kb_search(ctx: ToolContext, query: str, namespace: str | None = None) -> Too
     if not result.hit:
         return ToolResult(success=True, data={"hit": False, "citations": []})
     return ToolResult(success=True, data={"hit": True, "citations": result.citations})
-
-
-HANDLERS = {
-    "media_search": media_search,
-    "media_detail": media_detail,
-    "kb_search": kb_search,
-}

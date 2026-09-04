@@ -133,11 +133,3 @@ def words_delete(
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"删除识别词失败: {e}")
     return ToolResult(success=True, data={"deleted": gid or len(ids), "message": "已删除"})
-
-
-HANDLERS = {
-    "words_list": words_list,
-    "words_add": words_add,
-    "words_toggle": words_toggle,
-    "words_delete": words_delete,
-}

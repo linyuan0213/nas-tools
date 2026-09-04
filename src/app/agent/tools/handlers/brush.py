@@ -28,8 +28,3 @@ def brush_status(ctx: ToolContext) -> ToolResult:
         if isinstance(t, dict)
     ]
     return ToolResult(success=True, data={"total": len(items), "items": items})
-
-
-HANDLERS = {
-    "brush_status": brush_status,
-}

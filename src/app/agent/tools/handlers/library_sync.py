@@ -162,13 +162,3 @@ def sync_path_save(
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"保存同步任务失败: {e}")
     return ToolResult(success=True, data={"message": f"同步任务已保存：{source} → {dest or '(同库整理)'}"})
-
-
-HANDLERS = {
-    "media_library_dirs_get": media_library_dirs_get,
-    "media_library_dir_add": media_library_dir_add,
-    "media_library_dir_remove": media_library_dir_remove,
-    "storage_backend_list": storage_backend_list,
-    "sync_path_list": sync_path_list,
-    "sync_path_save": sync_path_save,
-}

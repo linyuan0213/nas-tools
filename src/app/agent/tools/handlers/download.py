@@ -107,13 +107,3 @@ def download_history_list(ctx: ToolContext, page: int = 1, page_size: int = 10, 
             }
         )
     return ToolResult(success=True, data={"total": len(items), "items": items[: max(page_size or 10, 1)]})
-
-
-HANDLERS = {
-    "download_add_link": download_add_link,
-    "media_download": media_download,
-    "download_list": download_list,
-    "download_control": download_control,
-    "downloader_status": downloader_status,
-    "download_history_list": download_history_list,
-}

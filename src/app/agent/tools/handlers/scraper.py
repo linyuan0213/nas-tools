@@ -72,9 +72,3 @@ def _mask(cfg: dict) -> dict:
 def _is_secret(key: str) -> bool:
     low = key.lower()
     return any(h in low for h in _SECRET_HINTS)
-
-
-HANDLERS = {
-    "scraper_config_get": scraper_config_get,
-    "scraper_config_save": scraper_config_save,
-}

@@ -169,8 +169,3 @@ def web_search(ctx: ToolContext, query: str, engine: str = "google", limit: int 
         success=False,
         error=f"所有搜索引擎均失败（尝试: {' → '.join(tried)}），请稍后重试或检查 Chrome 服务",
     )
-
-
-HANDLERS = {
-    "web_search": web_search,
-}

@@ -76,11 +76,3 @@ def subscribe_detail(ctx: ToolContext, title: str, tmdb_id: int | None = None) -
     if not found:
         return ToolResult(success=False, error=f"未找到订阅: {title}")
     return ToolResult(success=True, data={"total": len(found), "items": found})
-
-
-HANDLERS = {
-    "subscribe_add": subscribe_add,
-    "subscribe_list": subscribe_list,
-    "subscribe_detail": subscribe_detail,
-    "subscribe_delete": subscribe_delete,
-}

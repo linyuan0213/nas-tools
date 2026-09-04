@@ -2,7 +2,6 @@
 
 import pytest
 
-from app.agent.context import ContextBuilder
 from app.agent.providers.base import ProviderConfig, ReasoningConfig
 from app.agent.service import AgentService, sanitize
 
@@ -172,14 +171,3 @@ class TestSanitize:
     def test_short_or_none_untouched(self):
         assert sanitize("") == ""
         assert sanitize("无敏感信息") == "无敏感信息"
-
-
-class TestContextBuilder:
-    def test_build_order(self):
-        ctx = ContextBuilder().build(system_prompt="SYS", history=[{"role": "user", "content": "h1"}], user_input="q")
-        assert [m["role"] for m in ctx.messages] == ["system", "user", "user"]
-        assert ctx.messages[-1]["content"] == "q"
-
-    def test_empty_parts_skipped(self):
-        ctx = ContextBuilder().build(system_prompt="", history=[], user_input="")
-        assert ctx.messages == []
