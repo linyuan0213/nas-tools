@@ -1,9 +1,9 @@
 """索引器配置工具 handler — 读取（脱敏）与开关/连接配置更新"""
 
+from app.agent.sanitize import mask_config_values
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
-
-_MASK_KEYS = ("apikey", "api_key", "token", "password", "secret", "passkey")
+from app.agent.tools.handlers._config_ops import save_indexer_config
 
 
 def indexer_config_get(ctx: ToolContext) -> ToolResult:
@@ -23,7 +23,7 @@ def indexer_config_get(ctx: ToolContext) -> ToolResult:
                 "client_id": c.get("client_id"),
                 "enabled": c.get("enabled"),
                 "configured": bool(cfg.get("host") or cfg.get("api_key") or c.get("client_id") == "builtin"),
-                "config": {k: ("***" if v and _is_secret(k) else v) for k, v in cfg.items()},
+                "config": mask_config_values(cfg),
             }
         )
     return ToolResult(success=True, data={"total": len(items), "items": items})
@@ -54,35 +54,9 @@ def indexer_config_save(
             },
         )
 
-    # 合并已有配置，保留未改字段
-    existing = {}
+    # 合并已有配置并保存（复用共享持久化操作，与 config_manifest 一致）
     try:
-        cur = svc.get_config(client_id)
-        if cur:
-            existing = cur.get("config") or {}
-    except Exception:  # noqa: BLE001
-        existing = {}
-    merged = dict(existing)
-    merged.update({k: v for k, v in config.items() if v is not None})
-
-    data = {"type": client_id, "enabled": 1 if enabled else 0}
-    for k, v in merged.items():
-        data[f"{client_id}.{k}"] = v
-    try:
-        result = svc.save_config(data)
+        save_indexer_config(svc, client_id, enabled, config)
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"保存索引器失败: {e}")
-    if not getattr(result, "success", True):
-        return ToolResult(success=False, error=getattr(result, "msg", "保存失败"))
     return ToolResult(success=True, data={"client_id": client_id, "message": f"索引器「{client_id}」配置已保存"})
-
-
-def _is_secret(key: str) -> bool:
-    low = key.lower()
-    return any(h in low for h in _MASK_KEYS)
-
-
-HANDLERS = {
-    "indexer_config_get": indexer_config_get,
-    "indexer_config_save": indexer_config_save,
-}

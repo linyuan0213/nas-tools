@@ -269,6 +269,31 @@ class MediaServerConfigService:
                 return MediaServerConfigResultDTO(success=False, code=-1, msg=str(e))
         return MediaServerConfigResultDTO(success=True)
 
+    def apply_config(
+        self,
+        name: str,
+        config_overlay: dict | None = None,
+        enabled: bool | None = None,
+        is_default: bool | None = None,
+    ) -> None:
+        """统一媒体服务器新增/更新入口：合并现有配置后经 save_config 落库，供 Agent 工具与 manifest 复用.
+
+        enabled/is_default 为三态：None=保留现状；失败抛 ValueError（含“媒体服务器不存在”等提示）。
+        """
+        info = self.get_media_servers_info()
+        current = (info.get("servers") or {}).get(name) or {}
+        if not current:
+            raise ValueError(f"媒体服务器不存在: {name}")
+        merged = dict(current.get("config") or {})
+        if enabled is not None:
+            merged["enabled"] = 1 if enabled else 0
+        if is_default is not None:
+            merged["is_default"] = 1 if is_default else 0
+        merged.update({k: v for k, v in (config_overlay or {}).items() if v is not None})
+        result = self.save_config({"type": name, **merged})
+        if not getattr(result, "success", True):
+            raise ValueError(getattr(result, "msg", "保存失败"))
+
 
 class SystemConfigService:
     """

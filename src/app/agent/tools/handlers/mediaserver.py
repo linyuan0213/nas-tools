@@ -1,5 +1,6 @@
 """媒体服务器（Emby/Jellyfin/Plex）配置工具 handler"""
 
+from app.agent.sanitize import mask_config_values
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
 
@@ -9,8 +10,6 @@ _TYPE_NAMES = {
     "jellyfin": "Jellyfin",
     "plex": "Plex",
 }
-
-_MASK_KEYS = ("apikey", "api_key", "token", "password", "secret")
 
 
 def mediaserver_list(ctx: ToolContext) -> ToolResult:
@@ -30,7 +29,7 @@ def mediaserver_list(ctx: ToolContext) -> ToolResult:
                 "name": name,
                 "enabled": server.get("enabled"),
                 "is_default": server.get("is_default"),
-                "config": {k: ("***" if v and _is_secret(k) else v) for k, v in (server.get("config") or {}).items()},
+                "config": mask_config_values(server.get("config") or {}),
             }
         )
     return ToolResult(success=True, data={"default_server": info.get("default_server"), "items": items})
@@ -63,27 +62,13 @@ def mediaserver_config_save(ctx: ToolContext, name: str, config: dict, confirmed
             },
         )
 
-    merged = dict(current.get("config") or {})
-    for k in ("enabled", "is_default"):
-        if config.get(k) is not None:
-            merged[k] = 1 if config[k] else 0
-    merged.update({k: v for k, v in config.items() if v is not None})
-    data = {"type": name, **merged}
     try:
-        result = svc.save_config(data)
+        svc.apply_config(
+            name=name,
+            config_overlay=config,
+            enabled=config.get("enabled") if config.get("enabled") is not None else None,
+            is_default=config.get("is_default") if config.get("is_default") is not None else None,
+        )
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"保存媒体服务器失败: {e}")
-    if not getattr(result, "success", True):
-        return ToolResult(success=False, error=getattr(result, "msg", "保存失败"))
     return ToolResult(success=True, data={"name": name, "message": f"媒体服务器「{name}」配置已保存"})
-
-
-def _is_secret(key: str) -> bool:
-    low = key.lower()
-    return any(h in low for h in _MASK_KEYS)
-
-
-HANDLERS = {
-    "mediaserver_list": mediaserver_list,
-    "mediaserver_config_save": mediaserver_config_save,
-}

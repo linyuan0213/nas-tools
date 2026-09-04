@@ -1,7 +1,6 @@
 """系统配置读写工具 handler — 读取配置节点（脱敏）与按白名单写回 config.yaml"""
 
-from typing import Any
-
+from app.agent.sanitize import is_secret_key, mask_tree
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
 from app.core.settings import settings
@@ -9,20 +8,6 @@ from app.services.system.config import ConfigUpdateService
 
 # 允许 Agent 读写的配置顶层节点（security/database/log 等敏感或环境级节点不开放）
 _ALLOWED_SECTIONS = ("app", "media", "pt", "subscribe", "laboratory", "agent")
-
-# 字段名含这些关键字的叶子视为敏感：读取时脱敏、禁止写入
-_SECRET_HINTS = (
-    "password",
-    "passwd",
-    "api_key",
-    "apikey",
-    "token",
-    "secret",
-    "cookie",
-    "jwt",
-    "ssl_key",
-    "admin_token",
-)
 
 
 def config_get(ctx: ToolContext, section: str = "") -> ToolResult:
@@ -49,7 +34,7 @@ def config_get(ctx: ToolContext, section: str = "") -> ToolResult:
     node = data.get(section)
     if node is None:
         return ToolResult(success=False, error=f"配置节点不存在: {section}")
-    return ToolResult(success=True, data={section: _mask(node)})
+    return ToolResult(success=True, data={section: mask_tree(node)})
 
 
 def config_set(ctx: ToolContext, config: dict, confirmed: bool = False) -> ToolResult:
@@ -64,7 +49,7 @@ def config_set(ctx: ToolContext, config: dict, confirmed: bool = False) -> ToolR
         if top not in _ALLOWED_SECTIONS:
             invalid.append(key)
             continue
-        if any(h in key.lower() for h in _SECRET_HINTS):
+        if is_secret_key(key):
             sensitive.append(key)
             continue
         if not _is_known_leaf(key):
@@ -94,20 +79,6 @@ def config_set(ctx: ToolContext, config: dict, confirmed: bool = False) -> ToolR
     return ToolResult(success=True, data={"config": config, "message": "系统配置已更新并重载"})
 
 
-def _mask(node: Any) -> Any:
-    """递归脱敏：键名含敏感关键字的值替换为 ***"""
-    if isinstance(node, dict):
-        return {
-            k: "***" if isinstance(v, (str, int, float, bool)) and v not in ("", None) and _is_secret(k) else _mask(v)
-            for k, v in node.items()
-        }
-    return node
-
-
-def _is_secret(key: str) -> bool:
-    return any(h in key.lower() for h in _SECRET_HINTS)
-
-
 def _is_known_leaf(key: str) -> bool:
     """判断扁平键是否为现有配置中的真实叶子（避免写入拼写错误的键）"""
     try:
@@ -121,9 +92,3 @@ def _is_known_leaf(key: str) -> bool:
             return False
         cur = cur[part]
     return isinstance(cur, dict) and parts[-1] in cur
-
-
-HANDLERS = {
-    "config_get": config_get,
-    "config_set": config_set,
-}

@@ -3,8 +3,10 @@
 import json
 from typing import Any
 
+from app.agent.sanitize import mask_config_values
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
+from app.agent.tools.handlers._config_ops import save_message_client
 
 # 渠道类型配置字段（与 src/app/message/client/* 的真实 config 键一致）
 _CHANNEL_HINTS = {
@@ -98,16 +100,7 @@ def message_client_save(
             },
         )
     try:
-        svc.upsert_client(
-            name=name,
-            cid=int(cid or 0),
-            ctype=ctype,
-            config=json.dumps(config, ensure_ascii=False),
-            switches="",
-            interactive=0,
-            enabled=1 if enabled else 0,
-            templates="",
-        )
+        save_message_client(svc=svc, name=name, ctype=ctype, config=config, cid=cid, enabled=enabled)
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"保存消息渠道失败: {e}")
     return ToolResult(success=True, data={"message": f"消息渠道「{name}」已保存"})
@@ -136,21 +129,9 @@ def _svc(ctx: ToolContext) -> Any:
 
 
 def _mask_config(cfg: dict) -> dict:
-    return {k: ("***" if v and _is_secret(k) else v) for k, v in cfg.items()}
-
-
-def _is_secret(key: str) -> bool:
-    low = key.lower()
-    return any(h in low for h in ("token", "secret", "password", "key", "passwd"))
+    # 渠道 config 存在 sckey/bot_token 等命名，历史规则额外按 "key" 提示词命中
+    return mask_config_values(cfg, extra_hints=("key",))
 
 
 def _describe_fields(fields: dict) -> str:
     return "；".join(f"{label}" for label in fields.values())
-
-
-HANDLERS = {
-    "message_client_list": message_client_list,
-    "message_channel_types": message_channel_types,
-    "message_client_save": message_client_save,
-    "message_client_delete": message_client_delete,
-}

@@ -1,16 +1,20 @@
 """全量配置清单应用 handler — 一次校验、一次确认、统一应用、逐项报告"""
 
-import json
 from typing import Any
 
+from app.agent.sanitize import is_secret_key
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
+from app.agent.tools.handlers._config_ops import (
+    apply_plugin_action,
+    save_indexer_config,
+    save_message_client,
+)
 from app.core.settings import settings
 from app.domain.enums import SystemConfigKey
 from app.services.system.config import ConfigUpdateService
 
 _PLUGIN_ACTIONS = ("enable", "disable", "config")
-_SECRET_HINTS = ("password", "passwd", "api_key", "apikey", "token", "secret", "cookie", "jwt")
 _CONFIG_SECTIONS = ("app", "media", "pt", "subscribe", "laboratory", "agent")
 
 _SECTION_LABELS = {
@@ -103,7 +107,7 @@ def _collect(manifest: dict) -> tuple[list[dict], list[str]]:
             top = k.split(".", 1)[0]
             if top not in _CONFIG_SECTIONS:
                 errors.append(f"config 键不允许: {k}")
-            elif any(h in k.lower() for h in _SECRET_HINTS):
+            elif is_secret_key(k):
                 errors.append(f"config 键为敏感字段，禁止通过清单修改: {k}")
             elif not _is_known_leaf(k):
                 errors.append(f"config 未知配置键: {k}")
@@ -211,127 +215,62 @@ def _apply_one(ctx: ToolContext, entry: dict) -> str:
 def _apply_downloader(ctx: ToolContext, item: dict) -> str:
     core = ctx.downloader_core
     did = int(item["id"]) if item.get("id") else 0
-    conn_fields = {k: item[k] for k in ("host", "port", "username", "password") if item.get(k) is not None}
-    merged = dict((item.get("config") or {}))
-    merged.update(conn_fields)
-    if did:
-        current = core.get_downloader_conf(did=did)
-        if not current:
-            raise RuntimeError(f"下载器不存在: {did}")
-        cur_cfg = dict(current.get("config") or {})
-        cur_cfg.update({k: v for k, v in merged.items() if v is not None})
-        enabled = current.get("enabled") if item.get("enabled") is None else (1 if item["enabled"] else 0)
-        core.update_downloader(
-            did=did,
-            name=item.get("name") or current.get("name") or "",
-            enabled=enabled,
-            dtype=current.get("type") or "",
-            transfer=current.get("transfer"),
-            only_nexus_media=current.get("only_nexus_media"),
-            match_path=current.get("match_path"),
-            rmt_mode=current.get("rmt_mode"),
-            config=cur_cfg,
-            download_dir=current.get("download_dir"),
-        )
-        if item.get("is_default"):
-            core.set_default_downloader_id(str(did))
-        return "下载器配置已更新"
-    # 新增下载器（id 自动生成）
-    name = item.get("name") or ""
-    dtype = item.get("type") or ""
-    if not name or not dtype:
-        raise RuntimeError("新增下载器需提供 name 与 type")
-    enabled = 1 if item.get("enabled", True) else 0
-    core.update_downloader(
-        did=None,
-        name=name,
+    overlay = dict(item.get("config") or {})
+    # 顶层连接字段（host/port/username/password）与 config 一并作为覆盖层合并
+    for k in ("host", "port", "username", "password"):
+        if item.get(k) is not None:
+            overlay[k] = item[k]
+    enabled = bool(item["enabled"]) if item.get("enabled") is not None else None
+    name, dtype, created = core.upsert_downloader(
+        did=did or None,
+        name=item.get("name") or "",
+        dtype=item.get("type") or "",
+        config_overlay=overlay,
         enabled=enabled,
-        dtype=dtype,
-        transfer=item.get("transfer", 0),
-        only_nexus_media=item.get("only_nexus_media", 0),
-        match_path=0,
-        rmt_mode="",
-        config=merged,
-        download_dir=[],
+        is_default=bool(item.get("is_default")),
     )
-    if item.get("is_default"):
-        try:
-            fresh = core.get_downloader_conf()
-            target = None
-            for k, v in (fresh or {}).items():
-                if v.get("name") == name:
-                    target = k
-                    break
-            if target:
-                core.set_default_downloader_id(str(target))
-        except Exception:  # noqa: BLE001, S110
-            pass  # 设默认失败不阻断新增
-    return f"已新增下载器「{name}」({dtype})"
+    if created:
+        return f"已新增下载器「{name}」({dtype})"
+    return "下载器配置已更新"
 
 
 def _apply_message_client(ctx: ToolContext, item: dict) -> str:
-    svc = ctx.message_client_service
-    svc.upsert_client(
+    save_message_client(
+        svc=ctx.message_client_service,
         name=item["name"],
-        cid=int(item.get("cid") or 0),
         ctype=item["type"],
-        config=json.dumps(item["config"], ensure_ascii=False),
-        switches="",
-        interactive=0,
-        enabled=1 if item.get("enabled", True) else 0,
-        templates="",
+        config=item["config"],
+        cid=int(item.get("cid") or 0),
+        enabled=bool(item.get("enabled", True)),
     )
     return "消息渠道已保存"
 
 
 def _apply_plugin(ctx: ToolContext, item: dict) -> str:
-    svc = ctx.plugin_framework_service
     action = item["action"]
-    if action == "enable":
-        svc.enable(item["plugin_id"])
-    elif action == "disable":
-        svc.disable(item["plugin_id"])
-    else:
-        svc.save_config(item["plugin_id"], item.get("config") or {})
+    apply_plugin_action(ctx.plugin_framework_service, item["plugin_id"], action, item.get("config") or {})
     action_cn = {"enable": "启用", "disable": "禁用"}.get(action, "更新配置")
     return f"插件已{action_cn}"
 
 
 def _apply_mediaserver(ctx: ToolContext, item: dict) -> str:
     svc = ctx.media_server_config_service
-    info = svc.get_media_servers_info()
-    current = (info.get("servers") or {}).get(item["name"]) or {}
-    if not current:
-        raise RuntimeError(f"媒体服务器不存在: {item['name']}")
-    merged = dict(current.get("config") or {})
-    # 合并连接字段 + 顶层启停/默认开关（enabled/is_default 属于媒体服务器配置字段）
-    for k in ("enabled", "is_default"):
-        if item.get(k) is not None:
-            merged[k] = 1 if item[k] else 0
-    merged.update({k: v for k, v in item["config"].items() if v is not None})
-    result = svc.save_config({"type": item["name"], **merged})
-    if not getattr(result, "success", True):
-        raise RuntimeError(getattr(result, "msg", "保存失败"))
+    svc.apply_config(
+        name=item["name"],
+        config_overlay=item["config"],
+        enabled=bool(item["enabled"]) if item.get("enabled") is not None else None,
+        is_default=bool(item["is_default"]) if item.get("is_default") is not None else None,
+    )
     return "媒体服务器配置已更新"
 
 
 def _apply_indexer(ctx: ToolContext, item: dict) -> str:
-    svc = ctx.indexer_config_service
-    existing = {}
-    try:
-        cur = svc.get_config(item["client_id"])
-        if cur:
-            existing = cur.get("config") or {}
-    except Exception:  # noqa: BLE001
-        existing = {}
-    merged = dict(existing)
-    merged.update({k: v for k, v in (item.get("config") or {}).items() if v is not None})
-    data = {"type": item["client_id"], "enabled": 1 if item.get("enabled", True) else 0}
-    for k, v in merged.items():
-        data[f"{item['client_id']}.{k}"] = v
-    result = svc.save_config(data)
-    if not getattr(result, "success", True):
-        raise RuntimeError(getattr(result, "msg", "保存失败"))
+    save_indexer_config(
+        svc=ctx.indexer_config_service,
+        client_id=item["client_id"],
+        enabled=bool(item.get("enabled", True)),
+        config=item.get("config"),
+    )
     return "索引器配置已保存"
 
 
@@ -347,8 +286,3 @@ def _is_known_leaf(key: str) -> bool:
             return False
         cur = cur[part]
     return isinstance(cur, dict) and parts[-1] in cur
-
-
-HANDLERS = {
-    "config_apply_manifest": config_apply_manifest,
-}

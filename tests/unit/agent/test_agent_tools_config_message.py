@@ -208,6 +208,54 @@ class _DownloaderCore:
         self.default = did
         return True
 
+    def upsert_downloader(self, did=None, name="", dtype="", config_overlay=None, enabled=None, is_default=False):
+        did = int(did or 0) or None
+        if did:
+            current = self.confs.get(str(did))
+            if not current:
+                raise ValueError(f"下载器不存在: {did}")
+            merged = dict(current.get("config") or {})
+            merged.update({k: v for k, v in (config_overlay or {}).items() if v is not None})
+            enabled_val = current.get("enabled") if enabled is None else (1 if enabled else 0)
+            self.update_downloader(
+                did=did,
+                name=name or current.get("name") or "",
+                enabled=enabled_val,
+                dtype=current.get("type") or "",
+                transfer=current.get("transfer", 0),
+                only_nexus_media=current.get("only_nexus_media", 0),
+                match_path=current.get("match_path", 0),
+                rmt_mode=current.get("rmt_mode", ""),
+                config=merged,
+                download_dir=current.get("download_dir") or [],
+            )
+            if is_default:
+                self.set_default_downloader_id(str(did))
+            return (name or current.get("name") or "", current.get("type") or "", False)
+        if not name or not dtype:
+            raise ValueError("新增下载器需提供 name 与 dtype")
+        merged = dict(config_overlay or {})
+        enabled_val = 1 if (enabled is None or enabled) else 0
+        self.update_downloader(
+            did=None,
+            name=name,
+            enabled=enabled_val,
+            dtype=dtype,
+            transfer=0,
+            only_nexus_media=0,
+            match_path=0,
+            rmt_mode="",
+            config=merged,
+            download_dir=[],
+        )
+        if is_default:
+            fresh = self.confs
+            for k, v in (fresh or {}).items():
+                if v.get("name") == name:
+                    self.set_default_downloader_id(str(k))
+                    break
+        return (name, dtype, True)
+
 
 _DL_CONFS = {
     "1": {
@@ -270,6 +318,18 @@ class _MediaServerSvc:
         from app.schemas.system import MediaServerConfigResultDTO
 
         return MediaServerConfigResultDTO(success=True, msg="ok")
+
+    def apply_config(self, name, config_overlay=None, enabled=None, is_default=None):
+        current = (self.servers or {}).get(name)
+        if not current:
+            raise ValueError(f"媒体服务器不存在: {name}")
+        merged = dict(current.get("config") or {})
+        if enabled is not None:
+            merged["enabled"] = 1 if enabled else 0
+        if is_default is not None:
+            merged["is_default"] = 1 if is_default else 0
+        merged.update({k: v for k, v in (config_overlay or {}).items() if v is not None})
+        self.save_config({"type": name, **merged})
 
 
 _MS = {

@@ -364,6 +364,71 @@ class DownloaderCore:
         self._refresh_all_factories()
         return ret
 
+    def upsert_downloader(
+        self,
+        did: int | None = None,
+        name: str = "",
+        dtype: str = "",
+        config_overlay: dict | None = None,
+        enabled: bool | None = None,
+        is_default: bool = False,
+    ) -> tuple[str, str, bool]:
+        """统一下载器新增/更新入口：合并现有配置并保留管理字段，供 Agent 工具与 manifest 复用.
+
+        did 有值→更新（name/type 缺省保留现状，enabled=None 保留现状）；
+        did 为空→新增（需 name 与 dtype）。is_default 时同步设为默认下载器。
+        返回 (显示名, 类型, 是否新增)；失败抛 ValueError（含“下载器不存在”等提示）。
+        """
+        did = int(did or 0) or None
+        if did:
+            current = self.get_downloader_conf(did=did) or {}
+            if not current:
+                raise ValueError(f"下载器不存在: {did}")
+            merged = dict(current.get("config") or {})
+            merged.update({k: v for k, v in (config_overlay or {}).items() if v is not None})
+            target_name = name or current.get("name") or ""
+            target_type = current.get("type") or ""
+            enabled_val = current.get("enabled") if enabled is None else (1 if enabled else 0)
+            self.update_downloader(
+                did=did,
+                name=target_name,
+                enabled=enabled_val,
+                dtype=target_type,
+                transfer=current.get("transfer", 0),
+                only_nexus_media=current.get("only_nexus_media", 0),
+                match_path=current.get("match_path", 0),
+                rmt_mode=current.get("rmt_mode", ""),
+                config=merged,
+                download_dir=current.get("download_dir") or [],
+            )
+            if is_default:
+                self.set_default_downloader_id(str(did))
+            return target_name, target_type, False
+
+        if not name or not dtype:
+            raise ValueError("新增下载器需提供 name 与 dtype（类型如 qbittorrent/transmission）")
+        merged = dict(config_overlay or {})
+        enabled_val = 1 if (enabled is None or enabled) else 0
+        self.update_downloader(
+            did=None,
+            name=name,
+            enabled=enabled_val,
+            dtype=dtype,
+            transfer=0,
+            only_nexus_media=0,
+            match_path=0,
+            rmt_mode="",
+            config=merged,
+            download_dir=[],
+        )
+        if is_default:
+            fresh = self.get_downloader_conf() or {}
+            for k, v in fresh.items():
+                if v.get("name") == name:
+                    self.set_default_downloader_id(str(k))
+                    break
+        return name, dtype, True
+
     def delete_downloader(self, did):
         ret = self._download_core.delete_downloader(did=did)
         self._refresh_all_factories()

@@ -3,6 +3,7 @@
 import log
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
+from app.agent.tools.handlers._config_ops import apply_plugin_action
 
 
 def plugin_list(ctx: ToolContext, enabled_only: bool = False) -> ToolResult:
@@ -81,7 +82,7 @@ def plugin_enable(ctx: ToolContext, plugin_id: str, confirmed: bool = False) -> 
             data={"action": "enable", "plugin_id": plugin_id, "message": f"启用插件「{name}」需确认"},
         )
     try:
-        ctx.plugin_framework_service.enable(plugin_id)
+        apply_plugin_action(ctx.plugin_framework_service, plugin_id, "enable")
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"启用插件失败: {e}")
     return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」已启用"})
@@ -99,7 +100,7 @@ def plugin_disable(ctx: ToolContext, plugin_id: str, confirmed: bool = False) ->
             data={"action": "disable", "plugin_id": plugin_id, "message": f"禁用插件「{name}」需确认"},
         )
     try:
-        ctx.plugin_framework_service.disable(plugin_id)
+        apply_plugin_action(ctx.plugin_framework_service, plugin_id, "disable")
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"禁用插件失败: {e}")
     return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」已禁用"})
@@ -119,7 +120,7 @@ def plugin_config_save(ctx: ToolContext, plugin_id: str, config: dict, confirmed
             data={"action": "config_save", "plugin_id": plugin_id, "message": f"保存插件「{name}」配置需确认"},
         )
     try:
-        ctx.plugin_framework_service.save_config(plugin_id, config)
+        apply_plugin_action(ctx.plugin_framework_service, plugin_id, "config", config)
     except Exception as e:  # noqa: BLE001
         return ToolResult(success=False, error=f"保存插件配置失败: {e}")
     return ToolResult(success=True, data={"plugin_id": plugin_id, "message": f"插件「{name}」配置已保存"})
@@ -134,13 +135,3 @@ def _plugin_name(ctx: ToolContext, plugin_id: str) -> str | None:
     if not manifest:
         return None
     return getattr(manifest, "name", None) or plugin_id
-
-
-HANDLERS = {
-    "plugin_list": plugin_list,
-    "plugin_info": plugin_info,
-    "plugin_run": plugin_run,
-    "plugin_enable": plugin_enable,
-    "plugin_disable": plugin_disable,
-    "plugin_config_save": plugin_config_save,
-}
