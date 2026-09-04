@@ -11,7 +11,13 @@ from app.infrastructure.cache_system import TokenCache, get_cache_manager
 from app.message import Message
 from app.message.commands import COMMANDS
 from app.schemas.system import SendMessageResultDTO
+from app.services.rbac.init.constants import DEFAULT_PERMISSIONS
 from app.utils.json_utils import JsonUtils
+
+# webhook/IM 交互渠道经 apikey+IP 白名单认证后视为全权渠道：
+# 不再以 user_permissions=None 跳过 RBAC（fail-open），而是显式授予全部权限码，
+# 让工具/命令的权限校验始终生效（后续可在入口处按渠道收紧）。
+_TRUSTED_CHANNEL_PERMISSIONS = [p["code"] for p in DEFAULT_PERMISSIONS]
 
 
 class MessageClientService:
@@ -187,7 +193,8 @@ class MessageCommandHandler:
 
     _SEARCH_COMMAND_PREFIXES = ("/rss", "/ssa", "订阅", "搜索", "下载")
 
-    # 管理类命令所需权限（Web 内置消息页按用户权限执行；TG/WX webhook 不传权限时不受限）
+    # 管理类命令所需权限（Web 内置消息页按用户权限执行；webhook/IM 渠道在入口处
+    # 显式授予全权限后同样经此处校验，避免“不传权限即放行”的旁路）
     _COMMAND_PERMISSIONS: dict[str, str] = {
         "/udt": "setting:update",
         "/clr": "setting:update",
@@ -199,7 +206,7 @@ class MessageCommandHandler:
     }
 
     def _check_command_permission(self, command: str, user_permissions: list[str] | None) -> bool:
-        """命令权限校验：user_permissions 为 None（webhook 渠道，发送方已认证）时放行"""
+        """命令权限校验：user_permissions 由调用方显式传入（web=用户权限，webhook/IM=全权限）"""
         if user_permissions is None:
             return True
         required = self._COMMAND_PERMISSIONS.get(command)
@@ -226,9 +233,12 @@ class MessageCommandHandler:
     def handle_message_job(
         self, msg, in_from: SearchType | str = SearchType.OT, user_id=None, user_name=None, user_permissions=None
     ):
-        """处理消息事件（user_permissions: Web 用户权限列表，None=webhook 渠道放行）"""
+        """处理消息事件（user_permissions: Web 用户权限列表，None=webhook/IM 渠道）"""
         if not msg:
             return
+
+        # webhook/IM 渠道：显式授予全权限（取代旧的“None=跳过校验”），保证 RBAC 始终生效
+        permissions = user_permissions if user_permissions is not None else list(_TRUSTED_CHANNEL_PERMISSIONS)
 
         if self._event_bus:
             self._event_bus.publish(
@@ -242,7 +252,7 @@ class MessageCommandHandler:
 
         # 搜索/订阅类命令（含中文"订阅"、"搜索"、"下载"及 /rss、/ssa）直接交给搜索服务
         if self._is_search_command(msg):
-            if not self._check_search_permission(msg, user_permissions):
+            if not self._check_search_permission(msg, permissions):
                 if self._message:
                     self._message.send_channel_msg(
                         channel=in_from, title="权限不足，无法执行该操作", user_id=user_id or ""
@@ -252,12 +262,12 @@ class MessageCommandHandler:
                 self._message.send_channel_msg(channel=in_from, title="正在搜索/订阅，请稍候...", user_id=user_id or "")
             TokenCache.delete("search")
             if self._search_handler and self._thread_executor:
-                self._thread_executor.submit(self._search_handler.handle, msg, in_from, user_id, user_name)
+                self._thread_executor.submit(self._search_handler.handle, msg, in_from, user_id, user_name, permissions)
             return
 
         command = self._command_map.get(msg)
         if command:
-            if not self._check_command_permission(msg, user_permissions):
+            if not self._check_command_permission(msg, permissions):
                 if self._message:
                     self._message.send_channel_msg(
                         channel=in_from,
@@ -291,7 +301,7 @@ class MessageCommandHandler:
 
         TokenCache.delete("search")
         if self._search_handler and self._thread_executor:
-            self._thread_executor.submit(self._search_handler.handle, msg, in_from, user_id, user_name)
+            self._thread_executor.submit(self._search_handler.handle, msg, in_from, user_id, user_name, permissions)
             if self._message:
                 self._message.send_channel_msg(channel=in_from, title="正在处理，请稍候...", user_id=user_id or "")
 

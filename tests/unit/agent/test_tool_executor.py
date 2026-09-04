@@ -166,6 +166,6 @@ class TestDispatch:
     def test_memory_clear_with_store(self):
         store = MagicMock()
         executor = ToolExecutor(ctx=_ctx(conversation_store=store))
-        result = executor.execute("memory_clear", {}, session_id="s1", user_id="u1")
+        result = executor.execute("memory_clear", {}, session_id="s1", user_id="u1", channel="Telegram")
         assert result.success
-        store.clear_session.assert_called_once_with(session_id="s1", user_id="u1")
+        store.clear_session.assert_called_once_with(session_id="s1", user_id="u1", channel="Telegram")

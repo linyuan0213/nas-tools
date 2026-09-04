@@ -39,7 +39,7 @@ class ConversationStore:
         conv = self._repo.get(key.user_id, key.channel, key.session_id)
         if not conv:
             return []
-        rows = self._repo.get_messages(conv.ID)
+        rows = self._repo.get_messages_latest(conv.ID)
         messages = [
             {
                 "role": r.ROLE,

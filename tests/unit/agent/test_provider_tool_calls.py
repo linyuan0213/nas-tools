@@ -3,6 +3,8 @@
 from typing import Any, cast
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.agent.providers.base import (
     BaseProvider,
     ChatToolResponse,
@@ -100,12 +102,12 @@ class TestOpenAIProviderNative:
         assert not resp.has_tool_calls
         assert resp.content == "直接回答"
 
-    def test_native_failure_falls_back(self):
+    def test_native_failure_raises_for_fallback_chain(self):
         p = self._openai({})
         cast(Any, p._client).chat.completions.create.side_effect = RuntimeError("网络错误")
-        resp = p.chat_with_tools(messages=[], tools=[{"name": "t"}], system_prompt="")
-        # 回退到 prompt 协议（mock 的 create 再次抛错 → 空内容，但流程不炸）
-        assert isinstance(resp, ChatToolResponse)
+        # 不吞错：交给 AgentService 故障转移链切换备用 Provider
+        with pytest.raises(RuntimeError):
+            p.chat_with_tools(messages=[], tools=[{"name": "t"}], system_prompt="")
 
 
 class TestBaseEmbeddingProviderCompat:
@@ -180,8 +182,9 @@ class TestOpenAIReasoning:
         )
         mock = cast(Any, p._client).chat.completions.create
         mock.side_effect = err
-        # chat() 会吞掉错误返回空串，但必须不触发剥离重试（call_count 保持 1）
-        assert p.chat(messages=[{"role": "user", "content": "hi"}], reasoning=ReasoningConfig(effort="low")) == ""
+        # chat() 不再吞错（否则 fallback 链失效且空结果会被缓存）；400 非推理相关不触发剥离重试
+        with pytest.raises(APIStatusError):
+            p.chat(messages=[{"role": "user", "content": "hi"}], reasoning=ReasoningConfig(effort="low"))
         assert mock.call_count == 1
 
     def test_unsupported_model_negatively_cached(self):
@@ -192,7 +195,9 @@ class TestOpenAIReasoning:
             "400", response=MagicMock(status_code=400), body={"error": {"message": "reasoning_effort not supported"}}
         )
         mock = cast(Any, p._client).chat.completions.create
-        mock.side_effect = [err, MagicMock()]
+        resp = mock.return_value
+        # 三次调用：首次 400（剥离后成功）、缓存模型后再次成功
+        mock.side_effect = [err, resp, resp]
         p.chat(messages=[{"role": "user", "content": "hi"}], reasoning=ReasoningConfig(effort="low"))
         assert mock.call_count == 2
         p.chat(messages=[{"role": "user", "content": "hi"}], reasoning=ReasoningConfig(effort="low"))

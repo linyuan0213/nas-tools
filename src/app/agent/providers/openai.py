@@ -85,9 +85,10 @@ class OpenAIProvider(BaseProvider):
             resp = self._create(kwargs)
             return resp.choices[0].message.content
         except Exception as e:
+            # 不吞错：上抛以便 AgentService 故障转移链切换备用 Provider（否则空结果还会被缓存）
             err_msg = self._format_error(e)
             log.warn(f"[OpenAIProvider]请求失败: {err_msg}")
-            return ""
+            raise
 
     def _create(self, kwargs: dict[str, Any]) -> Any:
         """发起补全请求；模型不支持推理参数时剥离 reasoning 后重试一次（并记忆该模型）"""

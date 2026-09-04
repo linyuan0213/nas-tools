@@ -11,6 +11,13 @@ class ChatPort(Protocol):
         """对话能力是否可用"""
         ...
 
-    def chat_with_tools(self, question: str, session_id: str = "") -> str:
-        """带工具调用的对话"""
+    def chat_with_tools(
+        self,
+        question: str,
+        session_id: str = "",
+        channel: str = "web",
+        user_id: str = "",
+        user_permissions: list[str] | None = None,
+    ) -> str:
+        """带工具调用的对话（channel/user_permissions 由调用方按渠道语义传入）"""
         ...

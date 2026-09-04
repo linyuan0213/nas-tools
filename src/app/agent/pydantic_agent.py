@@ -35,17 +35,19 @@ from pydantic_ai.messages import (
 from pydantic_ai.models import Model, ModelRequestParameters
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.tools import Tool
+from pydantic_ai.usage import UsageLimits
 
 import log
 from app.agent.agents.memory import ConversationStore, MemoryKey, SemanticMemory, extract_facts
 from app.agent.config import get_provider
 from app.agent.providers.base import TOOL_RULES_PROMPT, ReasoningConfig
-from app.agent.sanitize import sanitize
+from app.agent.sanitize import sanitize, sanitize_dict
 from app.core.settings import settings
 from app.utils.json_utils import JsonUtils
 
 _CONFIRM_MARKER = "__need_confirm__"
 _CHECKPOINT_MAX = 4000  # checkpoint 消息历史长度上限
+_TOOL_RESULT_MAX_CHARS = 20000  # 单次工具结果回传模型的最大字符数（防塞爆上下文）
 # checkpoint JSON → pydantic-ai 消息重建（带 kind 判别）
 _CHECKPOINT_TA = TypeAdapter(list[ModelMessage])
 
@@ -105,7 +107,8 @@ class NexusModel(Model):
             self._svc.chat_tool_calls,
             project_messages,
             self._tools,
-            TOOL_RULES_PROMPT,
+            # Agent(system_prompt=TOOL_RULES_PROMPT) 已把规则注入消息历史，这里不再重复前置
+            "",
             0.7,
             self.on_token,
             # 仅第一步的推理实时透传（后续步骤不重复展示）
@@ -174,7 +177,7 @@ def _schema_field(props: dict) -> tuple[Any, Any]:
 
 
 class PydanticChatAgent:
-    """pydantic-ai 多步工具对话引擎（对外方法与 ChatAgent 一致）"""
+    """pydantic-ai 多步工具对话引擎（对外行为对齐原 ChatAgent，供 ChatPort/autosignin 等复用）"""
 
     def __init__(
         self,
@@ -249,7 +252,9 @@ class PydanticChatAgent:
 
     # ------------------------------------------------------------------ 工具包装
 
-    def _make_tool(self, schema: dict, session_id: str, user_id: str, user_permissions: list[str] | None) -> Tool:
+    def _make_tool(
+        self, schema: dict, session_id: str, user_id: str, user_permissions: list[str] | None, channel: str = ""
+    ) -> Tool:
         name = schema["name"]
         params_schema = schema.get("parameters") or {}
         props = params_schema.get("properties") or {}
@@ -264,7 +269,8 @@ class PydanticChatAgent:
         async def _run(args):  # type: ignore[no-untyped-def]
             raw = args.model_dump() if hasattr(args, "model_dump") else {}
             arguments = {k: v for k, v in raw.items() if v is not None}
-            log.info(sanitize(f"[PydanticAgent]调用工具: {name}({arguments})"))
+            safe_arguments = sanitize_dict(arguments)
+            log.info(f"[PydanticAgent]调用工具: {name}({JsonUtils.dumps(safe_arguments)})")
             result = self._tool_executor.execute(
                 name,
                 arguments,
@@ -272,26 +278,32 @@ class PydanticChatAgent:
                 session_id=session_id,
                 user_id=user_id,
                 user_permissions=user_permissions,
+                channel=channel,
             )
+            safe_data = sanitize_dict(result.data)
             payload: dict[str, Any] = {
                 "success": result.success,
-                "data": result.data,
-                "error": result.error,
+                "data": safe_data,
+                "error": sanitize(result.error) if result.error else None,
                 "need_confirm": result.need_confirm,
             }
             if result.need_confirm:
                 payload[_CONFIRM_MARKER] = True
-                payload["message"] = result.data
+                payload["message"] = safe_data
             elif self._memory:
-                note = JsonUtils.dumps(result.data, ensure_ascii=False) if result.data else (result.error or "")
+                note = JsonUtils.dumps(safe_data, ensure_ascii=False) if safe_data else (result.error or "")
                 self._memory.append_tool_trace(
-                    MemoryKey(user_id=user_id or session_id, channel="web", session_id=session_id),
+                    MemoryKey(user_id=user_id or session_id, channel=channel, session_id=session_id),
                     name,
-                    arguments,
+                    safe_arguments,
                     result.success,
                     note[:500],
                 )
-            return JsonUtils.dumps(payload, ensure_ascii=False)
+            text = JsonUtils.dumps(payload, ensure_ascii=False)
+            # 结果过大截断，避免多次工具调用后把模型上下文塞爆（需确认的小载荷不截断）
+            if not result.need_confirm and len(text) > _TOOL_RESULT_MAX_CHARS:
+                text = text[:_TOOL_RESULT_MAX_CHARS] + '..."[结果过大已截断]"'
+            return text
 
         # 手工注解：直接用模型对象（闭包变量无法被 get_type_hints 按名解析）
         _run.__annotations__ = {"args": param_model, "return": str}
@@ -306,6 +318,7 @@ class PydanticChatAgent:
         user_permissions: list[str] | None,
         on_token: Callable[[str], None] | None = None,
         reasoning: ReasoningConfig | None = None,
+        channel: str = "",
     ) -> Agent:
         self._on_token = on_token
         if not get_provider():
@@ -319,7 +332,7 @@ class PydanticChatAgent:
             on_tool_call=self._on_tool_call,
             reasoning=reasoning,
         )
-        tools = [self._make_tool(s, session_id, user_id, user_permissions) for s in tools_schema]
+        tools = [self._make_tool(s, session_id, user_id, user_permissions, channel=channel) for s in tools_schema]
         return Agent(model=model, tools=tools, system_prompt=TOOL_RULES_PROMPT)
 
     # ------------------------------------------------------------------ 对话
@@ -384,14 +397,22 @@ class PydanticChatAgent:
                 log.warn(f"[PydanticAgent]长程记忆注入失败: {e}")
 
         try:
-            agent = self._build_agent(session_id, user_id, user_permissions, on_token=on_token, reasoning=reasoning)
+            agent = self._build_agent(
+                session_id,
+                user_id,
+                user_permissions,
+                on_token=on_token,
+                reasoning=reasoning,
+                channel=channel,
+            )
             # 恢复会话历史：多轮对话上下文（checkpoint 持久化的 pydantic-ai 消息）
-            message_history = self._load_checkpoint(session_id, user_id)
+            message_history = self._load_checkpoint(session_id, user_id, channel)
             result = asyncio.run(
                 agent.run(
                     question,
                     instructions=instructions or None,
                     message_history=message_history or None,
+                    usage_limits=self._usage_limits(),
                 )
             )
         except Exception as e:
@@ -430,11 +451,15 @@ class PydanticChatAgent:
                 elif isinstance(part, TextPart):
                     final_resp = part.content or ""
 
-        # 危险操作需确认：发出确认卡，返回空（由前端确认后重跑）
+        # 危险/需确认操作：Web 端发 confirm_required 事件由前端批准；
+        # 无事件流的渠道（IM/消息）无法就地确认，明确告知而不是把空回答伪装成“AI 出错”
         if need_confirm:
             if on_event:
                 on_event({"type": "confirm_required", **need_confirm})
-            final_resp = ""
+                final_resp = ""
+            else:
+                tip = need_confirm.get("message") or need_confirm.get("tool") or "工具调用"
+                final_resp = f"该操作需要二次确认：{tip}。消息渠道暂不支持确认，请在 Web 端 Agent 对话中确认执行。"
 
         # 持久化会话
         if self._memory:
@@ -444,7 +469,7 @@ class PydanticChatAgent:
 
         # checkpoint：持久化 pydantic-ai 消息历史（断点续跑/会话恢复）
         if not need_confirm:
-            self._checkpoint(session_id, user_id, result.all_messages())
+            self._checkpoint(session_id, user_id, channel, result.all_messages())
 
         # 异步抽取偏好记忆（不阻塞返回，同一用户仅一个待处理任务防积压）
         if self._long_term and self._extract_memory and final_resp:
@@ -474,18 +499,48 @@ class PydanticChatAgent:
         finally:
             self._pending_extractions.discard(user_id)
 
+    def _usage_limits(self) -> UsageLimits:
+        """单轮对话模型请求上限护栏（原 max_steps 配置此前未生效，实际退化为默认 50 次请求）.
+
+        max_steps 语义≈工具循环步数，每步约消耗一次模型请求 → request_limit = max_steps + 1。
+        """
+        steps = max(2, int(self._max_steps or 8))
+        return UsageLimits(request_limit=steps + 1)
+
     # ------------------------------------------------------------------ checkpoint
 
-    def _load_checkpoint(self, session_id: str, user_id: str) -> list[ModelMessage]:
+    @staticmethod
+    def _checkpoint_path(session_id: str, user_id: str, channel: str = "") -> Path:
+        """会话 checkpoint 文件路径（按用户+渠道隔离）.
+
+        web/默认渠道沿用旧命名（user_session.json）避免升级丢会话；
+        其它消息渠道（IM）单独命名，防止跨渠道上下文互串。
+        """
+        cp_dir = Path(settings.data_path) / "agent_checkpoints"
+        safe_user = re.sub(r"[^\w.:-]", "_", user_id or session_id or "anon")
+        safe_session = re.sub(r"[^\w.:-]", "_", session_id or "default")
+        if channel and channel != "web":
+            safe_channel = re.sub(r"[^\w.:-]", "_", channel)
+            return cp_dir / f"{safe_user}_{safe_channel}_{safe_session}.json"
+        return cp_dir / f"{safe_user}_{safe_session}.json"
+
+    def clear_checkpoint(self, session_id: str, user_id: str, channel: str = "") -> None:
+        """删除会话 checkpoint（随 /chat/clear、memory_clear 调用，保证“清空”真正生效）"""
+        try:
+            path = self._checkpoint_path(session_id, user_id, channel)
+            if path.exists():
+                path.unlink()
+                log.info(f"[PydanticAgent]已删除会话 checkpoint: {path.name}")
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[PydanticAgent]checkpoint 清理失败: {e}")
+
+    def _load_checkpoint(self, session_id: str, user_id: str, channel: str = "") -> list[ModelMessage]:
         """加载会话历史（checkpoint 持久化的 pydantic-ai 消息），恢复多轮对话上下文.
 
         修复：agent.run 之前不加载历史导致每次都是全新会话，"可以/继续"等指代上文的话无法理解。
         """
         try:
-            cp_dir = Path(settings.data_path) / "agent_checkpoints"
-            safe_user = re.sub(r"[^\w.:-]", "_", user_id or session_id or "anon")
-            safe_session = re.sub(r"[^\w.:-]", "_", session_id or "default")
-            path = cp_dir / f"{safe_user}_{safe_session}.json"
+            path = self._checkpoint_path(session_id, user_id, channel)
             if not path.exists():
                 return []
             data = JsonUtils.loads(path.read_text(encoding="utf-8"))
@@ -499,14 +554,11 @@ class PydanticChatAgent:
             log.warn(f"[PydanticAgent]checkpoint 加载失败（忽略，按新会话处理）: {e}")
             return []
 
-    def _checkpoint(self, session_id: str, user_id: str, messages: list) -> None:
+    def _checkpoint(self, session_id: str, user_id: str, channel: str, messages: list) -> None:
         """持久化 pydantic-ai 消息历史（会话恢复/断点续跑的输入快照）"""
         try:
-            cp_dir = Path(settings.data_path) / "agent_checkpoints"
-            cp_dir.mkdir(parents=True, exist_ok=True)
-            safe_user = re.sub(r"[^\w.:-]", "_", user_id or session_id or "anon")
-            safe_session = re.sub(r"[^\w.:-]", "_", session_id or "default")
-            path = cp_dir / f"{safe_user}_{safe_session}.json"
+            path = self._checkpoint_path(session_id, user_id, channel)
+            path.parent.mkdir(parents=True, exist_ok=True)
             blob = [m.model_dump(mode="json") if hasattr(m, "model_dump") else m for m in messages]
             path.write_text(
                 JsonUtils.dumps(

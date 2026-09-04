@@ -7,9 +7,11 @@ import inspect
 from collections.abc import Callable
 
 import log
+from app.agent.sanitize import sanitize
 from app.agent.tools.base import ToolLevel, ToolRegistry, ToolResult
 from app.agent.tools.catalog import BUILTIN_TOOLS, HANDLERS
 from app.agent.tools.context import ToolContext
+from app.utils.json_utils import JsonUtils
 
 
 class ToolExecutor:
@@ -38,6 +40,7 @@ class ToolExecutor:
         session_id: str = "",
         user_id: str = "",
         user_permissions: list[str] | None = None,
+        channel: str = "",
     ) -> ToolResult:
         check = self._registry.validate(tool_name, arguments)
         if not check.success:
@@ -55,20 +58,27 @@ class ToolExecutor:
                 need_confirm=True,
                 data={"tool": tool_name, "arguments": args, "message": f"危险操作需确认：{tool.description}"},
             )
-        kwargs = self._build_kwargs(handler, args, confirmed, session_id, user_id)
+        kwargs = self._build_kwargs(handler, args, confirmed, session_id, user_id, channel)
         try:
-            log.info(f"[ToolExecutor]执行工具: {tool_name}({args})")
+            log.info(f"[ToolExecutor]执行工具: {tool_name}({sanitize(JsonUtils.dumps(args))})")
             return handler(self._ctx, **kwargs)
         except Exception as e:
             log.error(f"[ToolExecutor]工具 {tool_name} 执行失败: {e}")
             return ToolResult(success=False, error=f"执行失败: {e}")
 
     @staticmethod
-    def _build_kwargs(handler: Callable, args: dict, confirmed: bool, session_id: str, user_id: str) -> dict:
-        """按 handler 签名注入保留参数（confirmed/session_id/user_id）"""
+    def _build_kwargs(
+        handler: Callable, args: dict, confirmed: bool, session_id: str, user_id: str, channel: str
+    ) -> dict:
+        """按 handler 签名注入保留参数（confirmed/session_id/user_id/channel）"""
         kwargs = dict(args)
         params = inspect.signature(handler).parameters
-        for key, value in {"confirmed": confirmed, "session_id": session_id, "user_id": user_id}.items():
+        for key, value in {
+            "confirmed": confirmed,
+            "session_id": session_id,
+            "user_id": user_id,
+            "channel": channel,
+        }.items():
             if key in params:
                 kwargs[key] = value
         return kwargs

@@ -65,7 +65,7 @@ class AgentService:
     @property
     def chat_agent(self) -> PydanticChatAgent:
         if self._chat_agent is None:
-            raise RuntimeError("ChatAgent 未初始化（需 DI 调用 init_chat_agent）")
+            raise RuntimeError("Agent 对话引擎未初始化（需 DI 调用 init_chat_agent）")
         return self._chat_agent
 
     @property
@@ -259,9 +259,22 @@ class AgentService:
             log.warn(f"[AgentService]查询模型列表失败: {e}")
             return []
 
-    def chat_with_tools(self, question: str, session_id: str = "") -> str:
+    def chat_with_tools(
+        self,
+        question: str,
+        session_id: str = "",
+        channel: str = "web",
+        user_id: str = "",
+        user_permissions: list[str] | None = None,
+    ) -> str:
         """ChatPort 实现 — 委托 ChatAgent（惰性解析，保证 tool_executor 已注入）"""
-        return self.chat_agent.chat_with_tools(question=question, session_id=session_id)
+        return self.chat_agent.chat_with_tools(
+            question=question,
+            session_id=session_id,
+            channel=channel,
+            user_id=user_id,
+            user_permissions=user_permissions,
+        )
 
     def is_available(self) -> bool:
         """检查当前提供商是否可用"""

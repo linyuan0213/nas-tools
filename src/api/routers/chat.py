@@ -47,7 +47,7 @@ def agent_chat(
     user=Depends(require_permission("agent:view")),
     ctx: AppContext = Depends(get_app_context),
 ):
-    """SSE 流式对话：事件类型 tool_call / tool_result / answer / error"""
+    """SSE 流式对话：事件类型 reasoning / token / tool_call / tool_result / confirm_required / answer / error"""
     if not req.question.strip():
         return fail(msg="问题不能为空")
     agent_service = ctx.agent_service
@@ -101,10 +101,12 @@ def agent_chat_confirm(
     user=Depends(require_permission("agent:manage")),
     ctx: AppContext = Depends(get_app_context),
 ):
-    """确认并执行危险操作（chat 流程中 need_confirm 后的批准入口）"""
+    """确认并执行需要确认的工具（dangerous 或声明了确认分支的 write 工具）"""
     schema = ctx.tool_executor.get_schema(req.tool)
-    if not schema or schema.get("level") != "dangerous":
-        return fail(msg="仅支持确认危险操作工具")
+    # write/dangerous 均可确认：write 工具内部的 confirmed 分支经此处批准后执行，
+    # 避免“请求确认后永远无法批准”的死锁（read 工具无需确认，直接拒绝）
+    if not schema or schema.get("level") not in ("write", "dangerous"):
+        return fail(msg="仅支持需确认的 write/dangerous 工具")
     result = ctx.tool_executor.execute(
         req.tool,
         req.arguments,
@@ -151,10 +153,14 @@ def agent_chat_clear(
     user=Depends(require_permission("agent:view")),
     ctx: AppContext = Depends(get_app_context),
 ):
-    """清空会话记忆"""
+    """清空会话记忆（DB+缓存+checkpoint 一并清除，保证“清空”真正生效）"""
     conversation_store = ctx.conversation_store
     if conversation_store is None:
         return fail(msg="记忆存储未启用")
     session_id = req.session_id or f"web:{user.user_id}"
-    conversation_store.clear_session(session_id=session_id, user_id=str(user.user_id), channel="web")
+    user_id = str(user.user_id)
+    conversation_store.clear_session(session_id=session_id, user_id=user_id, channel="web")
+    chat_agent = getattr(ctx.agent_service, "chat_agent", None)
+    if chat_agent is not None and hasattr(chat_agent, "clear_checkpoint"):
+        chat_agent.clear_checkpoint(session_id=session_id, user_id=user_id, channel="web")
     return success(data={"cleared": True})

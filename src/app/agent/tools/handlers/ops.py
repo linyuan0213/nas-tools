@@ -1,5 +1,6 @@
 """媒体库 / 整理 / 调度 / 系统 / 记忆工具 handler"""
 
+from app.agent.pydantic_agent import PydanticChatAgent
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
 from app.domain.mediatypes import MediaType
@@ -205,10 +206,12 @@ def storage_status(ctx: ToolContext) -> ToolResult:
     return ToolResult(success=True, data={"total": len(items), "items": items})
 
 
-def memory_forget(ctx: ToolContext, text: str, user_id: str = "") -> ToolResult:
+def memory_forget(ctx: ToolContext, text: str, session_id: str = "", user_id: str = "") -> ToolResult:
     if ctx.semantic_memory is None:
         return ToolResult(success=False, error="长程语义记忆未启用")
-    deleted = ctx.semantic_memory.forget(user_id or "web", text)
+    # 命名空间与抽取保持一致：优先 user_id/session_id，匿名回退 anon（与抽取端一致）
+    uid = user_id or session_id or "anon"
+    deleted = ctx.semantic_memory.forget(uid, text)
     return ToolResult(
         success=True,
         data={
@@ -218,25 +221,18 @@ def memory_forget(ctx: ToolContext, text: str, user_id: str = "") -> ToolResult:
     )
 
 
-def memory_clear(ctx: ToolContext, session_id: str = "", user_id: str = "") -> ToolResult:
+def memory_clear(ctx: ToolContext, session_id: str = "", user_id: str = "", channel: str = "") -> ToolResult:
     if ctx.conversation_store is None:
         return ToolResult(success=False, error="记忆存储未启用")
-    ctx.conversation_store.clear_session(session_id=session_id, user_id=user_id)
+    target_channel = channel or "web"
+    ctx.conversation_store.clear_session(
+        session_id=session_id, user_id=user_id or session_id or "anon", channel=target_channel
+    )
+    # 同时删除会话 checkpoint（pydantic-ai 消息历史快照），否则下一轮仍会恢复旧上下文
+    try:
+        path = PydanticChatAgent._checkpoint_path(session_id, user_id or session_id or "anon", target_channel)
+        if path.exists():
+            path.unlink()
+    except Exception as e:  # noqa: BLE001
+        return ToolResult(success=False, error=f"清理会话失败: {e}")
     return ToolResult(success=True, data={"cleared": True})
-
-
-HANDLERS = {
-    "library_check": library_check,
-    "transfer_run": transfer_run,
-    "scheduler_list": scheduler_list,
-    "scheduler_run": scheduler_run,
-    "system_status": system_status,
-    "stats_summary": stats_summary,
-    "transfer_history": transfer_history,
-    "kb_status": kb_status,
-    "indexer_status": indexer_status,
-    "torrent_remover_status": torrent_remover_status,
-    "storage_status": storage_status,
-    "memory_clear": memory_clear,
-    "memory_forget": memory_forget,
-}

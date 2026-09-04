@@ -54,6 +54,7 @@ class AgentConversationRepository(BaseRepository):
             )
 
     def get_messages(self, conversation_id: int, limit: int = 50) -> list[AGENTMESSAGE]:
+        """返回最早 limit 条消息（升序）——供滚动摘要归档使用"""
         with self.session() as db:
             return (
                 db.query(AGENTMESSAGE)
@@ -62,6 +63,19 @@ class AgentConversationRepository(BaseRepository):
                 .limit(limit)
                 .all()
             )
+
+    def get_messages_latest(self, conversation_id: int, limit: int = 50) -> list[AGENTMESSAGE]:
+        """返回最近 limit 条消息（内部按最新优先取数，返回升序），避免长会话取到最旧记录"""
+        with self.session() as db:
+            rows = (
+                db.query(AGENTMESSAGE)
+                .filter(AGENTMESSAGE.CONVERSATION_ID == conversation_id)
+                .order_by(AGENTMESSAGE.ID.desc())
+                .limit(limit)
+                .all()
+            )
+            rows.reverse()
+            return rows
 
     def append_message(
         self, conversation_id: int, role: str, content: str, tokens: int = 0, tool_calls: dict | None = None

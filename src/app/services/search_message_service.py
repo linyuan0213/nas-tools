@@ -54,7 +54,14 @@ class MessageSearchService:
         self._message = message
         self._pagination = SearchPaginationManager(message=message)
 
-    def handle(self, input_str: str, in_from: SearchType, user_id: str, user_name: str | None = None):
+    def handle(
+        self,
+        input_str: str,
+        in_from: SearchType,
+        user_id: str,
+        user_name: str | None = None,
+        user_permissions: list[str] | None = None,
+    ):
         """处理消息中心输入"""
         if not input_str:
             return
@@ -71,7 +78,7 @@ class MessageSearchService:
             return
 
         # 文本输入
-        self._handle_text(input_str, in_from, user_id, user_name)
+        self._handle_text(input_str, in_from, user_id, user_name, user_permissions)
 
     def _handle_pagination(self, direction: str, in_from: SearchType, user_id: str):
         """处理分页导航"""
@@ -147,7 +154,14 @@ class MessageSearchService:
         self._downloader.download(media_info=media_info, in_from=in_from, user_name=user_name)
         self._pagination.clear_media_cache(user_id)
 
-    def _handle_text(self, input_str: str, in_from: SearchType, user_id: str, user_name: str | None = None):
+    def _handle_text(
+        self,
+        input_str: str,
+        in_from: SearchType,
+        user_id: str,
+        user_name: str | None = None,
+        user_permissions: list[str] | None = None,
+    ):
         """处理文本输入"""
         # 判断意图
         intent = self._parse_intent(input_str)
@@ -155,7 +169,7 @@ class MessageSearchService:
         if intent == "DOWNLOAD":
             self._download_from_url(input_str, in_from, user_id, user_name)
         elif intent == "ASK":
-            self._chat(input_str, in_from, user_id)
+            self._chat(input_str, in_from, user_id, user_permissions)
         elif intent == "SUBSCRIBE":
             content = re.sub(r"订阅[:：\s]*", "", input_str)
             if not content.strip():
@@ -210,14 +224,20 @@ class MessageSearchService:
         meta_info.set_torrent_info(enclosure=url)
         self._downloader.download(media_info=meta_info, torrent_file=filepath, in_from=in_from, user_name=user_name)
 
-    def _chat(self, question: str, in_from: SearchType, user_id: str):
+    def _chat(self, question: str, in_from: SearchType, user_id: str, user_permissions: list[str] | None = None):
         """AI 对话（支持工具调用）"""
         try:
-            answer = self._chat_port.chat_with_tools(question=question, session_id=str(user_id))
+            answer = self._chat_port.chat_with_tools(
+                question=question,
+                session_id=str(user_id),
+                channel=channel_key(in_from),
+                user_id=str(user_id),
+                user_permissions=user_permissions,
+            )
         except (ServiceError, RepositoryError, DomainError):
             raise
         except Exception as e:
-            log.error(f"[ChatAgent]对话异常: {e}")
+            log.error(f"[AgentChat]对话异常: {e}")
             answer = "AI出错了，请检查LLM配置，如需搜索电影/电视剧，请发送 搜索或下载 + 名称"
         if not answer:
             answer = "AI出错了，请检查LLM配置，如需搜索电影/电视剧，请发送 搜索或下载 + 名称"

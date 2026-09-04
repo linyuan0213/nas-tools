@@ -224,8 +224,23 @@ class TestPydanticChatAgent:
             ModelRequest(parts=[UserPromptPart(content="上一轮问题")]),
             ModelResponse(parts=[TextPart(content="上一轮回答")]),
         ]
-        agent._checkpoint("s4", "u4", history)
-        restored = agent._load_checkpoint("s4", "u4")
+        agent._checkpoint("s4", "u4", "web", history)
+        restored = agent._load_checkpoint("s4", "u4", "web")
         assert len(restored) == 2
         assert isinstance(restored[0], ModelRequest)
         assert isinstance(restored[1], ModelResponse)
+
+    def test_checkpoint_isolated_by_channel(self, tmp_path, monkeypatch):
+        """checkpoint 按渠道隔离：同一 user/session 不同渠道互不影响，且清理可删除"""
+        agent = PydanticChatAgent(svc=_FakeSvc(), tool_executor=_FakeExecutor())
+        from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+
+        history = [
+            ModelRequest(parts=[UserPromptPart(content="渠道A问题")]),
+            ModelResponse(parts=[TextPart(content="渠道A回答")]),
+        ]
+        agent._checkpoint("s5", "u5", "Telegram", history)
+        assert agent._load_checkpoint("s5", "u5", "web") == []
+        assert len(agent._load_checkpoint("s5", "u5", "Telegram")) == 2
+        agent.clear_checkpoint("s5", "u5", "Telegram")
+        assert agent._load_checkpoint("s5", "u5", "Telegram") == []
