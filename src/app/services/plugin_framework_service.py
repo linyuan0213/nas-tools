@@ -531,6 +531,16 @@ class PluginFrameworkService:
             threading.Thread(target=self._do_enable, args=(manifest.id,), daemon=True).start()
         return {"plugin_id": manifest.id, "name": manifest.name, "version": manifest.version}
 
+    def update_market_plugin(self, zip_bytes: bytes, plugin_id: str) -> dict:
+        """市场来源更新：卸载旧实例（配置保留）→ 装新版本 → 启用加载
+
+        PLUGIN_CONFIG 按 plugin_id 存储且安装不删除，配置天然跨版本保留。
+        """
+        sandbox = self._plugin_sandbox
+        if sandbox.get_plugin_instance(plugin_id) is not None:
+            sandbox.unload(plugin_id)
+        return self.install_market_plugin(zip_bytes, enabled=True)
+
     def _do_enable(self, plugin_id: str) -> None:
         """后台线程执行插件加载和初始化"""
         try:

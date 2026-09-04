@@ -116,7 +116,7 @@ class TestServiceAudit:
 
 
 class TestServiceInstall:
-    def _mk(self, pkg: bytes, expected_sha: str | None = None):
+    def _mk(self, pkg: bytes, expected_sha: str | None = None, updater=None):
         catalog = '{"market_version":"1.0","id":"m","plugins":[{"id":"demo","path":"plugins/demo.json"}]}'
         detail = (
             '{"id":"demo","name":"demo","version":"1.0.0",'
@@ -136,6 +136,7 @@ class TestServiceInstall:
             auditor=auditor,
             resolver=_fake_resolver,
             plugin_installer=installer,
+            plugin_updater=updater,
         )
         sid = svc.add_source("m", "https://a.example/catalog.json")["source_id"]
         svc.sync_source(sid)
@@ -167,7 +168,7 @@ class TestServiceInstall:
 
     def test_install_evil_blocked(self):
         pkg = _zip_bytes({"backend/x.py": "eval(input())\n"})
-        svc, sid, calls = self._mk(pkg, expected_sha=PluginPackageAuditor().sha256(pkg))
+        svc, sid, calls = self._mk(pkg)
         try:
             svc.install_plugin(sid, "demo")
         except ValueError as e:
@@ -175,3 +176,20 @@ class TestServiceInstall:
             assert calls == []
             return
         raise AssertionError("恶意包应被安装门禁拦截")
+
+    def test_update_uses_updater(self):
+        pkg = _zip_bytes(
+            {
+                "manifest.json": '{"id":"demo","version":"2.0.0","name":"demo"}',
+                "backend/main.py": "def ok():\n    return 1\n",
+            }
+        )
+        updated_calls = []
+        svc, sid, _ = self._mk(
+            pkg,
+            expected_sha=PluginPackageAuditor().sha256(pkg),
+            updater=lambda data, pid: updated_calls.append((data, pid)) or {"plugin_id": pid},
+        )
+        result = svc.update_plugin(sid, "demo")
+        assert result["updated"]["plugin_id"] == "demo"
+        assert updated_calls and updated_calls[0][1] == "demo"

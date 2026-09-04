@@ -90,6 +90,7 @@ class PluginMarketService:
         http_get_bytes: Callable[[str], bytes] | None = None,
         auditor: Any | None = None,
         plugin_installer: Callable[[bytes, bool], dict] | None = None,
+        plugin_updater: Callable[[bytes, str], dict] | None = None,
     ):
         self._store = store
         self._http_get = http_get or self._default_http_get
@@ -99,6 +100,7 @@ class PluginMarketService:
         self._detail_cache: dict[tuple[str, str], dict] = {}
         self._auditor: Any = auditor if auditor is not None else PluginPackageAuditor()
         self._plugin_installer = plugin_installer
+        self._plugin_updater = plugin_updater
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -357,6 +359,24 @@ class PluginMarketService:
             "sha256": self._auditor.sha256(data),
             "installed": installed,
             "quarantined": not enabled,
+        }
+
+    def update_plugin(self, source_id: str, plugin_id: str) -> dict:
+        """更新已装插件到市场最新版本（同样过审计门禁；配置保留，失败需回滚见后续）"""
+        detail = self.get_plugin_detail(source_id, plugin_id)
+        data = self._fetch_package(source_id, detail)
+        report = self._auditor.audit_bytes(data, str(detail.get("sha256") or ""))
+        if not report.passed:
+            findings = [f for f in report.to_dict()["findings"] if f["severity"] == "block"]
+            raise ValueError(f"更新被审计门禁拦截: {len(findings)} 项高危问题")
+        if self._plugin_updater is None:
+            raise ValueError("插件更新服务未接入")
+        updated = self._plugin_updater(data, plugin_id)
+        return {
+            "plugin_id": plugin_id,
+            "version": detail.get("version", ""),
+            "sha256": self._auditor.sha256(data),
+            "updated": updated,
         }
 
     def list_plugin_details(self, source_id: str, plugin_ids: list[str]) -> dict[str, dict]:

@@ -357,6 +357,11 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
             if plugin_framework_service
             else None
         ),
+        plugin_updater=(
+            (lambda data, plugin_id: plugin_framework_service.update_market_plugin(data, plugin_id))
+            if plugin_framework_service
+            else None
+        ),
     )
 
     storage_backend_service = StorageBackendService(

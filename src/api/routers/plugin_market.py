@@ -42,6 +42,11 @@ class MarketInstallRequest(BaseModel):
     enabled: bool = True  # False=隔离安装（仅落盘不启用）
 
 
+class MarketUpdateRequest(BaseModel):
+    source_id: str
+    plugin_id: str
+
+
 @router.get("/sources", response_model=CommonResponse, summary="市场源列表")
 def list_sources(
     _: str = Depends(require_any_permission("plugin:view", "plugin:manage")),
@@ -128,6 +133,20 @@ def install_plugin(
     """走审计门禁后安装（enabled=false 时隔离安装，仅落盘不启用）"""
     try:
         result = svc.install_plugin(source_id=req.source_id, plugin_id=req.plugin_id, enabled=req.enabled)
+    except ValueError as e:
+        return fail(msg=str(e))
+    return success(data=result)
+
+
+@router.post("/update", response_model=CommonResponse, summary="更新市场插件到最新")
+def update_plugin(
+    req: MarketUpdateRequest,
+    _: str = Depends(require_permission("plugin:manage")),
+    svc: PluginMarketService = Depends(get_plugin_market_service),
+):
+    """审计门禁通过后更新已装插件（配置保留）"""
+    try:
+        result = svc.update_plugin(source_id=req.source_id, plugin_id=req.plugin_id)
     except ValueError as e:
         return fail(msg=str(e))
     return success(data=result)
