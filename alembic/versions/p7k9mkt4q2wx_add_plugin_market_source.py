@@ -16,6 +16,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # 幂等：若表已存在（例如 init_db 的 create_all 先于 alembic 建表）则跳过，
+    # 避免重复建表/重复索引报错
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if inspector.has_table("PLUGIN_MARKET_SOURCE"):
+        return
     op.create_table(
         "PLUGIN_MARKET_SOURCE",
         sa.Column("ID", sa.Integer(), primary_key=True, autoincrement=True),
@@ -33,5 +39,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if not inspector.has_table("PLUGIN_MARKET_SOURCE"):
+        return
     op.drop_index("ix_plugin_market_source_source_id", table_name="PLUGIN_MARKET_SOURCE")
     op.drop_table("PLUGIN_MARKET_SOURCE")
