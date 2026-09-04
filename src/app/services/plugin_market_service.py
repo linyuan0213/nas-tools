@@ -1,0 +1,229 @@
+"""插件市场服务 — 市场源管理与目录索引同步（里程碑一核心逻辑）
+
+存储经 PluginMarketStore 抽象注入（后续由 DB 仓库实现，单测用内存实现）；
+HTTP 拉取经 http_get 注入（生产走应用 HttpClient，测试 mock），便于离线验证。
+"""
+
+import ipaddress
+import json
+import socket
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from urllib.parse import urlparse
+
+import httpx
+
+import log
+
+# 目录式市场索引（catalog.json）的最小必需字段
+_CATALOG_REQUIRED = ("market_version", "id", "plugins")
+_PLUGIN_ENTRY_REQUIRED = ("id", "path")
+
+
+@dataclass
+class MarketSource:
+    """市场源"""
+
+    name: str
+    url: str
+    enabled: bool = True
+    auto_update: bool = False
+    public_key: str = ""
+    last_sync_at: str = ""
+    last_error: str = ""
+    source_id: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "source_id": self.source_id or self.name,
+            "name": self.name,
+            "url": self.url,
+            "enabled": self.enabled,
+            "auto_update": self.auto_update,
+            "public_key": self.public_key,
+            "last_sync_at": self.last_sync_at,
+            "last_error": self.last_error,
+        }
+
+
+@dataclass
+class MarketCatalog:
+    """同步后的目录式索引缓存"""
+
+    source: MarketSource
+    meta: dict = field(default_factory=dict)
+    plugins: list[dict] = field(default_factory=list)  # [{id, path, updated_at}]
+    synced_at: float = 0.0
+    error: str = ""
+
+
+class PluginMarketStore:
+    """市场源存储抽象（DB 仓库或内存实现）"""
+
+    def list(self) -> list[MarketSource]:
+        raise NotImplementedError
+
+    def add(self, source: MarketSource) -> MarketSource:
+        raise NotImplementedError
+
+    def update(self, source: MarketSource) -> MarketSource:
+        raise NotImplementedError
+
+    def delete(self, source_id: str) -> bool:
+        raise NotImplementedError
+
+
+class PluginMarketService:
+    """插件市场服务：源 CRUD + catalog 拉取/校验/缓存"""
+
+    def __init__(
+        self,
+        store: PluginMarketStore,
+        http_get: Callable[[str], str] | None = None,
+        cache: dict[str, MarketCatalog] | None = None,
+        resolver: Callable[[str], list[str]] | None = None,
+    ):
+        self._store = store
+        self._http_get = http_get or self._default_http_get
+        self._resolver = resolver or self._default_resolve
+        self._catalog_cache: dict[str, MarketCatalog] = cache if cache is not None else {}
+
+    @staticmethod
+    def _default_resolve(hostname: str) -> list[str]:
+        return [str(info[4][0]).split("%")[0] for info in socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)]
+
+    # ------------------------------------------------------------ 工具
+
+    def _assert_public_http(self, url: str) -> None:
+        """仅允许公网 http(s)，拒绝私网/回环/链路本地/元数据地址（防 SSRF）"""
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            raise ValueError(f"仅支持 http(s) 市场源 URL: {url}")
+        try:
+            ips = self._resolver(parsed.hostname)
+        except socket.gaierror as e:
+            raise ValueError(f"市场源无法解析: {url}") from e
+        if not ips:
+            raise ValueError(f"市场源无法解析: {url}")
+        for ip_text in ips:
+            ip = ipaddress.ip_address(ip_text)
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+                or ip.is_unspecified
+                or ip == ipaddress.ip_address("169.254.169.254")
+                or ip == ipaddress.ip_address("169.254.169.253")
+            ):
+                raise ValueError(f"市场源指向内部网络，已拒绝: {url}")
+
+    def _default_http_get(self, url: str) -> str:
+        resp = httpx.get(url, timeout=30, follow_redirects=False)
+        resp.raise_for_status()
+        return resp.text
+
+    @staticmethod
+    def _validate_catalog(text: str) -> tuple[dict, list[dict]]:
+        """解析并校验 catalog.json，返回 (meta, plugins)；坏记录跳过"""
+        try:
+            data = json.loads(text)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"目录索引 JSON 解析失败: {e}") from e
+        if not isinstance(data, dict) or any(k not in data for k in _CATALOG_REQUIRED):
+            raise ValueError("目录索引缺少必需字段: market_version/id/plugins")
+        plugins = []
+        for entry in data.get("plugins") or []:
+            if not isinstance(entry, dict) or any(k not in entry for k in _PLUGIN_ENTRY_REQUIRED):
+                continue  # 坏记录跳过
+            plugins.append(
+                {
+                    "id": str(entry.get("id")),
+                    "path": str(entry.get("path")),
+                    "updated_at": entry.get("updated_at", ""),
+                }
+            )
+        return data, plugins
+
+    # ------------------------------------------------------------ 源管理
+
+    def list_sources(self) -> list[dict]:
+        return [s.to_dict() for s in self._store.list()]
+
+    def add_source(self, name: str, url: str, public_key: str = "") -> dict:
+        self._assert_public_http(url)
+        source = self._store.add(MarketSource(name=name, url=url, public_key=public_key))
+        return source.to_dict()
+
+    def update_source(self, source_id: str, **fields) -> dict:
+        sources = self._store.list()
+        target = next((s for s in sources if s.source_id == source_id), None)
+        if not target:
+            raise ValueError(f"市场源不存在: {source_id}")
+        if "url" in fields:
+            self._assert_public_http(str(fields["url"]))
+        for key in ("name", "url", "public_key", "enabled", "auto_update"):
+            if key in fields:
+                setattr(target, key, fields[key])
+        updated = self._store.update(target)
+        self._catalog_cache.pop(source_id, None)
+        return updated.to_dict()
+
+    def delete_source(self, source_id: str) -> bool:
+        self._catalog_cache.pop(source_id, None)
+        return self._store.delete(source_id)
+
+    # ------------------------------------------------------------ 目录同步
+
+    def sync_source(self, source_id: str) -> dict:
+        sources = self._store.list()
+        source = next((s for s in sources if s.source_id == source_id), None)
+        if not source:
+            raise ValueError(f"市场源不存在: {source_id}")
+        catalog = self._fetch_catalog(source)
+        if catalog.error:
+            raise ValueError(catalog.error)
+        return {
+            "source_id": source.source_id,
+            "meta": catalog.meta,
+            "plugin_count": len(catalog.plugins),
+            "synced_at": catalog.synced_at,
+        }
+
+    def _fetch_catalog(self, source: MarketSource) -> MarketCatalog:
+        try:
+            self._assert_public_http(source.url)
+            text = self._http_get(source.url)
+            meta, plugins = self._validate_catalog(text)
+            catalog = MarketCatalog(source=source, meta=meta, plugins=plugins, synced_at=time.time())
+            source.last_sync_at = str(catalog.synced_at)
+            source.last_error = ""
+            self._store.update(source)
+            self._catalog_cache[source.source_id] = catalog
+            return catalog
+        except Exception as e:  # noqa: BLE001
+            source.last_error = str(e)
+            try:
+                self._store.update(source)
+            except Exception:  # noqa: BLE001
+                log.warn("[PluginMarket]同步失败且记录状态出错，忽略")
+            log.warn(f"[PluginMarket]同步市场源失败 {source.name}: {e}")
+            return MarketCatalog(source=source, error=str(e))
+
+    def get_catalog(self, source_id: str) -> MarketCatalog | None:
+        """返回最近一次同步的目录缓存（未同步过返回 None）"""
+        return self._catalog_cache.get(source_id)
+
+    def list_catalog_plugins(self, source_id: str, keyword: str = "") -> list[dict]:
+        catalog = self.get_catalog(source_id)
+        if not catalog:
+            return []
+        keyword = (keyword or "").strip().lower()
+        items = []
+        for p in catalog.plugins:
+            if keyword and keyword not in f"{p.get('id')} {p.get('updated_at')}".lower():
+                continue
+            items.append({"source_id": source_id, **p})
+        return items
