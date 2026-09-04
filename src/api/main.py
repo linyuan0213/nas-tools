@@ -27,6 +27,7 @@ from api.routers import (
     media,
     message_webhook,
     plugin_framework,
+    plugin_market,
     rbac,
     rss_automation,
     scheduler,
@@ -210,6 +211,7 @@ app.include_router(brush.router, prefix="/api/brush", tags=["brush"])
 app.include_router(filter.router, prefix="/api/filter", tags=["filter"])
 app.include_router(scheduler.router, prefix="/api/scheduler", tags=["scheduler"])
 app.include_router(plugin_framework.router, prefix="/api/plugin-framework", tags=["plugin-framework"])
+app.include_router(plugin_market.router, prefix="/api/plugin/market", tags=["plugin-market"])
 app.include_router(rss_automation.router, prefix="/api/rss-automation", tags=["rss-automation"])
 app.include_router(words.router, prefix="/api/words", tags=["words"])
 app.include_router(media.router, prefix="/api/media", tags=["media"])

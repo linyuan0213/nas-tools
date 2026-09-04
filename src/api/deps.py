@@ -419,6 +419,11 @@ def get_plugin_framework_service(app_context: AppContext = Depends(get_app_conte
     return app_context.plugin_framework_service
 
 
+def get_plugin_market_service(app_context: AppContext = Depends(get_app_context)):
+    """获取插件市场服务实例"""
+    return app_context.plugin_market_service
+
+
 def get_brush_service(app_context: AppContext = Depends(get_app_context)):
     """获取刷流服务实例"""
     return app_context.brush_service

@@ -107,6 +107,7 @@ class AppContext:
     tmdb_blacklist_service: Any
     download_service: Any
     plugin_framework_service: Any
+    plugin_market_service: Any
     storage_backend_service: Any
     search_result_service: Any
     transfer_history_service: Any

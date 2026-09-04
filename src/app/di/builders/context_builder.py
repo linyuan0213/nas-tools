@@ -86,6 +86,7 @@ def build_app_context() -> AppContext:
         tmdb_blacklist_service=services.tmdb_blacklist_service,
         download_service=services.download_service,
         plugin_framework_service=services.plugin_framework_service,
+        plugin_market_service=services.plugin_market_service,
         storage_backend_service=services.storage_backend_service,
         search_result_service=services.search_result_service,
         transfer_history_service=services.transfer_history_service,

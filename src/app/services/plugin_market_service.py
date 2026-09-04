@@ -8,6 +8,7 @@ import ipaddress
 import json
 import socket
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
@@ -154,8 +155,10 @@ class PluginMarketService:
 
     def add_source(self, name: str, url: str, public_key: str = "") -> dict:
         self._assert_public_http(url)
-        source = self._store.add(MarketSource(name=name, url=url, public_key=public_key))
-        return source.to_dict()
+        source = MarketSource(name=name, url=url, public_key=public_key)
+        source.source_id = f"src_{uuid.uuid4().hex[:10]}"
+        added = self._store.add(source)
+        return added.to_dict()
 
     def update_source(self, source_id: str, **fields) -> dict:
         sources = self._store.list()

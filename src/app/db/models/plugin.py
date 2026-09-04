@@ -128,3 +128,22 @@ class PLUGINHOOKS(Base):
 
     def as_dict(self) -> dict[str, Any]:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class PLUGINMARKETSOURCE(Base):
+    """插件框架v2 - 远程插件市场源表"""
+
+    __tablename__ = "PLUGIN_MARKET_SOURCE"
+
+    ID: Mapped[int] = mapped_column(Integer, Sequence("ID"), primary_key=True)
+    SOURCE_ID: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    NAME: Mapped[str] = mapped_column(String(255), nullable=False)
+    URL: Mapped[str] = mapped_column(String(1024), nullable=False)
+    PUBLIC_KEY: Mapped[str] = mapped_column(Text, default="")
+    ENABLED: Mapped[int] = mapped_column(Integer, default=1)
+    AUTO_UPDATE: Mapped[int] = mapped_column(Integer, default=0)
+    LAST_SYNC_AT: Mapped[str] = mapped_column(String(64), default="")
+    LAST_ERROR: Mapped[str] = mapped_column(Text, default="")
+
+    def as_dict(self) -> dict[str, Any]:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

@@ -18,6 +18,7 @@ from app.db.repositories.download_repo_adapter import (
     IndexerStatisticsRepositoryAdapter,
 )
 from app.db.repositories.plugin_framework_repository import PluginFrameworkRepository
+from app.db.repositories.plugin_market_repository import PluginMarketRepository
 from app.db.repositories.rbac_repo_adapter import RBACMenuRepositoryAdapter, RBACRoleRepositoryAdapter
 from app.db.repositories.search_repo_adapter import SearchRepositoryAdapter
 from app.db.repositories.site_repo_adapter import SiteRepositoryAdapter
@@ -60,6 +61,7 @@ from app.services.media_info_service import MediaInfoService
 from app.services.media_library_service import MediaLibraryService
 from app.services.media_recommendation_service import MediaRecommendationService
 from app.services.plugin_framework_service import PluginFrameworkService
+from app.services.plugin_market_service import PluginMarketService
 from app.services.rbac.service import RBACService
 from app.services.rss_automation.task_service import RssTaskService
 from app.services.rss_automation.userrss_service import UserRssService
@@ -348,6 +350,8 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         hook_system=infra.hook_system,
     )
 
+    plugin_market_service = PluginMarketService(store=PluginMarketRepository())
+
     storage_backend_service = StorageBackendService(
         repo=StorageBackendRepositoryAdapter(),
     )
@@ -544,6 +548,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         tmdb_blacklist_service=tmdb_blacklist_service,
         download_service=download_service,
         plugin_framework_service=plugin_framework_service,
+        plugin_market_service=plugin_market_service,
         storage_backend_service=storage_backend_service,
         search_result_service=search_result_service,
         transfer_history_service=transfer_history_service,

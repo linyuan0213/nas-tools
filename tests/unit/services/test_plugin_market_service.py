@@ -74,21 +74,21 @@ class TestSourceCrud:
 
     def test_update_and_delete(self):
         svc = _service()
-        svc.add_source("s1", "https://a.example/catalog.json")
-        svc.update_source("s1", enabled=False, auto_update=True)
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        svc.update_source(sid, enabled=False, auto_update=True)
         assert svc.list_sources()[0]["enabled"] is False
         assert svc.list_sources()[0]["auto_update"] is True
-        assert svc.delete_source("s1") is True
+        assert svc.delete_source(sid) is True
 
 
 class TestCatalogSync:
     def test_sync_validates_and_caches(self):
         svc = _service()
-        svc.add_source("s1", "https://a.example/catalog.json")
-        result = svc.sync_source("s1")
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        result = svc.sync_source(sid)
         assert result["plugin_count"] == 1  # bad_plugin（缺 path）被跳过
         assert result["meta"]["name"] == "我的源"
-        plugins = svc.list_catalog_plugins("s1")
+        plugins = svc.list_catalog_plugins(sid)
         assert plugins[0]["id"] == "demo_plugin"
 
     def test_sync_http_error_records_last_error(self):
@@ -96,9 +96,9 @@ class TestCatalogSync:
             raise RuntimeError("network down")
 
         svc = _service(http=boom)
-        svc.add_source("s1", "https://a.example/catalog.json")
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
         try:
-            svc.sync_source("s1")
+            svc.sync_source(sid)
         except ValueError as e:
             assert "network down" in str(e)
             assert svc.list_sources()[0]["last_error"]
@@ -107,9 +107,9 @@ class TestCatalogSync:
 
     def test_invalid_catalog_rejected(self):
         svc = _service(http=lambda url: '{"plugins": []}')
-        svc.add_source("s1", "https://a.example/catalog.json")
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
         try:
-            svc.sync_source("s1")
+            svc.sync_source(sid)
         except ValueError as e:
             assert "必需字段" in str(e)
             return
@@ -117,7 +117,7 @@ class TestCatalogSync:
 
     def test_catalog_plugins_keyword_filter(self):
         svc = _service()
-        svc.add_source("s1", "https://a.example/catalog.json")
-        svc.sync_source("s1")
-        assert len(svc.list_catalog_plugins("s1", keyword="demo")) == 1
-        assert svc.list_catalog_plugins("s1", keyword="none") == []
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        svc.sync_source(sid)
+        assert len(svc.list_catalog_plugins(sid, keyword="demo")) == 1
+        assert svc.list_catalog_plugins(sid, keyword="none") == []
