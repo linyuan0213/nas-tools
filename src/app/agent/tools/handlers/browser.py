@@ -14,7 +14,6 @@ from urllib.parse import urlparse
 
 from lxml import html as lhtml
 
-import log
 from app.agent.tools.base import ToolResult
 from app.agent.tools.context import ToolContext
 from app.core.settings import settings
@@ -46,7 +45,7 @@ def _clean_html(html_str: str) -> str:
 
 
 def _validate_url(url: str) -> str:
-    """校验浏览器目标 URL：仅 http(s)，拒绝回环/链路本地/云元数据/保留地址等内部目标（防 SSRF）"""
+    """校验浏览器目标 URL：仅 http(s)，拒绝回环/私网/链路本地/云元数据/保留地址等内部目标（防 SSRF）"""
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise ValueError(f"不支持的 URL：{url}")
@@ -58,11 +57,14 @@ def _validate_url(url: str) -> str:
         ip_text = str(info[4][0]).split("%")[0]
         ip = ipaddress.ip_address(ip_text)
         if (
-            ip.is_link_local
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
             or ip.is_multicast
             or ip.is_reserved
             or ip.is_unspecified
             or ip == ipaddress.ip_address("169.254.169.254")
+            or ip == ipaddress.ip_address("169.254.169.253")
         ):
             raise ValueError(f"URL 指向内部网络，已拒绝：{url}")
     return url
@@ -74,12 +76,11 @@ def _validate_site_key(site_key: str | None) -> str | None:
         return None
     try:
         keys = {s.NAME for s in SiteRepository().get_config_site() if getattr(s, "NAME", None)}
-        if site_key not in keys:
-            raise ValueError(f"未配置的站点标识：{site_key}")
-    except ValueError:
-        raise
-    except Exception as e:
-        log.debug(f"[Browser]站点列表读取失败，放行 site_key: {e}")
+    except Exception as e:  # noqa: BLE001
+        # fail-closed：站点列表读取失败时拒绝，而不是放行任意 site_key
+        raise ValueError(f"站点列表校验失败，拒绝 site_key：{e}") from e
+    if site_key not in keys:
+        raise ValueError(f"未配置的站点标识：{site_key}")
     return site_key
 
 
@@ -180,9 +181,3 @@ def _static_data_dir():
     agent_dir = Path(settings.data_path) / "static" / "agent"
     agent_dir.mkdir(parents=True, exist_ok=True)
     return agent_dir
-
-
-HANDLERS = {
-    "browser_fetch": browser_fetch,
-    "browser_screenshot": browser_screenshot,
-}

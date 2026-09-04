@@ -4,7 +4,13 @@ from typing import cast
 from unittest.mock import patch
 
 from app.agent.tools.context import ToolContext
-from app.agent.tools.handlers.browser import _clean_html, browser_fetch, browser_screenshot
+from app.agent.tools.handlers.browser import (
+    _clean_html,
+    _validate_site_key,
+    _validate_url,
+    browser_fetch,
+    browser_screenshot,
+)
 from app.infrastructure.chrome import BrowserSession
 from app.infrastructure.chrome.challenge import wait_challenge_clear
 
@@ -113,6 +119,58 @@ class _ChallengeSession:
         if self._calls <= self._attempts:
             return "<html>Checking your browser... DDoS protection</html>"
         return "<html>真实页面内容</html>"
+
+
+class TestUrlValidation:
+    def test_public_url_allowed(self):
+        assert _validate_url("https://example.com") == "https://example.com"
+
+    def test_private_ranges_rejected(self):
+        for host in ("http://192.168.1.10/", "http://10.0.0.1/", "http://172.16.0.5/", "http://127.0.0.1/"):
+            try:
+                _validate_url(host)
+            except ValueError:
+                continue
+            raise AssertionError(f"应拒绝内网 URL: {host}")
+
+    def test_metadata_and_linklocal_rejected(self):
+        for host in ("http://169.254.169.254/latest/meta-data/", "http://169.254.169.253/", "http://[::1]/"):
+            try:
+                _validate_url(host)
+            except ValueError:
+                continue
+            raise AssertionError(f"应拒绝内部/元数据 URL: {host}")
+
+    def test_bad_scheme_rejected(self):
+        try:
+            _validate_url("file:///etc/passwd")
+        except ValueError:
+            return
+        raise AssertionError("应拒绝非 http(s) URL")
+
+
+class TestSiteKeyValidation:
+    def test_unknown_site_key_rejected(self):
+        from unittest.mock import patch
+
+        with patch("app.agent.tools.handlers.browser.SiteRepository.get_config_site", return_value=[]):
+            try:
+                _validate_site_key("not_exist_site")
+            except ValueError:
+                return
+        raise AssertionError("未配置的 site_key 应被拒绝")
+
+    def test_fail_closed_on_repo_error(self):
+        from unittest.mock import patch
+
+        with patch(
+            "app.agent.tools.handlers.browser.SiteRepository.get_config_site", side_effect=RuntimeError("db down")
+        ):
+            try:
+                _validate_site_key("pttime")
+            except ValueError:
+                return
+        raise AssertionError("站点列表读取失败时应拒绝（fail-closed）而非放行")
 
 
 class TestWaitChallenge:
