@@ -91,6 +91,8 @@ class PluginMarketService:
         auditor: Any | None = None,
         plugin_installer: Callable[[bytes, bool], dict] | None = None,
         plugin_updater: Callable[[bytes, str], dict] | None = None,
+        installed_provider: Callable[[], list[dict]] | None = None,
+        notifier: Callable[[list[dict]], None] | None = None,
     ):
         self._store = store
         self._http_get = http_get or self._default_http_get
@@ -101,6 +103,8 @@ class PluginMarketService:
         self._auditor: Any = auditor if auditor is not None else PluginPackageAuditor()
         self._plugin_installer = plugin_installer
         self._plugin_updater = plugin_updater
+        self._installed_provider = installed_provider
+        self._notifier = notifier
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -207,20 +211,59 @@ class PluginMarketService:
             "synced_at": catalog.synced_at,
         }
 
+    def _detect_updates(self, source_id: str) -> list[dict]:
+        """对单个已同步源：已装插件 vs 市场版本，返回 update_available 列表（无提供方时为空）"""
+        if self._installed_provider is None:
+            return []
+        catalog = self.get_catalog(source_id)
+        if not catalog:
+            return []
+        installed = {p.get("id"): p for p in (self._installed_provider() or []) if p.get("id")}
+        wanted = [pid for pid in (p.get("id") for p in catalog.plugins) if isinstance(pid, str) and pid in installed]
+        updates = []
+        for pid, detail in self.list_plugin_details(source_id, wanted).items():
+            local_ver = str(installed[pid].get("version") or "")
+            remote_ver = str(detail.get("version") or "")
+            if local_ver and remote_ver and self.compare_versions(local_ver, remote_ver) < 0:
+                updates.append(
+                    {
+                        "source_id": source_id,
+                        "plugin_id": pid,
+                        "name": detail.get("name", pid),
+                        "installed_version": local_ver,
+                        "remote_version": remote_ver,
+                    }
+                )
+        return updates
+
     def sync_auto_sources(self) -> dict:
-        """定时任务：同步所有启用且开启 auto_update 的源（单项失败不阻塞其余）"""
+        """定时任务：同步所有启用且开启 auto_update 的源（单项失败不阻塞其余），并汇总可更新项"""
         results = []
+        updates: list[dict] = []
         ok = 0
         for source in self._store.list():
             if not (source.enabled and source.auto_update):
                 continue
             try:
                 result = self.sync_source(source.source_id)
+                found = self._detect_updates(source.source_id)
+                result["updates"] = found
+                updates.extend(found)
                 results.append({"source_id": source.source_id, "ok": True, **result})
                 ok += 1
             except Exception as e:  # noqa: BLE001
                 results.append({"source_id": source.source_id, "ok": False, "error": str(e)})
-        return {"synced": ok, "total": len(results), "results": results}
+        if updates:
+            summary = f"{len(updates)} 个插件可更新："
+            summary += "、".join(f"{u['name']} {u['installed_version']}→{u['remote_version']}" for u in updates[:10])
+            if self._notifier is not None:
+                try:
+                    self._notifier(updates)
+                except Exception as e:  # noqa: BLE001
+                    log.warn(f"[PluginMarket]更新通知发送失败: {e}")
+            else:
+                log.info(f"[PluginMarket]{summary}")
+        return {"synced": ok, "total": len(results), "updates": updates, "results": results}
 
     def _fetch_catalog(self, source: MarketSource) -> MarketCatalog:
         try:

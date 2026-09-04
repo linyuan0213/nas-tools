@@ -362,6 +362,7 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
             if plugin_framework_service
             else None
         ),
+        installed_provider=((lambda: plugin_framework_service.list_plugins()) if plugin_framework_service else None),
     )
 
     storage_backend_service = StorageBackendService(

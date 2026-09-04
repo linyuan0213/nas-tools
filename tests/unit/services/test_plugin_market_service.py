@@ -212,3 +212,26 @@ class TestAutoSyncJob:
         assert result["synced"] == 0
         assert result["results"][0]["ok"] is False
         assert "network down" in result["results"][0]["error"]
+
+    def test_auto_sync_detects_and_notifies_updates(self):
+        catalog = '{"market_version":"1.0","id":"m","plugins":[{"id":"demo","path":"plugins/demo.json"}]}'
+        detail = '{"id":"demo","name":"demo","version":"2.0.0","download_url":"dist/demo.zip"}'
+        notified = []
+
+        def http(url):
+            return catalog if url.endswith("catalog.json") else detail
+
+        svc = PluginMarketService(
+            store=_MemoryStore(),
+            http_get=http,
+            resolver=_fake_resolver,
+            installed_provider=lambda: [{"id": "demo", "version": "1.0.0"}],
+            notifier=lambda updates: notified.extend(updates),
+        )
+        auto = svc.add_source("auto", "https://a.example/catalog.json")["source_id"]
+        svc.update_source(auto, auto_update=True)
+        result = svc.sync_auto_sources()
+        assert len(result["updates"]) == 1
+        assert result["updates"][0]["installed_version"] == "1.0.0"
+        assert result["updates"][0]["remote_version"] == "2.0.0"
+        assert notified and notified[0]["plugin_id"] == "demo"
