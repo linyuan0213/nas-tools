@@ -19,7 +19,7 @@
 | 术语 | 含义 |
 |---|---|
 | 插件源（Market Source） | 一个远程 URL，指向市场索引文件 |
-| 市场索引（market index） | 目录式索引：根 `catalog.json` 目录清单 + `plugins/<id>.json` 单插件详情 |
+| 市场索引（market index） | 目录式索引：根 `catalog.json` 目录清单 + `plugins/<id>/detail.json`（由 manifest 生成） |
 | 插件包（plugin package） | zip，包含 `manifest.json` + 前后端代码/资源 |
 | 发布者签名 | 可选的 Ed25519 签名，用于验证插件包与索引未被篡改 |
 
@@ -88,22 +88,23 @@ demo-plugin@1.0.0.zip
 
 ## 4. 市场索引规范（第三方市场开放协议）
 
-第三方市场 = 任意可静态托管文件的站点/对象存储。**标准只保留“目录式”一种形态**：仓库里每个插件一份独立元数据，根目录由构建工具生成轻量 `catalog.json`；客户端先取目录清单，再按需拉取单插件详情。这样插件多了既不会出现巨大的手改 JSON，也方便多人协作与增量更新。
+第三方市场 = 任意可静态托管文件的站点/对象存储。**标准只保留“目录式”一种形态**：每个插件一个目录，配置**单一人为维护源 = `manifest.json`**（与包内 manifest 同一份），其余 `detail.json`/zip/`catalog.json` 全部由构建 CLI/CI 生成，避免维护两份配置导致漂移。
 
 ### 4.1 标准目录布局
 
 ```
 market/
-├─ catalog.json               # 目录清单（由 CLI/CI 生成，保持最小）
+├─ catalog.json               # 目录清单（CLI/CI 生成，保持最小）
 ├─ plugins/
-│  ├─ demo_plugin.json        # 每个插件一份元数据（作者唯一需要维护的文件）
-│  ├─ another_plugin.json
-│  └─ …
-└─ dist/                      # 可选：zip 包产物（也可外链对象存储）
-   └─ demo_plugin@1.0.0.zip
+│  └─ <plugin_id>/
+│     ├─ manifest.json        # ★ 唯一人工维护（= 包内 manifest）
+│     ├─ backend/ frontend/ …   # 插件代码/资源（随目录打包进 zip）
+│     └─ detail.json          # CLI 生成（manifest + sha/download_url 等），勿手改
+└─ dist/
+   └─ <plugin_id>@<version>.zip  # CLI 由插件目录打包生成
 ```
 
-**catalog.json（根文件，`source_url` 指向它）**：只含市场信息与“id → 详情文件路径”小表，便于高频同步与缓存：
+**catalog.json（根文件，`source_url` 指向它）**：只含市场信息与“id → detail 路径”小表：
 
 ```json
 {
@@ -112,49 +113,44 @@ market/
   "name": "我的插件源",
   "homepage": "https://example.com",
   "plugins": [
-    { "id": "demo_plugin", "path": "plugins/demo_plugin.json", "updated_at": "2026-09-04T00:00:00+08:00" }
+    { "id": "demo_plugin", "path": "plugins/demo_plugin/detail.json", "updated_at": "2026-09-04T00:00:00+08:00" }
   ],
   "updated_at": "2026-09-04T00:00:00+08:00"
 }
 ```
 
-**plugins/<id>.json（作者直接维护）**：单条插件完整元数据：
+**plugins/<id>/manifest.json（作者唯一维护）**：与包内 manifest 相同，可含 summary/screenshots/changelog 等市场展示字段：
 
 ```json
 {
   "id": "demo_plugin",
   "name": "示例插件",
-  "summary": "一句话介绍",
-  "description": "长描述（支持 Markdown）",
+  "version": "1.0.0",
   "category": "automation",
   "tags": ["autosignin", "site"],
-  "author": { "name": "xxx", "url": "https://github.com/xxx" },
+  "description": "长描述（支持 Markdown）",
   "icon": "…", "license": "MIT",
-  "version": "1.0.0",
-  "channel": "stable",
   "min_app_version": "4.16.0",
-  "screenshots": ["https://…/s1.png"],
-  "changelog": "v1.0.0 发布",
-  "download_url": "dist/demo_plugin@1.0.0.zip",
-  "sha256": "…",
-  "signature": "…",
-  "size": 102400
+  "backend": { "entry": "…", "tools": [] },
+  "frontend": { "settings": {}, "routes": [], "slots": [] }
 }
 ```
 
-**可选 versions.json（plugins/<id>/versions.json）**：保留历史版本列表（version/changelog/sha256/download_url），供更新回滚；缺省时仅最新版可装。
+**plugins/<id>/detail.json（CLI 生成）**：`manifest + {download_url, sha256, signature?, size, updated_at}`，客户端浏览/安装实际读取的就是它（生成物一致性由 CLI 保证，作者无需维护）。
+
+**可选 versions 历史（plugins/<id>/versions/ 或 versions.json）**：保留历史版本（version/changelog/sha256/download_url），供更新回滚；缺省时仅最新版可装。
 
 ### 4.2 客户端行为约定
 
 - 同步只读 `catalog.json`（小表）→ 得到“有哪些插件”与更新时间；列表页可直接展示（摘要字段可缓存）；
-- 进入详情页才按需 GET `plugins/<id>.json`，做本地缓存并带 `ETag / Last-Modified` 增量刷新；
+- 进入详情页才按需 GET `plugins/<id>/detail.json`，做本地缓存并带 `ETag / Last-Modified` 增量刷新；
 - 校验与兜底：`id` 冲突（内置已存在）标记不可安装；`version/sha256/download_url` 缺失视为坏记录跳过；`min_app_version > 当前版本` 禁止安装并提示升级 App。
 
-### 4.3 作者工作流（不需要手改大 JSON）
+### 4.3 作者工作流（只维护 manifest，其余 CLI/CI 生成）
 
-- 每插件一份 `plugins/<id>.json`（或在插件仓库内维护后整体发布）；
-- 官方 CLI `nexus-market build`：扫描 `plugins/` → 校验（字段齐全、manifest 一致、category/tags 合法）→ 自动计算 zip 的 `sha256/size` → 生成/更新 `catalog.json`；
-- 接入 GitHub Actions / Gitee Pages：push 插件即自动构建并发布，`catalog.json` 永远由 CI 生成，仓库成员只改自己的插件文件。
+1. 新建 `plugins/<plugin_id>/`，写 `manifest.json`（id=目录名），放入插件代码/资源；
+2. `python3 tools/build_catalog.py .`：校验 → 由插件目录打包 `dist/<id>@<version>.zip` → 生成 `plugins/<id>/detail.json` → 生成 `catalog.json`（幂等，内容未变不重写）；
+3. 接入 GitHub Actions：push 后自动构建并提交 catalog/detail/zip；仓库成员**只维护自己插件目录的 manifest**。
 
 ## 5. 恶意插件防护与验证流程
 
