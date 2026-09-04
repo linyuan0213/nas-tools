@@ -237,6 +237,17 @@ market/
 
 复用/扩展 `PLUGIN_MANIFEST`（增加 `source_id`、`installed_from`、`download_url`、`package_sha256` 列，用于识别来源与后续更新）。标签完善后 `PLUGIN_MANIFEST.TAGS` 存规范后的 tags 列表。
 
+**配置/文件存放位置（用户侧说明）**
+
+| 内容 | 存放位置 | 说明 |
+|---|---|---|
+| 市场源 | DB `PLUGIN_MARKET_SOURCE` | 通过“插件 → 管理源”/API 管理，**不写在 config.yaml** |
+| 已安装插件包 | `{data}/plugins/<plugin_id>-<version>/` | registry 安装落盘目录 |
+| 插件清单 | DB `PLUGIN_MANIFEST` | 每个插件一行（含启用状态/来源） |
+| 插件配置 | DB `PLUGIN_CONFIG` | 按 plugin_id 存储，跨版本保留 |
+| 插件运行日志 | DB `PLUGIN_LOGS` + 后台日志 | 插件日志页可见 |
+| 目录/包产物（市场侧） | 各第三方市场仓库（见 §3/§4） | 与运行侧分离 |
+
 ### 6.2 服务层：`PluginMarketService`
 
 ```
