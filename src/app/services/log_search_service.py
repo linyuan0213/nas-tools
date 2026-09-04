@@ -21,6 +21,12 @@ __all__ = ["LogSearchService"]
 # 人类可读格式：2026-09-01 13:15:43.327 |INFO    | service.py : service.__init__:  42 | - [MediaService]xxx
 _HUMAN_LINE_PATTERN = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \|([A-Za-z]+)\s*\| .*? \| - (.*)$")
 
+
+def _looks_like_human_header(line: str) -> bool:
+    """廉价判断是否为新日志条目行（YYYY-MM-DD HH:... 开头），用于关键字预筛跳过无关行."""
+    return len(line) >= 12 and line[0:4].isdigit() and line[4] == "-" and line[7] == "-"
+
+
 # 默认搜索时间窗口（小时）：仅检索最近一天，控制读取量与导出体积
 DEFAULT_LOG_WINDOW_HOURS = 24
 
@@ -93,10 +99,15 @@ class LogSearchService:
             "text": text,
         }
 
-    def _iter_file_entries(self, filepath: str) -> Iterator[dict[str, Any]]:
-        """逐行解析单个日志文件；支持人类可读与 JSON 两种格式，保留多行续行."""
+    def _iter_file_entries(self, filepath: str, keyword: str | None = None) -> Iterator[dict[str, Any]]:
+        """逐行解析单个日志文件；支持人类可读与 JSON 两种格式，保留多行续行.
+
+        带关键字时先做廉价预筛：新条目行不含关键字则跳过整行解析，
+        仅继续追加已命中条目的多行续行，避免全量正则解析拖慢检索（Agent/日志页大时间窗查询）。
+        """
         fmt: str | None = None
         last_entry: dict[str, Any] | None = None
+        kw = (keyword or "").strip().lower()
         with open(filepath, encoding="utf-8", errors="ignore") as f:
             for raw in f:
                 line = raw.rstrip("\n")
@@ -104,6 +115,18 @@ class LogSearchService:
                     continue
                 if fmt is None:
                     fmt = "json" if line.lstrip().startswith("{") else "human"
+                if kw:
+                    line_lower = line.lower()
+                    if fmt == "json":
+                        if kw not in line_lower:
+                            last_entry = None
+                            continue
+                    elif _looks_like_human_header(line):
+                        if kw not in line_lower:
+                            last_entry = None
+                            continue
+                    elif last_entry is None:
+                        continue
                 if fmt == "json":
                     entry = self._parse_json_line(line)
                 else:
@@ -115,10 +138,11 @@ class LogSearchService:
                     # 多行消息的续行（如异常堆栈），追加到上一条
                     last_entry["text"] += "\n" + line
 
-    def _iter_entries(self, hours: int | None = None) -> Iterator[dict[str, Any]]:
+    def _iter_entries(self, hours: int | None = None, keyword: str | None = None) -> Iterator[dict[str, Any]]:
         """遍历可用日志：优先磁盘文件，无文件时回退内存缓冲。
 
         hours 非空时仅返回最近 N 小时内的条目，并跳过修改时间更早的旧文件。
+        keyword 非空时在磁盘文件解析前做行级预筛，降低大时间窗检索开销。
         """
         min_mtime = None
         if hours and hours > 0:
@@ -130,7 +154,7 @@ class LogSearchService:
                     yield dict(entry)
             return
         for filepath in files:
-            for entry in self._iter_file_entries(filepath):
+            for entry in self._iter_file_entries(filepath, keyword=keyword):
                 if self._within_window(entry, hours):
                     yield entry
 
@@ -183,7 +207,7 @@ class LogSearchService:
         end = start + page_size
         items: list[dict[str, Any]] = []
         total = 0
-        for entry in self._iter_entries(hours=hours):
+        for entry in self._iter_entries(hours=hours, keyword=keyword):
             if not self._match(entry, keyword, level, source):
                 continue
             if start <= total < end:
@@ -200,7 +224,7 @@ class LogSearchService:
     ) -> str:
         """导出匹配日志为文本（默认仅最近 DEFAULT_LOG_WINDOW_HOURS 小时）."""
         lines: list[str] = []
-        for entry in self._iter_entries(hours=hours):
+        for entry in self._iter_entries(hours=hours, keyword=keyword):
             if not self._match(entry, keyword, level, source):
                 continue
             lines.append(
