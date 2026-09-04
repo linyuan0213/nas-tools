@@ -532,14 +532,31 @@ class PluginFrameworkService:
         return {"plugin_id": manifest.id, "name": manifest.name, "version": manifest.version}
 
     def update_market_plugin(self, zip_bytes: bytes, plugin_id: str) -> dict:
-        """市场来源更新：卸载旧实例（配置保留）→ 装新版本 → 启用加载
+        """市场来源更新：卸载旧实例（配置保留）→ 装新版本 → 启用加载，并清理旧版本目录
 
         PLUGIN_CONFIG 按 plugin_id 存储且安装不删除，配置天然跨版本保留。
         """
         sandbox = self._plugin_sandbox
         if sandbox.get_plugin_instance(plugin_id) is not None:
             sandbox.unload(plugin_id)
-        return self.install_market_plugin(zip_bytes, enabled=True)
+        # registry.install 会 INSERT PLUGIN_MANIFEST（同 id 主键冲突），
+        # 更新前先删除旧清单行（配置 PLUGIN_CONFIG 保留，跨版本不删）
+        try:
+            self._repo.delete_manifest(plugin_id)
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[PluginFrameworkService]更新前清理旧清单失败: {e}")
+        result = self.install_market_plugin(zip_bytes, enabled=True)
+        # 清理同插件旧版本目录（保留配置，仅清文件）
+        try:
+            base = os.path.join(self._plugins_dir, f"{plugin_id}-")
+            new_dir = os.path.join(self._plugins_dir, f"{plugin_id}-{result['version']}")
+            for entry in os.listdir(self._plugins_dir):
+                entry_path = os.path.join(self._plugins_dir, entry)
+                if entry.startswith(base) and os.path.abspath(entry_path) != os.path.abspath(new_dir):
+                    shutil.rmtree(entry_path, ignore_errors=True)
+        except Exception as e:  # noqa: BLE001
+            log.warn(f"[PluginFrameworkService]清理旧版本目录失败: {e}")
+        return result
 
     def _do_enable(self, plugin_id: str) -> None:
         """后台线程执行插件加载和初始化"""

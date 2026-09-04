@@ -209,6 +209,8 @@ class PluginMarketService:
         catalog = self._fetch_catalog(source)
         if catalog.error:
             raise ValueError(catalog.error)
+        # 源内容变化后作废旧详情缓存，保证版本更新可被感知
+        self._detail_cache = {k: v for k, v in self._detail_cache.items() if k[0] != source_id}
         return {
             "source_id": source.source_id,
             "meta": catalog.meta,
