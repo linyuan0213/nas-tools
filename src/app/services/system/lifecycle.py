@@ -122,6 +122,7 @@ class SystemLifecycleService:
         event_bus=None,
         knowledge_ingestor=None,
         conversation_store=None,
+        plugin_market_service=None,
     ):
         self._scheduler = scheduler_core
         self._sync = sync
@@ -141,6 +142,7 @@ class SystemLifecycleService:
         self._event_bus = event_bus
         self._knowledge_ingestor = knowledge_ingestor
         self._conversation_store = conversation_store
+        self._plugin_market_service = plugin_market_service
 
     @property
     def subscription_monitor(self) -> SubscriptionMonitor | None:
@@ -170,6 +172,7 @@ class SystemLifecycleService:
             subscribe_service=self._subscribe_service,
             knowledge_ingestor=self._knowledge_ingestor,
             conversation_store=self._conversation_store,
+            plugin_market_service=self._plugin_market_service,
         )
         # 2. 并行启动各业务服务（此时调度器已运行，init_config 里的 stop/start_job 可正常执行）
         startup_tasks = [

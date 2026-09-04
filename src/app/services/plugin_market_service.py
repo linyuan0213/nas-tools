@@ -207,6 +207,21 @@ class PluginMarketService:
             "synced_at": catalog.synced_at,
         }
 
+    def sync_auto_sources(self) -> dict:
+        """定时任务：同步所有启用且开启 auto_update 的源（单项失败不阻塞其余）"""
+        results = []
+        ok = 0
+        for source in self._store.list():
+            if not (source.enabled and source.auto_update):
+                continue
+            try:
+                result = self.sync_source(source.source_id)
+                results.append({"source_id": source.source_id, "ok": True, **result})
+                ok += 1
+            except Exception as e:  # noqa: BLE001
+                results.append({"source_id": source.source_id, "ok": False, "error": str(e)})
+        return {"synced": ok, "total": len(results), "results": results}
+
     def _fetch_catalog(self, source: MarketSource) -> MarketCatalog:
         try:
             self._assert_public_http(source.url)

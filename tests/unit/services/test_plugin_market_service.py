@@ -188,3 +188,27 @@ class TestPluginDetailAndVersion:
         assert compare("v1.2.3", "1.2.3") == 0
         assert compare("2.0.0", "1.9.9") == 1
         assert compare("1.0", "1.0.0") == 0
+
+
+class TestAutoSyncJob:
+    def test_sync_auto_sources_only_auto_update(self):
+        svc = _service()
+        auto = svc.add_source("auto", "https://a.example/catalog.json")["source_id"]
+        svc.update_source(auto, auto_update=True)
+        svc.add_source("manual", "https://b.example/catalog.json")
+        result = svc.sync_auto_sources()
+        assert result["synced"] == 1
+        assert result["total"] == 1
+        assert svc.list_sources()[0]["last_sync_at"]  # auto 源已记录同步时间
+
+    def test_auto_sync_failure_recorded(self):
+        def boom(url):
+            raise RuntimeError("network down")
+
+        svc = _service(http=boom)
+        auto = svc.add_source("auto", "https://a.example/catalog.json")["source_id"]
+        svc.update_source(auto, auto_update=True)
+        result = svc.sync_auto_sources()
+        assert result["synced"] == 0
+        assert result["results"][0]["ok"] is False
+        assert "network down" in result["results"][0]["error"]

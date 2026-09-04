@@ -80,6 +80,7 @@ def load_default_jobs(
     subscribe_service,
     knowledge_ingestor=None,
     conversation_store=None,
+    plugin_market_service=None,
 ):
     """
     加载系统默认定时任务
@@ -215,6 +216,18 @@ def load_default_jobs(
         jobstore=_jobstore,
     )
     log.info("图片缓存清理任务已注册")
+
+    # 插件市场自动同步（auto_update 源；可更新检测在同步比对后由前端/通知驱动）
+    if plugin_market_service is not None:
+        scheduler.register_interval(
+            job_id="PluginMarket.sync_auto",
+            name="插件市场自动同步",
+            func=plugin_market_service.sync_auto_sources,
+            hours=6,
+            next_run_time=datetime.datetime.now() + datetime.timedelta(minutes=5),
+            jobstore=_jobstore,
+        )
+        log.info("插件市场自动同步任务已注册（每 6 小时）")
 
     # Agent 每日维护：RAG 知识库全量重建 + 短期记忆过期清理（agent 未启用时零开销）
     # 固定每日 03:00 执行，避免每次部署/重启都触发全量重建；
