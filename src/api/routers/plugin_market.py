@@ -36,6 +36,12 @@ class MarketSourceUpdateRequest(BaseModel):
     auto_update: Optional[bool] = None
 
 
+class MarketInstallRequest(BaseModel):
+    source_id: str
+    plugin_id: str
+    enabled: bool = True  # False=隔离安装（仅落盘不启用）
+
+
 @router.get("/sources", response_model=CommonResponse, summary="市场源列表")
 def list_sources(
     _: str = Depends(require_any_permission("plugin:view", "plugin:manage")),
@@ -111,6 +117,20 @@ def list_plugins(
     """按源列出已同步目录中的插件（来自 catalog 缓存，需先 sync）"""
     items = svc.list_catalog_plugins(source_id, keyword=keyword)
     return success(data={"total": len(items), "items": items})
+
+
+@router.post("/install", response_model=CommonResponse, summary="安装市场插件")
+def install_plugin(
+    req: MarketInstallRequest,
+    _: str = Depends(require_permission("plugin:manage")),
+    svc: PluginMarketService = Depends(get_plugin_market_service),
+):
+    """走审计门禁后安装（enabled=false 时隔离安装，仅落盘不启用）"""
+    try:
+        result = svc.install_plugin(source_id=req.source_id, plugin_id=req.plugin_id, enabled=req.enabled)
+    except ValueError as e:
+        return fail(msg=str(e))
+    return success(data=result)
 
 
 @router.get("/plugins/{plugin_id}/audit", response_model=CommonResponse, summary="插件包预检（SAST）")

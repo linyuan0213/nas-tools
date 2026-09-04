@@ -3,8 +3,10 @@ Plugin Framework Service
 插件框架 v2 业务服务层
 """
 
+import contextlib
 import os
 import shutil
+import tempfile
 import threading
 import zipfile
 
@@ -509,6 +511,25 @@ class PluginFrameworkService:
 
         self._get_hook_system().emit("plugin.uninstall", {"plugin_id": plugin_id})
         log.info(f"[PluginFrameworkService] 插件卸载成功: {plugin_id}")
+
+    def install_market_plugin(self, zip_bytes: bytes, enabled: bool = True) -> dict:
+        """市场来源安装：写临时 zip → registry.install（默认禁用落盘）→ 可选启用加载
+
+        返回 {plugin_id, name, version}；安装器已做 sha256/SAST 门禁，这里不再重复。
+        """
+        fd, tmp_path = tempfile.mkstemp(suffix=".zip", prefix="nexus_market_")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(zip_bytes)
+            manifest = self._plugin_registry.install(tmp_path)
+        finally:
+            if os.path.exists(tmp_path):
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp_path)
+        if enabled:
+            self.enable(manifest.id)
+            threading.Thread(target=self._do_enable, args=(manifest.id,), daemon=True).start()
+        return {"plugin_id": manifest.id, "name": manifest.name, "version": manifest.version}
 
     def _do_enable(self, plugin_id: str) -> None:
         """后台线程执行插件加载和初始化"""

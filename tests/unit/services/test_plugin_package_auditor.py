@@ -113,3 +113,65 @@ class TestServiceAudit:
         assert result["plugin_id"] == "demo"
         assert result["report"]["sha256_ok"] is False  # 期望哈希为 0000 → 不匹配
         assert result["report"]["passed"] is False
+
+
+class TestServiceInstall:
+    def _mk(self, pkg: bytes, expected_sha: str | None = None):
+        catalog = '{"market_version":"1.0","id":"m","plugins":[{"id":"demo","path":"plugins/demo.json"}]}'
+        detail = (
+            '{"id":"demo","name":"demo","version":"1.0.0",'
+            f'"download_url":"dist/demo.zip","sha256":"{expected_sha or ""}"}}'
+        )
+        calls = []
+
+        def installer(data, enabled):
+            calls.append((data, enabled))
+            return {"plugin_id": "demo", "name": "demo", "version": "1.0.0"}
+
+        auditor = PluginPackageAuditor()
+        svc = PluginMarketService(
+            store=_MemoryStore(),
+            http_get=lambda url: catalog if url.endswith("catalog.json") else detail,
+            http_get_bytes=lambda url: pkg,
+            auditor=auditor,
+            resolver=_fake_resolver,
+            plugin_installer=installer,
+        )
+        sid = svc.add_source("m", "https://a.example/catalog.json")["source_id"]
+        svc.sync_source(sid)
+        return svc, sid, calls
+
+    def test_install_good_package(self):
+        pkg = _zip_bytes(
+            {
+                "manifest.json": '{"id":"demo","version":"1.0.0","name":"demo"}',
+                "backend/main.py": "def ok():\n    return 1\n",
+            }
+        )
+        svc, sid, calls = self._mk(pkg, expected_sha=PluginPackageAuditor().sha256(pkg))
+        result = svc.install_plugin(sid, "demo", enabled=True)
+        assert result["quarantined"] is False
+        assert calls and calls[0][1] is True
+
+    def test_install_quarantine_disabled(self):
+        pkg = _zip_bytes(
+            {
+                "manifest.json": '{"id":"demo","version":"1.0.0","name":"demo"}',
+                "backend/main.py": "def ok():\n    return 1\n",
+            }
+        )
+        svc, sid, calls = self._mk(pkg, expected_sha=PluginPackageAuditor().sha256(pkg))
+        result = svc.install_plugin(sid, "demo", enabled=False)
+        assert result["quarantined"] is True
+        assert calls and calls[0][1] is False
+
+    def test_install_evil_blocked(self):
+        pkg = _zip_bytes({"backend/x.py": "eval(input())\n"})
+        svc, sid, calls = self._mk(pkg, expected_sha=PluginPackageAuditor().sha256(pkg))
+        try:
+            svc.install_plugin(sid, "demo")
+        except ValueError as e:
+            assert "审计门禁" in str(e)
+            assert calls == []
+            return
+        raise AssertionError("恶意包应被安装门禁拦截")

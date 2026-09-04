@@ -89,6 +89,7 @@ class PluginMarketService:
         resolver: Callable[[str], list[str]] | None = None,
         http_get_bytes: Callable[[str], bytes] | None = None,
         auditor: Any | None = None,
+        plugin_installer: Callable[[bytes, bool], dict] | None = None,
     ):
         self._store = store
         self._http_get = http_get or self._default_http_get
@@ -97,6 +98,7 @@ class PluginMarketService:
         self._catalog_cache: dict[str, MarketCatalog] = cache if cache is not None else {}
         self._detail_cache: dict[tuple[str, str], dict] = {}
         self._auditor: Any = auditor if auditor is not None else PluginPackageAuditor()
+        self._plugin_installer = plugin_installer
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -304,30 +306,57 @@ class PluginMarketService:
         resp.raise_for_status()
         return resp.content
 
+    def _fetch_package(self, source_id: str, detail: dict) -> bytes:
+        """按 detail.download_url 下载插件包（同源 + 公网校验）"""
+        catalog = self.get_catalog(source_id)
+        if not catalog:
+            raise ValueError("目录未同步，请先同步市场源")
+        source_url = catalog.source.url
+        download_url = detail.get("download_url") or ""
+        if not download_url:
+            raise ValueError("插件详情缺少 download_url")
+        url = self._join_url(source_url, str(download_url))
+        if urlsplit(url).netloc and urlsplit(url).netloc != urlsplit(source_url).netloc:
+            raise ValueError("插件包必须与市场源同源")
+        self._assert_public_http(url)
+        return self._http_get_bytes(url)
+
     def audit_plugin(self, source_id: str, plugin_id: str) -> dict:
         """预检（audit）：下载插件包 → sha256 → 静态扫描，不落盘启用
 
         返回 {plugin_id, version, sha256, report}；block 级命中 report.passed=False。
         """
         detail = self.get_plugin_detail(source_id, plugin_id)
-        catalog = self.get_catalog(source_id)
-        if not catalog:
-            raise ValueError("目录未同步，请先同步市场源")
-        download_url = detail.get("download_url") or ""
-        if not download_url:
-            raise ValueError("插件详情缺少 download_url，无法审计")
-        source_url = catalog.source.url
-        url = self._join_url(source_url, str(download_url))
-        if urlsplit(url).netloc and urlsplit(url).netloc != urlsplit(source_url).netloc:
-            raise ValueError("插件包必须与市场源同源")
-        self._assert_public_http(url)
-        data = self._http_get_bytes(url)
+        data = self._fetch_package(source_id, detail)
         report = self._auditor.audit_bytes(data, str(detail.get("sha256") or ""))
         return {
             "plugin_id": plugin_id,
             "version": detail.get("version", ""),
             "sha256": self._auditor.sha256(data),
             "report": report.to_dict(),
+        }
+
+    def install_plugin(self, source_id: str, plugin_id: str, enabled: bool = True) -> dict:
+        """安装：审计门禁通过后由插件安装器落盘（可只装不启用）
+
+        隔离语义：enabled=False 时安装后保持禁用（quarantine），
+        block 级审计命中直接拒绝安装。
+        """
+        detail = self.get_plugin_detail(source_id, plugin_id)
+        data = self._fetch_package(source_id, detail)
+        report = self._auditor.audit_bytes(data, str(detail.get("sha256") or ""))
+        if not report.passed:
+            findings = [f for f in report.to_dict()["findings"] if f["severity"] == "block"]
+            raise ValueError(f"安装被审计门禁拦截: {len(findings)} 项高危问题")
+        if self._plugin_installer is None:
+            raise ValueError("插件安装服务未接入")
+        installed = self._plugin_installer(data, enabled)
+        return {
+            "plugin_id": plugin_id,
+            "version": detail.get("version", ""),
+            "sha256": self._auditor.sha256(data),
+            "installed": installed,
+            "quarantined": not enabled,
         }
 
     def list_plugin_details(self, source_id: str, plugin_ids: list[str]) -> dict[str, dict]:

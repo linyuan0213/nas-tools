@@ -350,7 +350,14 @@ def build_services(infra: InfrastructureObjects, facades: BusinessFacades) -> Se
         hook_system=infra.hook_system,
     )
 
-    plugin_market_service = PluginMarketService(store=PluginMarketRepository())
+    plugin_market_service = PluginMarketService(
+        store=PluginMarketRepository(),
+        plugin_installer=(
+            (lambda data, enabled: plugin_framework_service.install_market_plugin(data, enabled=enabled))
+            if plugin_framework_service
+            else None
+        ),
+    )
 
     storage_backend_service = StorageBackendService(
         repo=StorageBackendRepositoryAdapter(),
