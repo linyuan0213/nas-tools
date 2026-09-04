@@ -8,8 +8,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from api.deps import get_plugin_market_service, require_any_permission, require_permission
+from api.deps import (
+    get_plugin_framework_service,
+    get_plugin_market_service,
+    require_any_permission,
+    require_permission,
+)
 from app.schemas.common import CommonResponse
+from app.services.plugin_framework_service import PluginFrameworkService
 from app.services.plugin_market_service import PluginMarketService
 from app.utils.response import fail, success
 
@@ -104,4 +110,60 @@ def list_plugins(
 ):
     """按源列出已同步目录中的插件（来自 catalog 缓存，需先 sync）"""
     items = svc.list_catalog_plugins(source_id, keyword=keyword)
+    return success(data={"total": len(items), "items": items})
+
+
+@router.get("/plugins/{plugin_id}", response_model=CommonResponse, summary="插件详情（懒加载）")
+def get_plugin_detail(
+    plugin_id: str,
+    source_id: str,
+    _: str = Depends(require_any_permission("plugin:view", "plugin:manage")),
+    svc: PluginMarketService = Depends(get_plugin_market_service),
+):
+    """按需拉取 plugins/<id>.json（同源限制 + id 一致性校验，含本地缓存）"""
+    try:
+        detail = svc.get_plugin_detail(source_id, plugin_id)
+    except ValueError as e:
+        return fail(msg=str(e))
+    return success(data=detail)
+
+
+@router.get("/status", response_model=CommonResponse, summary="已装插件 vs 市场版本状态")
+def plugin_status(
+    source_id: str,
+    _: str = Depends(require_any_permission("plugin:view", "plugin:manage")),
+    market: PluginMarketService = Depends(get_plugin_market_service),
+    framework: PluginFrameworkService = Depends(get_plugin_framework_service),
+):
+    """对指定源目录与本地已装插件做版本对比：installed_current / update_available / downgrade"""
+    catalog = market.get_catalog(source_id)
+    if not catalog:
+        return fail(msg="目录未同步，请先同步市场源")
+    installed = {p.get("id"): p for p in (framework.list_plugins() or []) if p.get("id")}
+    wanted: list[str] = []
+    for p in catalog.plugins:
+        pid = p.get("id")
+        if isinstance(pid, str) and pid in installed:
+            wanted.append(pid)
+    details = market.list_plugin_details(source_id, wanted)
+    items = []
+    for pid, detail in details.items():
+        local_ver = str(installed[pid].get("version") or "")
+        remote_ver = str(detail.get("version") or "")
+        if local_ver and remote_ver:
+            cmp_val = PluginMarketService.compare_versions(local_ver, remote_ver)
+            state = "installed_current" if cmp_val == 0 else ("update_available" if cmp_val < 0 else "downgrade")
+        else:
+            state = "update_available" if remote_ver else "unknown"
+        items.append(
+            {
+                "plugin_id": pid,
+                "source_id": source_id,
+                "installed_version": local_ver,
+                "remote_version": remote_ver,
+                "state": state,
+                "min_app_version": detail.get("min_app_version", ""),
+                "channel": detail.get("channel", "stable"),
+            }
+        )
     return success(data={"total": len(items), "items": items})

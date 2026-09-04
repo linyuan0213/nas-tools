@@ -121,3 +121,70 @@ class TestCatalogSync:
         svc.sync_source(sid)
         assert len(svc.list_catalog_plugins(sid, keyword="demo")) == 1
         assert svc.list_catalog_plugins(sid, keyword="none") == []
+
+
+DETAIL = """
+{
+  "id": "demo_plugin",
+  "name": "示例插件",
+  "version": "2.0.0",
+  "category": "automation",
+  "tags": ["autosignin"],
+  "min_app_version": "4.16.0",
+  "download_url": "dist/demo_plugin@2.0.0.zip",
+  "sha256": "abc"
+}
+"""
+
+
+class TestPluginDetailAndVersion:
+    @staticmethod
+    def _responder(detail_body):
+        return lambda url: CATALOG if url.endswith("/catalog.json") else detail_body
+
+    def test_detail_fetch_cached_and_version_compare(self):
+        calls = []
+        http = lambda url: calls.append(url) or (CATALOG if url.endswith("/catalog.json") else DETAIL)  # noqa: E731
+        svc = _service(http=http)
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        svc.sync_source(sid)
+        detail = svc.get_plugin_detail(sid, "demo_plugin")
+        assert detail["version"] == "2.0.0"
+        # 缓存命中：第二次不再发请求
+        assert svc.get_plugin_detail(sid, "demo_plugin")["id"] == "demo_plugin"
+        assert len(calls) == 2  # catalog + detail
+        # 相对路径基于 catalog 目录拼接
+        assert calls[1] == "https://a.example/plugins/demo_plugin.json"
+
+    def test_detail_id_mismatch_rejected(self):
+        bad = '{"id": "other", "version": "1.0.0"}'
+        svc = _service(http=self._responder(bad))
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        svc.sync_source(sid)
+        try:
+            svc.get_plugin_detail(sid, "demo_plugin")
+        except ValueError as e:
+            assert "不一致" in str(e)
+            return
+        raise AssertionError("详情 id 与请求不一致应被拒绝")
+
+    def test_cross_origin_detail_rejected(self):
+        svc = _service(http=self._responder(DETAIL))
+        sid = svc.add_source("s1", "https://a.example/catalog.json")["source_id"]
+        svc.sync_source(sid)
+        catalog = svc.get_catalog(sid)
+        assert catalog is not None
+        catalog.plugins[0]["path"] = "https://evil.example/x.json"
+        try:
+            svc.get_plugin_detail(sid, "demo_plugin")
+        except ValueError as e:
+            assert "同源" in str(e)
+            return
+        raise AssertionError("跨源详情地址应被拒绝")
+
+    def test_compare_versions(self):
+        compare = PluginMarketService.compare_versions
+        assert compare("1.0.0", "1.0.1") == -1
+        assert compare("v1.2.3", "1.2.3") == 0
+        assert compare("2.0.0", "1.9.9") == 1
+        assert compare("1.0", "1.0.0") == 0

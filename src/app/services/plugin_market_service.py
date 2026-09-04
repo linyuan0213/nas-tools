@@ -6,12 +6,13 @@ HTTP 拉取经 http_get 注入（生产走应用 HttpClient，测试 mock），�
 
 import ipaddress
 import json
+import re
 import socket
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse, urlsplit
 
 import httpx
 
@@ -89,6 +90,7 @@ class PluginMarketService:
         self._http_get = http_get or self._default_http_get
         self._resolver = resolver or self._default_resolve
         self._catalog_cache: dict[str, MarketCatalog] = cache if cache is not None else {}
+        self._detail_cache: dict[tuple[str, str], dict] = {}
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -230,3 +232,71 @@ class PluginMarketService:
                 continue
             items.append({"source_id": source_id, **p})
         return items
+
+    # ------------------------------------------------------------ 插件详情（懒加载）
+
+    @staticmethod
+    def _join_url(base_url: str, path: str) -> str:
+        """把插件详情/包相对路径基于 catalog.json 所在目录拼接为完整 URL"""
+        catalog_dir = base_url.rsplit("/", 1)[0] + "/" if "/" in base_url else base_url
+        return urljoin(catalog_dir, path)
+
+    def get_plugin_detail(self, source_id: str, plugin_id: str) -> dict:
+        """按需拉取 plugins/<id>.json 并缓存（detail 元数据）"""
+        key = (source_id, plugin_id)
+        cached = self._detail_cache.get(key)
+        if cached is not None:
+            return cached
+        catalog = self.get_catalog(source_id)
+        if not catalog:
+            raise ValueError("目录未同步，请先同步市场源")
+        entry = next((p for p in catalog.plugins if p.get("id") == plugin_id), None)
+        if not entry:
+            raise ValueError(f"目录中不存在插件: {plugin_id}")
+        url = self._join_url(catalog.source.url, str(entry["path"]))
+        # 防 SSRF：详情/包只允许同源（与目录索引同一 host:port），禁止跳其他域名
+        if urlsplit(url).netloc and urlsplit(url).netloc != urlsplit(catalog.source.url).netloc:
+            raise ValueError("插件详情必须与市场源同源")
+        self._assert_public_http(url)
+        detail = self._validate_plugin_detail(self._http_get(url), plugin_id)
+        self._detail_cache[key] = detail
+        return detail
+
+    @staticmethod
+    def _validate_plugin_detail(text: str, plugin_id: str) -> dict:
+        """校验单插件详情：必需 id/version；id 必须与请求一致（防路径串读）"""
+        try:
+            data = json.loads(text)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"插件详情 JSON 解析失败: {e}") from e
+        if not isinstance(data, dict):
+            raise ValueError("插件详情必须是 JSON 对象")
+        if str(data.get("id", "")) != plugin_id:
+            raise ValueError("插件详情 id 与请求不一致，可能被篡改")
+        if not data.get("version"):
+            raise ValueError("插件详情缺少 version")
+        return data
+
+    # ------------------------------------------------------------ 版本对比
+
+    @staticmethod
+    def compare_versions(local: str, remote: str) -> int:
+        """语义化版本比较：local<remote 返回 -1；相等 0；local>remote 1（忽略 pre-release 后缀）"""
+        pattern = re.compile(r"(\d+)(?:\.(\d+))?(?:\.(\d+))?")
+
+        def parse(ver: str) -> tuple:
+            m = pattern.match(str(ver).strip().lstrip("vV"))
+            return tuple(int(m.group(i)) if m and m.group(i) else 0 for i in (1, 2, 3))
+
+        a, b = parse(local), parse(remote)
+        return (a > b) - (a < b)
+
+    def list_plugin_details(self, source_id: str, plugin_ids: list[str]) -> dict[str, dict]:
+        """批量拉取详情（用于 /status 只取与已装插件匹配的条目）；单条失败跳过"""
+        result: dict[str, dict] = {}
+        for pid in plugin_ids:
+            try:
+                result[pid] = self.get_plugin_detail(source_id, pid)
+            except Exception as e:  # noqa: BLE001
+                log.warn(f"[PluginMarket]拉取插件详情失败 {source_id}/{pid}: {e}")
+        return result
