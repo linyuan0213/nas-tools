@@ -93,6 +93,7 @@ class PluginMarketService:
         plugin_updater: Callable[[bytes, str], dict] | None = None,
         installed_provider: Callable[[], list[dict]] | None = None,
         notifier: Callable[[list[dict]], None] | None = None,
+        allow_private: bool = False,
     ):
         self._store = store
         self._http_get = http_get or self._default_http_get
@@ -105,6 +106,8 @@ class PluginMarketService:
         self._plugin_updater = plugin_updater
         self._installed_provider = installed_provider
         self._notifier = notifier
+        # 仅本地联调/演示放开内网（生产必须为 False；默认保持拦截）
+        self._allow_private = allow_private
 
     @staticmethod
     def _default_resolve(hostname: str) -> list[str]:
@@ -125,6 +128,8 @@ class PluginMarketService:
             raise ValueError(f"市场源无法解析: {url}")
         for ip_text in ips:
             ip = ipaddress.ip_address(ip_text)
+            if self._allow_private:
+                continue
             if (
                 ip.is_private
                 or ip.is_loopback
