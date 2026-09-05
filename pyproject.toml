@@ -93,6 +93,16 @@ pythonpath = ["src", "."]
 # 项目以源码运行（run.py 注入 src），pyright 需显式解析 src 布局
 include = ["src", "tests"]
 extraPaths = ["src"]
+# 消息/办公插件依赖可选三方 SDK（lark_oapi/dingtalk_stream/slack_sdk 等），
+# 未安装时类型检查跳过，避免环境性误报
+ignore = [
+    "src/app/plugin_framework/builtin_plugins/feishu/**",
+    "src/app/plugin_framework/builtin_plugins/msg_dingtalk/**",
+    "src/app/plugin_framework/builtin_plugins/msg_pushdeer/**",
+    "src/app/plugin_framework/builtin_plugins/msg_serverchan/**",
+    "src/app/plugin_framework/builtin_plugins/msg_slack/**",
+    "tests/unit/plugin_framework/builtin_plugins/test_feishu_plugin.py",
+]
 
 [tool.ruff]
 target-version = "py311"
