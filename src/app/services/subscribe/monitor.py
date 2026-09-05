@@ -18,6 +18,7 @@ from app.services.subscribe.strategies.indexer_search import IndexerSearchStrate
 from app.services.subscribe.strategies.queue_search import QueueSearchStrategy
 from app.services.subscribe.strategies.rss_feed import RssFeedStrategy
 from app.services.subscribe_service import SubscribeService
+from app.utils import ExceptionUtils
 
 
 class SubscriptionMonitor:
@@ -146,6 +147,10 @@ class SubscriptionMonitor:
             self._save_last_run_times()
         except (MediaError, DownloadError, IndexerError, RepositoryError, ServiceError, NetworkError) as e:
             log.error(f"[SubscriptionMonitor] RSS 轮询失败: {e}")
+        except Exception as e:  # noqa: BLE001
+            # 兜底：记录完整堆栈，避免线程执行器只回传一句错误而无现场
+            ExceptionUtils.exception_traceback(e)
+            log.error(f"[SubscriptionMonitor] RSS 轮询出现未预期异常: {e}")
         finally:
             self._running_tasks["rss"] = False
 

@@ -141,9 +141,7 @@ class RssFeedStrategy:
                     check_sites += rss_sites
         if check_all:
             # 订阅未配置 rss_sites → 使用默认订阅设置的 rss_sites（与搜索/手动一致），而非全部站点
-            check_sites = self._get_default_rss_sites(MediaType.TV) + self._get_default_rss_sites(
-                MediaType.MOVIE
-            )
+            check_sites = self._get_default_rss_sites(MediaType.TV) + self._get_default_rss_sites(MediaType.MOVIE)
             check_sites = list(set(check_sites))
         else:
             check_sites = list(set(check_sites))
@@ -224,6 +222,10 @@ class RssFeedStrategy:
                     identify_results[item["idx"]] = info
             except (MediaError, NetworkError) as e:
                 log.error(f"[RssFeedStrategy] 批量识别出错: {e}")
+            except Exception as e:  # noqa: BLE001
+                # 单条资源解析异常不应中断整轮 RSS，保留堆栈便于定位
+                ExceptionUtils.exception_traceback(e)
+                log.error(f"[RssFeedStrategy] 批量识别出现未预期异常: {e}")
 
         rss_download_torrents = []
         rss_no_exists = {}
@@ -406,6 +408,11 @@ class RssFeedStrategy:
             except (MediaError, DownloadError, IndexerError, RepositoryError, ServiceError, NetworkError) as e:
                 ExceptionUtils.exception_traceback(e)
                 log.error(f"[RssFeedStrategy] 处理 RSS 发生错误：{e!s}")
+                continue
+            except Exception as e:  # noqa: BLE001
+                # 未预期异常（如对 None 做正则）不应中断整轮 RSS：记录堆栈后跳过本条
+                ExceptionUtils.exception_traceback(e)
+                log.error(f"[RssFeedStrategy] 处理 RSS 出现未预期异常：{e!s}")
                 continue
 
         log.info(f"[RssFeedStrategy] 所有 RSS 处理结束，共 {len(rss_download_torrents)} 个有效资源")

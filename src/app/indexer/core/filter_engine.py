@@ -35,7 +35,7 @@ class IndexerFilterEngine:
 
         :return: (是否匹配, 优先值, 信息)
         """
-        text = meta_info.rev_string
+        text = meta_info.rev_string or ""
         if meta_info.subtitle:
             text = f"{text} {meta_info.subtitle}"
 
