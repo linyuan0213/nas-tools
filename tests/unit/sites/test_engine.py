@@ -201,3 +201,30 @@ def json_dumps_site_discount(rule_discount: str) -> str:
             }
         }
     )
+
+
+class TestSiteRuleTimeParse:
+    """站点级活动时间窗解析：兼容 ISO 与 epoch 秒/毫秒."""
+
+    def test_parse_iso_string(self):
+        from datetime import datetime, timezone
+
+        from app.sites.engine import SiteEngine
+
+        dt = SiteEngine._parse_rule_time("2026-09-01T00:00:00+08:00")
+        assert dt.tzinfo is not None
+        assert dt == datetime(2026, 8, 31, 16, 0, tzinfo=timezone.utc)
+
+    def test_parse_epoch_ms(self):
+        from app.sites.engine import SiteEngine
+
+        # 2026-09-01 00:00:00 UTC 的毫秒时间戳
+        ms = 1780272000000
+        dt = SiteEngine._parse_rule_time(ms)
+        assert int(dt.timestamp()) == ms // 1000
+
+    def test_parse_epoch_numeric_string(self):
+        from app.sites.engine import SiteEngine
+
+        dt = SiteEngine._parse_rule_time("1780272000")
+        assert int(dt.timestamp()) == 1780272000

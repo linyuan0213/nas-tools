@@ -11,7 +11,7 @@ import re
 import time
 import traceback
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
@@ -409,23 +409,40 @@ class SiteEngine:
         end_key = resp_cfg.get(f"{prefix}_end_key", "")
         if not start_key and not end_key:
             return True
-        now = datetime.now()
         try:
+            now = datetime.now(timezone.utc)
             if start_key:
                 start_val = JsonUtils.get_json_object(text, start_key)
                 if not start_val:
                     return False
-                if dateutil.parser.parse(str(start_val)).replace(tzinfo=None) > now:
+                if SiteEngine._parse_rule_time(start_val) > now:
                     return False
             if end_key:
                 end_val = JsonUtils.get_json_object(text, end_key)
                 if not end_val:
                     return False
-                if dateutil.parser.parse(str(end_val)).replace(tzinfo=None) <= now:
+                if SiteEngine._parse_rule_time(end_val) <= now:
                     return False
         except Exception:
             return False
         return True
+
+    @staticmethod
+    def _parse_rule_time(value: Any) -> datetime:
+        """解析站点活动时间字段，兼容 ISO 字符串与 epoch 秒/毫秒（数字或数字字符串）.
+
+        返回 aware UTC 时间；无法解析时抛错由调用方按活动未生效处理。
+        """
+        try:
+            numeric = float(str(value).strip())
+            ts = numeric / 1000.0 if numeric > 1e12 else numeric
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except (TypeError, ValueError):
+            parsed = dateutil.parser.parse(str(value))
+            if parsed.tzinfo is None:
+                # naive 视为服务器本地时间
+                parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
+            return parsed.astimezone(timezone.utc)
 
     def resolve_torrent_attr(
         self,
