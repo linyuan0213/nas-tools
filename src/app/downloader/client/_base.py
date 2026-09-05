@@ -97,24 +97,28 @@ class _IDownloadClient(metaclass=ABCMeta):
         """获取需要转移的种子列表。子类可覆盖 _get_content_subpath 来自定义路径计算。"""
         torrents = self.get_completed_torrents(ids=ids) or []
         trans_tasks = []
+        tag_filtered = 0
+        no_path = 0
         for torrent in torrents:
             labels = torrent.labels or []
-            display_name = torrent.name or torrent.id or "未知种子"
             if "已整理" in labels:
                 continue
             if tag and tag not in labels:
-                log.debug(f"[{self.client_name}]{self.name} 开启标签隔离，{display_name} 未包含指定标签：{tag}")
+                tag_filtered += 1
                 continue
             path = torrent.save_path
             if not path:
-                log.debug(f"[{self.client_name}]{self.name} 未获取到 {display_name} 下载保存路径")
+                no_path += 1
                 continue
             true_path, replace_flag = self.get_replace_path(path, self.download_dir)
             if match_path and not replace_flag:
-                pass
                 continue
             subpath = self._get_content_subpath(torrent) or torrent.name or ""
             trans_tasks.append({"path": os.path.join(true_path, subpath).replace("\\", "/"), "id": torrent.id})
+        if tag_filtered:
+            log.debug(f"[{self.client_name}]{self.name} 标签隔离：{tag_filtered} 个种子未包含指定标签：{tag}（已忽略）")
+        if no_path:
+            log.debug(f"[{self.client_name}]{self.name} {no_path} 个种子未获取到下载保存路径")
         return trans_tasks
 
     def _get_content_subpath(self, torrent: Torrent) -> str | None:

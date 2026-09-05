@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.plugin_framework.registry import PluginRegistry
+from app.schemas.plugin import PluginManifest
 
 
 def _build_registry(tmp_path, builtin_dir=None):
@@ -122,3 +123,47 @@ class TestPluginRegistryScan:
         registry._scan_builtin_plugins()
 
         registry._repo.update_manifest.assert_called_once()
+
+
+def _minimal_manifest_dict(manifest_id="test_plugin", version="1.0.0"):
+    return {
+        "manifest_version": "1.0",
+        "id": manifest_id,
+        "name": "Test Plugin",
+        "version": version,
+        "author": "",
+        "author_url": "",
+        "description": "",
+        "category": "tool",
+        "tags": [],
+        "icon": "",
+        "color": "",
+        "min_app_version": "",
+        "backend": {
+            "entry": "backend.plugin",
+            "api_prefix": "/api/test-plugin",
+            "permissions": [],
+            "hooks": {},
+            "supports_run": False,
+            "dependencies": [],
+        },
+        "frontend": {"routes": [], "slots": []},
+    }
+
+
+class TestRegistrySaveManifestUpsert:
+    """同 id 清单已存在时安装应更新而非插入（修复 Duplicate PRIMARY）."""
+
+    def test_save_updates_when_row_exists(self, registry):
+        manifest = PluginManifest.from_dict(_minimal_manifest_dict())
+        registry._repo.get_manifest_by_id.return_value = MagicMock()
+        registry._save_manifest(manifest, "/data/plugins/test_plugin-1.0.0")
+        registry._repo.update_manifest.assert_called_once()
+        registry._repo.insert_manifest.assert_not_called()
+
+    def test_save_inserts_when_no_row(self, registry):
+        manifest = PluginManifest.from_dict(_minimal_manifest_dict())
+        registry._repo.get_manifest_by_id.return_value = None
+        registry._save_manifest(manifest, "/data/plugins/test_plugin-1.0.0")
+        registry._repo.insert_manifest.assert_called_once()
+        registry._repo.update_manifest.assert_not_called()

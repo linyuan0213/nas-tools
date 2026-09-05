@@ -191,7 +191,7 @@ class PluginRegistry:
             state.config = config
 
     def _save_manifest(self, manifest: PluginManifest, path: str, enabled: bool = False, installed: bool = True):
-        """保存插件清单到数据库"""
+        """保存插件清单到数据库（已存在同 id 记录时更新而非插入，避免重复安装/残留清单冲突）"""
         entity = PluginManifestEntity(
             id=manifest.id,
             name=manifest.name,
@@ -207,7 +207,11 @@ class PluginRegistry:
             installed=installed,
             path=path,
         )
-        self._repo.insert_manifest(entity)
+        existing = self._repo.get_manifest_by_id(manifest.id)
+        if existing is not None:
+            self._repo.update_manifest(entity)
+        else:
+            self._repo.insert_manifest(entity)
 
     @staticmethod
     def _normalize_manifest_dict(value: Any) -> Any:

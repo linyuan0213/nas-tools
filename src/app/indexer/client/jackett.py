@@ -88,7 +88,7 @@ class Jackett(_IIndexClient):
         获取配置的jackett indexer
         :return: indexer 信息 [(indexerId, indexerName, url)]
         """
-        indexer_query_url = f"{self.host}api/v2.0/indexers?configured=true"
+        indexer_query_url = f"{self.host}api/v2.0/indexers?configured=true&apikey={self.api_key}"
         try:
             client = HttpClient()
             client.post(url=f"{self.host}UI/Dashboard", data={"password": self._password})

@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import os
 import re
@@ -450,9 +451,17 @@ class Qbittorrent(_IDownloadClient):
         if not content:
             return None
         if isinstance(content, str) and content.startswith("magnet:"):
+            # 40 位十六进制 infohash（v1）
             match = re.search(r"xt=urn:btih:([a-fA-F0-9]{40})", content)
             if match:
                 return match.group(1).lower()
+            # 32 位 base32 infohash（部分站点磁力使用，如 ACG/动漫站）
+            match32 = re.search(r"xt=urn:btih:([A-Za-z2-7]{32})", content)
+            if match32:
+                try:
+                    return base64.b32decode(match32.group(1).upper()).hex().lower()
+                except Exception as err:
+                    log.debug(f"[{Qbittorrent.client_name}]base32 infohash 解析失败: {err!s}")
             return None
         if isinstance(content, bytes):
             try:
@@ -542,7 +551,10 @@ class Qbittorrent(_IDownloadClient):
         cookie=None,
         **kwargs,
     ):
-        if not self.qbc or not content:
+        if not content:
+            return False
+        if not self.qbc:
+            log.error(f"[{self.client_name}]{self.name} qBittorrent 客户端不可用（未登录或连接失败）")
             return False
         if isinstance(content, str):
             urls = content
@@ -611,8 +623,11 @@ class Qbittorrent(_IDownloadClient):
                 cookie=cookie,
             )
             ret_ok = bool(qbc_ret and str(qbc_ret).find("Ok") != -1)
-            if not ret_ok and qbc_ret is not None:
-                log.warn(f"[{self.client_name}]{self.name} 添加种子失败，qBittorrent 返回: {qbc_ret}")
+            if not ret_ok:
+                log.warn(
+                    f"[{self.client_name}]{self.name} 添加种子失败，"
+                    f"qBittorrent 返回: {qbc_ret!r}（重复种子会返回 Fails.，需确认是否已在下载器中）"
+                )
             return ret_ok
         except (InfrastructureError, NetworkError):
             raise

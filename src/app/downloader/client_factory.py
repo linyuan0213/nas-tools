@@ -179,7 +179,7 @@ class DownloadClientFactory:
             return None
         downloader_conf = self.get_downloader_conf(did)
         if not downloader_conf:
-            log.info("[Downloader]下载器配置不存在")
+            log.info(f"[Downloader]下载器配置不存在: {did}")
             return None
         if not downloader_conf.get("enabled"):
             log.info(f"[Downloader]下载器 {downloader_conf.get('name')} 未启用")
