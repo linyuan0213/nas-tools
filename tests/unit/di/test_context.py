@@ -81,6 +81,7 @@ def test_app_context_fields():
         target_matcher=MagicMock(),
         identity_builder=MagicMock(),
         episode_remapper=MagicMock(),
+        plugin_market_service=MagicMock(),
     )
     assert ctx.event_bus is not None
     assert ctx.media_service is not None

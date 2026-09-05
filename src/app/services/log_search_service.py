@@ -164,36 +164,63 @@ class LogSearchService:
             return None
         return re.compile(b"|".join(parts), re.IGNORECASE)
 
-    def _fast_lines(self, filepath: str, pattern: re.Pattern[bytes], limit_hits: int = 200000) -> list[str]:
-        """mmap + 字节正则做快速预筛，只返回命中行（无外部依赖、可移植）.
+    def _fast_entries(
+        self,
+        filepath: str,
+        pattern: re.Pattern[bytes],
+        hours: int | None,
+        limit_hits: int = 200000,
+    ) -> list[dict[str, Any]] | None:
+        """mmap + 字节正则快速预筛并解析命中条目（含多行续行）.
 
-        mmap 过大（>512MB）或不可用时返回空列表，由调用方回退逐行解析。
-        命中行过多时截断到 limit_hits，避免极端情况仍拖慢响应。
+        返回 None 表示该文件无法 mmap（超大或异常），由调用方回退逐行解析；
+        返回 [] 表示确认无匹配。
         """
         try:
             if os.path.getsize(filepath) > self._MMAP_LIMIT:
-                return []
+                return None
         except OSError:
-            return []
-        lines: list[str] = []
+            return None
+        entries: list[dict[str, Any]] = []
         seen_starts: set[int] = set()
         try:
             with open(filepath, "rb") as f:
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                    # 检测文件格式：首个非空行以 { 开头视为 JSON
+                    fmt: str = "json" if mm[:1] == b"{" else "human"
                     for match in pattern.finditer(mm):
-                        start = mm.rfind(b"\n", 0, match.start()) + 1
-                        if start in seen_starts:
+                        line_start = mm.rfind(b"\n", 0, match.start()) + 1
+                        if line_start in seen_starts:
                             continue
-                        seen_starts.add(start)
-                        end = mm.find(b"\n", match.end())
-                        if end == -1:
-                            end = len(mm)
-                        lines.append(bytes(mm[start:end]).decode("utf-8", errors="ignore"))
-                        if len(lines) >= limit_hits:
-                            break
+                        seen_starts.add(line_start)
+                        line_end = mm.find(b"\n", match.start())
+                        if line_end == -1:
+                            line_end = len(mm)
+                        raw_line = bytes(mm[line_start:line_end]).decode("utf-8", errors="ignore")
+                        entry = self._parse_json_line(raw_line) if fmt == "json" else self._parse_human_line(raw_line)
+                        if not entry:
+                            continue
+                        if fmt == "human":
+                            # 保留命中条目后的多行续行（异常堆栈等），遇到新条目表头即停止
+                            pos = line_end
+                            for _ in range(500):
+                                next_nl = mm.find(b"\n", pos + 1)
+                                if next_nl == -1:
+                                    break
+                                segment = bytes(mm[pos + 1 : next_nl]).decode("utf-8", errors="ignore")
+                                pos = next_nl
+                                if not segment.strip():
+                                    continue
+                                if _looks_like_human_header(segment):
+                                    break
+                                entry["text"] += "\n" + segment
+                        if self._within_window(entry, hours):
+                            entries.append(entry)
+                            if len(entries) >= limit_hits:
+                                break
         except (OSError, ValueError, TypeError):
-            return []
-        return lines
+            return None
+        return entries
 
     def _iter_entries(
         self,
@@ -205,7 +232,7 @@ class LogSearchService:
         """遍历可用日志：优先磁盘文件，无文件时回退内存缓冲.
 
         hours 非空时仅返回最近 N 小时内的条目，并跳过修改时间更早的旧文件。
-        关键词/级别/来源任一存在时优先 mmap 字节级快速预筛，命中行才解析；
+        关键词/级别/来源任一存在时优先 mmap 字节级快速预筛，命中条目（含续行）才解析；
         mmap 不可用或单文件超大时回退逐行解析。
         """
         min_mtime = None
@@ -220,16 +247,9 @@ class LogSearchService:
         pattern = self._build_prefilter_pattern(keyword, level, source)
         for filepath in files:
             if pattern is not None:
-                hits = self._fast_lines(filepath, pattern)
-                if hits:
-                    for line in hits:
-                        entry = self._parse_human_line(line) or self._parse_json_line(line)
-                        if entry and self._within_window(entry, hours):
-                            yield entry
-                    continue
-                # 无命中：若文件可被 mmap（未超限）则确实无匹配，跳过；
-                # 文件超大无法 mmap 时回退逐行解析，避免漏检。
-                if os.path.exists(filepath) and os.path.getsize(filepath) <= self._MMAP_LIMIT:
+                fast_entries = self._fast_entries(filepath, pattern, hours)
+                if fast_entries is not None:
+                    yield from fast_entries
                     continue
             for entry in self._iter_file_entries(filepath, keyword=(keyword or "").strip() or None):
                 if self._within_window(entry, hours):

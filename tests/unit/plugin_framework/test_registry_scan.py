@@ -96,7 +96,8 @@ class TestPluginRegistryScan:
         existing_orm = MagicMock()
         existing_orm.ENABLED = True
         existing_orm.INSTALLED = True
-        existing_orm.MANIFEST_JSON = json.dumps(manifest_data, ensure_ascii=False)
+        # 库中存量行 JSON 为规范化后的 to_dict 产物（含可选字段默认值），与扫描对比基准一致
+        existing_orm.MANIFEST_JSON = json.dumps(PluginManifest.from_dict(manifest_data).to_dict(), ensure_ascii=False)
         registry._repo.get_manifest_by_id.return_value = existing_orm
 
         registry._scan_builtin_plugins()
