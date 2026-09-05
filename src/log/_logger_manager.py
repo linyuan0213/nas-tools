@@ -7,7 +7,7 @@ import threading
 
 from loguru import logger
 
-from ._config import build_handlers
+from ._config import build_handlers, purge_expired_logs
 from ._intercept import InterceptHandler
 
 __all__ = ["Logger", "get_logger_instance"]
@@ -24,6 +24,8 @@ class Logger:
 
     def __init__(self, module: str):
         self._module = module
+        # 启动兜底：清理超过保留期的轮转日志（loguru retention 仅在轮转时触发）
+        purge_expired_logs(module)
         handlers = build_handlers(module)
         logger.configure(handlers=handlers)  # type: ignore[reportArgumentType]
         logging.basicConfig(handlers=[InterceptHandler()], level=0)

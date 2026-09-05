@@ -6,6 +6,7 @@
 """
 
 import json
+import mmap
 import os
 import re
 import time
@@ -29,6 +30,9 @@ def _looks_like_human_header(line: str) -> bool:
 
 # 默认搜索时间窗口（小时）：仅检索最近一天，控制读取量与导出体积
 DEFAULT_LOG_WINDOW_HOURS = 24
+
+# 单次检索最多解析/返回的命中条数（防止高频来源拖垮接口），超过则 truncated=True
+MAX_MATCHES = 20000
 
 
 class LogSearchService:
@@ -138,11 +142,71 @@ class LogSearchService:
                     # 多行消息的续行（如异常堆栈），追加到上一条
                     last_entry["text"] += "\n" + line
 
-    def _iter_entries(self, hours: int | None = None, keyword: str | None = None) -> Iterator[dict[str, Any]]:
-        """遍历可用日志：优先磁盘文件，无文件时回退内存缓冲。
+    _MMAP_LIMIT = 512 * 1024 * 1024  # 超过该大小的单文件回退逐行解析，避免内存峰值
+
+    def _build_prefilter_pattern(
+        self, keyword: str | None, level: str | None, source: str | None
+    ) -> re.Pattern[bytes] | None:
+        """把关键词/级别/来源组合成单次字节正则（任一模组命中即候选行）."""
+        parts: list[bytes] = []
+        kw = (keyword or "").strip()
+        if kw:
+            parts.append(b"(?:" + re.escape(kw.encode("utf-8")) + b")")
+        if level:
+            lv = level.strip().upper()
+            parts.append(b"\\|" + re.escape(lv.encode()) + b"\\s*\\|")
+        if source:
+            src = source.strip()
+            src_bytes = re.escape(src.encode("utf-8"))
+            parts.append(b"\\[" + src_bytes + b"\\]")
+            parts.append(src_bytes)
+        if not parts:
+            return None
+        return re.compile(b"|".join(parts), re.IGNORECASE)
+
+    def _fast_lines(self, filepath: str, pattern: re.Pattern[bytes], limit_hits: int = 200000) -> list[str]:
+        """mmap + 字节正则做快速预筛，只返回命中行（无外部依赖、可移植）.
+
+        mmap 过大（>512MB）或不可用时返回空列表，由调用方回退逐行解析。
+        命中行过多时截断到 limit_hits，避免极端情况仍拖慢响应。
+        """
+        try:
+            if os.path.getsize(filepath) > self._MMAP_LIMIT:
+                return []
+        except OSError:
+            return []
+        lines: list[str] = []
+        seen_starts: set[int] = set()
+        try:
+            with open(filepath, "rb") as f:
+                with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                    for match in pattern.finditer(mm):
+                        start = mm.rfind(b"\n", 0, match.start()) + 1
+                        if start in seen_starts:
+                            continue
+                        seen_starts.add(start)
+                        end = mm.find(b"\n", match.end())
+                        if end == -1:
+                            end = len(mm)
+                        lines.append(bytes(mm[start:end]).decode("utf-8", errors="ignore"))
+                        if len(lines) >= limit_hits:
+                            break
+        except (OSError, ValueError, TypeError):
+            return []
+        return lines
+
+    def _iter_entries(
+        self,
+        hours: int | None = None,
+        keyword: str | None = None,
+        level: str | None = None,
+        source: str | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        """遍历可用日志：优先磁盘文件，无文件时回退内存缓冲.
 
         hours 非空时仅返回最近 N 小时内的条目，并跳过修改时间更早的旧文件。
-        keyword 非空时在磁盘文件解析前做行级预筛，降低大时间窗检索开销。
+        关键词/级别/来源任一存在时优先 mmap 字节级快速预筛，命中行才解析；
+        mmap 不可用或单文件超大时回退逐行解析。
         """
         min_mtime = None
         if hours and hours > 0:
@@ -153,8 +217,21 @@ class LogSearchService:
                 if self._within_window(entry, hours):
                     yield dict(entry)
             return
+        pattern = self._build_prefilter_pattern(keyword, level, source)
         for filepath in files:
-            for entry in self._iter_file_entries(filepath, keyword=keyword):
+            if pattern is not None:
+                hits = self._fast_lines(filepath, pattern)
+                if hits:
+                    for line in hits:
+                        entry = self._parse_human_line(line) or self._parse_json_line(line)
+                        if entry and self._within_window(entry, hours):
+                            yield entry
+                    continue
+                # 无命中：若文件可被 mmap（未超限）则确实无匹配，跳过；
+                # 文件超大无法 mmap 时回退逐行解析，避免漏检。
+                if os.path.exists(filepath) and os.path.getsize(filepath) <= self._MMAP_LIMIT:
+                    continue
+            for entry in self._iter_file_entries(filepath, keyword=(keyword or "").strip() or None):
                 if self._within_window(entry, hours):
                     yield entry
 
@@ -207,13 +284,23 @@ class LogSearchService:
         end = start + page_size
         items: list[dict[str, Any]] = []
         total = 0
-        for entry in self._iter_entries(hours=hours, keyword=keyword):
+        truncated = False
+        for entry in self._iter_entries(hours=hours, keyword=keyword, level=level, source=source):
             if not self._match(entry, keyword, level, source):
                 continue
             if start <= total < end:
                 items.append(entry)
             total += 1
-        return {"items": items, "total": total, "page": page, "page_size": page_size}
+            if total >= MAX_MATCHES:
+                truncated = True
+                break
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "truncated": truncated,
+        }
 
     def export_text(
         self,
@@ -224,7 +311,7 @@ class LogSearchService:
     ) -> str:
         """导出匹配日志为文本（默认仅最近 DEFAULT_LOG_WINDOW_HOURS 小时）."""
         lines: list[str] = []
-        for entry in self._iter_entries(hours=hours, keyword=keyword):
+        for entry in self._iter_entries(hours=hours, keyword=keyword, level=level, source=source):
             if not self._match(entry, keyword, level, source):
                 continue
             lines.append(

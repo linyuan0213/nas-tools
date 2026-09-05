@@ -59,10 +59,7 @@ def cached(cache_instance: CacheAdapter | str | None = None, key_func: Callable 
             try:
                 found, result = get_cache_value(cache, cache_key)
                 if found:
-                    log.debug(f"[Cache]缓存命中: {cache_key}")
                     return result
-                else:
-                    log.debug(f"[Cache]缓存未命中: {cache_key}")
             except Exception as e:
                 log.error(f"[Cache]获取缓存失败: {e}")
 
@@ -72,7 +69,6 @@ def cached(cache_instance: CacheAdapter | str | None = None, key_func: Callable 
             # 缓存结果（包括 None）
             try:
                 cache.set(cache_key, result, ttl)
-                log.debug(f"[Cache]缓存设置: {cache_key}")
             except Exception as e:
                 log.error(f"[Cache]设置缓存失败: {e}")
 

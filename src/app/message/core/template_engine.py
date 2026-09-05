@@ -96,12 +96,9 @@ class TemplateEngine:
         client_name = client.get("name", "未知")
         templates = client.get("templates")
 
-        log.debug(f"[Message]客户端 {client_name} 模板配置: {templates}")
-
         if isinstance(templates, str):
             try:
                 templates = JsonUtils.loads(templates)
-                log.debug(f"[Message]客户端 {client_name} 模板配置已解析为字典")
             except json.JSONDecodeError as e:
                 log.error(f"[Message]客户端 {client_name} 模板配置 JSON 解析失败: {e}")
                 return None, None
@@ -121,15 +118,7 @@ class TemplateEngine:
         title_template = template_config.get("title")
         text_template = template_config.get("text")
 
-        log.debug(f"[Message]客户端 {client_name} 标题模板: {title_template}")
-        log.debug(f"[Message]客户端 {client_name} 内容模板: {text_template}")
-
         rendered_title = self.render_template(title_template, variables) if title_template else None
         rendered_text = self.render_template(text_template, variables) if text_template else None
-
-        log.info(
-            f"[Message]客户端 {client_name} 模板渲染结果 - "
-            f"标题: {rendered_title is not None}, 内容: {rendered_text is not None}"
-        )
 
         return rendered_title, rendered_text
