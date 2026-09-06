@@ -69,3 +69,6 @@ config/*.pid
 
 tests/config_test.yaml.lock
 tests/config_test.yaml
+
+# 本地调试日志
+/log
