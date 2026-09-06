@@ -74,6 +74,7 @@ class BrushTaskHelper:
         self._hr_counts: dict[int, int] = {}
         self._dl_stats: dict = {}
         self._dl_locks: dict = {}
+        self._deleted_dedup_cache: dict[int, tuple[float, set[str]]] = {}
 
     def add_hr_count(self, task_id: int) -> None:
         self._hr_counts[task_id] = self._hr_counts.get(task_id, 0) + 1
@@ -183,16 +184,56 @@ class BrushTaskHelper:
     def _get_site_engine(self):
         return self._site_engine
 
-    def is_torrent_handled(self, enclosure: str | None) -> bool:
-        if not enclosure:
+    def is_torrent_handled(self, enclosure: str | None, page_url: str | None = None) -> bool:
+        if not enclosure and not page_url:
             return False
         engine = self._get_site_engine()
-        if engine.is_tid_based_dedup(enclosure):
-            tid = get_tid_by_url(enclosure, site_engine=engine)
-            domain = engine.normalize_domain(enclosure)
+        # 优先用详情页 URL（如 M-Team /detail/{id}）做 tid 去重；
+        # RSS enclosure 若为一次性签名链接（sign 每轮变化）直接精确匹配永远不命中。
+        dedup_url = page_url or enclosure or ""
+        if not dedup_url:
+            return False
+        if engine.is_tid_based_dedup(dedup_url):
+            tid = get_tid_by_url(dedup_url, site_engine=engine)
+            if not tid:
+                return False
+            domain = engine.normalize_domain(dedup_url)
             all_torrents = self._repo.get_brushtask_torrents_by_domain(domain)
-            return any(get_tid_by_url(t.ENCLOSURE, site_engine=engine) == tid for t in all_torrents)
+            for t in all_torrents:
+                record_url = t.PAGE_URL or t.ENCLOSURE or ""
+                if get_tid_by_url(record_url, site_engine=engine) == tid:
+                    return True
+            return False
         return self._repo.get_brushtask_torrent_by_enclosure(enclosure) is not None
+
+    def is_recently_deleted(self, task_id: int | None, page_url: str | None, enclosure: str | None) -> bool:
+        """该任务是否近期删除过同一种子（按详情页 tid 判断），避免刷流删种循环重进."""
+        if not page_url and not enclosure:
+            return False
+        task_id = int(task_id or 0)
+        if task_id <= 0:
+            return False
+        cached = self._deleted_dedup_cache.get(task_id)
+        if not cached or time.time() - cached[0] > 60:
+            deleted_tids: set[str] = set()
+            try:
+                _, events = self._repo.get_brush_events(task_id, action="delete", page=1, page_size=10000)
+                engine = self._get_site_engine()
+                for ev in events:
+                    url = ev.TORRENT_URL or ""
+                    tid = get_tid_by_url(url, site_engine=engine) if url else None
+                    if tid:
+                        deleted_tids.add(tid)
+            except Exception:  # noqa: BLE001
+                deleted_tids = set()
+            self._deleted_dedup_cache[task_id] = (time.time(), deleted_tids)
+        else:
+            deleted_tids = cached[1]
+        if not deleted_tids:
+            return False
+        engine = self._get_site_engine()
+        target_tid = get_tid_by_url(page_url or enclosure or "", site_engine=engine)
+        return bool(target_tid and target_tid in deleted_tids)
 
     def get_torrent_attr(self, site_info: dict, enclosure: str, use_cache: bool = True):
         if not site_info:

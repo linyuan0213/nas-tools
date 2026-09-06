@@ -26,6 +26,15 @@ class BrushTaskRepository:
     def get_brushtask_torrent_by_enclosure(self, enclosure: str | None) -> Any:
         return self._repo.get_brushtask_torrent_by_enclosure(enclosure or "")
 
+    def get_brush_events(
+        self,
+        task_id: int | None = None,
+        action: str | None = None,
+        page: int = 1,
+        page_size: int = 50,
+    ):
+        return self._repo.get_brush_events(task_id, action, page, page_size)
+
     def get_brushtask_torrents_by_domain(self, domain: str | None) -> list:
         return self._repo.get_brushtask_torrents_by_domain(domain or "")
 

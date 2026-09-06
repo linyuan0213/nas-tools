@@ -154,17 +154,31 @@ class TestCheckRemoveRule:
         need, _ = BrushRuleEngine.check_remove_rule(rule, params)
         assert need is False
 
-    def test_freestatus_normal_rule_triggers_when_currently_free(self):
+    def test_freestatus_switch_triggers_when_free_expired(self):
+        # 前端开关存值 'Y'：免费到期（非免费）才删
+        rule = {"freestatus": "Y", "mode": "or"}
+        need, dtype = BrushRuleEngine.check_remove_rule(rule, {"torrent_attr": {"free": False}})
+        assert need is True
+        assert dtype == BrushDeleteType.FREESTATUS
+
+    def test_freestatus_switch_not_triggers_when_still_free(self):
+        rule = {"freestatus": "Y", "mode": "or"}
+        need, _ = BrushRuleEngine.check_remove_rule(rule, {"torrent_attr": {"free": True}})
+        assert need is False
+
+    def test_freestatus_normal_rule_not_triggers_when_currently_free(self):
+        # 与“到期删”一致：仍免费不删，避免把免费种子刚进就删
         rule = {"freestatus": "NORMAL", "mode": "or"}
         params = {"torrent_attr": {"free": True}}
-        need, dtype = BrushRuleEngine.check_remove_rule(rule, params)
-        assert need is True
-
-    def test_freestatus_normal_rule_not_triggers_when_not_free(self):
-        rule = {"freestatus": "NORMAL", "mode": "or"}
-        params = {"torrent_attr": {"free": False}}
         need, _ = BrushRuleEngine.check_remove_rule(rule, params)
         assert need is False
+
+    def test_freestatus_normal_rule_triggers_when_not_free(self):
+        rule = {"freestatus": "NORMAL", "mode": "or"}
+        params = {"torrent_attr": {"free": False}}
+        need, dtype = BrushRuleEngine.check_remove_rule(rule, params)
+        assert need is True
+        assert dtype == BrushDeleteType.FREESTATUS
 
     def test_hr_rule_triggers_when_is_hr(self):
         rule = {"hr": "HR", "mode": "or"}
@@ -376,6 +390,18 @@ class TestCheckStopRule:
 
     def test_stopfree_off_always_passes(self):
         stop_rule = {"stopfree": SwitchState.OFF.value}
+        need, _ = BrushRuleEngine.check_stop_rule(stop_rule, {"free": True})
+        assert need is False
+
+    def test_stopfree_switch_triggers_when_free_expired(self):
+        # 前端开关存值 'Y'：非 Free（到期）才停
+        stop_rule = {"stopfree": "Y"}
+        need, stype = BrushRuleEngine.check_stop_rule(stop_rule, {"free": False})
+        assert need is True
+        assert stype == BrushStopType.FREEEND
+
+    def test_stopfree_switch_not_triggers_when_still_free(self):
+        stop_rule = {"stopfree": "Y"}
         need, _ = BrushRuleEngine.check_stop_rule(stop_rule, {"free": True})
         assert need is False
 

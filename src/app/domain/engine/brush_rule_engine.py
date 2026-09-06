@@ -286,9 +286,12 @@ class BrushRuleEngine:
             "iatime": (BrushDeleteType.IATIME, lambda value, rv: cls.check_range_rule(value, rv, 3600)),
             "pending_time": (BrushDeleteType.PENDINGTIME, lambda value, rv: cls.check_range_rule(value, rv, 3600)),
             "freespace": (BrushDeleteType.FREESPACE, lambda value, rv: cls.check_range_rule(value, rv, 1024**3)),
+            # freestatus = “Free到期删”：仍免费时不删，Free 到期（非免费）才删；
+            # 该键开关（前端以 'Y' 存储，历史模板也可能为 FREE/NORMAL），
+            # 关闭态已在循环外跳过，这里统一按到期语义判断，杜绝“免费即删”误删。
             "freestatus": (
                 BrushDeleteType.FREESTATUS,
-                lambda value, rv: not value if rv == "FREE" else value if rv == "NORMAL" else True,
+                lambda value, rv: not value,
             ),
             "hr": (BrushDeleteType.HR, lambda value, rv: value if rv == "HR" else not value if rv == "NOHR" else True),
             "alive_time": (BrushDeleteType.ALIVETIME, lambda value, rv: cls.check_range_rule(value, rv, 1)),
@@ -373,9 +376,11 @@ class BrushRuleEngine:
                 BrushStopType.AVGUPSPEED,
                 lambda rv: cls.check_range_rule(values["avg_upspeed"], rv, 1024),
             ),
+            # stopfree = “Free到期停”：仍免费不停，Free 到期（非免费）才停；
+            # 前端以 'Y' 存储，历史模板可能为 'ON'，关闭态已在循环外跳过，统一按到期语义判断。
             "stopfree": (
                 BrushStopType.FREEEND,
-                lambda rv: not values["stopfree"] if rv == SwitchState.ON.value else True,
+                lambda rv: not values["stopfree"],
             ),
         }
 

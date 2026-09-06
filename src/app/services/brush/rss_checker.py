@@ -256,8 +256,15 @@ class BrushRssChecker:
                 if not enclosure:
                     continue
 
-                if self._helper.is_torrent_handled(enclosure=enclosure):
+                if self._helper.is_torrent_handled(enclosure=enclosure, page_url=page_url):
                     log.info(f"[Brush]{torrent_name} 已在刷流任务中")
+                    continue
+                if self._helper.is_recently_deleted(
+                    task_id=taskinfo.get("id"),
+                    page_url=page_url,
+                    enclosure=enclosure,
+                ):
+                    log.info(f"[Brush]{torrent_name} 近期已删除过，跳过避免重复进种")
                     continue
 
                 torrent_attr = self._check_torrent_attr_if_needed(
