@@ -96,11 +96,14 @@ class TransferHistoryService:
             elif parsed == MediaType.ANIME:
                 entry["anime"] = statistic[2]
         labels = list(data.keys())
+        # 按天去重剧数（仅电视剧，用于首页卡片趋势口径对齐）
+        series_by_date = {s[0]: s[1] for s in self._filetransfer.get_transfer_series_statistics(days) or []}
         result = {
             "labels": labels,
             "movie_nums": [data[label]["movie"] for label in labels],
             "tv_nums": [data[label]["tv"] for label in labels],
             "anime_nums": [data[label]["anime"] for label in labels],
+            "tv_series_nums": [series_by_date.get(label, 0) for label in labels],
         }
         self._cache.set(cache_key, result, ttl=self._cache_ttl)
         return result

@@ -13,6 +13,7 @@ from sqlalchemy import func
 from app.db.models import SYNCHISTORY, TRANSFERBLACKLIST, TRANSFERHISTORY, TRANSFERUNKNOWN
 from app.db.repositories.base_repository import BaseRepository
 from app.db.repositories.episode_progress import contiguous_episodes
+from app.domain.mediatypes import MediaType
 from app.schemas.media import TransferMediaDTO
 from app.utils.string_utils import StringUtils
 
@@ -269,6 +270,22 @@ class TransferRepository(BaseRepository):
                 begin_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
                 query = query.filter(begin_date < TRANSFERHISTORY.DATE)
             return query.group_by(TRANSFERHISTORY.TYPE, date_str).order_by(date_str).all()
+
+    def get_transfer_series_statistics(self, days: int = 30) -> list[tuple]:
+        """
+        按天统计电视剧去重剧数（distinct TMDBID，仅 tv 类型）
+        返回 [(date_str, series_count), ...]
+        """
+        with self.session() as db:
+            date_str = func.substr(TRANSFERHISTORY.DATE, 1, 10).label("date_str")
+            query = db.query(date_str, func.count(func.distinct(TRANSFERHISTORY.TMDBID))).filter(
+                TRANSFERHISTORY.TYPE == MediaType.TV.value,
+                TRANSFERHISTORY.TMDBID > 0,
+            )
+            if days > 0:
+                begin_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+                query = query.filter(begin_date < TRANSFERHISTORY.DATE)
+            return query.group_by(date_str).order_by(date_str).all()
 
     # ==================== Transfer Unknown ====================
 

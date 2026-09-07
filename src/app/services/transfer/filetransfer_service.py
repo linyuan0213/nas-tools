@@ -211,6 +211,9 @@ class FileTransferService:
     def get_transfer_statistics(self, days=30):
         return self._history.get_transfer_statistics(days)
 
+    def get_transfer_series_statistics(self, days=30):
+        return self._history.get_transfer_series_statistics(days)
+
     def get_transfer_unknown_paths(self):
         return self._history.get_transfer_unknown_paths()
 

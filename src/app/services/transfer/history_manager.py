@@ -70,6 +70,9 @@ class TransferHistoryManager:
     def get_transfer_statistics(self, days=30):
         return self.transfer_repo.get_transfer_statistics(days=days)
 
+    def get_transfer_series_statistics(self, days=30):
+        return self.transfer_repo.get_transfer_series_statistics(days=days)
+
     # ---------- 未知记录 ----------
 
     def delete_transfer_unknown(self, tid):

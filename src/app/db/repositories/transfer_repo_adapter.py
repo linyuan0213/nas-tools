@@ -99,6 +99,9 @@ class TransferHistoryRepositoryAdapter:
     def get_transfer_statistics(self, days: int = 30) -> list[tuple]:
         return self._repo.get_transfer_statistics(days)
 
+    def get_transfer_series_statistics(self, days: int = 30) -> list[tuple]:
+        return self._repo.get_transfer_series_statistics(days)
+
     def delete_transfer_unknown(self, tid: int | None) -> None:
         self._repo.delete_transfer_unknown(tid)
 
