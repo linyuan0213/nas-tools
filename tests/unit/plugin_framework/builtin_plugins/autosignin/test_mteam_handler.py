@@ -51,3 +51,12 @@ def test_api_base_prefers_cc_domain():
 
     assert _handler()._resolve_api_base(SiteDef()) == "https://api.m-team.cc"
     assert _handler()._resolve_api_base(None) == "https://api.m-team.cc"
+
+
+def test_response_401_auth_expired_returns_clear_message():
+    """JWT 过期(401)：返回明确提示而非接口原文，且不触发自动重登路径"""
+    handler = _handler()
+    res = _FakeResponse('{"code":401,"message":"Full authentication is required to access this resource","data":null}')
+    result = handler._check_response(res, "M-Team")
+    assert result.ok is False
+    assert "登录态已过期" in result.msg

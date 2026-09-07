@@ -185,8 +185,13 @@ class MTeam(SiteSigninHandler):
         if data.get("code") in (0, "0") or data.get("success") is True:
             return SigninResult.success(site)
 
-        message = str(data.get("message", "")).lower()
-        if "重复" in message or "already" in message or "frequently" in message:
+        message = str(data.get("message", ""))
+        message_lower = message.lower()
+        if data.get("code") in (401, "401") or "full authentication" in message_lower:
+            # 登录态(JWT)过期：切勿自动重新登录（密码/浏览器登录会触发站点风控）。
+            # 提示用户在真实浏览器登录后同步 CookieCloud localStorage 即可静默续期
+            return SigninResult.fail(site, "M-Team 登录态已过期，请在真实浏览器重新登录并同步 CookieCloud")
+        if "重复" in message or "already" in message_lower or "frequently" in message_lower:
             return SigninResult.already(site)
 
         return SigninResult.fail(site, f"接口返回 {text[:200]}")
