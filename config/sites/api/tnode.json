@@ -105,9 +105,9 @@
   },
   "user_info": {
     "type": "api",
-"profile": {
-        "method": "GET",
-        "path": "/api/user/getInfo",
+    "profile": {
+      "method": "GET",
+      "path": "/api/user/getInfo",
       "response": {
         "field_mapping": {
           "username": {
@@ -163,7 +163,9 @@
     },
     "response": {
       "free_key": "data.torrent.downloadRate",
-      "free_value": 0
+      "free_value": 0,
+      "peer_count_key": "data.torrent.seeding",
+      "peer_count_type": "int"
     }
   },
   "favicon": "https://zhuque.in/assets/images/512.png"

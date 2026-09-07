@@ -168,7 +168,7 @@
       "free_value": "0.0",
       "2xfree_key": "data.promotion.up_multiplier",
       "2xfree_value": "2.0",
-      "peer_count_key": "data.peer_count",
+      "peer_count_key": "data.seeders",
       "peer_count_type": "int"
     }
   },
