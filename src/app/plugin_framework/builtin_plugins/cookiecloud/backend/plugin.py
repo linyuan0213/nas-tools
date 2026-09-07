@@ -195,6 +195,13 @@ class CookieCloudPlugin:
             self._send_message("未从 CookieCloud 获取到数据")
             return
 
+        ls_synced = 0
+        try:
+            # m-team 等站点使用 localStorage 中的 JWT 认证，须随手动/定时同步一并写入
+            ls_synced = self._store_local_storage(contents)
+        except Exception as e:
+            self.ctx.warn(f"[CookieCloud]同步 LocalStorage 失败: {e}")
+
         try:
             update_ok, add_ok, failed, _results = self._process_cookies(contents if isinstance(contents, dict) else {})
         except Exception as e:
@@ -210,6 +217,8 @@ class CookieCloudPlugin:
                 msg = "同步完成，但未更新任何站点数据！"
         else:
             msg = f"同步完成：更新了 {update_ok} 个站点的 Cookie 数据，新增了 {add_ok} 个站点"
+        if ls_synced:
+            msg += f"，LocalStorage 已更新 {ls_synced} 个站点"
 
         if failed:
             msg += f"（{failed} 个失败/跳过）"
@@ -663,6 +672,23 @@ class CookieCloudPlugin:
             self.ctx.warn(f"[CookieCloud]验证异常 {domain_url}: {e}")
             return False
 
+    def _store_local_storage(self, contents: dict) -> int:
+        """把 CookieCloud local_storage_data 写入 Redis（按父域 key），返回成功站点数."""
+        local_storage = contents.get("local_storage_data") or {}
+        synced = 0
+        for site, storage in local_storage.items():
+            try:
+                if not storage:
+                    continue
+                if not self._check_domain(site):
+                    continue
+                domain_url = ".".join(site.split(".")[-2:])
+                self._cache.set(f"local_storage:{domain_url}", JsonUtils.dumps(storage))
+                synced += 1
+            except Exception as e:
+                self.ctx.error(f"处理 LocalStorage {site} 时出错: {e}")
+        return synced
+
     def _local_storage_save(self):
         self.ctx.info("开始同步 LocalStorage ...")
         contents, msg, flag = self._download_data()
@@ -673,31 +699,7 @@ class CookieCloudPlugin:
             self.ctx.info("未从 CookieCloud 获取到数据")
             return
 
-        local_storage = contents.get("local_storage_data") or {}
-        synced = 0
-        for site, storage in local_storage.items():
-            try:
-                if not storage:
-                    continue
-                if not self._check_domain(site):
-                    continue
-                if isinstance(storage, dict):
-                    domain_parts = site.split(".")[-2:]
-                    domain_key = tuple(domain_parts)
-                    domain_url = ".".join(domain_key)
-                    self._cache.set(f"local_storage:{domain_url}", JsonUtils.dumps(storage))
-                    synced += 1
-                elif isinstance(storage, list):
-                    for cookie_data in storage:
-                        if cookie_data.get("domain") and self._check_domain(cookie_data.get("domain", "")):
-                            domain_parts = site.split(".")[-2:]
-                            domain_key = tuple(domain_parts)
-                            domain_url = ".".join(domain_key)
-                            self._cache.set(f"local_storage:{domain_url}", JsonUtils.dumps(storage))
-                            synced += 1
-            except Exception as e:
-                self.ctx.error(f"处理 LocalStorage {site} 时出错: {e}")
-
+        synced = self._store_local_storage(contents)
         self.ctx.info(f"LocalStorage 同步 Redis 成功，共同步 {synced} 个站点")
 
     def _send_message(self, msg):
