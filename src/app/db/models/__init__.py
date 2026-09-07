@@ -107,6 +107,9 @@ from app.db.models.site import (
     SITEUSERSEEDINGINFO,
 )
 
+# 站点解析健康度
+from app.db.models.site_parse_health import SiteParseHealth
+
 # 存储后端模型
 from app.db.models.storage_backend import (
     STORAGEBACKEND,
@@ -164,6 +167,8 @@ __all__ = [
     # 识别词
     "CUSTOMWORDS",
     "CUSTOMWORDGROUPS",
+    # 站点解析健康度
+    "SiteParseHealth",
     # 下载
     "DOWNLOADER",
     "DOWNLOADHISTORY",
