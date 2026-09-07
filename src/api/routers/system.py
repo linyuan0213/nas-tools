@@ -233,6 +233,10 @@ def system_info(
             "uptime_seconds": info.uptime_seconds,
             "start_time": info.start_time,
             "memory_mb": info.memory_mb,
+            "cpu_percent": info.cpu_percent,
+            "memory_percent": info.memory_percent,
+            "memory_used_mb": info.memory_used_mb,
+            "memory_total_mb": info.memory_total_mb,
         }
     )
 
@@ -863,6 +867,10 @@ def system_status(
             "version": info.version,
             "uptime": info.uptime_seconds,
             "python_version": info.python_version,
+            "cpu_percent": info.cpu_percent,
+            "memory_percent": info.memory_percent,
+            "memory_used_mb": info.memory_used_mb,
+            "memory_total_mb": info.memory_total_mb,
         }
     )
 

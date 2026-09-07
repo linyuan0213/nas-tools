@@ -99,6 +99,10 @@ class TestSystemInfoService:
         result = svc.get_system_info()
         assert result.version is not None
         assert result.python_version is not None
+        assert 0 <= result.cpu_percent <= 100
+        assert 0 <= result.memory_percent <= 100
+        assert result.memory_total_mb > 0
+        assert 0 < result.memory_used_mb <= result.memory_total_mb
 
     def test_format_uptime(self):
         svc = SystemInfoService()
