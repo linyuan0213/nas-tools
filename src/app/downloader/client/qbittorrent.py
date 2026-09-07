@@ -864,11 +864,14 @@ class Qbittorrent(_IDownloadClient):
         try:
             tracker_list = self.qbc.torrents_trackers(torrent_hash=torrent_hash)
             return tracker_list
+        except qbittorrentapi.NotFound404Error:
+            # 种子已被删除/清理（删种或整理竞态）：属正常，静默忽略
+            return None
         except (InfrastructureError, NetworkError):
             raise
         except Exception as err:
             ExceptionUtils.exception_traceback(err)
-            return
+            return None
 
     def get_torrent_trackers(self, torrent_hash) -> list[str]:
         tracker_list = self._get_torrent_trackers(torrent_hash)
@@ -887,6 +890,8 @@ class Qbittorrent(_IDownloadClient):
             return
         try:
             self.qbc.torrents_add_trackers(torrent_hashes=torrent_hash, urls=urls)
+        except qbittorrentapi.NotFound404Error:
+            return
         except (InfrastructureError, NetworkError):
             raise
         except Exception as err:
@@ -897,6 +902,8 @@ class Qbittorrent(_IDownloadClient):
             return
         try:
             self.qbc.torrents_remove_trackers(torrent_hashes=torrent_hash, urls=urls)
+        except qbittorrentapi.NotFound404Error:
+            return
         except (InfrastructureError, NetworkError):
             raise
         except Exception as err:
@@ -907,6 +914,8 @@ class Qbittorrent(_IDownloadClient):
             return
         try:
             self.qbc.torrents_edit_tracker(torrent_hash=torrent_hash, original_url=old_url, new_url=new_url)
+        except qbittorrentapi.NotFound404Error:
+            return
         except (InfrastructureError, NetworkError):
             raise
         except Exception as err:
