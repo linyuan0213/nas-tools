@@ -19,28 +19,35 @@ class MediaSyncRepository(BaseRepository):
     def insert_item(self, server_type: str, iteminfo: dict, seasoninfo: list | None = None) -> bool:
         """
         插入/更新媒体同步项目
+        id 类字段统一转 str：MEDIASYNC_ITEMS 对应列为 varchar，PostgreSQL 不允许隐式转换
         """
         if not server_type or not iteminfo:
             return False
 
+        item_id = str(iteminfo.get("id") or "")
+        tmdb_id = str(iteminfo.get("tmdbid") or "") if iteminfo.get("tmdbid") is not None else ""
+        imdb_id = str(iteminfo.get("imdbid") or "") if iteminfo.get("imdbid") is not None else ""
+        year = str(iteminfo.get("year") or "") if iteminfo.get("year") is not None else ""
+
         with self.session() as db:
             db.query(MEDIASYNCITEMS).filter(
                 MEDIASYNCITEMS.SERVER == server_type,
-                MEDIASYNCITEMS.ITEM_ID == iteminfo.get("id"),
+                MEDIASYNCITEMS.ITEM_ID == item_id,
             ).delete()
 
             new_item = MEDIASYNCITEMS(
                 SERVER=server_type,
-                LIBRARY=iteminfo.get("library"),
-                ITEM_ID=iteminfo.get("id"),
-                ITEM_TYPE=iteminfo.get("type"),
-                TITLE=iteminfo.get("title"),
-                ORGIN_TITLE=iteminfo.get("originalTitle"),
-                YEAR=iteminfo.get("year"),
-                TMDBID=iteminfo.get("tmdbid"),
-                IMDBID=iteminfo.get("imdbid"),
-                PATH=iteminfo.get("path"),
-                JSON=JsonUtils.dumps(seasoninfo) if seasoninfo else None,
+                LIBRARY=iteminfo.get("library") or "",
+                ITEM_ID=item_id,
+                ITEM_TYPE=iteminfo.get("type") or "",
+                TITLE=iteminfo.get("title") or "",
+                ORGIN_TITLE=iteminfo.get("originalTitle") or "",
+                YEAR=year,
+                TMDBID=tmdb_id,
+                IMDBID=imdb_id,
+                PATH=iteminfo.get("path") or "",
+                NOTE=iteminfo.get("note") or "",
+                JSON=JsonUtils.dumps(seasoninfo) if seasoninfo is not None else "",
             )
             db.add(new_item)
             db.commit()
@@ -87,9 +94,14 @@ class MediaSyncRepository(BaseRepository):
     def query_item(self, server_type: str, title: str, year: str | None = None, tmdbid: str | None = None):
         """
         查询媒体同步项目
+        列 TMDBID/YEAR 为 varchar：入参统一转 str，避免 PostgreSQL 下 varchar = integer 报错
         """
         if not server_type or not title:
             return None
+        if tmdbid is not None:
+            tmdbid = str(tmdbid)
+        if year is not None:
+            year = str(year)
 
         with self.session() as db:
             query = db.query(MEDIASYNCITEMS).filter(MEDIASYNCITEMS.SERVER == server_type)
