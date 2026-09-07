@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from app.infrastructure.cache_system.cookiecloud_adapter import CookiecloudAdapter
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
+from app.utils.config_tools import get_ua
 from app.utils.json_utils import JsonUtils
 
 from .base import SigninResult, SiteSigninContext, SiteSigninHandler
@@ -47,7 +48,8 @@ class MTeam(SiteSigninHandler):
         jwt = local_storage.get("auth")
         did = local_storage.get("did")
         visitor_id = local_storage.get("visitorId")
-        webversion = local_storage.get("webversion", "1140")
+        # localStorage 无 webversion 时使用当前站点前端版本
+        webversion = local_storage.get("webversion") or "1170"
         if not jwt:
             return SigninResult.fail(site, "localStorage auth 为空")
 
@@ -58,27 +60,45 @@ class MTeam(SiteSigninHandler):
         timestamp_s = timestamp_ms // 1000
         signature = self._build_sign("POST", self._API_PATH, timestamp_ms, secret)
 
-        headers = {
+        # 认证相关请求头：必填核心项（站点维护 headers 无法覆盖）
+        headers: dict[str, str] = {
             "accept": "application/json, text/plain, */*",
-            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
             "authorization": jwt,
             "cache-control": "no-cache",
             "did": did or "",
             "dnt": "1",
             "origin": home_url,
             "pragma": "no-cache",
-            "referer": f"{home_url}/",
-            "sec-ch-ua": '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"macOS"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
+            "priority": "u=1, i",
+            "referer": f"{home_url}/login",
             "ts": str(timestamp_s),
-            "user-agent": ctx.ua or "",
+            "user-agent": ctx.ua or get_ua(),
             "visitorid": visitor_id or "",
             "webversion": webversion,
         }
+        # 浏览器指纹类请求头（sec-ch-ua / accept-language / sec-fetch-* 等）取站点维护中维护的 headers
+        maintained_headers = ctx.headers
+        if isinstance(maintained_headers, str):
+            try:
+                maintained_headers = JsonUtils.loads(maintained_headers)
+            except Exception:
+                maintained_headers = {}
+        if not isinstance(maintained_headers, dict):
+            maintained_headers = {}
+        core_keys = (
+            "authorization",
+            "did",
+            "ts",
+            "visitorid",
+            "webversion",
+            "origin",
+            "referer",
+            "user-agent",
+            "content-type",
+        )
+        for hk, hv in maintained_headers.items():
+            if hk and hv and hk.lower() not in core_keys:
+                headers.setdefault(hk, hv)
         headers = {k: v for k, v in headers.items() if v}
 
         form = {
@@ -119,15 +139,17 @@ class MTeam(SiteSigninHandler):
     def _resolve_api_base(self, site_def: Any) -> str:
         if site_def and site_def.api and site_def.api.base_url:
             return site_def.api.base_url.rstrip("/")
-        return "https://api.m-team.io"
+        return "https://api.m-team.cc"
 
     def _fetch_secret(self, home_url: str, site: str) -> str | None:
         try:
-            with HttpClient(config=HttpClientConfig()) as client:
-                home_res = client.get(
-                    url=f"{home_url}/index",
-                    headers={"User-Agent": "Mozilla/5.0"},
-                )
+            headers = {
+                "User-Agent": get_ua(),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            }
+            with HttpClient(config=HttpClientConfig(default_headers=headers)) as client:
+                home_res = client.get(url=f"{home_url}/index")
                 main_match = re.search(r'src=["\']([^"\']*main\.(\w+)\.js)["\']', home_res.text)
                 if not main_match:
                     return None
@@ -160,7 +182,7 @@ class MTeam(SiteSigninHandler):
         except Exception:
             return SigninResult.fail(site, "解析 JSON 响应失败")
 
-        if data.get("code") == 0 or data.get("success") is True:
+        if data.get("code") in (0, "0") or data.get("success") is True:
             return SigninResult.success(site)
 
         message = str(data.get("message", "")).lower()
