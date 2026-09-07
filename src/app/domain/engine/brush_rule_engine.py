@@ -305,7 +305,7 @@ class BrushRuleEngine:
         triggered_types = []
         mode = remove_rule.get("mode", "and")
         log.info(
-            f"[删种规则] 当前值 ratio={values['ratio']}, 做种={values['time']}s, "
+            f"[Brush][删种规则] 当前值 ratio={values['ratio']}, 做种={values['time']}s, "
             f"上传={values['uploadsize']}B, 活了{values['alive_time']}h, "
             f"free={values['freestatus']}, tracker_err={bool(values['tracker_error'])}"
         )
@@ -317,13 +317,13 @@ class BrushRuleEngine:
 
             # hr_time 规则仅对 HR 种子生效，非 HR 种子在两种模式下都跳过
             if rule == "hr_time" and not params.get("torrent_attr", {}).get("hr"):
-                log.info("[删种规则] hr_time 仅对 HR 种子生效，跳过非 HR 种子")
+                log.info("[Brush][删种规则] hr_time 仅对 HR 种子生效，跳过非 HR 种子")
                 continue
 
             value = values.get(rule)
             if value is None:
                 log.info(
-                    f"[删种规则] {rule}={rule_value}, 但种子无此数据 (None)，"
+                    f"[Brush][删种规则] {rule}={rule_value}, 但种子无此数据 (None)，"
                     f"模式={mode}，" + ("阻止删种" if mode == "and" else "跳过该规则")
                 )
                 if mode == "and":
@@ -333,12 +333,12 @@ class BrushRuleEngine:
             matched = check_func(value, rule_value)
             if matched:
                 triggered_types.append(delete_type)
-                log.info(f"[删种规则] {rule} 触发: 当前={value}, 规则={rule_value}")
+                log.info(f"[Brush][删种规则] {rule} 触发: 当前={value}, 规则={rule_value}")
                 if mode == "or":
                     _t = triggered_types
                     return True, _t[0] if len(_t) == 1 else _t  # type: ignore[return-value]
             else:
-                log.info(f"[删种规则] {rule} 未触发: 当前={value}, 规则={rule_value}")
+                log.info(f"[Brush][删种规则] {rule} 未触发: 当前={value}, 规则={rule_value}")
                 if mode == "and":
                     return False, BrushDeleteType.NOTDELETE
 
@@ -385,7 +385,7 @@ class BrushRuleEngine:
         }
 
         log.info(
-            f"[停种规则] ratio={values['ratio']}, 做种={values['seedtime']}s, "
+            f"[Brush][停种规则] ratio={values['ratio']}, 做种={values['seedtime']}s, "
             f"上传={values['uploadsize']}B, avg={values['avg_upspeed']}, "
             f"free={values['stopfree']}"
         )
@@ -395,9 +395,9 @@ class BrushRuleEngine:
             if rule_value in ("#", SwitchState.OFF.value, None, ""):
                 continue
             if check_func(rule_value):
-                log.info(f"[停种规则] {rule} 触发: 规则={rule_value}")
+                log.info(f"[Brush][停种规则] {rule} 触发: 规则={rule_value}")
                 return True, stop_type
-            log.info(f"[停种规则] {rule} 未触发: 规则={rule_value}")
+            log.info(f"[Brush][停种规则] {rule} 未触发: 规则={rule_value}")
         return False, BrushStopType.NOTSTOP
 
     # --------------------------------------------------
