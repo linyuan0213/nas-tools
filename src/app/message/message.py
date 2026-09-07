@@ -160,6 +160,9 @@ class Message:
     def send_site_message(self, title=None, text=None) -> None:
         self._builder.send_site_message(title, text)
 
+    def send_site_parse_health_message(self, title=None, text=None) -> None:
+        self._builder.send_site_parse_health_message(title, text)
+
     def send_transfer_fail_message(self, path: str, count: int, text: str) -> None:
         self._builder.send_transfer_fail_message(path, count, text)
 

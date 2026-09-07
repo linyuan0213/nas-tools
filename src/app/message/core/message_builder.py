@@ -306,6 +306,26 @@ class MessageBuilder:
                     template_engine=self._template_engine,
                 )
 
+    def send_site_parse_health_message(self, title=None, text=None) -> None:
+        """站点解析健康告警：独立开关 site_parse_health，与通用站点通知分开控制."""
+        if not title:
+            return
+        if not text:
+            text = ""
+        if self._messagecenter:
+            self._messagecenter.insert_system_message(title=title, content=text)
+        for client in self._client_manager.active_clients:
+            if "site_parse_health" in (client.get("switches") or ""):
+                variables = {"title": title, "text": text}
+                self._dispatcher.sendmsg(
+                    client=client,
+                    title=title,
+                    text=text,
+                    msg_type="site_parse_health",
+                    variables=variables,
+                    template_engine=self._template_engine,
+                )
+
     def send_transfer_fail_message(self, path: str, count: int, text: str) -> None:
         if not path or not count:
             return
