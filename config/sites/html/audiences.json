@@ -126,7 +126,6 @@
         },
         "date": {
           "text": "{% if fields['date_elapsed'] or fields['date_added'] %}{{ fields['date_elapsed'] if fields['date_elapsed'] else fields['date_added'] }}{% else %}now{% endif %}"
-
         },
         "size": {
           "selector": "td:nth-child(5)"
@@ -170,7 +169,8 @@
                 "\\d+-\\d+-\\d+ \\d+:\\d+:\\d+",
                 0
               ]
-            }]
+            }
+          ]
         },
         "description": {
           "selector": "span.torrent-subtitle-text"
@@ -191,7 +191,8 @@
         "//h1[@id='top']/img[@class='hitandrun']"
       ],
       "PEER_COUNT": [
-        "//div[@id='peercount']/b[1]"
+        "//div[@id='peercount']/b[1]",
+        "//span[@id='seeders']/span[1]"
       ]
     }
   },
