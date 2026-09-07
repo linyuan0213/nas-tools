@@ -257,7 +257,16 @@ class BrushTaskHelper:
         if resolved.startswith(("http://", "https://")):
             torrent_url = resolved
         else:
-            torrent_url = f"{site_base_url}{resolved}"
+            # 相对路径：优先用输入 URL 匹配的站点主域（M-Team 详情页在 kp.m-team.cc，
+            # 而 RSS 域是 rss.m-team.cc，用 rssurl 拼接会导致站点不匹配误判）
+            site_def = engine.get_by_url(enclosure)
+            domain = getattr(site_def, "domain", "") if site_def else ""
+            if domain:
+                # domain 可能自带 scheme（如 audiences 配置为 https://audiences.me）
+                base = domain if domain.startswith(("http://", "https://")) else f"https://{domain}"
+                torrent_url = f"{base}{resolved}"
+            else:
+                torrent_url = f"{site_base_url}{resolved}"
 
         # 同一详情页短周期内命中缓存（跨任务/周期共享），避免重复抓取。
         # 注意：删种/停种/免费自动恢复等“状态变化敏感”场景需 use_cache=False 取最新态
