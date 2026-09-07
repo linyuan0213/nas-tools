@@ -15,7 +15,7 @@
   "public": false,
   "language": "zh",
   "api": {
-    "base_url": "https://api.m-team.io",
+    "base_url": "https://api.m-team.cc",
     "auth": {
       "type": "api_key",
       "header_name": "x-api-key"

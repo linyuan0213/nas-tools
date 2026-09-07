@@ -7,7 +7,7 @@ from typing import cast
 from lxml import etree
 
 import log
-from app.core.constants import MT_URL, RMT_SUBEXT
+from app.core.constants import RMT_SUBEXT
 from app.infrastructure.http.auth import CookieAuth
 from app.infrastructure.http.client import HttpClient
 from app.infrastructure.http.config import HttpClientConfig
@@ -207,8 +207,13 @@ class SiteSubtitle:
             return
 
         # 获取字幕列表
-        subtitle_list_url = f"{MT_URL}/api/subtitle/list"
         engine = self._site_engine
+        site_def = engine.get_by_url(media_info.page_url) or engine.get_by_name("M-Team")
+        api_base = ""
+        if site_def and getattr(site_def, "api", None):
+            api_base = site_def.api.base_url or ""
+        api_base = api_base.rstrip("/") or "https://api.m-team.cc"
+        subtitle_list_url = f"{api_base}/api/subtitle/list"
         rate_limiter = getattr(engine, "site_limiter", None)
         rate_limiter_engine = rate_limiter.engine if rate_limiter else None
         client = HttpClient(
@@ -244,7 +249,7 @@ class SiteSubtitle:
                     continue
 
                 # 获取下载凭证
-                genlink_url = f"{MT_URL}/api/subtitle/genlink"
+                genlink_url = f"{api_base}/api/subtitle/genlink"
                 genlink_res = client.post(url=genlink_url, data=JsonUtils.dumps({"id": subtitle_id}))
                 genlink_data = genlink_res.json()
                 if genlink_data.get("code") != "0":
@@ -257,7 +262,7 @@ class SiteSubtitle:
                     continue
 
                 # 下载字幕文件
-                download_url = f"{MT_URL}/api/subtitle/dlV2?credential={credential}"
+                download_url = f"{api_base}/api/subtitle/dlV2?credential={credential}"
                 download_res = client.get(url=download_url)
 
                 # 保存字幕文件
