@@ -3,19 +3,42 @@ Site Router — FastAPI 迁移
 对应原 web/controllers/site.py，复用 app/services/site_service.py
 """
 
+import threading
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from api.deps import get_indexer_service, get_site_service, require_any_permission, require_permission
+import log
+from api.deps import (
+    get_app_context,
+    get_indexer_service,
+    get_site_service,
+    require_any_permission,
+    require_permission,
+)
 from app.core.error_codes import ErrorCode
 from app.core.exceptions import DomainError, ServiceError  # noqa: F401
 from app.infrastructure.thread import ThreadExecutor
 from app.schemas.common import CommonResponse
 from app.services.indexer_service import IndexerService
+from app.services.site_parse_health_service import SiteParseHealthService
 from app.services.site_service import SiteService
+from app.sites.siteconf import SiteConf
 from app.utils.response import fail, success
 
 router = APIRouter()
+
+# 解析自检后台运行状态（单实例进程内标记，防并发重复触发）
+_PARSE_HEALTH_STATE = {"running": False, "lock": threading.Lock()}
+
+
+def _build_parse_health_service(app_context) -> SiteParseHealthService:
+    """基于应用上下文装配解析健康自检服务（无需注册到 DI 对象图）."""
+    return SiteParseHealthService(
+        site_cache=app_context.site_cache,
+        siteconf=SiteConf(app_context.site_engine),
+        message=app_context.message,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -389,3 +412,61 @@ def batch_update_indexer_site_config(
         if "default_settings" in item:
             idx_svc.update_site_default_settings(site_name, item.get("default_settings"))
     return success()
+
+
+class SiteParseHealthRequest(BaseModel):
+    site_id: int | None = None
+
+
+@router.get("/parse-health/latest", response_model=CommonResponse, summary="各站点最新解析健康状态")
+def parse_health_latest(
+    user: str = Depends(require_any_permission("site:view", "site:manage")),
+    app_context=Depends(get_app_context),
+):
+    svc = _build_parse_health_service(app_context)
+    return success(data=svc.latest_all())
+
+
+@router.get("/parse-health/history", response_model=CommonResponse, summary="站点解析健康历史")
+def parse_health_history(
+    site_id: int,
+    limit: int = 30,
+    user: str = Depends(require_any_permission("site:view", "site:manage")),
+    app_context=Depends(get_app_context),
+):
+    svc = _build_parse_health_service(app_context)
+    return success(data=svc.history(site_id, limit))
+
+
+@router.get("/parse-health/run-state", response_model=CommonResponse, summary="解析自检是否正在后台运行")
+def parse_health_run_state(
+    user: str = Depends(require_any_permission("site:view", "site:manage")),
+):
+    return success(data={"running": bool(_PARSE_HEALTH_STATE.get("running"))})
+
+
+@router.post("/parse-health/run", response_model=CommonResponse, summary="手动触发站点解析健康自检（后台执行）")
+def parse_health_run(
+    req: SiteParseHealthRequest,
+    user: str = Depends(require_permission("site:manage")),
+    app_context=Depends(get_app_context),
+):
+    state = _PARSE_HEALTH_STATE
+    with state["lock"]:
+        if state.get("running"):
+            return success(data={"running": True, "started": False})
+        state["running"] = True
+
+    def _run():
+        try:
+            svc = _build_parse_health_service(app_context)
+            svc.check_all([req.site_id] if req.site_id else None)
+        except Exception as e:  # noqa: BLE001
+            log.error(f"[解析自检]后台任务异常: {e}")
+        finally:
+            with state["lock"]:
+                state["running"] = False
+
+    threading.Thread(target=_run, name="parse-health-check", daemon=True).start()
+    return success(data={"running": True, "started": True})
+
