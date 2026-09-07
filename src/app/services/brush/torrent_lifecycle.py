@@ -31,10 +31,13 @@ class BrushTorrentLifecycle:
 
     @staticmethod
     def _remove_rule_needs_torrent_attr(remove_rule: dict | None) -> bool:
-        """删种规则是否依赖种子详情页属性（free/hr），避免对每颗种子做无谓详情请求消耗站点限流."""
+        """删种规则是否依赖种子详情页属性（free/hr/pubdate），避免对每颗种子做无谓详情请求消耗站点限流."""
         if not remove_rule:
             return False
-        return any(remove_rule.get(key) not in ("#", "N", None, "") for key in ("freestatus", "hr", "hr_time"))
+        return any(
+            remove_rule.get(key) not in ("#", "N", None, "")
+            for key in ("freestatus", "hr", "hr_time", "pubdate")
+        )
 
     def remove_task_torrents(self, taskid: int | None, taskinfo: dict) -> None:
         if taskinfo.get("state") != BrushTaskState.RUNNING.value:

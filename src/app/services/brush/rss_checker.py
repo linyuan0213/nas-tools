@@ -70,7 +70,7 @@ class BrushRssChecker:
         """判断 RSS 选种规则是否需要解析种子详情页属性。"""
         if not rss_rule:
             return False
-        for key in ("free", "hr", "peercount", "label_include", "label_exclude"):
+        for key in ("free", "hr", "peercount", "label_include", "label_exclude", "pubdate"):
             val = rss_rule.get(key)
             if val and val not in ("#", "N", None, ""):
                 return True

@@ -676,3 +676,18 @@ class TestFormatRssMatchReason:
         assert "免费" in reason
         assert "排除HR" in reason
         assert "体积符合" in reason
+
+
+def test_check_pubdate_prefers_page_and_handles_tz():
+    """页面 pubdate 优先；naive 字符串按 +08 处理，年龄按小时计算"""
+    # 页面时间 1 小时前（+08），规则"3 小时以内"
+    import datetime as _dt
+
+    from app.domain.engine.brush_rule_engine import BrushRuleEngine
+
+    attr = {"pubdate": (_dt.datetime.now() - _dt.timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")}
+    ok = BrushRuleEngine._check_pubdate(_dt.datetime.now(), attr, "bw#0,3")
+    assert ok is True
+    # 很旧的页面时间（>3h）不满足
+    attr2 = {"pubdate": (_dt.datetime.now() - _dt.timedelta(hours=10)).strftime("%Y-%m-%d %H:%M:%S")}
+    assert BrushRuleEngine._check_pubdate(_dt.datetime.now(), attr2, "bw#0,3") is False

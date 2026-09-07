@@ -209,6 +209,132 @@ def json_dumps_site_discount(rule_discount: str) -> str:
     )
 
 
+class TestGetTidByUrlHostDigits:
+    """域名含数字不得抢占种子 id（如 u2.dmhy.org 的 2）"""
+
+    def test_u2_style_url_extracts_query_id(self):
+        from app.sites.engine import SiteEngine, get_tid_by_url
+
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        site = SiteDefinition(id="u2", name="幼儿园", domain="u2.dmhy.org", tid_pattern=r"\d+",
+                              detail_page_url="/details.php?id={tid}")
+        engine.register(site)
+        assert get_tid_by_url("https://u2.dmhy.org/details.php?id=66055", site_engine=engine) == "66055"
+
+    def test_host_digit_not_picked_for_plain_digits_pattern(self):
+        from app.sites.engine import SiteEngine, get_tid_by_url
+
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        site = SiteDefinition(id="t", name="站", domain="my2pt.example.com", tid_pattern=r"\d+")
+        engine.register(site)
+        # 无 id= 参数：取路径/查询里的最后一个数字
+        assert get_tid_by_url("https://my2pt.example.com/details?id=12345", site_engine=engine) == "12345"
+
+
+class TestHtmlPubdateExtract:
+    """详情页 PUBDATE 提取：刷流时间规则以种子页面日期为准"""
+
+    def _engine(self, monkeypatch, html_text, conf=None):
+        from types import SimpleNamespace
+
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        site = SiteDefinition(id="u2", name="幼儿园", domain="u2.dmhy.org", detail_page_url="/details.php?id={tid}")
+        default_conf = {
+            "PUBDATE": ["//td[contains(., '发布时间')]//time/@title"],
+            "PEER_COUNT": ["//div[@id='peercount']/b[1]"],
+        }
+        site.html = SimpleNamespace(conf=conf or default_conf, torrents=[])  # type: ignore[attr-defined]
+        engine.register(site)
+        monkeypatch.setattr(
+            engine, "_fetch_page_ex", lambda *a, **k: (html_text, "https://u2.dmhy.org/details.php?id=1")
+        )
+        return engine
+
+    def test_pubdate_attr_extracted(self, monkeypatch):
+        html = ("<html><body><a href='logout.php'>退出</a>"
+                "<td class='rowfollow'>发布时间: <time title='2026-09-07 12:34:56'>2026-09-07</time></td>"
+                "<div id='peercount'><b>1个做种者</b></div></body></html>")
+        engine = self._engine(monkeypatch, html)
+        stats = engine.html_selector_stats("https://u2.dmhy.org/details.php?id=1", {})
+        assert stats.get("pubdate") == "2026-09-07 12:34:56"
+        # resolve_torrent_attr 也带 pubdate
+        monkeypatch.setattr(engine, "_fetch_page", lambda *a, **k: html)
+        ret = engine.resolve_torrent_attr("https://u2.dmhy.org/details.php?id=1", cookie="c")
+        assert ret.get("pubdate") == "2026-09-07 12:34:56"
+
+
+class TestHtmlSelectorStats:
+    """html_selector_stats：HTML 详情页选择器命中统计与登录页检测."""
+
+    def _engine(self, monkeypatch, html_text, conf=None):
+        from types import SimpleNamespace
+
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        site = SiteDefinition(id="t1", name="站点", domain="example.com", detail_page_url="/d/{tid}")
+        default_conf = {"FREE": ["//b[@class='free']"], "PEER_COUNT": ["//span[@id='seeders']/span[1]"]}
+        site.html = SimpleNamespace(conf=conf or default_conf, torrents=[])  # type: ignore[attr-defined]
+        engine.register(site)
+        monkeypatch.setattr(engine, "_fetch_page_ex", lambda *a, **k: (html_text, "https://example.com/d/1"))
+        return engine
+
+    def test_login_page_detected(self, monkeypatch):
+        """登录页（takelogin 表单）→ auth=True，不算选择器失效"""
+        engine = self._engine(monkeypatch, "<html><body><form action='takelogin.php'></form></body></html>")
+        ret = engine.html_selector_stats("https://example.com/d/1", {})
+        assert ret.get("auth") is True
+
+    def test_normal_page_selector_hits(self, monkeypatch):
+        """正常详情页：各选择器命中数正确统计"""
+        html = ("<html><body><a href='logout.php'>退出</a>"
+                "<b class='free'>免费</b><span id='seeders'><span>12</span></span></body></html>")
+        engine = self._engine(monkeypatch, html)
+        ret = engine.html_selector_stats("https://example.com/d/1", {})
+        assert ret.get("fetched") is True
+        assert ret["selectors"]["FREE"] == 1
+        assert ret["selectors"]["PEER_COUNT"] == 1
+        assert ret["peer_value"] == 12
+
+
+class TestApiFreeValueZero:
+    """free_value 为 0（数值判免费，如朱雀 downloadRate==0）不得因真值判断漏判"""
+
+    def test_free_when_value_zero(self, monkeypatch):
+        torrent_attr = {"method": "GET", "path": "/api/torrent/info", "params": {"id": "{tid}"},
+                        "response": {"free_key": "data.torrent.downloadRate", "free_value": 0}}
+        site = SiteDefinition(
+            id="tnode", name="朱雀", domain="zhuque.in", detail_page_url="/torrent/info/{tid}",
+            api=SiteApiConfig(
+                base_url="https://zhuque.in", auth={"type": "api_key", "header_name": "x-api-key"}, endpoints={}
+            ),
+        )
+        site.torrent_attr = torrent_attr
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        engine.register(site)
+        fake = _FakeClient()
+        fake.text = '{"code":0,"data":{"torrent":{"downloadRate":0,"seeding":1}}}'
+        monkeypatch.setattr(engine_mod, "HttpClient", lambda *a, **k: fake)
+        ret = engine.resolve_torrent_attr("https://zhuque.in/torrent/info/54638", cookie="c")
+        assert ret["free"] is True
+
+    def test_not_free_when_value_one(self, monkeypatch):
+        torrent_attr = {"method": "GET", "path": "/api/torrent/info", "params": {"id": "{tid}"},
+                        "response": {"free_key": "data.torrent.downloadRate", "free_value": 0}}
+        site = SiteDefinition(
+            id="tnode2", name="朱雀", domain="zhuque2.in", detail_page_url="/torrent/info/{tid}",
+            api=SiteApiConfig(
+                base_url="https://zhuque2.in", auth={"type": "api_key", "header_name": "x-api-key"}, endpoints={}
+            ),
+        )
+        site.torrent_attr = torrent_attr
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        engine.register(site)
+        fake = _FakeClient()
+        fake.text = '{"code":0,"data":{"torrent":{"downloadRate":1,"seeding":1}}}'
+        monkeypatch.setattr(engine_mod, "HttpClient", lambda *a, **k: fake)
+        ret = engine.resolve_torrent_attr("https://zhuque2.in/torrent/info/1", cookie="c")
+        assert ret["free"] is False
+
+
 class TestApiAttrFailClosed:
     """API 站点种子属性解析失败时必须收敛（抛 TorrentAttrFetchError），不得按"非免费"误判删种"""
 

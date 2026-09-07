@@ -18,26 +18,6 @@ class SiteConf:
     _SITE_SUBTITLE_XPATH = [
         '//td[@class="rowhead"][text()="字幕"]/following-sibling::td//a/@href',
     ]
-    _SITE_LOGIN_XPATH = {
-        "username": ['//input[@name="username"]', '//input[@id="form_item_username"]', '//input[@id="username"]'],
-        "password": ['//input[@name="password"]', '//input[@id="form_item_password"]', '//input[@id="password"]'],
-        "captcha": ['//input[@name="imagestring"]', '//input[@name="captcha"]', '//input[@id="form_item_captcha"]'],
-        "captcha_img": [
-            '//img[@alt="CAPTCHA"]/@src',
-            '//img[@alt="SECURITY CODE"]/@src',
-            '//img[@id="LAY-user-get-vercode"]/@src',
-            '//img[contains(@src,"/api/getCaptcha")]/@src',
-        ],
-        "submit": [
-            '//input[@type="submit"]',
-            '//button[@type="submit"]',
-            '//button[@lay-filter="login"]',
-            '//button[@lay-filter="formLogin"]',
-            '//input[@type="button"][@value="登录"]',
-        ],
-        "error": ["//table[@class='main']//td[@class='text']/text()"],
-        "twostep": ['//input[@name="two_step_code"]', '//input[@name="2fa_secret"]'],
-    }
 
     def __init__(self, site_engine):
         self._refresh()
@@ -54,9 +34,6 @@ class SiteConf:
 
     def get_subtitle_conf(self):
         return self._SITE_SUBTITLE_XPATH
-
-    def get_login_conf(self):
-        return self._SITE_LOGIN_XPATH
 
     def get_grap_conf(self, url=None):
         site_def = self._get_site_engine().get_by_url(url) if url else None
@@ -86,6 +63,7 @@ class SiteConf:
         proxy=False,
         chrome=False,
         browser_persistent=False,
+        detail=None,
     ):
         return self._get_site_engine().resolve_torrent_attr(
             torrent_url=torrent_url,
@@ -97,4 +75,5 @@ class SiteConf:
             proxy=proxy,
             chrome=chrome,
             browser_persistent=browser_persistent,
+            detail=detail,
         )

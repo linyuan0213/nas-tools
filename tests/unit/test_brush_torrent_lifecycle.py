@@ -242,3 +242,11 @@ def test_torrent_not_deleted_when_attr_unknown():
     lc = _lc_with_helper(helper, torrent)
     lc.remove_task_torrents(1, _task({"freestatus": "Y", "mode": "or"}))
     assert lc._downloader.deleted == []
+
+
+def test_remove_rule_pubdate_alone_triggers_attr_fetch():
+    """只配 pubdate 的删种规则也要抓详情页属性（页面发布时间为准）"""
+    from app.services.brush.torrent_lifecycle import BrushTorrentLifecycle
+
+    assert BrushTorrentLifecycle._remove_rule_needs_torrent_attr({"pubdate": "0-24"}) is True
+    assert BrushTorrentLifecycle._remove_rule_needs_torrent_attr({"pubdate": "#"}) is False

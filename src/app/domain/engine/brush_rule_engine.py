@@ -155,11 +155,18 @@ class BrushRuleEngine:
             local_time_str = torrent_attr.get("pubdate")
             try:
                 if local_time_str:
-                    pubdate = dateutil.parser.parse(str(local_time_str)).replace(tzinfo=timezone(timedelta(hours=8)))
+                    parsed = dateutil.parser.parse(str(local_time_str))
+                    # 页面/接口时间为站点本地时区（+08），无时区信息才补；带偏移则保留原值
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone(timedelta(hours=8)))
+                    pubdate = parsed
             except Exception:
                 pubdate = None
 
         if pubdate:
+            # pubdate 带 tzinfo 时可直接相减；naive 视为 +08 本地时间
+            if pubdate.tzinfo is None:
+                pubdate = pubdate.replace(tzinfo=timezone(timedelta(hours=8)))
             pubdate_hours = (datetime.now(pytz.utc) - pubdate).total_seconds() / 3600
             return cls.check_range_rule(pubdate_hours, rule_value, multiplier=1)
         return True
