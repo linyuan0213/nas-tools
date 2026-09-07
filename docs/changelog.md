@@ -1,5 +1,24 @@
 # 版本历史
 
+## v4.18.0 (2026-09-07)
+
+### 功能
+
+- 站点解析健康自检（前端站点维护页同步）：从各站 RSS 采样真实种子单抓解析，按站点定义逐项校验选择器/字段命中，识别页面改版与配置漂移；后台异步执行不阻塞、前端轮询刷新；每日 03:20 定时自检并可推送独立「站点解析告警」通知开关
+- 状态语义清晰：限流/空响应为临时态跳过不告警；未登录/凭据失效单独归类（不误报结构变更）；连续两轮异常才告警，异常持续按 7 天间隔复读
+- 种子属性获取统一收敛到站点定义：HTML 选择器（FREE/2XFREE/HR/PEER_COUNT/PUBDATE）与 API 字段（free_key/peer_count_key）统一求值入口，自检与刷流共用同一解析
+- 详情页发布时间（PUBDATE）参与刷流时间规则，且以种子页面日期为准（需站点定义含 PUBDATE 选择器，如 U2）
+
+### 修复
+
+- 刷流免费种子误删相关链路复核：详情页属性失败收敛为“属性未知”跳过（站点未匹配/TID 提取失败/非 JSON/业务失败均不再误判非免费）；详情 URL 按站点主域拼接（兼容带 scheme 域名）；M-Team 等 enclosure 签名链接优先用 PAGE_URL 取详情
+- 种子详情 ID 提取：剥离域名数字后取最后数字，修复 u2.dmhy.org 的 2 抢占 tid 致解析错种
+- API 站属性解析：支持 GET params（朱雀 detail）；free_value=0（数值判免费）不再漏判；仅配 pubdate 规则的刷流同样抓取详情页
+- 站点配置修正（已同步 nexus-media-sites）：Rousi 做种字段 data.seeders、朱雀 data.torrent.seeding、U2 详情页模板与发布时间选择器
+- qBittorrent 删种竞态 NotFound404Error 静默（不再整段 ERROR 栈）
+- MEDIASYNC_ITEMS varchar 列与 int 入参类型收敛，修复 PostgreSQL `varchar = integer` 报错（含写侧字段规范化）
+- M-Team 签到 401（登录态过期）给出明确提示，引导在真实浏览器登录并同步 CookieCloud，避免服务器侧重登触发风控
+
 ## v4.17.1 (2026-09-07)
 
 ### 修复
