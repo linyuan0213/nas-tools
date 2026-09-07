@@ -187,3 +187,58 @@ def test_remove_rule_needing_attr_fetches_torrent_attr():
     )
     lc.remove_task_torrents(1, _task({"freestatus": "NORMAL", "mode": "or"}))
     assert helper.calls == 1
+
+
+class _UrlTrackingHelper:
+    """记录 get_torrent_attr 实际请求的 URL，验证优先使用详情页 page_url"""
+
+    def __init__(self, attr=None):
+        self.urls: list[str] = []
+        self._attr = attr
+
+    def get_torrent_attr(self, site_info, url, use_cache=True):
+        self.urls.append(url)
+        return url, self._attr
+
+
+def _seeding_torrent():
+    return Torrent(
+        id="A", name="做种", download_time=1 * HOUR, iatime=1 * HOUR, status=TorrentStatus.Uploading, progress=1.0
+    )
+
+
+def _lc_with_helper(helper, torrent):
+    return BrushTorrentLifecycle(
+        helper=helper,
+        repo=_RepoWithEnclosure([torrent.id]),
+        downloader=_Downloader([torrent]),
+        sites=cast(SiteCache, _Sites()),
+        message=cast(Message, _Message()),
+    )
+
+
+def test_attr_fetch_prefers_page_url_over_enclosure():
+    """M-Team 等站点 enclosure 为一次性签名链接无法提取 TID，属性检查须用详情页 page_url"""
+    torrent = _seeding_torrent()
+    helper = _UrlTrackingHelper(attr={"free": True, "hr": False})
+    lc = _lc_with_helper(helper, torrent)
+    lc.remove_task_torrents(1, _task({"freestatus": "Y", "mode": "or"}))
+    assert helper.urls == ["https://site/detail/A"]
+
+
+def test_free_torrent_not_deleted_when_freestatus_rule_on():
+    """免费种子在开启 Free 到期删规则时不应被删除"""
+    torrent = _seeding_torrent()
+    helper = _UrlTrackingHelper(attr={"free": True, "hr": False})
+    lc = _lc_with_helper(helper, torrent)
+    lc.remove_task_torrents(1, _task({"freestatus": "Y", "mode": "or"}))
+    assert lc._downloader.deleted == []
+
+
+def test_torrent_not_deleted_when_attr_unknown():
+    """详情属性抓取失败（返回 None）：跳过本轮判断，不得按非免费误删"""
+    torrent = _seeding_torrent()
+    helper = _UrlTrackingHelper(attr=None)
+    lc = _lc_with_helper(helper, torrent)
+    lc.remove_task_torrents(1, _task({"freestatus": "Y", "mode": "or"}))
+    assert lc._downloader.deleted == []
