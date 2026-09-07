@@ -111,6 +111,7 @@ class ConfigReloader:
                 subscribe_service=ctx.subscribe_service,
                 knowledge_ingestor=ctx.knowledge_ingestor,
                 conversation_store=ctx.conversation_store,
+                message=getattr(ctx, "message", None),
             )
             self._scheduler_snapshot = current
 

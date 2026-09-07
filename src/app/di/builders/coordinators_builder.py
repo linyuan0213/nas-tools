@@ -122,6 +122,7 @@ def build_coordinators(
         knowledge_ingestor=agent_rag.knowledge_ingestor,
         conversation_store=agent_rag.conversation_store,
         plugin_market_service=services.plugin_market_service,
+        message=message,
     )
 
     # RAG 知识库自动更新：媒体转移完成后节流重建 media_library 命名空间

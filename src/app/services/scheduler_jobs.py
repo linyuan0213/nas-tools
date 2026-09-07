@@ -12,6 +12,7 @@ from app.core.settings import settings
 from app.indexer.core.miss_collector import weekly_miss_review
 from app.infrastructure.image_proxy import clean_old_cache
 from app.infrastructure.temp import TempCleanup
+from app.services.site_parse_health_service import SiteParseHealthService
 
 
 def _refresh_site_data_now_threaded(thread_executor, site_userinfo):
@@ -31,6 +32,7 @@ DEFAULT_JOB_IDS = (
     "IdentifyMiss.weekly_review",
     "ImageProxy.clean_old_cache",
     "AgentMaintenance.daily",
+    "SiteParseHealth.daily_check",
 )
 
 
@@ -69,6 +71,18 @@ def _parse_interval(value, min_val=0, default=0):
         return default
 
 
+def _parse_health_daily_check(message=None):
+    """站点解析健康自检定时任务：注入消息通道用于异常告警推送."""
+
+    def _run():
+        try:
+            SiteParseHealthService(message=message).check_all()
+        except Exception as e:  # noqa: BLE001
+            log.error(f"[解析自检]每日任务异常: {e}")
+
+    return _run
+
+
 def load_default_jobs(
     scheduler,
     *,
@@ -81,6 +95,7 @@ def load_default_jobs(
     knowledge_ingestor=None,
     conversation_store=None,
     plugin_market_service=None,
+    message=None,
 ):
     """
     加载系统默认定时任务
@@ -260,3 +275,14 @@ def load_default_jobs(
             jobstore=_jobstore,
         )
         log.info("Agent 每日维护任务已注册（每日 03:00）")
+
+    # 站点解析健康度自检（每日 03:20；页面改版导致选择器/字段静默失效时及早发现）
+    # 消息注入：负载常时通过 message 推送（连续确认/限流间隔见服务内防抖逻辑）
+    scheduler.register_cron(
+        job_id="SiteParseHealth.daily_check",
+        name="站点解析健康自检",
+        func=_parse_health_daily_check(message),
+        cron="20 3 * * *",
+        jobstore=_jobstore,
+    )
+    log.info("站点解析健康自检任务已注册（每日 03:20）")

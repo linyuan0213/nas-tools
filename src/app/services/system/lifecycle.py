@@ -123,8 +123,10 @@ class SystemLifecycleService:
         knowledge_ingestor=None,
         conversation_store=None,
         plugin_market_service=None,
+        message=None,
     ):
         self._scheduler = scheduler_core
+        self._message = message
         self._sync = sync
         self._brush = brush_task_service
         self._rss_checker = rss_checker
@@ -173,6 +175,7 @@ class SystemLifecycleService:
             knowledge_ingestor=self._knowledge_ingestor,
             conversation_store=self._conversation_store,
             plugin_market_service=self._plugin_market_service,
+            message=self._message,
         )
         # 2. 并行启动各业务服务（此时调度器已运行，init_config 里的 stop/start_job 可正常执行）
         startup_tasks = [
