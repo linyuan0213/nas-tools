@@ -459,8 +459,9 @@ class SiteEngine:
         ret = {"free": False, "2xfree": False, "hr": False, "peer_count": 0, "labels": ""}
         site = self.get_by_url(torrent_url)
         if not site:
-            log.debug(f"[SiteEngine]resolve_torrent_attr 未匹配站点, url={torrent_url[:100]}")
-            return ret
+            # 站点未匹配：属性未知而非"非免费"，避免上层按非免费误删
+            log.warn(f"[SiteEngine]resolve_torrent_attr 未匹配站点, url={torrent_url[:100]}")
+            raise TorrentAttrFetchError(f"未匹配站点: {torrent_url[:100]}")
         user_config = {
             "cookie": cookie or "",
             "api_key": api_key or "",
@@ -475,8 +476,9 @@ class SiteEngine:
         if site.api and site.torrent_attr:
             tid = self._extract_tid(torrent_url, site)
             if not tid:
-                log.debug(f"[SiteEngine]resolve_torrent_attr TID提取失败, url={torrent_url[:100]}")
-                return ret
+                # TID 提取失败（如 RSS 一次性签名链接）：属性未知，不得按"非免费"处理
+                log.warn(f"[SiteEngine]resolve_torrent_attr TID提取失败, url={torrent_url[:100]}")
+                raise TorrentAttrFetchError(f"TID提取失败: {torrent_url[:100]}")
             cfg = site.torrent_attr
             base = site.api.base_url.rstrip("/")
             path = cfg.get("path", "").format(tid=tid)
@@ -520,9 +522,20 @@ class SiteEngine:
                 else:
                     res = client.get(url=url, headers=headers, auth=auth, **rl_kwargs)
                 text = res.text
-                free_path = cfg.get("response", {}).get("free_key", "")
-                free_val = cfg.get("response", {}).get("free_value", "")
-                free_match = cfg.get("response", {}).get("free_match", "exact")
+                # 非 JSON 响应（302 错误页/限流 HTML 等）：属性未知，不得按"非免费"处理
+                if not JsonUtils.is_valid_json(text):
+                    raise TorrentAttrFetchError(f"详情返回非 JSON（疑似错误页/限流）: {url[:100]}")
+                resp_cfg = cfg.get("response", {})
+                # 业务失败响应（如 {"code":1,"message":"非法用戶端"} 无 data）：
+                # free_key 顶层字段（约定为 data）缺失或为空时视为属性未知，不误判"非免费"
+                free_path = resp_cfg.get("free_key", "")
+                top_key = free_path.split(".")[0] if free_path else ""
+                if top_key:
+                    root = JsonUtils.loads(text)
+                    if isinstance(root, dict) and (top_key not in root or root.get(top_key) is None):
+                        raise TorrentAttrFetchError(f"详情接口无 {top_key} 数据（疑似业务失败）: {str(root)[:120]}")
+                free_val = resp_cfg.get("free_value", "")
+                free_match = resp_cfg.get("free_match", "exact")
                 if free_path and free_val:
                     extracted = JsonUtils.get_json_object(text, free_path)
                     if self._match_attr_value(extracted, free_val, free_match):
@@ -535,7 +548,6 @@ class SiteEngine:
                     if self._match_attr_value(extracted2x, free2x_val, free2x_match):
                         ret["free"] = True
                         ret["2xfree"] = True
-                resp_cfg = cfg.get("response", {})
                 # 站点级活动（如“全站免费”）：
                 # 部分站点活动期间不逐种更新徽标（如 M-Team 全站 FREE 时多数种子仍显示
                 # 上传者自设的折扣），此时以详情返回的全站活动规则补判免费。

@@ -6,7 +6,13 @@ from unittest.mock import MagicMock
 from lxml import etree
 
 import app.sites.engine as engine_mod
-from app.sites.engine import SiteApiConfig, SiteDefinition, SiteEngine, _extract_detail_labels
+from app.sites.engine import (
+    SiteApiConfig,
+    SiteDefinition,
+    SiteEngine,
+    TorrentAttrFetchError,
+    _extract_detail_labels,
+)
 
 
 class TestSiteEngine:
@@ -150,7 +156,7 @@ class TestApiSiteWideFreeAttr:
     def test_no_promotion_rule_not_free(self, monkeypatch):
         ret = self._resolve(
             monkeypatch,
-            '{"data": {"status": {"discount": "PERCENT_50", "discountEndTime": None}}}',
+            '{"data": {"status": {"discount": "PERCENT_50", "discountEndTime": null}}}',
         )
         assert ret["free"] is False
 
@@ -201,6 +207,59 @@ def json_dumps_site_discount(rule_discount: str) -> str:
             }
         }
     )
+
+
+class TestApiAttrFailClosed:
+    """API 站点种子属性解析失败时必须收敛（抛 TorrentAttrFetchError），不得按"非免费"误判删种"""
+
+    def test_business_error_response_raises(self, monkeypatch):
+        """业务错误 JSON（无 data，如限流/非法客户端）→ 属性未知"""
+        import pytest
+
+        engine = _make_mteam_like_engine(monkeypatch, '{"code": 1, "message": "非法用戶端"}', _mteam_attr_config())
+        with pytest.raises(TorrentAttrFetchError):
+            engine.resolve_torrent_attr(torrent_url="https://kp.m-team.cc/detail/123", api_key="test-key")
+
+    def test_null_data_response_raises(self, monkeypatch):
+        """data 为 null（业务失败）→ 属性未知"""
+        import pytest
+
+        engine = _make_mteam_like_engine(monkeypatch, '{"code": 1, "data": None}', _mteam_attr_config())
+        with pytest.raises(TorrentAttrFetchError):
+            engine.resolve_torrent_attr(torrent_url="https://kp.m-team.cc/detail/123", api_key="test-key")
+
+    def test_non_json_response_raises(self, monkeypatch):
+        """非 JSON（302 HTML 错误页等）→ 属性未知"""
+        import pytest
+
+        engine = _make_mteam_like_engine(monkeypatch, "<html><body>302 Found</body></html>", _mteam_attr_config())
+        with pytest.raises(TorrentAttrFetchError):
+            engine.resolve_torrent_attr(torrent_url="https://kp.m-team.cc/detail/123", api_key="test-key")
+
+    def test_unmatched_site_raises(self):
+        """URL 未匹配任何站点 → 属性未知（原为返回 free=False 默认值导致误删）"""
+        import pytest
+
+        engine = SiteEngine(definitions_dir="/nonexistent")
+        with pytest.raises(TorrentAttrFetchError):
+            engine.resolve_torrent_attr(torrent_url="https://unknown.example/detail/1")
+
+    def test_tid_extract_failure_raises(self, monkeypatch):
+        """无法从 URL 提取 TID（如无数字的签名链接）→ 属性未知"""
+        import pytest
+
+        engine = _make_mteam_like_engine(monkeypatch, _promo_payload(badge="FREE"), _mteam_attr_config())
+        with pytest.raises(TorrentAttrFetchError):
+            engine.resolve_torrent_attr(torrent_url="https://kp.m-team.cc/rss/dlx?sign=abcdef", api_key="test-key")
+
+    def test_success_normal_discount_not_free(self, monkeypatch):
+        """正常响应但 discount=NORMAL → 正确判定非免费（不误抛异常）"""
+        ret = self._resolve_ok(monkeypatch, '{"code": 0, "data": {"status": {"discount": "NORMAL"}}}')
+        assert ret["free"] is False
+
+    def _resolve_ok(self, monkeypatch, payload):
+        engine = _make_mteam_like_engine(monkeypatch, payload, _mteam_attr_config())
+        return engine.resolve_torrent_attr(torrent_url="https://kp.m-team.cc/detail/123", api_key="test-key")
 
 
 class TestSiteRuleTimeParse:
