@@ -37,6 +37,7 @@ from api.routers import (
     sync,
     system,
     web_message,
+    web_push,
     words,
 )
 from app.core.settings import settings
@@ -223,6 +224,7 @@ app.include_router(apikey.router, prefix="/api/apikey", tags=["apikey"])
 app.include_router(kb.router, prefix="/api/agent", tags=["agent"])
 app.include_router(chat.router, prefix="/api/agent", tags=["agent"])
 app.include_router(web_message.router, prefix="/api/agent", tags=["agent"])
+app.include_router(web_push.router, prefix="/api/agent", tags=["agent"])
 # 消息客户端 webhook（不需要 /api 前缀）
 app.include_router(message_webhook.router, tags=["message-webhook"])
 

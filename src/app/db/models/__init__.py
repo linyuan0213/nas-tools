@@ -84,6 +84,9 @@ from app.db.models.plugin import (
     USERRSSTASKHISTORY,
 )
 
+# Web Push 订阅
+from app.db.models.push_subscription import PushSubscription
+
 # RBAC权限管理模型
 from app.db.models.rbac import (
     RBACMenu,
@@ -169,6 +172,8 @@ __all__ = [
     "CUSTOMWORDGROUPS",
     # 站点解析健康度
     "SiteParseHealth",
+    # Web Push 订阅
+    "PushSubscription",
     # 下载
     "DOWNLOADER",
     "DOWNLOADHISTORY",
