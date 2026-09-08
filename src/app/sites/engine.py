@@ -7,7 +7,9 @@
 
 import importlib
 import os
+import random
 import re
+import threading
 import time
 import traceback
 from dataclasses import dataclass, field
@@ -29,6 +31,53 @@ from app.sites.utils import is_logged_in
 from app.utils import JsonUtils
 from app.utils.browser_mode import build_browser_mode
 from app.utils.config_tools import get_proxies
+
+# 详情页/页面抓取限流退避：站点连续返回空/失败时，串行化并放缓后续请求，
+# 避免瞬时并发触发站点风控；恢复正常后自动回到无间隔并发。
+_PAGE_PACE_WINDOW = 180.0
+_PAGE_PACE_MAX_INTERVAL = 6.0
+_page_pace_state: dict[str, dict] = {}
+_page_pace_lock = threading.Lock()
+
+
+def _record_page_fetch_result(site_id: str, ok: bool) -> None:
+    """记录一次页面抓取结果，ok=False 表示空/失败，进入退避窗口"""
+    with _page_pace_lock:
+        st = _page_pace_state.setdefault(site_id, {"last_fail": 0.0, "streak": 0})
+        if ok:
+            st["last_fail"] = 0.0
+            st["streak"] = 0
+            st["slot"] = 0.0
+        else:
+            st["last_fail"] = time.monotonic()
+            st["streak"] = int(st.get("streak", 0)) + 1
+
+
+def _claim_page_fetch_slot(site_id: str, interval: float) -> float:
+    """为一次抓取预约时间片，返回需等待秒数（>0 则调用方 sleep）"""
+    with _page_pace_lock:
+        now = time.monotonic()
+        slot = _page_pace_state.get(site_id, {}).get("slot", 0.0) or 0.0
+        start = max(now, slot)
+        _page_pace_state.setdefault(site_id, {})["slot"] = start + interval
+        return start - now
+
+
+def _page_fetch_interval(site_id: str) -> float:
+    """当前站点是否处于退避窗口；是则返回建议间隔"""
+    with _page_pace_lock:
+        st = _page_pace_state.get(site_id)
+        if not st:
+            return 0.0
+        now = time.monotonic()
+        if now - float(st.get("last_fail", 0.0)) > _PAGE_PACE_WINDOW:
+            st["streak"] = 0
+            return 0.0
+        streak = int(st.get("streak", 0))
+        if streak <= 0:
+            return 0.0
+        base = min(0.8 + (streak - 1) * 1.2, _PAGE_PACE_MAX_INTERVAL)
+        return random.uniform(base * 0.7, base * 1.3)
 
 
 class TorrentAttrFetchError(Exception):
@@ -772,6 +821,15 @@ class SiteEngine:
         proxies = get_proxies() if user_config.get("proxy") else None
         proxy_url = proxies.get("http") if proxies else None
         site = self.get_by_url(url)
+        site_id = str(site.id) if site is not None else ""
+        pace_wait = 0.0
+        if site_id:
+            interval = _page_fetch_interval(site_id)
+            if interval > 0:
+                pace_wait = _claim_page_fetch_slot(site_id, interval)
+        if pace_wait > 0:
+            log.debug(f"[SiteEngine]{site_id} 页面抓取空/失败退避，{pace_wait:.1f}s 后重试")
+            time.sleep(pace_wait)
         rate_limiter = getattr(self, "site_limiter", None)
         rate_limiter_engine = rate_limiter.engine if rate_limiter else None
         rl_kwargs = engine_tools._get_rate_limit_kwargs(self, site)
@@ -799,6 +857,7 @@ class SiteEngine:
                 res = client.get(url=url, headers=headers, auth=auth, **rl_kwargs)
                 final = str(res.url) if getattr(res, "url", None) else url
                 if not res.is_success:
+                    log.debug(f"[SiteEngine]页面抓取非 2xx: HTTP {res.status_code} url={str(url)[:80]}")
                     return None, final
                 return res.text, final
             except Exception as e:
@@ -831,6 +890,9 @@ class SiteEngine:
                     text, final_url = text2, final2
             except Exception as e:
                 log.debug(f"[SiteEngine]浏览器降级抓取失败: {e}")
+        if site_id:
+            blocked = text is None and "login" not in str(final_url).lower()
+            _record_page_fetch_result(site_id, ok=not blocked)
         return text, final_url
 
     # ---- 连接测试 ----
