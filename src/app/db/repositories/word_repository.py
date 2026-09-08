@@ -163,6 +163,7 @@ class WordRepository(BaseRepository):
             season_count: 季数
             note: 备注
         """
+        note = note or ""
         with self.session() as db:
             db.add(
                 CUSTOMWORDGROUPS(
