@@ -782,6 +782,15 @@ def get_downloading(
     return success(data=result)
 
 
+@router.post("/statistics", response_model=CommonResponse, summary="获取下载器实时速率统计")
+def get_downloader_statistics(
+    req: EmptyRequest = EmptyRequest(),
+    user: str = Depends(require_any_permission("download:view", "download:manage")),
+    svc: DownloadService = Depends(get_download_service),
+):
+    return success(data=svc.get_downloader_speed_statistics())
+
+
 @router.post("/tools/blacklist/clear", response_model=CommonResponse, summary="清空转移黑名单")
 def truncate_blacklist(
     req: EmptyRequest = EmptyRequest(),

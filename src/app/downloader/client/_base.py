@@ -313,6 +313,10 @@ class _IDownloadClient(metaclass=ABCMeta):
         eta = StringUtils.str_timelong(torrent.eta)
         return f"{chr(8595)}{dl}B/s {chr(8593)}{ul}B/s {eta}"
 
+    def get_transfer_statistics(self) -> dict | None:
+        """获取下载器实时速率与速度上限；不支持或离线时返回 None"""
+        return None
+
     @abstractmethod
     def set_speed_limit(self, download_limit: int | None = None, upload_limit: int | None = None) -> bool:
         """设置速度限制"""

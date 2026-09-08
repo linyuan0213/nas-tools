@@ -440,6 +440,67 @@ class DownloadService:
             title = f"{display_name} {se}"
         return title, poster
 
+    # ---------- 下载器实时速率统计 ----------
+
+    def get_downloader_speed_statistics(self) -> dict:
+        """聚合各下载器实时速率与速度上限，反映真实带宽占用负载"""
+        enabled = []
+        stats: list[tuple[dict, dict]] = []
+        for conf in (self._downloader.get_downloader_conf() or {}).values():
+            if not conf.get("enabled"):
+                continue
+            enabled.append(conf)
+            client = self._downloader.get_downloader(str(conf.get("id")))
+            if not client:
+                continue
+            try:
+                stat = client.get_transfer_statistics()
+            except Exception as e:
+                log.warn(f"[DownloadService]下载器 {conf.get('name')} 速率统计失败：{e}")
+                stat = None
+            if stat:
+                stats.append((conf, stat))
+
+        downloaders = [
+            {
+                "id": conf.get("id"),
+                "name": conf.get("name"),
+                "download_speed": int(stat.get("download_speed") or 0),
+                "upload_speed": int(stat.get("upload_speed") or 0),
+                "download_limit": stat.get("download_limit"),
+                "upload_limit": stat.get("upload_limit"),
+            }
+            for conf, stat in stats
+        ]
+
+        if not stats:
+            return {
+                "online": False,
+                "online_count": 0,
+                "downloader_count": len(enabled),
+                "download_speed": 0,
+                "upload_speed": 0,
+                "download_limit": None,
+                "upload_limit": None,
+                "downloaders": [],
+            }
+
+        download_speed = sum(int(s.get("download_speed") or 0) for _, s in stats)
+        upload_speed = sum(int(s.get("upload_speed") or 0) for _, s in stats)
+        # 全部在线下载器均配置了速度上限时才有可对比的占用比例
+        dl_limits = [int(s["download_limit"]) for _, s in stats if s.get("download_limit")]
+        ul_limits = [int(s["upload_limit"]) for _, s in stats if s.get("upload_limit")]
+        return {
+            "online": True,
+            "online_count": len(stats),
+            "downloader_count": len(enabled),
+            "download_speed": download_speed,
+            "upload_speed": upload_speed,
+            "download_limit": sum(dl_limits) if len(dl_limits) == len(stats) else None,
+            "upload_limit": sum(ul_limits) if len(ul_limits) == len(stats) else None,
+            "downloaders": downloaders,
+        }
+
     def _fill_torrent_info(self, torrent, media_info):
         """将 MediaInfo 回填到 torrent 字典"""
         year = media_info.year

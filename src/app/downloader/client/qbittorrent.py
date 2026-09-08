@@ -833,6 +833,32 @@ class Qbittorrent(_IDownloadClient):
             ExceptionUtils.exception_traceback(err)
             return False
 
+    def get_transfer_statistics(self) -> dict | None:
+        if not self.qbc:
+            return None
+        try:
+            info = self.qbc.transfer_info()
+        except (InfrastructureError, NetworkError):
+            raise
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+            return None
+        if not info:
+            return None
+
+        def _speed(key: str) -> int:
+            val = info.get(key)
+            return int(val) if isinstance(val, (int, float)) else 0
+
+        dl_limit = _speed("dl_rate_limit")
+        up_limit = _speed("up_rate_limit")
+        return {
+            "download_speed": _speed("dl_info_speed"),
+            "upload_speed": _speed("up_info_speed"),
+            "download_limit": dl_limit if dl_limit > 0 else None,
+            "upload_limit": up_limit if up_limit > 0 else None,
+        }
+
     def recheck_torrents(self, ids: list[str] | str | None = None) -> Any:
         if not self.qbc:
             return False

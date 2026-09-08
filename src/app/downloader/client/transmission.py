@@ -611,6 +611,26 @@ class Transmission(_IDownloadClient):
             ExceptionUtils.exception_traceback(err)
             return False
 
+    def get_transfer_statistics(self) -> dict | None:
+        if not self.trc:
+            return None
+        try:
+            session = self.trc.get_session()
+            stats = self.trc.session_stats
+        except (InfrastructureError, NetworkError):
+            raise
+        except Exception as err:
+            ExceptionUtils.exception_traceback(err)
+            return None
+        if not session or not stats:
+            return None
+        return {
+            "download_speed": int(getattr(stats, "download_speed", 0) or 0),
+            "upload_speed": int(getattr(stats, "upload_speed", 0) or 0),
+            "download_limit": int(session.speed_limit_down * 1024) if session.speed_limit_down_enabled else None,
+            "upload_limit": int(session.speed_limit_up * 1024) if session.speed_limit_up_enabled else None,
+        }
+
     def recheck_torrents(self, ids: list[str] | str | int | None = None) -> Any:
         if not self.trc:
             return False
