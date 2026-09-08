@@ -217,7 +217,7 @@ def test_first_abnormal_no_notify_until_second_day():
         def latest(self, site_id):  # type: ignore[override]
             if self._prev is None:
                 return None
-            return _NS(STATUS=self._prev, CHECK_DATE=self._prev_date)
+            return _NS(status=self._prev, check_date=self._prev_date, detail=None)
 
     # 场景1：首次异常（无历史）→ 不推送
     engine = _FakeEngine({"FREE": ["//b"], "PEER_COUNT": ["//span[@id='seeders']/span[1]"]})
@@ -333,7 +333,7 @@ def test_abnormal_continues_silent_until_interval():
             self._detail = detail
 
         def latest(self, site_id):  # type: ignore[override]
-            return _NS(STATUS="degraded", CHECK_DATE="2026-09-06", DETAIL=self._detail)
+            return _NS(status="degraded", check_date="2026-09-06", detail=self._detail)
 
     engine = _FakeEngine({"FREE": ["//b"], "PEER_COUNT": ["//span[@id='seeders']/span[1]"]})
     engine._selector_stats = {"FREE": 0, "PEER_COUNT": 0}

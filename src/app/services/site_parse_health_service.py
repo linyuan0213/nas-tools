@@ -13,13 +13,12 @@
 import datetime
 import json
 import urllib.error
-import urllib.parse
 import urllib.request
 from typing import Any
 from xml.dom import minidom
 
 import log
-from app.db.repositories.site_parse_health_repository import SiteParseHealthRepository
+from app.db.repositories.site_parse_health_repo_adapter import SiteParseHealthRepositoryAdapter
 from app.message.message import Message
 from app.sites.engine import TorrentAttrFetchError
 from app.sites.site_cache import SiteCache
@@ -42,13 +41,13 @@ class SiteParseHealthService:
         self,
         site_cache: SiteCache | None = None,
         siteconf: SiteConf | None = None,
-        repo: SiteParseHealthRepository | None = None,
+        repo: SiteParseHealthRepositoryAdapter | None = None,
         message: Message | None = None,
         sample_size: int = DEFAULT_SAMPLE_SIZE,
     ):
         self._cache = site_cache or SiteCache()
         self._siteconf = siteconf or SiteConf(self._cache._site_engine)
-        self._repo = repo or SiteParseHealthRepository()
+        self._repo = repo or SiteParseHealthRepositoryAdapter()
         self._message = message
         self._sample_size = sample_size
 
@@ -300,9 +299,9 @@ class SiteParseHealthService:
         today = datetime.date.today().strftime("%Y-%m-%d")
         row = self._to_row(result)
         # 非告警日也要把上次告警时间继承下来，避免 detail 覆盖导致 7 天复读失效
-        if previous and getattr(previous, "DETAIL", None):
+        if previous and getattr(previous, "detail", None):
             try:
-                prev_detail = json.loads(previous.DETAIL or "") or {}
+                prev_detail = json.loads(previous.detail or "") or {}
             except (TypeError, ValueError):
                 prev_detail = {}
             last_alert = prev_detail.get("last_alert_date") or ""
@@ -317,22 +316,19 @@ class SiteParseHealthService:
         """结构异常（降级/失效）连续两轮确认后推送；异常持续时每 RE_ALERT_INTERVAL_DAYS 天复读一次."""
         new_status = result.get("status")
         if new_status == self.STATUS_AUTH_ERROR:
-            log.warn(
-                f"[解析自检]{result.get('site_name')} 凭据失效（不告警）："
-                f"{result.get('issues')}"
-            )
+            log.warn(f"[解析自检]{result.get('site_name')} 凭据失效（不告警）：{result.get('issues')}")
             return
         if new_status not in (self.STATUS_DEGRADED, self.STATUS_INVALID):
             return
-        prev_status = (getattr(previous, "STATUS", None) or "").strip() if previous else ""
-        prev_date = (getattr(previous, "CHECK_DATE", None) or "") if previous else ""
+        prev_status = (getattr(previous, "status", None) or "").strip() if previous else ""
+        prev_date = (getattr(previous, "check_date", None) or "") if previous else ""
         today = datetime.date.today()
         today_str = today.strftime("%Y-%m-%d")
         # 上次告警时间（存在历史行 DETAIL 中），用于异常持续时按间隔复读而非每日打扰
         last_alert_date = ""
-        if previous and getattr(previous, "DETAIL", None):
+        if previous and getattr(previous, "detail", None):
             try:
-                last_alert_date = (json.loads(previous.DETAIL) or {}).get("last_alert_date", "") or ""
+                last_alert_date = (json.loads(previous.detail) or {}).get("last_alert_date", "") or ""
             except (TypeError, ValueError):
                 last_alert_date = ""
 
@@ -344,18 +340,14 @@ class SiteParseHealthService:
 
         if prev_status not in (self.STATUS_DEGRADED, self.STATUS_INVALID, self.STATUS_AUTH_ERROR):
             # 昨日正常/无记录，首次异常只记录不推送（等明日连续确认，防抖）
-            log.warn(
-                f"[解析自检]{result.get('site_name')} 首次异常 {new_status}（暂不推送，待连续确认）"
-            )
+            log.warn(f"[解析自检]{result.get('site_name')} 首次异常 {new_status}（暂不推送，待连续确认）")
             return
         if prev_date >= today_str:
             return  # 当日已跑过，不重复处理
         # 昨日异常：确认连续两轮；若近期已推送过则按间隔静默（7 天复读一次）
         if last_alert_date and last_alert_date < today_str:
             if _days_between(last_alert_date, today_str) < self.RE_ALERT_INTERVAL_DAYS:
-                log.info(
-                    f"[解析自检]{result.get('site_name')} 异常持续中（{last_alert_date} 已提醒过），静默"
-                )
+                log.info(f"[解析自检]{result.get('site_name')} 异常持续中（{last_alert_date} 已提醒过），静默")
                 return
         self._push_alert(result, new_status, first=True)
 
@@ -459,11 +451,11 @@ class SiteParseHealthService:
     @staticmethod
     def _row_dict(row) -> dict:
         detail = {}
-        if row.DETAIL:
+        if row.detail:
             try:
-                detail = json.loads(row.DETAIL)
+                detail = json.loads(row.detail)
             except (TypeError, ValueError):
-                detail = {"raw": row.DETAIL}
+                detail = {"raw": row.detail}
         # 兼容旧数据：issue 可能为 {"url":..,"error":..} 字典，统一转可读字符串
         issues: list[str] = []
         for issue in detail.get("issues", []) or []:
@@ -474,15 +466,15 @@ class SiteParseHealthService:
             else:
                 issues.append(str(issue))
         return {
-            "id": row.ID,
-            "site_id": row.SITE_ID,
-            "site_name": row.SITE_NAME,
-            "check_date": row.CHECK_DATE,
-            "status": row.STATUS,
-            "sample_count": row.SAMPLE_COUNT,
-            "attr_ok": row.ATTR_OK,
-            "attr_fail": row.ATTR_FAIL,
+            "id": row.id,
+            "site_id": row.site_id,
+            "site_name": row.site_name,
+            "check_date": row.check_date,
+            "status": row.status,
+            "sample_count": row.sample_count,
+            "attr_ok": row.attr_ok,
+            "attr_fail": row.attr_fail,
             "issues": issues,
             "selectors": detail.get("selectors", {}),
-            "created_at": row.CREATED_AT.isoformat() if row.CREATED_AT else "",
+            "created_at": row.created_at.isoformat() if row.created_at else "",
         }
