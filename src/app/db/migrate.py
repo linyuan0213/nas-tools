@@ -226,6 +226,10 @@ def import_database(
                 if sa_table is None:
                     continue
 
+                # 只插入目标表实际存在的列：备份文件可能来自不同版本，
+                # 多余列直接过滤，避免新旧版本 schema 差异导致整行插入失败
+                insert_columns = set(sa_table.columns.keys())
+
                 # 获取需要截断的列（避免 MySQL Data too long 错误）
                 truncate_columns = {}
                 for col in sa_table.columns:
@@ -240,12 +244,18 @@ def import_database(
                         if truncate_columns:
                             new_row = {}
                             for k, v in row.items():
+                                if k not in insert_columns:
+                                    continue
                                 max_len = truncate_columns.get(k)
                                 if max_len is not None and isinstance(v, str) and len(v) > max_len:
                                     new_row[k] = v[:max_len]
                                 else:
                                     new_row[k] = v
                             row = new_row
+                        else:
+                            row = {k: v for k, v in row.items() if k in insert_columns}
+                        if not row:
+                            continue
                         try:
                             conn.execute(sa_table.insert(), [row])
                         except Exception as e:
