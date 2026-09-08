@@ -86,6 +86,7 @@ class SubscribeQueryService:
                 "release_date": note_info.get("release_date"),
                 "vote": note_info.get("vote"),
                 "keyword": keyword,
+                "add_date": rss_movie.ADD_DATE,
             }
         return ret_dict
 
@@ -167,6 +168,7 @@ class SubscribeQueryService:
                 "release_date": note_info.get("release_date"),
                 "vote": note_info.get("vote"),
                 "keyword": keyword,
+                "add_date": rss_tv.ADD_DATE,
             }
         return ret_dict
 

@@ -267,6 +267,7 @@ class SubscribeRepository(BaseRepository):
                     DESC=desc,
                     NOTE=note,
                     KEYWORD=keyword,
+                    ADD_DATE=time.strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 db.add(movie)
                 db.flush()
@@ -550,6 +551,7 @@ class SubscribeRepository(BaseRepository):
                     DESC=desc,
                     NOTE=note,
                     KEYWORD=keyword,
+                    ADD_DATE=time.strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 db.add(tv)
                 db.flush()

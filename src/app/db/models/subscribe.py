@@ -58,6 +58,7 @@ class SubscribeMovies(Base):
     STATE: Mapped[str] = mapped_column(String(255), index=True, nullable=True)
     DESC: Mapped[str] = mapped_column(String(255), nullable=True)
     NOTE: Mapped[str] = mapped_column(Text, nullable=True)
+    ADD_DATE: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     def as_dict(self) -> dict[str, Any]:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
@@ -108,6 +109,7 @@ class SubscribeTvs(Base):
     STATE: Mapped[str] = mapped_column(String(255), index=True, nullable=True)
     DESC: Mapped[str] = mapped_column(String(255), nullable=True)
     NOTE: Mapped[str] = mapped_column(Text, nullable=True)
+    ADD_DATE: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     def as_dict(self) -> dict[str, Any]:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

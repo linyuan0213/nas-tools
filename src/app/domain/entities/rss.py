@@ -135,6 +135,7 @@ class SubscribeMovieEntity:
     state: str
     description: str
     note: str
+    add_date: str = ""
     filter_free: bool = False
 
     @property
@@ -233,6 +234,7 @@ class SubscribeMovieEntity:
             state=orm_model.STATE or "",
             description=orm_model.DESC or "",
             note=orm_model.NOTE or "",
+            add_date=getattr(orm_model, "ADD_DATE", None) or "",
         )
 
     # 从 ORM 列名到 dataclass 字段名的映射
@@ -366,6 +368,7 @@ class SubscribeTvEntity:
     state: str
     description: str
     note: str
+    add_date: str = ""
     filter_free: bool = False
 
     @property
@@ -484,6 +487,7 @@ class SubscribeTvEntity:
             state=orm_model.STATE or "",
             description=orm_model.DESC or "",
             note=orm_model.NOTE or "",
+            add_date=getattr(orm_model, "ADD_DATE", None) or "",
         )
 
     # 从 ORM 列名到 dataclass 字段名的映射
