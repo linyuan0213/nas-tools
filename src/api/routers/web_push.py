@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+import log
 from api.deps import require_any_permission
 from app.services.web_push_service import WebPushService
 from app.utils.response import success
@@ -41,6 +42,7 @@ def push_subscribe(
     user: Any = Depends(require_any_permission("agent:view", "site:view")),
 ):
     keys = req.keys or {}
+    log.info(f"[WebPush]subscribe endpoint={str(req.endpoint)[:60]} user={getattr(user, 'username', '')}")
     WebPushService().subscribe(
         endpoint=req.endpoint,
         p256dh=keys.get("p256dh", ""),
@@ -54,5 +56,6 @@ def push_unsubscribe(
     req: PushUnsubscribeRequest,
     user: Any = Depends(require_any_permission("agent:view", "site:view")),
 ):
+    log.info(f"[WebPush]unsubscribe endpoint={str(req.endpoint)[:60]} user={getattr(user, 'username', '')}")
     WebPushService().unsubscribe(endpoint=req.endpoint)
     return success()

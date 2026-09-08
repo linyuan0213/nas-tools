@@ -18,6 +18,7 @@ Nexus Media 是一个功能强大的媒体库管理工具，提供自动化追�
 |------|------|------|
 | 首页仪表盘 | `/dashboard/home` | - |
 | AI 助手 | `/message-center` | [AI 助手](agent.md) |
+| 消息通知 | 右上角铃铛 | [通知渠道配置](notifications.md) · [浏览器系统通知（PWA/Web Push）](webpush.md) |
 | 知识库 | `/kb` | [AI 助手](agent.md) |
 | 我的媒体库 | `/library` | [媒体库](media_library.md) |
 | 资源搜索 | `/media/search` | [资源搜索与探索](search.md) |

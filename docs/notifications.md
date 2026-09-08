@@ -292,4 +292,5 @@ server {
 ## 下一步
 
 - [消息通知模板](message_templates.md)：自定义每种事件的消息标题和内容格式
+- [浏览器系统通知（PWA / Web Push）](webpush.md)：桌面/手机系统通知栏推送
 - [基础配置](configuration.md)：Telegram 访问不通时配置代理服务器

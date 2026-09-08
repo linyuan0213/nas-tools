@@ -76,7 +76,7 @@ class TestSendPush:
         svc.subscribe("https://push.example/ok", "p", "a")
         svc.subscribe("https://push.example/gone", "p", "a")
 
-        def fake_webpush(subscription_info, data, vapid_private_key, vapid_claims):
+        def fake_webpush(subscription_info, data, vapid_private_key, vapid_claims, **kwargs):
             ep = subscription_info["endpoint"]
             if "gone" in ep:
                 resp = SimpleNamespace(status_code=410)

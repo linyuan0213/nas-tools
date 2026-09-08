@@ -12,6 +12,9 @@ app:
   web_host: '::'
   # 【WEB管理界面端口】：默认3000
   web_port: 3000
+  # 【Web Push 推送 VAPID 联系邮箱】：可选。默认自动取 app.domain 的主机名（Apple 要求真实域名，
+  # @localhost/.local 会被拒绝）；如需自定义填 mailto 邮箱，否则留空即可
+  push_contact: ""
   # 【WEB管理页面登录用户】，默认admin
   login_user: admin
   # 【WEB管理页面登录密码】：默认password，如果是全数字密码，要用''括起来
