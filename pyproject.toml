@@ -1,6 +1,6 @@
 [project]
 name = "nexus-media"
-version = "4.18.0"
+version = "4.19.0"
 description = "Nexus Media"
 readme = "README.md"
 requires-python = ">=3.11"
