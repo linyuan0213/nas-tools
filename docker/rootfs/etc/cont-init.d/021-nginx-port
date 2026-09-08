@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+# 按 NEXUS_PORT 渲染 nginx 上游端口：每次启动从模板重写，
+# 避免 NEXUS_PORT 变更后 nginx 仍代理到旧端口导致连不上
+set -e
+
+TPL=/etc/nginx/nginx.conf.template
+CFG=/etc/nginx/nginx.conf
+PORT=${NEXUS_PORT:-3000}
+
+if [ -f "${TPL}" ]; then
+    cp "${TPL}" "${CFG}"
+    sed -i "s#__NEXUS_PORT__#${PORT}#g" "${CFG}"
+    echo "已按 NEXUS_PORT=${PORT} 渲染 nginx 上游端口"
+fi

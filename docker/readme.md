@@ -184,7 +184,7 @@ compose 中 Redis 服务已配置（无密码、使用 `./data/redis_data` 持�
 | `PUID` | 0 | 运行用户 UID |
 | `PGID` | 0 | 运行用户 GID |
 | `UMASK` | 000 | 文件权限掩码 |
-| `NEXUS_PORT` | 3000 | 容器内部 nexus-media 服务端口（nginx 反代到该端口） |
+| `NEXUS_PORT` | 3000 | 容器内部 nexus-media 服务端口（内嵌 nginx 每次启动按该值自动渲染 upstream，修改后需重建镜像/容器生效） |
 | `SKIP_MIGRATION` | false | 设为 `true` 跳过启动时数据库迁移（默认自动执行） |
 | `TZ` | Asia/Shanghai | 时区 |
 | `NEXUS_MEDIA_DATA` | /data | 数据目录（config.yaml、数据库、插件数据） |
