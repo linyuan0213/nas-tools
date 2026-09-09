@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "刷流任务状态",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [
+      1080,
+      700
+    ],
+    "views": [
+      {
+        "id": "main",
+        "label": "状态流转",
+        "focus": [
+          "disabled",
+          "running",
+          "stopped"
+        ],
+        "note": "运行中周期执行规则检查；停止仍保留任务与做种清理调度。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "刷流任务状态"
+    }
+  ],
+  "states": [
+    {
+      "id": "disabled",
+      "type": "start",
+      "label": "未启用/停用",
+      "sublabel": "站点停用 · 配置不完整",
+      "lane": "main",
+      "col": 0,
+      "step": "00",
+      "tag": "DISABLED"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "label": "运行中",
+      "sublabel": "周期调度检查",
+      "lane": "main",
+      "col": 1,
+      "step": "01",
+      "tag": "RUNNING"
+    },
+    {
+      "id": "stopped",
+      "type": "waiting",
+      "label": "已停止",
+      "sublabel": "保留任务 · 可清理",
+      "lane": "main",
+      "col": 2,
+      "step": "02",
+      "tag": "STOPPED"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "enable",
+      "from": "disabled",
+      "to": "running",
+      "label": "启用",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "id": "start",
+      "from": "stopped",
+      "to": "running",
+      "label": "启动",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": -16
+    },
+    {
+      "id": "stop",
+      "from": "running",
+      "to": "stopped",
+      "label": "停止",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": 16
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "运行与停止",
+      "items": [
+        "运行中按规则周期性执行（RSS/做种检查）",
+        "停止后任务保留，仍按需执行做种清理调度"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "停用态",
+      "items": [
+        "DISABLED 来自站点停用/未启用（实体判定）",
+        "非启停接口写入，启用后进入运行中"
+      ]
+    }
+  ]
+}

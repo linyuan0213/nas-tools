@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "站点检索与浏览器降级",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [860, 700],
+    "views": [
+      {
+        "id": "main",
+        "label": "检索主路径",
+        "focus": ["idx", "sites", "site-ext"],
+        "note": "索引器经站点引擎直连 API/HTML 抓取。"
+      },
+      {
+        "id": "fallback",
+        "label": "降级路径",
+        "focus": ["sites", "chrome", "chrome-srv"],
+        "note": "直连失败/遇挑战自动降级 nexus-chrome 渲染。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "idx", "type": "backend", "label": "索引器", "sublabel": "indexer · SearchPipeline", "pos": [150, 100], "size": [190, 62] },
+    { "id": "sites", "type": "backend", "label": "站点引擎", "sublabel": "sites/engine · html 配置", "pos": [150, 300], "size": [190, 62] },
+    { "id": "site-ext", "type": "external", "label": "PT 站点", "sublabel": "API / HTML", "pos": [150, 520], "size": [190, 62] },
+    { "id": "chrome", "type": "backend", "label": "Chrome 客户端", "sublabel": "infrastructure/chrome · 会话", "pos": [600, 300], "size": [190, 62] },
+    { "id": "chrome-srv", "type": "external", "label": "浏览器服务", "sublabel": "nexus-chrome · 指纹", "pos": [600, 520], "size": [190, 62] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "应用服务层", "wraps": ["idx", "sites"] },
+    { "kind": "region", "label": "基础设施", "wraps": ["chrome"] },
+    { "kind": "region", "label": "站点接入", "wraps": ["site-ext"] },
+    { "kind": "region", "label": "浏览器服务", "wraps": ["chrome-srv"] }
+  ],
+  "connections": [
+    { "id": "idx-sites", "from": "idx", "to": "sites", "label": "站点检索", "labelDy": 55 },
+    { "id": "sites-ext", "from": "sites", "to": "site-ext", "label": "API/HTML 抓取", "labelDy": 55 },
+    { "id": "sites-chrome", "from": "sites", "to": "chrome", "label": "403/挑战降级", "variant": "dashed" },
+    { "id": "chrome-srv-flow", "from": "chrome", "to": "chrome-srv", "label": "渲染/执行", "labelDy": 55 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "直连优先", "items": ["站点引擎按 API / HTML 配置直连请求", "HttpClient 统一限速与重试"] },
+    { "dot": "rose", "title": "降级与生命周期", "items": ["非 2xx / 挑战页触发 nexus-chrome 渲染", "非持久会话用完即删，browser_persistent 支持复用"] }
+  ]
+}

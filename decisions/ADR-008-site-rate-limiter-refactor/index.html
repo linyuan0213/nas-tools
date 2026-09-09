@@ -1,0 +1,2143 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-008-site-rate-limiter-refactor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-008: 通用限流器重构方案 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-008-通用限流器重构方案" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-008: 通用限流器重构方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#当前问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当前问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="当前问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#问题-1三套实现三套配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 1：三套实现，三套配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-2站点限流器计数逻辑严重错误" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 2：站点限流器计数逻辑严重错误
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-3站点限流是拒绝模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 3：站点限流是拒绝模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-4tmdb-限流器是全局单例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 4：TMDB 限流器是全局单例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-5api-限流器不支持等待" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 5：API 限流器不支持等待
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-6无统一监控" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 6：无统一监控
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#方案设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="方案设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#统一配置格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        统一配置格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#架构设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心类设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#后端实现" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        后端实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#各场景使用方式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        各场景使用方式
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="各场景使用方式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-站点限流替换-site_limiterpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 站点限流（替换 site_limiter.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-tmdb-限流替换-tmdb_rate_limiterpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. TMDB 限流（替换 tmdb_rate_limiter.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-api-限流替换现有中间件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. API 限流（替换现有中间件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#统一监控" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        统一监控
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施步骤" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施步骤
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1扩展通用限流引擎" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1：扩展通用限流引擎
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2替换站点限流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2：替换站点限流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3替换-tmdb-限流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3：替换 TMDB 限流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4api-限流迁移" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4：API 限流迁移
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-008-site-rate-limiter-refactor.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-008-通用限流器重构方案">ADR-008: 通用限流器重构方案<a class="headerlink" href="#adr-008-通用限流器重构方案" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Accepted</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-05-31</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<p>当前系统存在三套独立的限流器，各自为政，无法复用：</p>
+<table>
+<thead>
+<tr>
+<th>限流器</th>
+<th>位置</th>
+<th>算法</th>
+<th>后端</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SiteRateLimiter</code></td>
+<td><code>app/sites/site_limiter.py</code></td>
+<td>窗口计数（有bug）</td>
+<td>内存</td>
+<td>PT 站点访问限流</td>
+</tr>
+<tr>
+<td><code>TMDBRateLimiter</code></td>
+<td><code>app/utils/tmdb_rate_limiter.py</code></td>
+<td>令牌桶</td>
+<td>内存</td>
+<td>TMDB API 限流</td>
+</tr>
+<tr>
+<td><code>RateLimiter</code></td>
+<td><code>app/infrastructure/rate_limiter/</code></td>
+<td>滑动窗口</td>
+<td>Redis/内存</td>
+<td>HTTP API 限流（FastAPI 中间件）</td>
+</tr>
+</tbody>
+</table>
+<p>三套限流器代码重复、配置分散、行为不一致。需要统一为通用限流框架，所有限流场景共用同一套实现。</p>
+<hr>
+<h2 id="当前问题">当前问题<a class="headerlink" href="#当前问题" title="Permanent link">¶</a></h2>
+<h3 id="问题-1三套实现三套配置">问题 1：三套实现，三套配置<a class="headerlink" href="#问题-1三套实现三套配置" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 站点限流配置（site_note JSON 字段）</span>
+<span class="p">{</span><span class="s2">"limit_interval"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"limit_count"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"limit_seconds"</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>
+
+<span class="c1"># TMDB 限流配置（硬编码）</span>
+<span class="n">TMDBRateLimiter</span><span class="p">(</span><span class="n">max_requests_per_second</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">burst_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># API 限流配置（硬编码）</span>
+<span class="n">RateLimiter</span><span class="o">.</span><span class="n">is_allowed</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">"ip:path"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="问题-2站点限流器计数逻辑严重错误">问题 2：站点限流器计数逻辑严重错误<a class="headerlink" href="#问题-2站点限流器计数逻辑严重错误" title="Permanent link">¶</a></h3>
+<p><code>site_limiter.py</code> 的 <code>last_visit_time</code> 每次调用都被更新，<code>count</code> 几乎无法正确累计，窗口限流基本不生效。</p>
+<h3 id="问题-3站点限流是拒绝模式">问题 3：站点限流是拒绝模式<a class="headerlink" href="#问题-3站点限流是拒绝模式" title="Permanent link">¶</a></h3>
+<p>触发后返回 <code>True</code>，调用方直接 <code>return []</code> 跳过，导致 RSS/搜索/刷流遗漏资源。</p>
+<h3 id="问题-4tmdb-限流器是全局单例">问题 4：TMDB 限流器是全局单例<a class="headerlink" href="#问题-4tmdb-限流器是全局单例" title="Permanent link">¶</a></h3>
+<p><code>_global_rate_limiter = TMDBRateLimiter()</code>，无法按 API Key 区分限流，多 Key 场景下互相干扰。</p>
+<h3 id="问题-5api-限流器不支持等待">问题 5：API 限流器不支持等待<a class="headerlink" href="#问题-5api-限流器不支持等待" title="Permanent link">¶</a></h3>
+<p><code>is_allowed()</code> 只返回 True/False，触发限流时直接拒绝请求，无排队等待能力。</p>
+<h3 id="问题-6无统一监控">问题 6：无统一监控<a class="headerlink" href="#问题-6无统一监控" title="Permanent link">¶</a></h3>
+<p>三套限流器各自统计，无法统一查看当前限流状态（哪些 key 在限流、等待队列多长）。</p>
+<hr>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>统一限流框架</strong>：一套代码覆盖站点限流、API 限流、TMDB 限流等所有场景</li>
+<li><strong>支持多种算法</strong>：滑动窗口 + 令牌桶，按需选择</li>
+<li><strong>支持等待模式</strong>：触发限流时可选排队等待，而非直接拒绝</li>
+<li><strong>支持分布式</strong>：Redis 后端确保多实例共享限流状态</li>
+<li><strong>统一配置格式</strong>：所有限流场景使用同一套配置语义</li>
+<li><strong>统一监控接口</strong>：通过 <code>/api/system/rate_limits</code> 查看全局限流状态</li>
+</ol>
+<hr>
+<h2 id="方案设计">方案设计<a class="headerlink" href="#方案设计" title="Permanent link">¶</a></h2>
+<h3 id="统一配置格式">统一配置格式<a class="headerlink" href="#统一配置格式" title="Permanent link">¶</a></h3>
+<p>所有限流场景使用同一套配置：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 站点配置</span>
+<span class="nt">site_note</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="s">"10/m"</span><span class="w">      </span><span class="c1"># 每分钟 10 次</span>
+<span class="w">  </span><span class="nt">rate_burst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">          </span><span class="c1"># 突发 10 次</span>
+
+<span class="c1"># TMDB 配置</span>
+<span class="nt">tmdb</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="s">"2.5/s"</span><span class="w">     </span><span class="c1"># 每秒 2.5 次</span>
+<span class="w">  </span><span class="nt">rate_burst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">           </span><span class="c1"># 突发 5 次</span>
+
+<span class="c1"># API 限流配置</span>
+<span class="nt">api_rate_limits</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">"100/m"</span>
+<span class="w">  </span><span class="nt">search</span><span class="p">:</span><span class="w"> </span><span class="s">"20/m"</span>
+<span class="w">  </span><span class="nt">download</span><span class="p">:</span><span class="w"> </span><span class="s">"10/m"</span>
+</code></pre></div>
+<h3 id="架构设计">架构设计<a class="headerlink" href="#架构设计" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────────────────────────────────────────┐
+│                    RateLimitEngine                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ SlidingWindow│  │ TokenBucket  │  │ RateLimitMonitor │  │
+│  │  (算法)       │  │  (算法)      │  │  (监控/统计)      │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────────────┘  │
+│         │                  │                                │
+│         └──────────────────┼────────────────────────────────┘
+│                            ▼
+│              ┌─────────────────────────┐
+│              │   RateLimitBackend      │
+│              │  ├─ MemoryBackend       │
+│              │  └─ RedisBackend        │
+│              └─────────────────────────┘
+└─────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+   ┌─────────┐         ┌──────────┐         ┌──────────┐
+   │ Site    │         │ TMDB     │         │ API      │
+   │ Limiter │         │ Limiter  │         │ Limiter  │
+   └─────────┘         └──────────┘         └──────────┘
+</code></pre></div>
+<h3 id="核心类设计">核心类设计<a class="headerlink" href="#核心类设计" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/infrastructure/rate_limiter/engine.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RateLimitEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""统一限流引擎"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">RateLimitBackend</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">backend</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor</span> <span class="o">=</span> <span class="n">RateLimitMonitor</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">rate</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"10/m"</span><span class="p">,</span>
+        <span class="n">burst</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"token_bucket"</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        获取执行许可</span>
+<span class="sd">        :param key: 限流标识（如 site_id、api_key、client_ip）</span>
+<span class="sd">        :param rate: 速率（如 "10/m", "2.5/s", "100/h"）</span>
+<span class="sd">        :param burst: 突发容量，默认等于 rate 的数值</span>
+<span class="sd">        :param tokens: 本次消耗的令牌数</span>
+<span class="sd">        :param timeout: 最大等待时间（秒），None 表示不等待直接返回</span>
+<span class="sd">        :param algorithm: "token_bucket" 或 "sliding_window"</span>
+<span class="sd">        :return: True=获得许可，False=限流中（timeout=None 时）或超时</span>
+<span class="sd">        """</span>
+        <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">try_acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"10/m"</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""不等待，立即返回"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="n">tokens</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""获取限流状态（用于监控）"""</span>
+        <span class="o">...</span>
+
+
+<span class="c1"># 上下文管理器</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rate_limit</span><span class="p">(</span>
+    <span class="n">engine</span><span class="p">:</span> <span class="n">RateLimitEngine</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"10/m"</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""限流上下文管理器"""</span>
+    <span class="n">acquired</span> <span class="o">=</span> <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">acquired</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">RateLimitExceeded</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rate limit exceeded for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<span class="c1"># 装饰器</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rate_limited</span><span class="p">(</span><span class="n">rate</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"10/m"</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">60</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""限流装饰器"""</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">_derive_key</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">rate_limit</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+</code></pre></div>
+<h3 id="后端实现">后端实现<a class="headerlink" href="#后端实现" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/infrastructure/rate_limiter/backends.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RateLimitBackend</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">burst</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""原子化获取许可"""</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MemoryBackend</span><span class="p">(</span><span class="n">RateLimitBackend</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""内存令牌桶（线程安全）"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># key -&gt; {tokens, last_update}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">burst</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">deadline</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="n">timeout</span> <span class="k">if</span> <span class="n">timeout</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="n">bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{</span><span class="s2">"tokens"</span><span class="p">:</span> <span class="n">burst</span><span class="p">,</span> <span class="s2">"last_update"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()})</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="c1"># 填充令牌</span>
+                <span class="n">bucket</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">burst</span><span class="p">,</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">"last_update"</span><span class="p">])</span> <span class="o">*</span> <span class="n">rate</span><span class="p">)</span>
+                <span class="n">bucket</span><span class="p">[</span><span class="s2">"last_update"</span><span class="p">]</span> <span class="o">=</span> <span class="n">now</span>
+                <span class="c1"># 尝试消耗</span>
+                <span class="k">if</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">tokens</span><span class="p">:</span>
+                    <span class="n">bucket</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span> <span class="o">-=</span> <span class="n">tokens</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="c1"># 计算等待时间</span>
+                <span class="n">wait_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span> <span class="o">-</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">])</span> <span class="o">/</span> <span class="n">rate</span>
+            <span class="c1"># 检查超时</span>
+            <span class="k">if</span> <span class="n">deadline</span> <span class="ow">and</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="n">wait_time</span> <span class="o">&gt;</span> <span class="n">deadline</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">timeout</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RedisBackend</span><span class="p">(</span><span class="n">RateLimitBackend</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Redis 分布式令牌桶（Lua 原子脚本）"""</span>
+
+    <span class="n">_TOKEN_BUCKET_SCRIPT</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    local key = KEYS[1]</span>
+<span class="s2">    local rate = tonumber(ARGV[1])</span>
+<span class="s2">    local burst = tonumber(ARGV[2])</span>
+<span class="s2">    local tokens = tonumber(ARGV[3])</span>
+<span class="s2">    local now = tonumber(ARGV[4])</span>
+<span class="s2">    local timeout_ms = tonumber(ARGV[5])</span>
+
+<span class="s2">    local function try_acquire()</span>
+<span class="s2">        local data = redis.call('HMGET', key, 'tokens', 'last_update')</span>
+<span class="s2">        local current_tokens = tonumber(data[1]) or burst</span>
+<span class="s2">        local last_update = tonumber(data[2]) or now</span>
+
+<span class="s2">        current_tokens = math.min(burst, current_tokens + (now - last_update) * rate / 1000.0)</span>
+
+<span class="s2">        if current_tokens &gt;= tokens then</span>
+<span class="s2">            current_tokens = current_tokens - tokens</span>
+<span class="s2">            redis.call('HMSET', key, 'tokens', current_tokens, 'last_update', now)</span>
+<span class="s2">            redis.call('EXPIRE', key, math.ceil(burst / rate * 1000) + 1)</span>
+<span class="s2">            return 1</span>
+<span class="s2">        else</span>
+<span class="s2">            redis.call('HMSET', key, 'tokens', current_tokens, 'last_update', now)</span>
+<span class="s2">            return 0</span>
+<span class="s2">        end</span>
+<span class="s2">    end</span>
+
+<span class="s2">    local deadline = now + timeout_ms</span>
+<span class="s2">    while true do</span>
+<span class="s2">        local result = try_acquire()</span>
+<span class="s2">        if result == 1 then</span>
+<span class="s2">            return 1</span>
+<span class="s2">        end</span>
+<span class="s2">        local remaining = deadline - redis.call('TIME')[1]</span>
+<span class="s2">        if remaining &lt;= 0 then</span>
+<span class="s2">            return 0</span>
+<span class="s2">        end</span>
+<span class="s2">        -- 简单轮询，实际可用 Redis Pub/Sub 或 Redlock</span>
+<span class="s2">        redis.call('SET', key .. ':wait', '1', 'PX', math.min(remaining, 100))</span>
+<span class="s2">    end</span>
+<span class="s2">    """</span>
+</code></pre></div>
+<h3 id="各场景使用方式">各场景使用方式<a class="headerlink" href="#各场景使用方式" title="Permanent link">¶</a></h3>
+<h4 id="1-站点限流替换-site_limiterpy">1. 站点限流（替换 site_limiter.py）<a class="headerlink" href="#1-站点限流替换-site_limiterpy" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/services/site_rate_limiter.py</span>
+
+<span class="nd">@inject</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SiteRateLimiterService</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">RateLimitEngine</span><span class="p">,</span> <span class="n">site_repo</span><span class="p">:</span> <span class="n">ISiteRepository</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span> <span class="o">=</span> <span class="n">engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_repo</span> <span class="o">=</span> <span class="n">site_repo</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">60</span><span class="p">):</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_site_repo</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
+        <span class="n">note</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">note</span> <span class="ow">or</span> <span class="s2">"</span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">rate</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"10/m"</span><span class="p">)</span>
+        <span class="n">burst</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rate_burst"</span><span class="p">,</span> <span class="n">_parse_rate</span><span class="p">(</span><span class="n">rate</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">rate_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">"site:</span><span class="si">{</span><span class="n">site_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">burst</span><span class="o">=</span><span class="n">burst</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+<span class="c1"># 调用方</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">indexer</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">site_limiter</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">indexer</span><span class="o">.</span><span class="n">siteid</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">do_search</span><span class="p">(</span><span class="n">indexer</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="2-tmdb-限流替换-tmdb_rate_limiterpy">2. TMDB 限流（替换 tmdb_rate_limiter.py）<a class="headerlink" href="#2-tmdb-限流替换-tmdb_rate_limiterpy" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/utils/tmdb_rate_limiter.py</span>
+
+<span class="nd">@inject</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TMDBRateLimiter</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">RateLimitEngine</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span> <span class="o">=</span> <span class="n">engine</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># 按 API Key 区分限流，多 Key 互不干扰</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"tmdb:</span><span class="si">{</span><span class="n">api_key</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'default'</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="s2">"2.5/s"</span><span class="p">,</span> <span class="n">burst</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+<span class="c1"># 调用方</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tmdb_request</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">tmdb_limiter</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="3-api-限流替换现有中间件">3. API 限流（替换现有中间件）<a class="headerlink" href="#3-api-限流替换现有中间件" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/infrastructure/rate_limiter/middleware.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RateLimitMiddleware</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">RateLimitEngine</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span> <span class="o">=</span> <span class="n">engine</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
+        <span class="n">client_ip</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"api:</span><span class="si">{</span><span class="n">client_ip</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="c1"># 根据路由配置不同限流规则</span>
+        <span class="n">rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_rate_for_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">acquired</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">acquired</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">429</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="p">{</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Rate limit exceeded"</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="统一监控">统一监控<a class="headerlink" href="#统一监控" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/api/routers/system.py</span>
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/api/system/rate_limits"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_rate_limits</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">RateLimitEngine</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_rate_limit_engine</span><span class="p">)):</span>
+    <span class="k">return</span> <span class="n">engine</span><span class="o">.</span><span class="n">get_status</span><span class="p">()</span>
+</code></pre></div>
+<p>返回示例：
+</p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"backends"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"redis"</span><span class="p">,</span><span class="w"> </span><span class="s2">"memory"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"active_limits"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"site:1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"10/m"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tokens"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.5</span><span class="p">,</span><span class="w"> </span><span class="nt">"queued"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"site:5"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"5/m"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tokens"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">"queued"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"tmdb:default"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.5/s"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tokens"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.2</span><span class="p">,</span><span class="w"> </span><span class="nt">"queued"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"api:192.168.1.100:/api/search"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"20/m"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tokens"</span><span class="p">:</span><span class="w"> </span><span class="mi">18</span><span class="p">,</span><span class="w"> </span><span class="nt">"queued"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"total_blocked"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"total_waited"</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span>
+<span class="p">}</span>
+</code></pre></div><p></p>
+<hr>
+<h2 id="实施步骤">实施步骤<a class="headerlink" href="#实施步骤" title="Permanent link">¶</a></h2>
+<h3 id="phase-1扩展通用限流引擎">Phase 1：扩展通用限流引擎<a class="headerlink" href="#phase-1扩展通用限流引擎" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>重构 <code>app/infrastructure/rate_limiter/</code></strong></li>
+<li><code>backends.py</code> — <code>RateLimitBackend</code> + <code>MemoryBackend</code> + <code>RedisBackend</code>（令牌桶实现）</li>
+<li><code>monitor.py</code> — <code>RateLimitMonitor</code> 监控统计</li>
+<li><code>decorators.py</code> — <code>@rate_limited</code> 装饰器 + <code>rate_limit</code> 上下文管理器</li>
+<li><code>middleware.py</code> — FastAPI 中间件限流（保留，委托给新后端）</li>
+<li><code>dependency.py</code> — FastAPI 依赖注入限流（保留，委托给新后端）</li>
+</ol>
+<h3 id="phase-2替换站点限流">Phase 2：替换站点限流<a class="headerlink" href="#phase-2替换站点限流" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>创建 <code>app/services/site_rate_limiter.py</code></strong></li>
+<li><code>SiteRateLimiterService</code> 封装站点限流逻辑</li>
+<li>
+<p>从 <code>Sites</code> 类中解耦</p>
+</li>
+<li>
+<p><strong>逐个替换调用点</strong></p>
+</li>
+<li><code>indexer/client/builtin.py</code></li>
+<li><code>subscribe/strategies/rss_feed.py</code></li>
+<li><code>subscribe/matcher.py</code></li>
+<li><code>brush/helpers.py</code></li>
+<li><code>site_subtitle.py</code></li>
+<li>
+<p><code>site_userinfo.py</code></p>
+</li>
+<li>
+<p><strong>删除旧代码</strong></p>
+</li>
+<li><code>app/sites/site_limiter.py</code></li>
+<li><code>Sites._limiters</code> / <code>Sites.check_ratelimit()</code> / <code>Sites._rate_limit_val()</code></li>
+</ol>
+<h3 id="phase-3替换-tmdb-限流">Phase 3：替换 TMDB 限流<a class="headerlink" href="#phase-3替换-tmdb-限流" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>重构 <code>app/utils/tmdb_rate_limiter.py</code></strong></li>
+<li><code>TMDBRateLimiter</code> 内部使用 <code>RateLimitBackend</code></li>
+<li>支持按 API Key 区分限流</li>
+<li>保留 <code>TMDBRetryWithBackoff</code>（重试逻辑与限流无关）</li>
+</ol>
+<h3 id="phase-4api-限流迁移">Phase 4：API 限流迁移<a class="headerlink" href="#phase-4api-限流迁移" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>重构 <code>app/infrastructure/rate_limiter/middleware.py</code> 和 <code>dependency.py</code></strong></li>
+<li>使用新 <code>RateLimitBackend</code> 替代独立的旧 <code>RateLimiter</code></li>
+<li>支持按路由配置不同限流规则</li>
+</ol>
+<hr>
+<h2 id="决策">决策<a class="headerlink" href="#决策" title="Permanent link">¶</a></h2>
+<p>等待 review 后按 Phase 逐步实施。</p>
+<hr>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>代码复用</strong>：一套限流框架覆盖所有场景，消除三套重复代码</li>
+<li><strong>配置统一</strong>：所有限流场景使用同一套 <code>rate</code> + <code>burst</code> 配置语义</li>
+<li><strong>状态可监控</strong>：通过 <code>/api/system/rate_limits</code> 查看全局限流状态</li>
+<li><strong>分布式支持</strong>：Redis 后端确保多实例共享限流状态</li>
+<li><strong>算法可选</strong>：滑动窗口适合严格计数场景，令牌桶适合平滑流量场景</li>
+<li><strong>等待模式</strong>：站点限流从拒绝模式改为等待模式，不再遗漏资源</li>
+</ul>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>配置迁移</strong>：旧 <code>limit_interval</code> / <code>limit_count</code> / <code>limit_seconds</code> 需迁移到新 <code>rate</code> / <code>burst</code></li>
+<li><strong>异步改造</strong>：等待模式需要调用方支持 async/await</li>
+<li><strong>Redis 依赖</strong>：分布式限流依赖 Redis，单实例无 Redis 时回退到内存后端</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

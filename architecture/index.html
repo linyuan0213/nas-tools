@@ -1,0 +1,3422 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/architecture/">
+      
+      
+        <link rel="prev" href="../development/">
+      
+      
+        <link rel="next" href="../agent-mvp-detailed-design/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>架构文档 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#nexus-media-后端架构文档" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              架构文档
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#0-架构图交互式浏览器打开" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. 架构图（交互式，浏览器打开）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-顶层目录结构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 顶层目录结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 顶层目录结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app-子目录职责" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/ 子目录职责
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-api-路由层与业务服务层的关系" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. API 路由层与业务服务层的关系
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. API 路由层与业务服务层的关系">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apirouters-包含的路由模块" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api/routers/ 包含的路由模块
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#依赖注入模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        依赖注入模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#与旧-flask-控制器的关系" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与旧 Flask 控制器的关系
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-领域层-appdomain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 领域层 (app/domain/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 领域层 (app/domain/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#设计意图" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        设计意图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-数据访问层-appdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 数据访问层 (app/db/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 数据访问层 (app/db/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-数据库模型-appdbmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 数据库模型 (app/db/models/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-仓库层-appdbrepositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 仓库层 (app/db/repositories/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-数据库连接工厂-appdbdatabase_factorypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 数据库连接工厂 (app/db/database_factory.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-session-管理-appdbmain_dbpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Session 管理 (app/db/main_db.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-插件系统-appplugin_framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 插件系统 (app/plugin_framework/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 插件系统 (app/plugin_framework/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#核心组件交互" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心组件交互
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#插件数据流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件数据流
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-缓存系统-appinfrastructurecache_system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 缓存系统 (app/infrastructure/cache_system/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 缓存系统 (app/infrastructure/cache_system/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#缓存适配器架构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓存适配器架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#专用缓存实例模块级单例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        专用缓存实例（模块级单例）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-站点引擎-appsites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 站点引擎 (app/sites/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 站点引擎 (app/sites/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#siteengine-架构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SiteEngine 架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#数据流站点搜索" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据流：站点搜索
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-媒体处理流程-appmedia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 媒体处理流程 (app/media/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. 媒体处理流程 (app/media/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#媒体识别数据流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        媒体识别数据流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#批量识别优化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        批量识别优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-单例模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 单例模式
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. 单例模式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#方式一singletonmeta推荐" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式一：SingletonMeta（推荐）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式二手动-newcachemanagerdatabase-等" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式二：手动 new（CacheManager、Database 等）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式三类变量--get_instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式三：类变量 + get_instance()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-启动流程" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 启动流程
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. 启动流程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-进程启动runpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 进程启动（run.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-fastapi-生命周期srcapimainpylifespan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 FastAPI 生命周期（src/api/main.py::lifespan）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-后台服务启动systemlifecycleservicestart_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 后台服务启动（SystemLifecycleService.start_service()）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-配置重载" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 配置重载
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-整体数据流概览" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 整体数据流概览
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 整体数据流概览">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-典型-http-请求流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 典型 HTTP 请求流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-媒体识别流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 媒体识别流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-搜索与下载流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 搜索与下载流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-文件转移流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 文件转移流
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-关键设计决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 关键设计决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-模块依赖原则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. 模块依赖原则
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#0-架构图交互式浏览器打开" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. 架构图（交互式，浏览器打开）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-顶层目录结构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 顶层目录结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 顶层目录结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app-子目录职责" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/ 子目录职责
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-api-路由层与业务服务层的关系" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. API 路由层与业务服务层的关系
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. API 路由层与业务服务层的关系">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apirouters-包含的路由模块" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api/routers/ 包含的路由模块
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#依赖注入模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        依赖注入模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#与旧-flask-控制器的关系" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与旧 Flask 控制器的关系
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-领域层-appdomain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 领域层 (app/domain/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 领域层 (app/domain/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#设计意图" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        设计意图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-数据访问层-appdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 数据访问层 (app/db/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 数据访问层 (app/db/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-数据库模型-appdbmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 数据库模型 (app/db/models/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-仓库层-appdbrepositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 仓库层 (app/db/repositories/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-数据库连接工厂-appdbdatabase_factorypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 数据库连接工厂 (app/db/database_factory.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-session-管理-appdbmain_dbpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Session 管理 (app/db/main_db.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-插件系统-appplugin_framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 插件系统 (app/plugin_framework/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 插件系统 (app/plugin_framework/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#核心组件交互" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心组件交互
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#插件数据流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件数据流
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-缓存系统-appinfrastructurecache_system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 缓存系统 (app/infrastructure/cache_system/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 缓存系统 (app/infrastructure/cache_system/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#缓存适配器架构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓存适配器架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#专用缓存实例模块级单例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        专用缓存实例（模块级单例）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-站点引擎-appsites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 站点引擎 (app/sites/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 站点引擎 (app/sites/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#siteengine-架构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SiteEngine 架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#数据流站点搜索" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据流：站点搜索
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-媒体处理流程-appmedia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 媒体处理流程 (app/media/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. 媒体处理流程 (app/media/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#媒体识别数据流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        媒体识别数据流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#批量识别优化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        批量识别优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-单例模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 单例模式
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. 单例模式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#方式一singletonmeta推荐" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式一：SingletonMeta（推荐）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式二手动-newcachemanagerdatabase-等" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式二：手动 new（CacheManager、Database 等）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式三类变量--get_instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式三：类变量 + get_instance()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-启动流程" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 启动流程
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. 启动流程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-进程启动runpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 进程启动（run.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-fastapi-生命周期srcapimainpylifespan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 FastAPI 生命周期（src/api/main.py::lifespan）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-后台服务启动systemlifecycleservicestart_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 后台服务启动（SystemLifecycleService.start_service()）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-配置重载" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 配置重载
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-整体数据流概览" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 整体数据流概览
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 整体数据流概览">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-典型-http-请求流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 典型 HTTP 请求流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-媒体识别流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 媒体识别流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-搜索与下载流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 搜索与下载流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-文件转移流" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 文件转移流
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-关键设计决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 关键设计决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-模块依赖原则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. 模块依赖原则
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/architecture.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="nexus-media-后端架构文档">Nexus Media 后端架构文档<a class="headerlink" href="#nexus-media-后端架构文档" title="Permanent link">¶</a></h1>
+<blockquote>
+<p>本文档描述 Nexus Media 后端（<code>backend/</code>）的整体架构、模块分层、数据流和关键设计模式。</p>
+<p>技术栈：Python 3.11+ + FastAPI + SQLAlchemy + Alembic + APScheduler</p>
+</blockquote>
+<h2 id="0-架构图交互式浏览器打开">0. 架构图（交互式，浏览器打开）<a class="headerlink" href="#0-架构图交互式浏览器打开" title="Permanent link">¶</a></h2>
+<blockquote>
+<p>图为 Archify 交付物（<code>.html</code>），支持主题切换 / 聚焦视图 / 导出；依据与代码映射见 <a href="architecture-evidence/">architecture-evidence.md</a>。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="architecture.html">architecture.html</a></td>
+<td>完整架构大图</td>
+<td>接入 → API/装配 → 应用服务 → 外部/消息 → 基础设施；3 个视图</td>
+</tr>
+<tr>
+<td><a href="architecture-brush-flow.html">architecture-brush-flow.html</a></td>
+<td>数据流</td>
+<td>刷流/订阅：RSS→匹配→下载→做种保种/识别入库双泳道</td>
+</tr>
+<tr>
+<td><a href="architecture-scrape.html">architecture-scrape.html</a></td>
+<td>数据流</td>
+<td>识别后刮削队列：NFO/海报/FFmpeg→写库→完成通知</td>
+</tr>
+<tr>
+<td><a href="architecture-brush-lifecycle.html">architecture-brush-lifecycle.html</a></td>
+<td>生命周期</td>
+<td>刷流任务状态：未启用/停用 → 运行中 ⇄ 已停止</td>
+</tr>
+<tr>
+<td><a href="architecture-agent.html">architecture-agent.html</a></td>
+<td>架构</td>
+<td>AI 助手多步工具循环（providers/工具/记忆/SSE）</td>
+</tr>
+<tr>
+<td><a href="architecture-msg.html">architecture-msg.html</a></td>
+<td>架构</td>
+<td>消息通知中心 + 插件框架（含 msg_* 渠道）</td>
+</tr>
+<tr>
+<td><a href="architecture-sites.html">architecture-sites.html</a></td>
+<td>架构</td>
+<td>站点检索与 nexus-chrome 降级</td>
+</tr>
+<tr>
+<td><a href="architecture-plugin.html">architecture-plugin.html</a></td>
+<td>架构</td>
+<td>插件框架：注册表/沙箱/钩子/API 注册</td>
+</tr>
+<tr>
+<td><a href="architecture-indexer.html">architecture-indexer.html</a></td>
+<td>架构</td>
+<td>索引器搜索：编排→内置/聚合器→过滤收口</td>
+</tr>
+</tbody>
+</table>
+<p>每个 <code>.json</code> 为对应图的可校验规格（<code>archify validate --quality standard</code> 通过），<code>.html</code> 为交付产物。</p>
+<hr>
+<h2 id="1-顶层目录结构">1. 顶层目录结构<a class="headerlink" href="#1-顶层目录结构" title="Permanent link">¶</a></h2>
+<div class="highlight"><pre><span></span><code>backend/
+├── src/                    # 源代码（PEP 517/518 src layout）
+│   ├── api/                # FastAPI 入口与路由层
+│   │   ├── main.py         # FastAPI 应用实例 + lifespan 生命周期
+│   │   └── routers/        # 按领域拆分的 API 路由
+│   ├── app/                # 核心业务层
+│   │   ├── agent/          # AI Agent 相关
+│   │   ├── core/           # 核心配置、常量
+│   │   ├── db/             # 数据库模型、仓库、连接工厂
+│   │   ├── domain/         # 领域层（实体 + 接口 + 引擎）
+│   │   ├── downloader/     # 下载器客户端抽象
+│   │   ├── helper/         # 辅助工具类
+│   │   ├── indexer/        # 索引器客户端
+│   │   ├── infrastructure/ # 基础设施（缓存、事件总线）
+│   │   ├── media/          # 媒体处理（识别、查询、刮削）
+│   │   ├── mediaserver/    # 媒体服务器客户端（Emby/Jellyfin/Plex）
+│   │   ├── message/        # 消息通知客户端
+│   │   ├── plugin_framework/ # 插件框架
+│   │   ├── services/       # 业务服务层
+│   │   ├── sites/          # 站点引擎与管理
+│   │   ├── storage/        # 存储后端抽象
+│   │   └── utils/          # 通用工具、类型定义
+│   ├── log/                # 日志模块（loguru）
+│   ├── version.py          # 版本（从 pyproject.toml 动态读取）
+│   └── initializer.py      # 启动初始化逻辑
+├── tests/                  # 测试
+│   ├── unit/               # 单元测试
+│   ├── integration/        # 集成测试
+│   └── conftest.py
+├── config/                 # 站点 JSON 定义、配置模板
+│   └── config.yaml.example # 提交到 git 的配置模板
+├── alembic/                # Alembic 迁移目录
+│   ├── env.py
+│   └── versions/
+├── static/                 # 静态文件
+├── scripts/                # 工具脚本
+├── docker/                 # Docker 构建文件
+├── justfile                # 任务运行器
+├── run.py                  # 启动入口（uvicorn）
+├── gunicorn.conf.py        # Gunicorn 生产配置
+└── pyproject.toml
+</code></pre></div>
+<h3 id="app-子目录职责"><code>app/</code> 子目录职责<a class="headerlink" href="#app-子目录职责" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>目录</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api/routers/</code></td>
+<td>FastAPI HTTP 路由层，负责请求校验、权限检查、调用 Service</td>
+</tr>
+<tr>
+<td><code>app/services/</code></td>
+<td>业务服务层，编排领域逻辑、调用 Repository 或外部客户端</td>
+</tr>
+<tr>
+<td><code>app/domain/</code></td>
+<td>领域层：定义实体（Entity）、仓库接口（Interface）、领域引擎（Engine）</td>
+</tr>
+<tr>
+<td><code>app/db/</code></td>
+<td>数据访问层：SQLAlchemy ORM 模型、Repository 实现、数据库工厂</td>
+</tr>
+<tr>
+<td><code>app/schemas/</code></td>
+<td>Pydantic 模型：请求/响应 DTO、数据校验</td>
+</tr>
+<tr>
+<td><code>app/media/</code></td>
+<td>媒体处理：文件名解析、TMDB/豆瓣/Bangumi 查询、元数据刮削</td>
+</tr>
+<tr>
+<td><code>app/sites/</code></td>
+<td>站点引擎：声明式 JSON 站点定义、搜索、下载、用户信息抓取</td>
+</tr>
+<tr>
+<td><code>app/plugin_framework/</code></td>
+<td>插件框架：注册表、钩子系统、沙箱、内置插件</td>
+</tr>
+<tr>
+<td><code>app/infrastructure/</code></td>
+<td>基础设施：统一缓存系统（内存/Redis/分层）、事件总线</td>
+</tr>
+<tr>
+<td><code>app/downloader/</code></td>
+<td>下载器抽象：qBittorrent、Transmission 等客户端封装</td>
+</tr>
+<tr>
+<td><code>app/mediaserver/</code></td>
+<td>媒体服务器抽象：Emby、Jellyfin、Plex 客户端封装</td>
+</tr>
+<tr>
+<td><code>app/message/</code></td>
+<td>消息通知抽象：微信、Telegram、Slack 等客户端封装</td>
+</tr>
+<tr>
+<td><code>app/indexer/</code></td>
+<td>索引器抽象：内置站点、Jackett、Prowlarr 等</td>
+</tr>
+<tr>
+<td><code>app/storage/</code></td>
+<td>存储后端抽象：本地、SMB、对象存储等</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-api-路由层与业务服务层的关系">2. API 路由层与业务服务层的关系<a class="headerlink" href="#2-api-路由层与业务服务层的关系" title="Permanent link">¶</a></h2>
+<h3 id="apirouters-包含的路由模块"><code>api/routers/</code> 包含的路由模块<a class="headerlink" href="#apirouters-包含的路由模块" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>api/routers/
+├── __init__.py
+├── apikey.py
+├── auth.py
+├── brush.py
+├── download.py
+├── filter.py
+├── image.py
+├── media.py
+├── message_webhook.py
+├── plugin_framework.py
+├── rbac.py
+├── rss.py
+├── scheduler.py
+├── site.py
+├── storage_backend.py
+├── sync.py
+├── system.py
+├── userrss.py
+└── words.py
+</code></pre></div>
+<p>每个路由模块对应一个业务领域，例如 <code>site.py</code> 处理站点 CRUD、<code>download.py</code> 处理下载任务、<code>media.py</code> 处理媒体库查询。</p>
+<h3 id="依赖注入模式">依赖注入模式<a class="headerlink" href="#依赖注入模式" title="Permanent link">¶</a></h3>
+<p>路由层通过不可变应用上下文（<code>src/app/di/context.py</code>）获取依赖。
+对象图由分模块 Builder（<code>src/app/di/builders/</code>）按拓扑顺序组装，
+lifespan 将 <code>AppContext</code> 挂载到 <code>app.state.context</code>。</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">api.deps</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_app_context</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.di.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppContext</span>
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_items</span><span class="p">(</span><span class="n">app_context</span><span class="p">:</span> <span class="n">AppContext</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_app_context</span><span class="p">)):</span>
+    <span class="k">return</span> <span class="n">app_context</span><span class="o">.</span><span class="n">some_service</span><span class="o">.</span><span class="n">do_work</span><span class="p">()</span>
+</code></pre></div>
+<p><code>AppContext</code> 是运行时对象图的唯一持有者，替代了早期的手写 Registry。
+Service 内部禁止访问全局上下文，所有依赖必须通过构造函数显式注入。</p>
+<h3 id="与旧-flask-控制器的关系">与旧 Flask 控制器的关系<a class="headerlink" href="#与旧-flask-控制器的关系" title="Permanent link">¶</a></h3>
+<p>Flask 已完全移除，统一使用 FastAPI。<code>api/deps.py</code> 提供兼容的重导出。</p>
+<hr>
+<h2 id="3-领域层-appdomain">3. 领域层 (<code>app/domain/</code>)<a class="headerlink" href="#3-领域层-appdomain" title="Permanent link">¶</a></h2>
+<p>领域层采用 <strong>Entity + Interface + Engine</strong> 三层结构：</p>
+<div class="highlight"><pre><span></span><code>app/domain/
+├── __init__.py
+├── entities/           # 纯数据实体（Pydantic-like dataclass）
+│   ├── apikey.py
+│   ├── brush.py
+│   ├── config.py
+│   ├── download.py
+│   ├── plugin.py
+│   ├── rss.py
+│   ├── rss_torrent.py
+│   ├── site.py
+│   ├── storage_backend.py
+│   ├── sync.py
+│   ├── system_dict.py
+│   ├── transfer.py
+│   ├── transfer_task.py
+│   └── word.py
+├── interfaces/         # 仓库接口（抽象基类）
+│   ├── apikey_repo.py
+│   ├── brush_repo.py
+│   ├── config_repo.py
+│   ├── download_repo.py
+│   ├── plugin_repo.py
+│   ├── rbac_repo.py
+│   ├── rss_repo.py
+│   ├── rss_torrent_repo.py
+│   ├── search_repo.py
+│   ├── site_repo.py
+│   ├── storage_backend_repo.py
+│   ├── sync_repo.py
+│   ├── system_dict_repo.py
+│   ├── transfer_repo.py
+│   └── word_repo.py
+└── engine/
+    └── brush_rule_engine.py   # 刷流规则引擎（纯领域逻辑）
+</code></pre></div>
+<h3 id="设计意图">设计意图<a class="headerlink" href="#设计意图" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>Entity</strong>：脱离 ORM 的纯数据结构，可在层间传递，避免直接暴露数据库模型</li>
+<li><strong>Interface</strong>：定义仓库契约，<code>app/db/repositories/</code> 中的实现类遵循这些接口</li>
+<li><strong>Engine</strong>：放置无状态、纯内存的领域算法（如刷流规则匹配引擎）</li>
+</ul>
+<blockquote>
+<p>注意：由于项目处于渐进式重构中，并非所有模块都严格遵循 Domain-Driven Design。部分旧代码直接在 Service 中操作 ORM 模型。</p>
+</blockquote>
+<hr>
+<h2 id="4-数据访问层-appdb">4. 数据访问层 (<code>app/db/</code>)<a class="headerlink" href="#4-数据访问层-appdb" title="Permanent link">¶</a></h2>
+<h3 id="41-数据库模型-appdbmodels">4.1 数据库模型 (<code>app/db/models/</code>)<a class="headerlink" href="#41-数据库模型-appdbmodels" title="Permanent link">¶</a></h3>
+<p>所有 ORM 模型基于单一的 <code>Base = declarative_base()</code>（<code>BaseMedia</code> 也指向同一基类，用于兼容旧双数据库设计）。</p>
+<p>按业务域拆分的模型文件：</p>
+<table>
+<thead>
+<tr>
+<th>模型文件</th>
+<th>对应业务域</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apikey.py</code></td>
+<td>API Key 管理 (<code>APIKEY</code>, <code>APIKEYLOG</code>)</td>
+</tr>
+<tr>
+<td><code>brush.py</code></td>
+<td>刷流规则与任务 (<code>SITEBRUSHRULE</code>, <code>SITEBRUSHTASK</code>, <code>SITEBRUSHTORRENTS</code>)</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td>配置与媒体服务器 (<code>CONFIGSITE</code>, <code>CONFIGUSERS</code>, <code>MEDIASERVER</code> 等)</td>
+</tr>
+<tr>
+<td><code>download.py</code></td>
+<td>下载器与历史 (<code>DOWNLOADER</code>, <code>DOWNLOADHISTORY</code>)</td>
+</tr>
+<tr>
+<td><code>indexer.py</code></td>
+<td>索引器统计 (<code>INDEXERSTATISTICS</code>)</td>
+</tr>
+<tr>
+<td><code>media_sync.py</code></td>
+<td>媒体同步 (<code>MEDIASYNCITEMS</code>, <code>MEDIASYNCSTATISTIC</code>)</td>
+</tr>
+<tr>
+<td><code>message.py</code></td>
+<td>消息客户端 (<code>MESSAGECLIENT</code>)</td>
+</tr>
+<tr>
+<td><code>plugin.py</code></td>
+<td>插件与黑名单 (<code>PLUGINMANIFEST</code>, <code>PLUGINCONFIG</code>, <code>TMDBBLACKLIST</code> 等)</td>
+</tr>
+<tr>
+<td><code>rbac.py</code></td>
+<td>RBAC 权限 (<code>RBACUser</code>, <code>RBACRole</code>, <code>RBACPermission</code>, <code>RBACMenu</code> 等)</td>
+</tr>
+<tr>
+<td><code>rss.py</code></td>
+<td>RSS 订阅与历史 (<code>RSSTVS</code>, <code>RSSMOVIES</code>, <code>RSSHISTORY</code> 等)</td>
+</tr>
+<tr>
+<td><code>search.py</code></td>
+<td>搜索结果 (<code>SEARCHRESULTINFO</code>)</td>
+</tr>
+<tr>
+<td><code>site.py</code></td>
+<td>站点统计 (<code>SITEUSERINFOSTATS</code>, <code>SITESTATISTICSHISTORY</code>)</td>
+</tr>
+<tr>
+<td><code>storage_backend.py</code></td>
+<td>存储后端 (<code>STORAGEBACKEND</code>)</td>
+</tr>
+<tr>
+<td><code>sync.py</code></td>
+<td>同步历史 (<code>SYNCHISTORY</code>)</td>
+</tr>
+<tr>
+<td><code>system.py</code></td>
+<td>系统字典 (<code>SYSTEMDICT</code>)</td>
+</tr>
+<tr>
+<td><code>transfer.py</code></td>
+<td>转移历史与黑名单 (<code>TRANSFERHISTORY</code>, <code>TRANSFERUNKNOWN</code>)</td>
+</tr>
+<tr>
+<td><code>word.py</code></td>
+<td>自定义识别词 (<code>CUSTOMWORDS</code>, <code>CUSTOMWORDGROUPS</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-仓库层-appdbrepositories">4.2 仓库层 (<code>app/db/repositories/</code>)<a class="headerlink" href="#42-仓库层-appdbrepositories" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>app/db/repositories/
+├── base_repository.py          # 基类：提供 query/insert/commit/transactional
+├── &lt;name&gt;_repository.py        # 具体仓库（ORM 操作）
+├── &lt;name&gt;_repo_adapter.py      # 适配器（将 ORM 模型转换为 Domain Entity）
+└── __init__.py                 # 统一导出
+</code></pre></div>
+<p><strong>BaseRepository</strong> 提供通用数据库操作：
+- <code>query()</code> / <code>insert()</code> / <code>delete()</code> / <code>commit()</code> / <code>rollback()</code> / <code>flush()</code>
+- <code>execute()</code> - 执行 SQL（自动适配不同数据库方言）
+- <code>bulk_insert()</code> / <code>bulk_insert_mappings()</code> - 批量插入
+- <code>transactional()</code> - 事务上下文管理器（推荐新代码使用）
+- <code>_paginate()</code> / <code>_build_like_pattern()</code> / <code>exists()</code> / <code>count()</code></p>
+<p><strong>适配器模式</strong>：<code>SiteRepositoryAdapter</code>、<code>PluginConfigRepositoryAdapter</code> 等将 ORM 查询结果转换为 <code>app/domain/entities/</code> 中的纯数据实体，实现数据库层与业务层的解耦。</p>
+<h3 id="43-数据库连接工厂-appdbdatabase_factorypy">4.3 数据库连接工厂 (<code>app/db/database_factory.py</code>)<a class="headerlink" href="#43-数据库连接工厂-appdbdatabase_factorypy" title="Permanent link">¶</a></h3>
+<p><code>DatabaseFactory</code> 支持三种数据库：
+- <strong>SQLite</strong>（默认）：<code>sqlite:///&lt;path&gt;?check_same_thread=False</code>，启用 WAL 模式
+- <strong>MySQL</strong>：<code>mysql+pymysql://...</code>
+- <strong>PostgreSQL</strong>：<code>postgresql+psycopg2://...</code></p>
+<p>配置优先级：<strong>环境变量</strong> &gt; <code>.env</code> &gt; <code>data/config.yaml</code>（可选）。
+<code>NEXUS_MEDIA_CONFIG</code> 已降级为可选，未设置时自动发现 <code>./data/config.yaml</code> 或 <code>/data/config.yaml</code>。
+首次启动时自动从模板 <code>config/config.yaml.example</code> 创建配置文件。</p>
+<p><code>DatabaseDialect</code> 类处理跨数据库 SQL 差异（日期函数、LIMIT、字符串连接、随机函数等）。</p>
+<h3 id="44-session-管理-appdbmain_dbpy">4.4 Session 管理 (<code>app/db/main_db.py</code>)<a class="headerlink" href="#44-session-管理-appdbmain_dbpy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>SessionManager          # 管理 scoped_session 生命周期
+    ├── session_scope() # 上下文管理器（自动 commit/rollback/close）
+    ├── query()         # 兼容旧 API
+    ├── execute()       # 执行 SQL
+    └── ...
+
+Database                # 数据库单例（引擎管理）
+    ├── engine
+    └── session_manager
+
+MainDb = SessionManager # 向后兼容别名
+</code></pre></div>
+<p><strong>关键机制</strong>：<code>scoped_session</code> 保证同一线程内共享同一个 Session，请求结束后必须调用 <code>remove_session()</code> 清理线程本地存储。FastAPI 中通过中间件 <code>db_session_cleanup</code> 在每个请求结束后自动执行。</p>
+<hr>
+<h2 id="5-插件系统-appplugin_framework">5. 插件系统 (<code>app/plugin_framework/</code>)<a class="headerlink" href="#5-插件系统-appplugin_framework" title="Permanent link">¶</a></h2>
+<p>插件框架 v2 是一个完整的插件运行时环境：</p>
+<div class="highlight"><pre><span></span><code>app/plugin_framework/
+├── __init__.py              # 导出 PluginRegistry, HookSystem
+├── registry.py              # 插件注册表：扫描、安装、启用/禁用
+├── hook_system.py           # 全局事件钩子系统
+├── sandbox.py               # 插件沙箱：动态加载、热重载
+├── context.py               # 插件运行时上下文
+├── dependency_manager.py    # 插件依赖管理
+├── event_compat.py          # 兼容旧事件系统
+└── builtin_plugins/         # 内置插件
+    ├── autosignin/          # 自动签到
+    ├── autogenrss/          # 自动 RSS 生成
+    ├── doubansync/          # 豆瓣同步
+    ├── iyuuautoseed/        # IYUU 自动辅种
+    ├── libraryscraper/      # 库刮削
+    └── ...
+</code></pre></div>
+<h3 id="核心组件交互">核心组件交互<a class="headerlink" href="#核心组件交互" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>PluginRegistry (单例)
+    ├── 扫描 builtin_plugins/ 和 config/plugins/
+    ├── 管理 manifest.json（元数据缓存）
+    ├── 数据库持久化（PLUGINMANIFEST 表）
+    └── 提供 install / enable / disable / uninstall / get_config
+
+HookSystem (单例)
+    ├── 预定义 50+ 系统事件（media.scraped, download.completed, site.signed_in 等）
+    ├── 插件通过 register(event, plugin_id) 订阅事件
+    ├── emit(event, data) 触发事件 → 调用所有订阅插件
+    └── 持久化到 PLUGINHOOKS 表
+
+PluginSandbox (单例)
+    ├── load(plugin_id)      # 动态 importlib 加载模块，实例化插件类
+    ├── unload(plugin_id)    # 调用 on_disable，清理 sys.modules
+    ├── reload(plugin_id)    # 热重载（清理缓存 → 重新加载）
+    ├── call(plugin_id, method, *args)   # 调用插件方法
+    └── call_hook(plugin_id, event, data) # 调用 on_hook 处理器
+
+PluginContext (每个插件实例一个)
+    ├── get_config() / set_config()     # 通过 RepositoryAdapter 读写数据库
+    ├── log_info() / log_warn() / log_error()  # 同时写文件日志和 PLUGINLOGS 表
+    ├── notify()                        # 发送消息通知
+    ├── schedule_cron() / schedule_interval()  # 注册定时任务（SchedulerCore）
+    ├── emit()                          # 触发全局事件
+    └── register_message_command()      # 注册消息命令
+</code></pre></div>
+<h3 id="插件数据流">插件数据流<a class="headerlink" href="#插件数据流" title="Permanent link">¶</a></h3>
+<ol>
+<li>系统事件触发（如下载完成）</li>
+<li><code>HookSystem.emit("download.completed", data)</code></li>
+<li>遍历该事件的订阅插件</li>
+<li><code>PluginSandbox.call_hook(plugin_id, event, data)</code></li>
+<li>调用插件实例的 <code>on_hook(event, data)</code> 方法</li>
+<li>插件通过 <code>PluginContext</code> 访问系统能力（配置、日志、通知、定时任务）</li>
+</ol>
+<hr>
+<h2 id="6-缓存系统-appinfrastructurecache_system">6. 缓存系统 (<code>app/infrastructure/cache_system/</code>)<a class="headerlink" href="#6-缓存系统-appinfrastructurecache_system" title="Permanent link">¶</a></h2>
+<p>统一缓存框架，支持多后端、命名空间隔离、事件驱动、自动预热。</p>
+<div class="highlight"><pre><span></span><code>app/infrastructure/cache_system/
+├── cache_manager.py    # 统一缓存管理器（单例）
+├── adapters.py         # MemoryCacheAdapter, RedisCacheAdapter, TieredCacheAdapter
+├── base.py             # CacheAdapter 抽象基类, CacheEntry
+├── caches.py           # 专用缓存类（TMDBCache, MediaInfoCache 等）
+├── decorators.py       # @cached, @cached_with_lock, @lru_cache_with_ttl
+├── events.py           # 缓存事件总线（GET/HIT/MISS/SET/DELETE/EVICT/EXPIRE/CLEAR）
+├── warmer.py           # 缓存预热器（ConfigCacheWarmer, SiteCacheWarmer 等）
+└── compat.py           # 兼容旧接口 cacheman
+</code></pre></div>
+<h3 id="缓存适配器架构">缓存适配器架构<a class="headerlink" href="#缓存适配器架构" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>CacheManager (单例)
+    ├── register(name, adapter)
+    ├── create_memory_cache(name, maxsize, ttl)
+    ├── create_redis_cache(name, ttl)
+    ├── create_tiered_cache(name, memory_maxsize, ttl)
+    ├── get(name) → CacheAdapter
+    └── cache_get/cache_set/cache_delete/cache_clear(name, key)
+
+MemoryCacheAdapter
+    ├── OrderedDict + threading.RLock（线程安全 LRU）
+    ├── 支持 TTL 过期
+    └── 命中/未命中统计
+
+RedisCacheAdapter
+    ├── 基于 app.utils.redis_store.RedisStore
+    ├── Redis 不可用时自动回退到 MemoryCacheAdapter（fallback）
+    ├── 使用 pickle 序列化值
+    └── 自动重连机制
+
+TieredCacheAdapter (L1 + L2)
+    ├── L1: MemoryCacheAdapter（高速）
+    ├── L2: RedisCacheAdapter（持久化）
+    └── 读取时 L1 miss → L2 hit → 回填 L1
+</code></pre></div>
+<h3 id="专用缓存实例模块级单例">专用缓存实例（模块级单例）<a class="headerlink" href="#专用缓存实例模块级单例" title="Permanent link">¶</a></h3>
+<p>在 <code>__init__.py</code> 中预创建：</p>
+<div class="highlight"><pre><span></span><code><span class="n">MediaInfoCache</span>      <span class="c1"># 媒体信息缓存（内存，maxsize=1000）</span>
+<span class="n">SearchResultCache</span>   <span class="c1"># 搜索结果缓存（内存，maxsize=500）</span>
+<span class="n">SiteInfoCache</span>       <span class="c1"># 站点信息缓存（内存，maxsize=100）</span>
+<span class="n">TokenCache</span>          <span class="c1"># 认证 Token 缓存（内存，maxsize=512）</span>
+<span class="n">ConfigLoadCache</span>     <span class="c1"># 配置加载防抖（内存，maxsize=1）</span>
+<span class="n">CategoryLoadCache</span>   <span class="c1"># 分类加载防抖（内存，maxsize=2）</span>
+<span class="n">OpenAISessionCache</span>  <span class="c1"># OpenAI 会话缓存（Tiered：L1 内存 + L2 Redis）</span>
+<span class="n">TMDBCache</span>           <span class="c1"># TMDB API 响应缓存（Redis）</span>
+</code></pre></div>
+<hr>
+<h2 id="7-站点引擎-appsites">7. 站点引擎 (<code>app/sites/</code>)<a class="headerlink" href="#7-站点引擎-appsites" title="Permanent link">¶</a></h2>
+<p>站点引擎是 Nexus Media 的核心差异化能力，通过 <strong>声明式 JSON 站点定义</strong> 消除散落在代码中的 <code>"if m-team in url"</code> 硬编码逻辑。</p>
+<div class="highlight"><pre><span></span><code>app/sites/
+├── engine.py              # SiteEngine：统一站点定义加载与功能入口
+├── sites.py               # Sites：旧版站点管理（CRUD、限速、连通性测试）
+├── siteconf.py            # 站点配置解析
+├── site_cookie.py         # Cookie 管理
+├── site_limiter.py        # 站点请求限速器
+├── site_subtitle.py       # 字幕下载
+├── site_userinfo.py       # 站点用户信息统一接口
+├── searcher_factory.py    # 搜索器工厂
+├── html_searcher.py       # HTML 站点搜索实现
+├── api_searcher.py        # API 站点搜索实现
+├── engine_tools.py        # 引擎工具（endpoint 调用、header 构建、认证）
+├── engine_download.py     # 下载链接解析
+├── engine_connection.py   # 连接测试
+├── engine_user_info.py    # 用户信息预取
+└── siteuserinfo/          # 各站点框架的用户信息解析器
+    ├── __init__.py
+    ├── config_api.py      # API 站点用户信息工厂
+    ├── config_html.py     # HTML 站点用户信息工厂
+    ├── nexus_php.py
+    ├── discuz.py
+    ├── gazelle.py
+    ├── unit3d.py
+    └── ...
+</code></pre></div>
+<h3 id="siteengine-架构">SiteEngine 架构<a class="headerlink" href="#siteengine-架构" title="Permanent link">¶</a></h3>
+<p><code>SiteEngine</code> 从 <code>config/sites/</code> 加载声明式 JSON 定义（分为 <code>api/</code> 和 <code>html/</code> 两个子目录）：</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m-team"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"M-Team"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"domain"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api.m-team.io"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"api"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"base_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://api.m-team.io"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"auth"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bearer"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"endpoints"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"search"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/api/torrent/search"</span><span class="p">,</span><span class="w"> </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"POST"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"test_connection"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"download"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/api/torrent/genDlToken"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"POST"</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"subtitle"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"user_info"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>核心方法</strong>：
+- <code>get_by_id(id)</code> / <code>get_by_url(url)</code> - 查找站点定义
+- <code>test_connection(url, user_config)</code> - 统一连接测试
+- <code>resolve_download_url(page_url, user_config)</code> - 解析下载链接
+- <code>resolve_torrent_attr(torrent_url, ...)</code> - 获取种子属性（FREE/2xFREE/HR/做种数）
+- <code>resolve_subtitle(page_url, torrent_id, subtitle_dir)</code> - 字幕下载
+- <code>get_user_info(...)</code> - 站点用户信息（通过工厂模式适配不同站点框架）</p>
+<h3 id="数据流站点搜索">数据流：站点搜索<a class="headerlink" href="#数据流站点搜索" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>api/routers/site.py
+    → SiteService.list_site_resources()
+        → IndexerService.list_resources()
+            → SiteEngine.get_by_url(url) 获取站点定义
+            → 根据定义类型选择：
+                - API 站点 → api_searcher.search()
+                - HTML 站点 → html_searcher.search()
+            → 返回结构化搜索结果
+</code></pre></div>
+<hr>
+<h2 id="8-媒体处理流程-appmedia">8. 媒体处理流程 (<code>app/media/</code>)<a class="headerlink" href="#8-媒体处理流程-appmedia" title="Permanent link">¶</a></h2>
+<p>媒体处理模块采用 <strong>Parser + Lookup + Scraper</strong> 解耦架构：</p>
+<div class="highlight"><pre><span></span><code>app/media/
+├── __init__.py            # 统一导出 MediaService, MediaCache, MediaInfo 等
+├── service.py             # MediaService：文件名识别门面
+├── factory.py             # get_media_service() / get_media_cache() 单例工厂
+├── models.py              # MediaInfo：核心数据模型
+├── category.py            # 二级分类策略
+├── fanart.py              # Fanart.tv 图片获取
+│
+├── parser/                # 文件名解析层
+│   ├── base.py            # BaseParser 接口
+│   ├── regex.py           # RegexParser：正则解析（默认）
+│   ├── llm.py             # LLMParser：AI 解析（可选）
+│   ├── anitopy_adapter.py # Anitopy 动漫解析适配器
+│   ├── token_adapter.py   # Token 分词适配器
+│   ├── episode_mapper.py  # 集数映射（动漫绝对集号 → TMDB 季/集）
+│   ├── _metainfo.py       # 兼容旧接口
+│   ├── _video.py          # 视频元信息解析
+│   ├── _anime.py          # 动漫元信息解析
+│   ├── _customization.py  # 自定义匹配
+│   ├── _release_groups.py # 发布组识别
+│   ├── video/             # 视频解析子模块
+│   │   ├── name_parser.py
+│   │   ├── season_episode_parser.py
+│   │   ├── resource_parser.py
+│   │   └── encode_parser.py
+│   └── anime/             # 动漫解析子模块
+│       ├── name_parser.py
+│       ├── season_episode_parser.py
+│       └── resource_parser.py
+│
+├── lookup/                # 外部数据库查询层
+│   ├── base.py            # BaseLookup 接口
+│   ├── tmdb_lookup.py     # TMDB 查询（主）
+│   ├── tmdb_client.py     # TMDB API 客户端封装
+│   ├── tmdb_search.py     # TMDB 搜索
+│   ├── tmdb_detail.py     # TMDB 详情
+│   ├── tmdb_discover.py   # TMDB 发现/推荐
+│   ├── tmdb_person.py     # TMDB 影人
+│   ├── tmdb_season.py     # TMDB 季信息
+│   ├── douban.py          # 豆瓣查询
+│   └── bangumi.py         # Bangumi 查询
+│
+├── scraper/               # 元数据刮削层
+│   ├── __init__.py
+│   ├── nfo_generator.py   # NFO 文件生成
+│   ├── image_downloader.py # 海报/背景图下载
+│   ├── media_library.py   # 媒体库刮削流程
+│   └── chinese_credits.py # 中文演职员表
+│
+├── external/              # 第三方 API 客户端
+│   ├── __init__.py
+│   ├── douban.py          # 豆瓣 API 客户端
+│   └── bangumi.py         # Bangumi API 客户端
+│
+├── cache/                 # 媒体缓存层
+│   ├── __init__.py
+│   └── media_cache.py     # MediaCache：已知 tmdb_id 查详情
+│
+└── batch/                 # 批量处理
+    ├── __init__.py
+    └── processor.py       # BatchProcessor
+</code></pre></div>
+<h3 id="媒体识别数据流">媒体识别数据流<a class="headerlink" href="#媒体识别数据流" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>输入：文件名（如 "The.Matrix.1999.2160p.UHD.BluRay.x265.mkv"）
+
+1. Parser 层
+   → RegexParser.parse(title)              # 默认正则解析
+   → 失败则 fallback 到 LLMParser.parse()   # AI 解析兜底
+   → 输出：ParserResult {title_en, year, type, season, episode, ...}
+
+2. Lookup 层
+   → TmdbLookup.lookup(parsed)             # TMDB API 查询
+   → 失败则 fallback：
+      - search_tmdbweb()                   # 网页抓取
+      - search_engine()                    # 搜索引擎辅助
+   → 输出：LookupResult {tmdb_id, title, overview, poster_path, ...}
+
+3. 组装
+   → MediaInfo.from_parser(parsed)         # 基础信息
+   → 补充 TMDB 详情（genre_ids → 修正 type）
+   → EpisodeMapper.map_auto()              # 动漫集数映射（如启用）
+
+4. 缓存
+   → TMDBCache / MediaInfoCache.set()      # 写入缓存
+
+输出：MediaInfo 对象（包含完整媒体元数据）
+</code></pre></div>
+<h3 id="批量识别优化">批量识别优化<a class="headerlink" href="#批量识别优化" title="Permanent link">¶</a></h3>
+<p><code>identify_batch()</code> 实现并发优化：
+1. 批量 Parser 解析所有文件名
+2. 按 <code>(title, year, type)</code> 去重
+3. <code>ThreadPoolExecutor(max_workers=8)</code> 并发查询 TMDB
+4. 结果映射回原始列表
+5. 批量 EpisodeMapper 映射</p>
+<hr>
+<h2 id="9-单例模式">9. 单例模式<a class="headerlink" href="#9-单例模式" title="Permanent link">¶</a></h2>
+<p>项目广泛使用单例模式管理有状态组件。实现方式有两种：</p>
+<h3 id="方式一singletonmeta推荐">方式一：SingletonMeta（推荐）<a class="headerlink" href="#方式一singletonmeta推荐" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/utils/commons.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SingletonMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="n">_instances</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">:</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span>
+</code></pre></div>
+<p>使用此元类的关键组件：
+- <code>PluginRegistry</code>
+- <code>HookSystem</code>
+- <code>PluginSandbox</code>
+- <code>SystemConfig</code>
+- <code>Config</code>（旧版配置单例）
+- <code>Category</code>
+- <code>Message</code>
+- <code>MediaServer</code>
+- <code>Downloader</code> 各客户端</p>
+<h3 id="方式二手动-newcachemanagerdatabase-等">方式二：手动 <strong>new</strong>（CacheManager、Database 等）<a class="headerlink" href="#方式二手动-newcachemanagerdatabase-等" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CacheManager</span><span class="p">:</span>
+    <span class="n">_instance</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">,</span> <span class="o">**</span><span class="n">_kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span>
+</code></pre></div>
+<h3 id="方式三类变量--get_instance">方式三：类变量 + get_instance()<a class="headerlink" href="#方式三类变量--get_instance" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SiteEngine</span><span class="p">:</span>
+    <span class="n">_engine_instance</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">definitions_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">definitions_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span>
+</code></pre></div>
+<hr>
+<h2 id="10-启动流程">10. 启动流程<a class="headerlink" href="#10-启动流程" title="Permanent link">¶</a></h2>
+<h3 id="101-进程启动runpy">10.1 进程启动（<code>run.py</code>）<a class="headerlink" href="#101-进程启动runpy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>run.py
+    └── uvicorn.run(app, host, port, ...)
+        └── api/main.py:app
+</code></pre></div>
+<h3 id="102-fastapi-生命周期srcapimainpylifespan">10.2 FastAPI 生命周期（<code>src/api/main.py::lifespan</code>）<a class="headerlink" href="#102-fastapi-生命周期srcapimainpylifespan" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># 1. 初始化数据库表结构（create_all，不执行迁移）</span>
+    <span class="n">init_db</span><span class="p">()</span>
+
+    <span class="c1"># 2. 初始化站点配置</span>
+    <span class="n">SiteConfigUpdater</span><span class="p">()</span><span class="o">.</span><span class="n">ensure_local_sites</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">update_site_config_at_startup</span><span class="p">()</span>
+
+    <span class="c1"># 3. 启动后台服务</span>
+    <span class="n">SystemLifecycleService</span><span class="p">()</span><span class="o">.</span><span class="n">start_service</span><span class="p">()</span>
+
+    <span class="c1"># 4-6. 注册内置客户端 + 加载插件 + 初始化消息</span>
+    <span class="n">init_indexers</span><span class="p">()</span>
+    <span class="n">init_downloaders</span><span class="p">()</span>
+    <span class="n">init_mediaservers</span><span class="p">()</span>
+    <span class="n">init_message_clients</span><span class="p">()</span>
+    <span class="n">PluginSandbox</span><span class="p">()</span><span class="o">.</span><span class="n">load_all</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">Message</span><span class="p">()</span><span class="o">.</span><span class="n">active_clients</span>
+    <span class="n">Message</span><span class="p">()</span><span class="o">.</span><span class="n">refresh_menus</span><span class="p">()</span>
+
+    <span class="k">yield</span>
+
+    <span class="c1"># 7. 关闭</span>
+    <span class="n">SystemLifecycleService</span><span class="p">()</span><span class="o">.</span><span class="n">stop_service</span><span class="p">()</span>
+</code></pre></div>
+<blockquote>
+<p>注意：Alembic 数据库迁移已从代码中移除，由 Docker entrypoint 或 <code>docker-compose migrate</code> 服务在启动前执行 <code>alembic upgrade head</code>。</p>
+</blockquote>
+<h3 id="103-后台服务启动systemlifecycleservicestart_service">10.3 后台服务启动（<code>SystemLifecycleService.start_service()</code>）<a class="headerlink" href="#103-后台服务启动systemlifecycleservicestart_service" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SystemLifecycleService</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># 0. 初始化检查</span>
+        <span class="n">check_config</span><span class="p">()</span>              <span class="c1"># 检查配置文件合法性</span>
+        <span class="n">update_config</span><span class="p">()</span>             <span class="c1"># 升级/迁移旧配置</span>
+        <span class="n">check_redis</span><span class="p">()</span>               <span class="c1"># 检查 Redis 状态</span>
+        <span class="n">update_rss_state</span><span class="p">()</span>          <span class="c1"># 重置 RSS 订阅状态</span>
+        <span class="n">init_rbac_system</span><span class="p">()</span>          <span class="c1"># 初始化权限系统</span>
+        <span class="n">init_message_webhook_apikey</span><span class="p">()</span> <span class="c1"># 初始化 Webhook API Key</span>
+
+        <span class="c1"># 1. 启动调度器（APScheduler）</span>
+        <span class="n">SchedulerCore</span><span class="p">()</span><span class="o">.</span><span class="n">start_service</span><span class="p">(</span><span class="n">load_defaults</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># 2. 加载基础组件</span>
+        <span class="n">IndexerHelper</span><span class="p">()</span>             <span class="c1"># 索引器助手</span>
+        <span class="n">SiteConf</span><span class="p">()</span>                  <span class="c1"># 站点配置</span>
+
+        <span class="c1"># 3. 启动各业务服务</span>
+        <span class="n">Sync</span><span class="p">()</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>               <span class="c1"># 目录同步引擎</span>
+        <span class="n">BrushTaskService</span><span class="p">()</span><span class="o">.</span><span class="n">init_config</span><span class="p">()</span>   <span class="c1"># 刷流任务</span>
+        <span class="n">RssTaskService</span><span class="p">()</span><span class="o">.</span><span class="n">init_config</span><span class="p">()</span>     <span class="c1"># RSS 任务</span>
+        <span class="n">TorrentRemover</span><span class="p">()</span><span class="o">.</span><span class="n">init_config</span><span class="p">()</span>     <span class="c1"># 种子自动删除</span>
+        <span class="n">Downloader</span><span class="p">()</span><span class="o">.</span><span class="n">init_config</span><span class="p">()</span>         <span class="c1"># 下载器核心</span>
+        <span class="n">FileIndexService</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>         <span class="c1"># 文件索引服务</span>
+</code></pre></div>
+<h3 id="104-配置重载">10.4 配置重载<a class="headerlink" href="#104-配置重载" title="Permanent link">¶</a></h3>
+<p>使用 <code>src/app/core/settings.py</code> 中的 <code>AppSettings.reload()</code> 方法手动重载配置。
+应用层调用 <code>SettingsService.reload_config()</code> 或通过 API <code>/system/reload_config</code> 触发。</p>
+<hr>
+<h2 id="11-整体数据流概览">11. 整体数据流概览<a class="headerlink" href="#11-整体数据流概览" title="Permanent link">¶</a></h2>
+<h3 id="111-典型-http-请求流">11.1 典型 HTTP 请求流<a class="headerlink" href="#111-典型-http-请求流" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Client    │────▶│  FastAPI    │────▶│   Router    │────▶│   Service   │
+│  (Browser)  │     │   (main.py) │     │(api/routers)│     │(app/services)│
+└─────────────┘     └─────────────┘     └─────────────┘     └──────┬──────┘
+                                                                    │
+                          ┌─────────────────────────────────────────┘
+                          ▼
+              ┌─────────────────────┐
+              │     业务编排分支      │
+              └──────┬──────┬───────┘
+                     │      │
+           ┌─────────┘      └─────────┐
+           ▼                          ▼
+    ┌─────────────┐            ┌─────────────┐
+    │  Repository │            │   External  │
+    │ (app/db/...)│            │   Client    │
+    └──────┬──────┘            │(sites/media)│
+           │                   └──────┬──────┘
+           ▼                          │
+    ┌─────────────┐                   │
+    │  Database   │◀──────────────────┘
+    │ (SQLite/    │        结果返回
+    │  MySQL/PG)  │
+    └─────────────┘
+</code></pre></div>
+<h3 id="112-媒体识别流">11.2 媒体识别流<a class="headerlink" href="#112-媒体识别流" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>文件名输入
+    │
+    ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Parser    │────▶│   Lookup    │────▶│  MediaInfo  │────▶│   Cache     │
+│(Regex/LLM)  │     │(TMDB/豆瓣/  │     │  组装对象    │     │(写入缓存)   │
+│             │     │ Bangumi)    │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+</code></pre></div>
+<h3 id="113-搜索与下载流">11.3 搜索与下载流<a class="headerlink" href="#113-搜索与下载流" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>用户搜索关键词
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ SearchService                                                           │
+│   ├── MediaService.identify(keyword) → 获取 tmdb_id                     │
+│   ├── IndexerService.search() → 遍历所有索引器                          │
+│   │       ├── 内置站点：SiteEngine → API/HTML Searcher → 站点返回种子列表 │
+│   │       └── 外部索引器：Jackett/Prowlarr API                          │
+│   └── FilterService.apply() → 应用过滤规则                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ DownloadService                                                         │
+│   ├── 用户选择种子 → DownloaderCore.add_torrent()                       │
+│   ├── 下载器客户端（qBittorrent/Transmission）添加任务                   │
+│   └── 完成后触发：HookSystem.emit("download.completed")                 │
+└─────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="114-文件转移流">11.4 文件转移流<a class="headerlink" href="#114-文件转移流" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>下载完成 / 定时扫描
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ TransferEngine / FileTransferService                                    │
+│   ├── 扫描下载目录 → 识别文件 → MediaService.identify_files()           │
+│   ├── 二级分类策略 Category.get_category() → 确定目标路径               │
+│   ├── 执行转移（复制/移动/硬链接/软链接）                                │
+│   ├── 元数据刮削 Scraper.scrape() → NFO + 图片                          │
+│   ├── 通知媒体服务器 MediaServer.refresh_library()                      │
+│   └── 记录历史 TransferHistoryRepository.insert()                       │
+└─────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr>
+<h2 id="12-关键设计决策">12. 关键设计决策<a class="headerlink" href="#12-关键设计决策" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>决策</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>绞杀式迁移</strong></td>
+<td>从 Flask 迁移到 FastAPI，新功能用 FastAPI Router，旧功能逐步迁移，共享 Service 层</td>
+</tr>
+<tr>
+<td><strong>声明式站点定义</strong></td>
+<td>用 JSON 文件描述站点 API/HTML 结构，替代代码中的硬编码 <code>if site == "m-team"</code></td>
+</tr>
+<tr>
+<td><strong>Parser + Lookup 解耦</strong></td>
+<td>文件名解析与外部数据库查询分离，支持 Regex/LLM 双 Parser，TMDB/豆瓣/Bangumi 多 Lookup</td>
+</tr>
+<tr>
+<td><strong>插件沙箱</strong></td>
+<td>动态 <code>importlib</code> 加载插件，支持热重载，隔离 <code>sys.modules</code></td>
+</tr>
+<tr>
+<td><strong>统一缓存框架</strong></td>
+<td>内存/Redis/分层三级适配器，事件驱动，装饰器式缓存声明</td>
+</tr>
+<tr>
+<td><strong>scoped_session + 请求清理</strong></td>
+<td>SQLAlchemy <code>scoped_session</code> 保证线程安全，FastAPI 中间件确保请求结束后 <code>remove()</code></td>
+</tr>
+<tr>
+<td><strong>Repository + Adapter 模式</strong></td>
+<td>仓库操作 ORM，适配器转换 Domain Entity，新旧代码兼容共存</td>
+</tr>
+<tr>
+<td><strong>RBAC 权限系统</strong></td>
+<td>自定义权限模型（用户-角色-权限-菜单），替代旧版简单登录</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="13-模块依赖原则">13. 模块依赖原则<a class="headerlink" href="#13-模块依赖原则" title="Permanent link">¶</a></h2>
+<div class="highlight"><pre><span></span><code>允许依赖方向（上层可依赖下层）：
+
+api/routers/  ──▶  app/services/  ──▶  app/domain/  ──▶  app/db/repositories/
+     │                  │                  │                    │
+     │                  │                  │                    ▼
+     │                  │                  │              app/db/models/
+     │                  │                  │
+     │                  ▼                  ▼
+     │           app/sites/         app/media/
+     │           app/downloader/    app/helper/
+     │           app/indexer/
+     │           app/mediaserver/
+     │           app/message/
+     │           app/storage/
+     │
+     ▼
+app/infrastructure/  (cache_system)
+app/plugin_framework/
+app/core/            (config, constants)
+app/utils/           (commons, types, security)
+</code></pre></div>
+<p><strong>禁止</strong>：下层模块依赖上层模块。如 <code>app/db/models/</code> 不能导入 <code>app/services/</code>。</p>
+<p><strong>循环依赖处理</strong>：所有 <code>import</code> 必须放在文件顶部。如遇循环依赖，通过重构 <code>__init__.py</code> 延迟导入或调整模块结构解除，禁止在函数内部使用 <code>import</code> 规避。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚">
+        
+          
+          <a href="../development/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 本地开发">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                本地开发
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../agent-mvp-detailed-design/" class="md-footer__link md-footer__link--next" aria-label="下一页: AI 助手设计">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                AI 助手设计
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

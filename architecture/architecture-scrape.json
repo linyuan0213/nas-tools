@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "识别后刮削队列",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [
+      1250,
+      760
+    ],
+    "views": [
+      {
+        "id": "main",
+        "label": "刮削流水线",
+        "focus": [
+          "trigger",
+          "queue",
+          "nfo",
+          "poster",
+          "ffmpeg",
+          "write",
+          "done"
+        ],
+        "note": "识别完成后非阻塞提交，队列分派三类刮削任务。"
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "触发"
+    },
+    {
+      "label": "队列"
+    },
+    {
+      "label": "执行"
+    },
+    {
+      "label": "写入"
+    },
+    {
+      "label": "结果"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "backend",
+      "label": "识别完成",
+      "sublabel": "filetransfer · media",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "queue",
+      "type": "messagebus",
+      "label": "刮削队列",
+      "sublabel": "scrape_queue_service",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "nfo",
+      "type": "backend",
+      "label": "NFO/元数据",
+      "sublabel": "TMDB 详情",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "poster",
+      "type": "backend",
+      "label": "海报/图片",
+      "sublabel": "图片抓取",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "ffmpeg",
+      "type": "backend",
+      "label": "FFmpeg 处理",
+      "sublabel": "infrastructure/ffmpeg",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "write",
+      "type": "external",
+      "label": "媒体库目录",
+      "sublabel": "dst_backend 存储",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "done",
+      "type": "backend",
+      "label": "完成通知",
+      "sublabel": "事件 · 刷新/消息",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "from": "trigger",
+      "to": "queue",
+      "label": "提交"
+    },
+    {
+      "from": "queue",
+      "to": "nfo",
+      "label": "分派"
+    },
+    {
+      "from": "queue",
+      "to": "poster",
+      "label": "分派"
+    },
+    {
+      "from": "queue",
+      "to": "ffmpeg",
+      "label": "分派"
+    },
+    {
+      "from": "nfo",
+      "to": "write",
+      "label": "写入",
+      "variant": "dashed"
+    },
+    {
+      "from": "poster",
+      "to": "write",
+      "label": "写入",
+      "variant": "dashed"
+    },
+    {
+      "from": "ffmpeg",
+      "to": "write",
+      "label": "写入",
+      "variant": "dashed"
+    },
+    {
+      "from": "write",
+      "to": "done",
+      "label": "完成"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "非阻塞",
+      "items": [
+        "submit_file_scrape / submit_folder_scrape 立即返回",
+        "识别转移不再等待刮削完成"
+      ]
+    }
+  ]
+}

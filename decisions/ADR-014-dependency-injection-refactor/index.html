@@ -1,0 +1,2740 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-014-dependency-injection-refactor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-014: 依赖注入架构重构 — 从 Service Locator 到分层显式依赖 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-014-依赖注入架构重构--从-service-locator-到分层显式依赖" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-014: 依赖注入架构重构 — 从 Service Locator 到分层显式依赖
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#当前问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当前问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#引用现状" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        引用现状
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#单例滥用现状" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        单例滥用现状
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#架构三层模型" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构：三层模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心设计决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心设计决策
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="核心设计决策">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-基础设施单例自托管" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 基础设施单例：自托管
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#siteengine-改造示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SiteEngine 改造示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-有状态业务对象container-singleton--inject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 有状态业务对象：Container Singleton + @inject
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-无状态业务-servicecontainer-factory--inject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 无状态业务 Service：Container Factory + @inject
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-repository每次创建不传单例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Repository：每次创建，不传单例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-插件依赖注入plugincontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 插件依赖注入：PluginContext
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-单例分类决策表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 单例分类决策表
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#详细设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        详细设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="详细设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#container-精简后" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container 精简后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifespan-中基础设施绑定" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lifespan 中基础设施绑定
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#测试策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration Path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1基础设施自托管改造2-天" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1：基础设施自托管改造（2 天）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2container-精简--inject-改造3-天" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2：Container 精简 + @inject 改造（3 天）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3插件改造2-天" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3：插件改造（2 天）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4清理1-天" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4：清理（1 天）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#缓解措施" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓解措施
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#附录单例完整分类表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录：单例完整分类表
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="附录：单例完整分类表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#自托管单例不在-container-中注册" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自托管单例（不在 Container 中注册）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-singleton有状态业务" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container Singleton（有状态业务）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-factory无状态" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container Factory（无状态）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-014-dependency-injection-refactor.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-014-依赖注入架构重构--从-service-locator-到分层显式依赖">ADR-014: 依赖注入架构重构 — 从 Service Locator 到分层显式依赖<a class="headerlink" href="#adr-014-依赖注入架构重构--从-service-locator-到分层显式依赖" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Proposed</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-06-10</p>
+<hr>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<h3 id="当前问题">当前问题<a class="headerlink" href="#当前问题" title="Permanent link">¶</a></h3>
+<p>项目使用 <code>dependency-injector</code> 的 <code>DeclarativeContainer</code> 管理约 270 个 provider，在 135 个文件中被直接调用 459 次。这种模式本质上是 <strong>Service Locator 反模式</strong>，产生以下问题：</p>
+<ol>
+<li><strong>隐藏依赖</strong>：Service 的 <code>__init__</code> 参数全为 <code>None</code>，依赖关系散落在 <code>or container.xxx()</code> 中，无法通过签名读取</li>
+<li><strong>单例滥用</strong>：270 个 provider 中有约 85% 被注册为 Singleton，但 Repository、Strategy、无状态 Service 根本不需要单例</li>
+<li><strong>测试困难</strong>：需要 <code>override</code>/<code>reset_override</code> 全局状态，测试间相互污染</li>
+<li><strong>生命周期不可控</strong>：基础设施（EventBus、HttpClient、Scheduler）的创建和关闭隐藏在 Container 内，lifespan 无法显式管理</li>
+<li><strong>插件硬编码</strong>：21 个内置插件在 <code>__init__</code> 中直接调用 <code>container.xxx()</code>，无注入参数</li>
+</ol>
+<h3 id="引用现状">引用现状<a class="headerlink" href="#引用现状" title="Permanent link">¶</a></h3>
+<p><code>from app.di import container</code> 被 135 个文件引用：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>文件数</th>
+<th>问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app/services/</code></td>
+<td>40+</td>
+<td><code>or container.xxx()</code> fallback</td>
+</tr>
+<tr>
+<td><code>app/plugin_framework/builtin_plugins/</code></td>
+<td>21</td>
+<td>构造函数硬编码 container</td>
+</tr>
+<tr>
+<td><code>app/media/</code></td>
+<td>8</td>
+<td>方法内部调用 container</td>
+</tr>
+<tr>
+<td><code>app/message/</code></td>
+<td>5</td>
+<td>客户端内部调用 container</td>
+</tr>
+<tr>
+<td><code>app/events/</code></td>
+<td>1</td>
+<td><code>@on_event</code> 装饰器导入即触发</td>
+</tr>
+</tbody>
+</table>
+<h3 id="单例滥用现状">单例滥用现状<a class="headerlink" href="#单例滥用现状" title="Permanent link">¶</a></h3>
+<p>当前 Container 注册了 270+ 个 provider，但实际需要单例的不到 15 个。Repository、Strategy、轻量 Helper 全部被注册为 Singleton，导致：</p>
+<ul>
+<li>内存中常驻大量不必要的对象</li>
+<li>测试时 <code>reset_override</code> 需要清理整个容器</li>
+<li>新开发者难以判断哪些对象可以安全地 <code>new</code>，哪些必须走 Container</li>
+</ul>
+<hr>
+<h2 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>消除 Service Locator</strong>：Service / Plugin 内部不再调用 <code>container.xxx()</code></li>
+<li><strong>显式依赖声明</strong>：所有依赖通过 <code>__init__</code> 参数传入，类型签名即文档</li>
+<li><strong>单例按需</strong>：只有真正有共享状态/资源的对象才使用单例，其余每次创建</li>
+<li><strong>生命周期可控</strong>：基础设施单例的创建和关闭由 lifespan 显式管理</li>
+<li><strong>渐进迁移</strong>：新旧模式共存，按文件逐步替换</li>
+</ol>
+<hr>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">¶</a></h2>
+<h3 id="架构三层模型">架构：三层模型<a class="headerlink" href="#架构三层模型" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────────────────┐
+│  Layer 3: Composition Root (lifespan / api/deps)            │
+│  职责：创建基础设施单例 → 注入业务单例 → 组装无状态 Service     │
+│         ↓ 关闭时反向清理                                     │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 2: Business Services                                 │
+│  app/services/*, app/media/*, app/message/*                 │
+│  职责：业务逻辑，只通过 __init__ 接收依赖                    │
+│  注入方式：@inject + Provide[Container.xxx]                  │
+│  禁止：调用 container、import deps                           │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 1: Infrastructure Singletons                         │
+│  EventBus, HttpClient, ThreadExecutor, SchedulerCore        │
+│  Message, SiteCache, SiteEngine, ConfigReloader             │
+│  职责：资源管理，自管生命周期                                │
+│  暴露：get_instance() / close_instance()                     │
+│  lifespan 直接调用，不通过 Container                         │
+└──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="核心设计决策">核心设计决策<a class="headerlink" href="#核心设计决策" title="Permanent link">¶</a></h3>
+<h4 id="1-基础设施单例自托管">1. 基础设施单例：自托管<a class="headerlink" href="#1-基础设施单例自托管" title="Permanent link">¶</a></h4>
+<p>有共享状态/资源的对象，由类自身管理生命周期，lifespan 中显式创建和关闭。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/events/bus.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventBus</span><span class="p">:</span>
+    <span class="n">_instance</span><span class="p">:</span> <span class="n">EventBus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventBus</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">registry</span><span class="o">=</span><span class="n">registry</span> <span class="ow">or</span> <span class="n">EventHandlerRegistry</span><span class="p">(),</span>
+                <span class="n">queue</span><span class="o">=</span><span class="n">queue</span> <span class="ow">or</span> <span class="n">MessageQueueFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/infrastructure/http/client.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HttpClient</span><span class="p">:</span>
+    <span class="n">_instance</span><span class="p">:</span> <span class="n">HttpClient</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpClient</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/services/scheduler/core.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SchedulerCore</span><span class="p">:</span>
+    <span class="n">_instance</span><span class="p">:</span> <span class="n">SchedulerCore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SchedulerCore</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">stop_service</span><span class="p">()</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+<p><strong>自托管单例清单</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>共享状态/资源</th>
+<th>生命周期管理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EventBus</td>
+<td>事件处理器注册表</td>
+<td>lifespan 创建 → 关闭</td>
+</tr>
+<tr>
+<td>HttpClient</td>
+<td>httpx.Client 连接池</td>
+<td>lifespan 创建 → 关闭</td>
+</tr>
+<tr>
+<td>AsyncHttpClient</td>
+<td>httpx.AsyncClient 连接池</td>
+<td>lifespan 创建 → 关闭</td>
+</tr>
+<tr>
+<td>ThreadExecutor</td>
+<td>ThreadPoolExecutor</td>
+<td>lifespan 创建 → shutdown</td>
+</tr>
+<tr>
+<td>SchedulerCore</td>
+<td>BackgroundScheduler + 任务注册表</td>
+<td>lifespan 创建 → stop</td>
+</tr>
+<tr>
+<td>Message</td>
+<td>ClientManager 配置 + MessageCenter 队列</td>
+<td>lifespan 创建 → 清理</td>
+</tr>
+<tr>
+<td>SiteCache</td>
+<td>内存索引 dict</td>
+<td>lifespan 创建 → 刷新</td>
+</tr>
+<tr>
+<td>SiteEngine</td>
+<td>站点定义 + 工厂注册表</td>
+<td>lifespan 创建 → 重置</td>
+</tr>
+<tr>
+<td>ConfigReloader</td>
+<td>重载步骤 + 版本号</td>
+<td>lifespan 创建</td>
+</tr>
+<tr>
+<td>PluginRegistry</td>
+<td>插件注册表</td>
+<td>lifespan 创建</td>
+</tr>
+<tr>
+<td>HookSystem</td>
+<td>钩子订阅</td>
+<td>lifespan 创建</td>
+</tr>
+<tr>
+<td>PluginSandbox</td>
+<td>插件实例缓存</td>
+<td>lifespan 创建 → 清理</td>
+</tr>
+<tr>
+<td>MediaServer</td>
+<td>客户端连接状态</td>
+<td>lifespan 创建 → 关闭</td>
+</tr>
+<tr>
+<td>DownloadMonitor</td>
+<td>后台监控状态</td>
+<td>lifespan 创建 → 停止</td>
+</tr>
+<tr>
+<td>SyncEngine</td>
+<td>watchdog Observer + 配置缓存</td>
+<td>lifespan 创建 → 停止</td>
+</tr>
+</tbody>
+</table>
+<h4 id="siteengine-改造示例">SiteEngine 改造示例<a class="headerlink" href="#siteengine-改造示例" title="Permanent link">¶</a></h4>
+<p>SiteEngine 是当前调用最分散的单例，30+ 处直接调用 <code>SiteEngine.get_instance()</code>。需要保留 <code>get_instance()</code> 作为自托管入口，但限制调用位置。</p>
+<p><strong>改造前</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/sites/engine.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SiteEngine</span><span class="p">:</span>
+    <span class="n">_engine_instance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"SiteEngine"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">definitions_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SiteEngine"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">definitions_dir</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span><span class="o">.</span><span class="n">_register_user_info_factories</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span>
+
+
+<span class="c1"># app/services/download_core.py（方法内部直接调用）</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_download_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+    <span class="n">site_def</span> <span class="o">=</span> <span class="n">SiteEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span><span class="o">.</span><span class="n">get_by_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">site_def</span><span class="o">.</span><span class="n">download</span><span class="o">.</span><span class="n">url_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tid</span><span class="o">=</span><span class="n">tid</span><span class="p">)</span>
+
+
+<span class="c1"># app/services/brush/helpers.py（方法内部直接调用）</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">):</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">SiteEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">site_def</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>改造后</strong>：自托管 + 构造函数注入</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/sites/engine.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SiteEngine</span><span class="p">:</span>
+    <span class="n">_engine_instance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"SiteEngine"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">definitions_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SiteEngine"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">definitions_dir</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span><span class="o">.</span><span class="n">_register_user_info_factories</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""测试时重置"""</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_engine_instance</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="c1"># app/services/download_core.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DownloadCore</span><span class="p">:</span>
+    <span class="nd">@inject</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">site_engine</span><span class="p">:</span> <span class="n">SiteEngine</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">site_engine</span><span class="p">],</span>
+        <span class="o">...</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span> <span class="o">=</span> <span class="n">site_engine</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_download_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="n">site_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span><span class="o">.</span><span class="n">get_by_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">site_def</span><span class="o">.</span><span class="n">download</span><span class="o">.</span><span class="n">url_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tid</span><span class="o">=</span><span class="n">tid</span><span class="p">)</span>
+
+
+<span class="c1"># app/services/brush/helpers.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BrushHelper</span><span class="p">:</span>
+    <span class="nd">@inject</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">site_engine</span><span class="p">:</span> <span class="n">SiteEngine</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">site_engine</span><span class="p">],</span>
+        <span class="o">...</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span> <span class="o">=</span> <span class="n">site_engine</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">):</span>
+        <span class="n">site_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
+        <span class="o">...</span>
+</code></pre></div>
+<p><strong>Container 注册</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Container</span><span class="p">(</span><span class="n">containers</span><span class="o">.</span><span class="n">DeclarativeContainer</span><span class="p">):</span>
+    <span class="c1"># SiteEngine 是自托管单例，通过 override 注入</span>
+    <span class="n">site_engine</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_not_bound</span><span class="p">(</span><span class="s2">"site_engine"</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>lifespan 绑定</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="n">site_engine</span> <span class="o">=</span> <span class="n">SiteEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">site_engine</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">site_engine</span><span class="p">))</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>调用位置限制</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>允许调用</th>
+<th>禁止调用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lifespan</code> 中创建</td>
+<td>Service 方法内部</td>
+</tr>
+<tr>
+<td><code>api/deps.py</code> 组装</td>
+<td>插件内部</td>
+</tr>
+<tr>
+<td>测试 fixture 中 reset</td>
+<td>工具函数/静态方法</td>
+</tr>
+<tr>
+<td><code>get_tid_by_url</code> 等纯函数（过渡期）</td>
+<td>Repository 内部</td>
+</tr>
+</tbody>
+</table>
+<p><strong>过渡期处理</strong>：</p>
+<p><code>get_tid_by_url</code> 等模块级函数无法接收构造函数注入，可保留 <code>SiteEngine.get_instance()</code> 调用作为过渡，但需标记为 <code>@deprecated</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_tid_by_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">site_engine</span><span class="p">:</span> <span class="n">SiteEngine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""从下载链接提取种子 ID"""</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">site_engine</span> <span class="ow">or</span> <span class="n">SiteEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">site_def</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">get_by_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<h4 id="2-有状态业务对象container-singleton--inject">2. 有状态业务对象：Container Singleton + @inject<a class="headerlink" href="#2-有状态业务对象container-singleton--inject" title="Permanent link">¶</a></h4>
+<p>有内部缓存但非基础设施的对象，通过 <code>@inject</code> 注入基础设施引用。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/media/service.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dependency_injector.wiring</span><span class="w"> </span><span class="kn">import</span> <span class="n">inject</span><span class="p">,</span> <span class="n">Provide</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.di.container</span><span class="w"> </span><span class="kn">import</span> <span class="n">Container</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MediaService</span><span class="p">:</span>
+    <span class="nd">@inject</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tmdb_lookup</span><span class="p">:</span> <span class="n">TmdbLookup</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">tmdb_lookup</span><span class="p">],</span>
+        <span class="n">llm_parser</span><span class="p">:</span> <span class="n">LLMParser</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">llm_parser</span><span class="p">],</span>
+        <span class="n">tmdb_client</span><span class="p">:</span> <span class="n">TmdbClient</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">tmdb_client</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lookup</span> <span class="o">=</span> <span class="n">tmdb_lookup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_llm_parser</span> <span class="o">=</span> <span class="n">llm_parser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tmdb_client</span> <span class="o">=</span> <span class="n">tmdb_client</span>
+</code></pre></div>
+<p><strong>有状态业务单例清单</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>内部状态</th>
+<th>注册方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MediaService</td>
+<td>TmdbLookup 缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>TmdbClient</td>
+<td>查询结果缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>TmdbLookup</td>
+<td>TMDB 请求缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>DouBan</td>
+<td>请求缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>Bangumi</td>
+<td>请求缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>元数据缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>Fanart</td>
+<td>图片元数据缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>MediaCache</td>
+<td>显式缓存对象</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>WordsService</td>
+<td>识别词规则缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>SiteUserInfo</td>
+<td>站点用户信息缓存</td>
+<td>Singleton</td>
+</tr>
+<tr>
+<td>SiteConf</td>
+<td>站点配置缓存</td>
+<td>Singleton</td>
+</tr>
+</tbody>
+</table>
+<h4 id="3-无状态业务-servicecontainer-factory--inject">3. 无状态业务 Service：Container Factory + @inject<a class="headerlink" href="#3-无状态业务-servicecontainer-factory--inject" title="Permanent link">¶</a></h4>
+<p>无共享状态的对象，每次创建新实例。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/services/transfer/filetransfer_service.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileTransferService</span><span class="p">:</span>
+    <span class="nd">@inject</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">media_service</span><span class="p">:</span> <span class="n">MediaService</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">media_service</span><span class="p">],</span>
+        <span class="n">scraper</span><span class="p">:</span> <span class="n">Scraper</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">scraper</span><span class="p">],</span>
+        <span class="n">event_bus</span><span class="p">:</span> <span class="n">EventBus</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">event_bus</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_media</span> <span class="o">=</span> <span class="n">media_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scraper</span> <span class="o">=</span> <span class="n">scraper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_bus</span> <span class="o">=</span> <span class="n">event_bus</span>
+</code></pre></div>
+<p><strong>注意</strong>：<code>EventBus</code> 是基础设施单例，不在 Container 中注册。通过 lifespan 中 <code>override</code> 注入：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># api/main.py</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># 1. 基础设施自管创建</span>
+    <span class="n">event_bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">thread_executor</span> <span class="o">=</span> <span class="n">ThreadExecutor</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+
+    <span class="c1"># 2. 基础设施注入到 Container（供 @inject 使用）</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">event_bus</span><span class="p">))</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">thread_executor</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">thread_executor</span><span class="p">))</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">message</span><span class="p">))</span>
+
+    <span class="c1"># 3. 触发 @inject 绑定</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">wire_modules</span><span class="p">()</span>
+
+    <span class="k">yield</span>
+
+    <span class="c1"># 4. 反向清理</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">reset_override</span><span class="p">()</span>
+    <span class="n">Message</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">EventBus</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">ThreadExecutor</span><span class="o">.</span><span class="n">shutdown_all</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="4-repository每次创建不传单例">4. Repository：每次创建，不传单例<a class="headerlink" href="#4-repository每次创建不传单例" title="Permanent link">¶</a></h4>
+<p>Repository 是轻量对象，不持有连接，通过 SQLAlchemy session 共享连接。</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SiteRepositoryAdapter</span><span class="p">(</span><span class="n">ISiteRepository</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># 不接收 session，每次方法内部获取</span>
+        <span class="k">pass</span>
+</code></pre></div>
+<p><strong>不在 Container 中注册</strong>，由需要它的 Service 在 <code>__init__</code> 中直接 <code>new</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SyncEngine</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sync_path_repo</span><span class="p">:</span> <span class="n">SyncPathRepositoryAdapter</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">sync_path_repo</span><span class="p">],</span>
+        <span class="n">storage_backend_repo</span><span class="p">:</span> <span class="n">StorageBackendRepositoryAdapter</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">storage_backend_repo</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_repo</span> <span class="o">=</span> <span class="n">sync_path_repo</span>  <span class="c1"># Container 提供，但内部是 Factory</span>
+</code></pre></div>
+<p>Container 中注册为 <code>Factory</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Container</span><span class="p">(</span><span class="n">containers</span><span class="o">.</span><span class="n">DeclarativeContainer</span><span class="p">):</span>
+    <span class="n">sync_path_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SyncPathRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">storage_backend_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">StorageBackendRepositoryAdapter</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="5-插件依赖注入plugincontext">5. 插件依赖注入：PluginContext<a class="headerlink" href="#5-插件依赖注入plugincontext" title="Permanent link">¶</a></h4>
+<p>插件不再硬编码 <code>container.xxx()</code>，通过 <code>PluginContext</code> 接收依赖。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/plugin_framework/context.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PluginContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""插件运行时的依赖上下文 — 由 PluginSandbox 在初始化时注入。"""</span>
+
+    <span class="nd">@inject</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">douban</span><span class="p">:</span> <span class="n">DouBan</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">douban</span><span class="p">],</span>
+        <span class="n">searcher</span><span class="p">:</span> <span class="n">Searcher</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">searcher</span><span class="p">],</span>
+        <span class="n">downloader</span><span class="p">:</span> <span class="n">DownloaderCore</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">downloader_core</span><span class="p">],</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Message</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">message</span><span class="p">],</span>
+        <span class="n">site_cache</span><span class="p">:</span> <span class="n">SiteCache</span> <span class="o">=</span> <span class="n">Provide</span><span class="p">[</span><span class="n">Container</span><span class="o">.</span><span class="n">site_cache</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">douban</span> <span class="o">=</span> <span class="n">douban</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span> <span class="o">=</span> <span class="n">searcher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">downloader</span> <span class="o">=</span> <span class="n">downloader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">site_cache</span> <span class="o">=</span> <span class="n">site_cache</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/plugin_framework/builtin_plugins/doubansync/backend/plugin.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DoubanSyncPlugin</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">PluginContext</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_douban</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">douban</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_searcher</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">searcher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_downloader</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">downloader</span>
+</code></pre></div>
+<h4 id="6-单例分类决策表">6. 单例分类决策表<a class="headerlink" href="#6-单例分类决策表" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>判定标准</th>
+<th>管理方式</th>
+<th>Container 注册</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>基础设施单例</strong></td>
+<td>外部资源（线程池、连接池、调度器）、全局注册表、队列</td>
+<td>自托管 <code>get_instance()</code></td>
+<td>❌ 不注册，lifespan override</td>
+</tr>
+<tr>
+<td><strong>有状态业务单例</strong></td>
+<td>内部缓存、配置缓存、运行时状态</td>
+<td><code>@inject</code> + Singleton</td>
+<td>✅ Singleton</td>
+</tr>
+<tr>
+<td><strong>无状态 Service</strong></td>
+<td>纯协调逻辑，无内部状态</td>
+<td><code>@inject</code> + Factory</td>
+<td>✅ Factory</td>
+</tr>
+<tr>
+<td><strong>Repository</strong></td>
+<td>数据访问，无状态</td>
+<td>每次 <code>new</code></td>
+<td>✅ Factory</td>
+</tr>
+<tr>
+<td><strong>Strategy/Helper</strong></td>
+<td>算法/工具，无状态</td>
+<td>每次 <code>new</code></td>
+<td>✅ Factory</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="详细设计">详细设计<a class="headerlink" href="#详细设计" title="Permanent link">¶</a></h2>
+<h3 id="container-精简后">Container 精简后<a class="headerlink" href="#container-精简后" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/di/container.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dependency_injector</span><span class="w"> </span><span class="kn">import</span> <span class="n">containers</span><span class="p">,</span> <span class="n">providers</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Container</span><span class="p">(</span><span class="n">containers</span><span class="o">.</span><span class="n">DeclarativeContainer</span><span class="p">):</span>
+    <span class="c1"># ── 基础设施占位符（lifespan 中 override）──</span>
+    <span class="n">event_bus</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_not_bound</span><span class="p">(</span><span class="s2">"event_bus"</span><span class="p">))</span>
+    <span class="n">thread_executor</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_not_bound</span><span class="p">(</span><span class="s2">"thread_executor"</span><span class="p">))</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_not_bound</span><span class="p">(</span><span class="s2">"message"</span><span class="p">))</span>
+
+    <span class="c1"># ── 有状态业务单例 ──</span>
+    <span class="n">media_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">MediaService</span><span class="p">)</span>
+    <span class="n">tmdb_client</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">TmdbClient</span><span class="p">)</span>
+    <span class="n">tmdb_lookup</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">TmdbLookup</span><span class="p">)</span>
+    <span class="n">douban</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">DouBan</span><span class="p">)</span>
+    <span class="n">bangumi</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">Bangumi</span><span class="p">)</span>
+    <span class="n">scraper</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">Scraper</span><span class="p">)</span>
+    <span class="n">fanart</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">Fanart</span><span class="p">)</span>
+    <span class="n">media_cache</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">MediaCache</span><span class="p">)</span>
+    <span class="n">words_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">WordsService</span><span class="p">)</span>
+    <span class="n">site_userinfo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">SiteUserInfo</span><span class="p">)</span>
+    <span class="n">site_conf</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="n">SiteConf</span><span class="p">)</span>
+
+    <span class="c1"># ── 无状态 Service（Factory）──</span>
+    <span class="n">sync_engine</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SyncEngine</span><span class="p">)</span>
+    <span class="n">filetransfer_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">FileTransferService</span><span class="p">)</span>
+    <span class="n">transfer_engine</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">TransferEngine</span><span class="p">)</span>
+    <span class="n">search_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SearchService</span><span class="p">)</span>
+    <span class="n">download_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">DownloadService</span><span class="p">)</span>
+    <span class="n">indexer_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">IndexerService</span><span class="p">)</span>
+    <span class="n">filter_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">FilterService</span><span class="p">)</span>
+    <span class="n">site_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SiteService</span><span class="p">)</span>
+    <span class="n">brush_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">BrushService</span><span class="p">)</span>
+    <span class="n">brush_task_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">BrushTaskService</span><span class="p">)</span>
+    <span class="n">rss_task_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">RssTaskService</span><span class="p">)</span>
+    <span class="n">subscribe_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SubscribeService</span><span class="p">)</span>
+    <span class="n">transfer_history_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">TransferHistoryService</span><span class="p">)</span>
+    <span class="n">media_info_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaInfoService</span><span class="p">)</span>
+    <span class="n">media_library_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaLibraryService</span><span class="p">)</span>
+    <span class="n">media_recommendation_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaRecommendationService</span><span class="p">)</span>
+    <span class="n">media_file_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaFileService</span><span class="p">)</span>
+    <span class="n">search_result_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SearchResultService</span><span class="p">)</span>
+    <span class="n">file_index_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">FileIndexService</span><span class="p">)</span>
+    <span class="n">config_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">ConfigService</span><span class="p">)</span>
+    <span class="n">scheduler_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SchedulerService</span><span class="p">)</span>
+    <span class="n">system_lifecycle_service</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SystemLifecycleService</span><span class="p">)</span>
+
+    <span class="c1"># ── Repository（Factory）──</span>
+    <span class="n">site_repository</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SiteRepository</span><span class="p">)</span>
+    <span class="n">site_repo_adapter</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SiteRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">sync_path_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SyncPathRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">storage_backend_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">StorageBackendRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">media_sync_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaSyncRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">download_history_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">DownloadHistoryRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">downloader_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">DownloaderRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">media_server_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">MediaServerRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">tmdb_blacklist_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">TmdbBlacklistRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">apikey_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">APIKeyRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">apikey_log_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">APIKeyLogRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">indexer_statistics_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">IndexerStatisticsRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">search_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SearchRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">brush_rule_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">BrushRuleRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">rbac_permission_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">RBACPermissionRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">rbac_menu_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">RBACMenuRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">rbac_role_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">RBACRoleRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">rbac_user_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">RBACUserRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">rss_torrent_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">SubscribeTorrentRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">custom_word_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">CustomWordRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">custom_word_group_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">CustomWordGroupRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">plugin_framework_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">PluginFrameworkRepository</span><span class="p">)</span>
+    <span class="n">torrent_remove_task_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">TorrentRemoveTaskRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">download_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">DownloadRepository</span><span class="p">)</span>
+    <span class="n">filter_group_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">FilterGroupRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">filter_rule_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">FilterRuleRepositoryAdapter</span><span class="p">)</span>
+    <span class="n">plugin_log_repo</span> <span class="o">=</span> <span class="n">providers</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">PluginLogRepositoryAdapter</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">wire_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""触发 @inject 绑定，在 lifespan 中调用。"""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.services</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.services</span><span class="w"> </span><span class="kn">import</span> <span class="n">sync_engine</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.services</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_service</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.media</span><span class="w"> </span><span class="kn">import</span> <span class="n">service</span> <span class="k">as</span> <span class="n">media_service_module</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">message</span> <span class="k">as</span> <span class="n">message_module</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">app.plugin_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">builtin_plugins</span>
+        <span class="c1"># ... 所有使用 @inject 的模块</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wire</span><span class="p">(</span>
+            <span class="n">modules</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">transfer</span><span class="o">.</span><span class="n">filetransfer_service</span><span class="p">,</span>
+                <span class="n">sync_engine</span><span class="p">,</span>
+                <span class="n">download_service</span><span class="p">,</span>
+                <span class="n">media_service_module</span><span class="p">,</span>
+                <span class="n">message_module</span><span class="p">,</span>
+                <span class="c1"># ...</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_not_bound</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> 尚未绑定，请在 lifespan 中 override"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="lifespan-中基础设施绑定">lifespan 中基础设施绑定<a class="headerlink" href="#lifespan-中基础设施绑定" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># api/main.py</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># 1. 基础设施自管创建</span>
+    <span class="n">event_bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">http_client</span> <span class="o">=</span> <span class="n">HttpClient</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">async_http</span> <span class="o">=</span> <span class="n">AsyncHttpClient</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">thread_executor</span> <span class="o">=</span> <span class="n">ThreadExecutor</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+    <span class="n">scheduler_core</span> <span class="o">=</span> <span class="n">SchedulerCore</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">site_cache</span> <span class="o">=</span> <span class="n">SiteCache</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">site_engine</span> <span class="o">=</span> <span class="n">SiteEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">config_reloader</span> <span class="o">=</span> <span class="n">ConfigReloader</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">plugin_registry</span> <span class="o">=</span> <span class="n">PluginRegistry</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">hook_system</span> <span class="o">=</span> <span class="n">HookSystem</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">plugin_sandbox</span> <span class="o">=</span> <span class="n">PluginSandbox</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">media_server</span> <span class="o">=</span> <span class="n">MediaServer</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">download_monitor</span> <span class="o">=</span> <span class="n">DownloadMonitor</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+    <span class="n">sync_engine_singleton</span> <span class="o">=</span> <span class="n">SyncEngine</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
+
+    <span class="c1"># 2. 基础设施注入到 Container（供 @inject 使用）</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">event_bus</span><span class="p">))</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">thread_executor</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">thread_executor</span><span class="p">))</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">message</span><span class="p">))</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">site_cache</span><span class="o">.</span><span class="n">override</span><span class="p">(</span><span class="n">providers</span><span class="o">.</span><span class="n">Singleton</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">site_cache</span><span class="p">))</span>
+
+    <span class="c1"># 3. 触发 @inject 绑定</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">wire_modules</span><span class="p">()</span>
+
+    <span class="c1"># 4. 启动业务服务</span>
+    <span class="n">sync_engine_singleton</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+    <span class="n">scheduler_core</span><span class="o">.</span><span class="n">start_service</span><span class="p">(</span><span class="n">load_defaults</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">download_monitor</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">yield</span>
+
+    <span class="c1"># 5. 反向关闭</span>
+    <span class="n">sync_engine_singleton</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+    <span class="n">download_monitor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+    <span class="n">scheduler_core</span><span class="o">.</span><span class="n">stop_service</span><span class="p">()</span>
+    <span class="n">Message</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">EventBus</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">HttpClient</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">AsyncHttpClient</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>
+    <span class="n">ThreadExecutor</span><span class="o">.</span><span class="n">shutdown_all</span><span class="p">()</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">reset_override</span><span class="p">()</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">thread_executor</span><span class="o">.</span><span class="n">reset_override</span><span class="p">()</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reset_override</span><span class="p">()</span>
+    <span class="n">container</span><span class="o">.</span><span class="n">site_cache</span><span class="o">.</span><span class="n">reset_override</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="测试策略">测试策略<a class="headerlink" href="#测试策略" title="Permanent link">¶</a></h3>
+<p><strong>测试无状态 Service</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_sync_engine</span><span class="p">():</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">SyncEngine</span><span class="p">(</span>
+        <span class="n">transfer_engine</span><span class="o">=</span><span class="n">mock_transfer</span><span class="p">,</span>
+        <span class="n">sync_path_repo</span><span class="o">=</span><span class="n">mock_repo</span><span class="p">,</span>
+        <span class="n">storage_backend_repo</span><span class="o">=</span><span class="n">mock_backend</span><span class="p">,</span>
+        <span class="n">event_bus</span><span class="o">=</span><span class="n">mock_bus</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>测试有状态单例</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_media_service</span><span class="p">():</span>
+    <span class="n">svc</span> <span class="o">=</span> <span class="n">MediaService</span><span class="p">(</span>
+        <span class="n">tmdb_lookup</span><span class="o">=</span><span class="n">mock_lookup</span><span class="p">,</span>
+        <span class="n">llm_parser</span><span class="o">=</span><span class="n">mock_llm</span><span class="p">,</span>
+        <span class="n">tmdb_client</span><span class="o">=</span><span class="n">mock_client</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>测试基础设施</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_event_bus</span><span class="p">():</span>
+    <span class="n">bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">mock_registry</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="n">mock_queue</span><span class="p">)</span>
+    <span class="o">...</span>
+    <span class="n">EventBus</span><span class="o">.</span><span class="n">close_instance</span><span class="p">()</span>  <span class="c1"># 清理</span>
+</code></pre></div>
+<hr>
+<h2 id="migration-path">Migration Path<a class="headerlink" href="#migration-path" title="Permanent link">¶</a></h2>
+<h3 id="phase-1基础设施自托管改造2-天">Phase 1：基础设施自托管改造（2 天）<a class="headerlink" href="#phase-1基础设施自托管改造2-天" title="Permanent link">¶</a></h3>
+<ol>
+<li>为 EventBus、HttpClient、AsyncHttpClient、ThreadExecutor 添加 <code>get_instance()</code> / <code>close_instance()</code></li>
+<li>为 SchedulerCore、Message、SiteCache、SiteEngine、ConfigReloader、PluginRegistry、HookSystem、PluginSandbox、MediaServer、DownloadMonitor、SyncEngine 添加 <code>get_instance()</code> / <code>close_instance()</code></li>
+<li>修改 <code>api/main.py</code> lifespan，用自托管替代 Container 创建</li>
+</ol>
+<h3 id="phase-2container-精简--inject-改造3-天">Phase 2：Container 精简 + @inject 改造（3 天）<a class="headerlink" href="#phase-2container-精简--inject-改造3-天" title="Permanent link">¶</a></h3>
+<ol>
+<li>精简 Container：移除基础设施 provider，保留约 35 个业务 provider（15 个 Singleton + 20 个 Factory）</li>
+<li>为高频 Service 添加 <code>@inject</code>：<code>MediaService</code>、<code>FileTransferService</code>、<code>SyncEngine</code>、<code>DownloadService</code>、<code>SearchService</code></li>
+<li>删除 Service 内部的 <code>from app.di import container</code></li>
+</ol>
+<h3 id="phase-3插件改造2-天">Phase 3：插件改造（2 天）<a class="headerlink" href="#phase-3插件改造2-天" title="Permanent link">¶</a></h3>
+<ol>
+<li>完善 <code>PluginContext</code>，注入常用依赖</li>
+<li>改造 21 个内置插件，移除 <code>container.xxx()</code> 硬编码</li>
+</ol>
+<h3 id="phase-4清理1-天">Phase 4：清理（1 天）<a class="headerlink" href="#phase-4清理1-天" title="Permanent link">¶</a></h3>
+<ol>
+<li>全局检查 <code>from app.di import container</code>，确保仅在 <code>api/deps.py</code> 和 <code>lifespan</code> 中存在</li>
+<li>运行 <code>uv run ruff check .</code> 和 <code>uv run pyright src/ tests/</code></li>
+</ol>
+<hr>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>依赖可见</strong>：通过 <code>__init__</code> 签名即可读取类的全部依赖</li>
+<li><strong>单例可控</strong>：基础设施生命周期由 lifespan 显式管理，可测试 close/restart</li>
+<li><strong>容器精简</strong>：从 270 个 provider 减至约 35 个，降低认知负担</li>
+<li><strong>测试友好</strong>：直接 <code>new Service(mock_a, mock_b)</code>，无需 override 全局状态</li>
+<li><strong>插件解耦</strong>：PluginContext 统一注入，插件不再硬编码 container</li>
+</ol>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>@inject 样板代码</strong>：每个 Service 需要添加 <code>@inject</code> + <code>Provide[Container.xxx]</code></li>
+<li><strong>lifespan 膨胀</strong>：基础设施创建逻辑从 Container 移到 lifespan，代码量增加</li>
+<li><strong>模块导入顺序</strong>：<code>wire_modules()</code> 需要在所有 <code>@inject</code> 模块导入后调用</li>
+</ol>
+<h3 id="缓解措施">缓解措施<a class="headerlink" href="#缓解措施" title="Permanent link">¶</a></h3>
+<ul>
+<li>使用 <code>pycln</code> / <code>autoflake</code> 自动清理 <code>from app.di import container</code></li>
+<li>lifespan 中基础设施创建可提取为 <code>init_infrastructure()</code> / <code>shutdown_infrastructure()</code> 辅助函数</li>
+</ul>
+<hr>
+<h2 id="附录单例完整分类表">附录：单例完整分类表<a class="headerlink" href="#附录单例完整分类表" title="Permanent link">¶</a></h2>
+<h3 id="自托管单例不在-container-中注册">自托管单例（不在 Container 中注册）<a class="headerlink" href="#自托管单例不在-container-中注册" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>共享状态</th>
+<th>创建位置</th>
+<th>关闭位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EventBus</td>
+<td>事件处理器注册表</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>HttpClient</td>
+<td>httpx.Client 连接池</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>AsyncHttpClient</td>
+<td>httpx.AsyncClient 连接池</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>ThreadExecutor</td>
+<td>ThreadPoolExecutor</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>SchedulerCore</td>
+<td>BackgroundScheduler + 任务注册表</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>Message</td>
+<td>ClientManager + MessageCenter 队列</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>SiteCache</td>
+<td>内存索引 dict</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>SiteEngine</td>
+<td>站点定义 + 工厂注册表</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>ConfigReloader</td>
+<td>重载步骤 + 版本号</td>
+<td>lifespan</td>
+<td>—</td>
+</tr>
+<tr>
+<td>PluginRegistry</td>
+<td>插件注册表</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>HookSystem</td>
+<td>钩子订阅</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>PluginSandbox</td>
+<td>插件实例缓存</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>MediaServer</td>
+<td>客户端连接状态</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>DownloadMonitor</td>
+<td>后台监控状态</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+<tr>
+<td>SyncEngine</td>
+<td>watchdog Observer + 配置缓存</td>
+<td>lifespan</td>
+<td>lifespan</td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-singleton有状态业务">Container Singleton（有状态业务）<a class="headerlink" href="#container-singleton有状态业务" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>内部状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MediaService</td>
+<td>TmdbLookup 缓存引用</td>
+</tr>
+<tr>
+<td>TmdbClient</td>
+<td>HTTP 响应缓存</td>
+</tr>
+<tr>
+<td>TmdbLookup</td>
+<td>TMDB 查询结果缓存</td>
+</tr>
+<tr>
+<td>DouBan</td>
+<td>请求缓存</td>
+</tr>
+<tr>
+<td>Bangumi</td>
+<td>请求缓存</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>元数据缓存</td>
+</tr>
+<tr>
+<td>Fanart</td>
+<td>图片元数据缓存</td>
+</tr>
+<tr>
+<td>MediaCache</td>
+<td>显式缓存字典</td>
+</tr>
+<tr>
+<td>WordsService</td>
+<td>识别词规则缓存</td>
+</tr>
+<tr>
+<td>SiteUserInfo</td>
+<td>站点用户信息缓存</td>
+</tr>
+<tr>
+<td>SiteConf</td>
+<td>站点配置缓存</td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-factory无状态">Container Factory（无状态）<a class="headerlink" href="#container-factory无状态" title="Permanent link">¶</a></h3>
+<p>所有 Service、Repository、Strategy、Helper 均注册为 Factory。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

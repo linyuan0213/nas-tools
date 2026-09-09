@@ -1,0 +1,3133 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-020-agent-rag-mcp-architecture/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-020: 智能 Agent RAG + MCP 架构 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-020-智能-agent-rag--mcp-架构" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-020: 智能 Agent RAG + MCP 架构
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#现状盘点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现状盘点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心约束决定取舍" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心约束（决定取舍）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#相对主流-agent--rag-架构的缺口" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        相对主流 Agent + RAG 架构的缺口
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-目标架构mvp-优先" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 目标架构（MVP 优先）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-向量库选型评审修正-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 向量库选型（评审修正 ×2）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-mcp是否服务化评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. MCP：是否服务化（评审修正）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-范围裁剪评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 范围裁剪（评审修正）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#详细设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        详细设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="详细设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#0-分层与依赖规则评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. 分层与依赖规则（评审修正）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0. 分层与依赖规则（评审修正）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#现状违规实测" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现状违规（实测）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#修正规则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修正规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-搜索与意图统一评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 搜索与意图统一（评审修正）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 搜索与意图统一（评审修正）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#现状重复实测" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现状重复（实测）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#修正单一意图端口--单一编排入口" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修正：单一意图端口 + 单一编排入口
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-provider-层扩展providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Provider 层扩展（providers/）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-rag-pipeline新增-rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. RAG Pipeline（新增 rag/）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-agent-core重构-agentsmvp-单-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Agent Core（重构 agents/，MVP 单 Agent）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-记忆子系统评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 记忆子系统（评审修正）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 记忆子系统（评审修正）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#现状问题实测" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现状问题（实测）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#记忆分层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        记忆分层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#存储选型说明为什么短程不用向量库" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        存储选型说明（为什么短程不用向量库）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#读写路径" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        读写路径
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#组件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        组件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#db-模型新增配-alembic-迁移" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DB 模型（新增，配 Alembic 迁移）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#治理" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        治理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mvp-范围" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP 范围
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-内部工具层重设计评审修正" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 内部工具层重设计（评审修正）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 内部工具层重设计（评审修正）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#现状问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现状问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#设计原则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        设计原则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#工具全景按域标注分级" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        工具全景（按域，标注分级）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mvp-工具集17-个覆盖-80-对话场景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP 工具集（17 个，覆盖 80% 对话场景）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#工具代码组织" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        工具代码组织
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-治理与可观测轻量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 治理与可观测（轻量）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-反哺路径让系统更符合用户评审补充" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 反哺路径：让系统更符合用户（评审补充）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-mcp-适配层可选默认关闭" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. MCP 适配层（可选，默认关闭）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. MCP 适配层（可选，默认关闭）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#方向1mcp-server对外暴露默认关闭" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方向1：MCP Server（对外暴露，默认关闭）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方向2mcp-client接入外部服务插件化集成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方向2：MCP Client（接入外部服务，插件化集成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#文件与目录变更清单" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        文件与目录变更清单
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#配置设计configyamlexample-新增-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置设计（config.yaml.example 新增 agent:）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#di-组装builder-侧" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DI 组装（Builder 侧）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#测试策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试策略
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施路线" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施路线
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#附录现代化对标2025-2026-主流实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录：现代化对标（2025-2026 主流实践）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="附录：现代化对标（2025-2026 主流实践）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#对标补齐项" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对标补齐项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#缓解措施" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓解措施
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-020-agent-rag-mcp-architecture.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-020-智能-agent-rag--mcp-架构">ADR-020: 智能 Agent RAG + MCP 架构<a class="headerlink" href="#adr-020-智能-agent-rag--mcp-架构" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Proposed</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-08-09</p>
+<h2 id="updated">Updated<a class="headerlink" href="#updated" title="Permanent link">¶</a></h2>
+<p>2026-08-09（评审后修正：向量库默认改为 LanceDB + 可选 Qdrant；MCP 降级为可选适配层、默认关闭；整体裁剪为 MVP 优先；内部工具层按域重设计，MVP 17 工具；分层与依赖规则修正（端口下沉，禁反向依赖）；搜索/意图统一为单一意图端口 + 单一编排入口，删除重复流水线；记忆子系统（短程 DB + 长程向量）；反哺路径；MCP 双向候选评估；现代化对标补齐 SSE/async/fallback/evals/Langfuse/ContextBuilder）</p>
+<hr>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<h3 id="现状盘点">现状盘点<a class="headerlink" href="#现状盘点" title="Permanent link">¶</a></h3>
+<p>项目已具备一套基于 <code>pydantic-ai</code> 的 Agent 基础（<code>src/app/agent/</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>service.py</code></td>
+<td><code>AgentService</code> 门面：provider 管理、缓存、重试、结构化输出</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td><code>ProviderConfig</code> + <code>get_provider()</code></td>
+</tr>
+<tr>
+<td><code>providers/</code></td>
+<td><code>BaseProvider</code> + OpenAI / Ollama / Gemini 聊天提供方</td>
+</tr>
+<tr>
+<td><code>agents/</code></td>
+<td><code>MediaRecognizer</code>、<code>SearchIntentAgent</code>、<code>ChatAgent</code>、<code>QuestionAnswerAgent</code></td>
+</tr>
+<tr>
+<td><code>tools/</code></td>
+<td><code>ToolRegistry</code> + <code>ToolExecutor</code>（静态注册表，桥接业务 Service）</td>
+</tr>
+<tr>
+<td><code>prompts/</code></td>
+<td>media / search 提示词模板</td>
+</tr>
+</tbody>
+</table>
+<p>已复用的基础设施：不可变 <code>AppContext</code> + 分模块 Builder（<code>app/di/</code>）、事件总线（<code>app/events/</code>）、缓存系统（<code>app/infrastructure/cache_system/</code>）、插件框架、RBAC。</p>
+<h3 id="核心约束决定取舍">核心约束（决定取舍）<a class="headerlink" href="#核心约束决定取舍" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>自托管单节点 NAS 媒体工具</strong>，默认 SQLite、Docker 单容器，个人 / 小团队使用</li>
+<li>Agent 是<strong>辅助功能</strong>，不是产品主线；运维成本与代码复杂度必须可控</li>
+<li>设计原则：满足价值的最简方案，优先 MVP，避免过度工程化</li>
+</ul>
+<h3 id="相对主流-agent--rag-架构的缺口">相对主流 Agent + RAG 架构的缺口<a class="headerlink" href="#相对主流-agent--rag-架构的缺口" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>缺口</th>
+<th>现状</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>无 RAG</td>
+<td>仅会话窗口历史，无 embedding / 向量库 / 检索</td>
+<td>无法回答关于媒体库、配置、FAQ 的具体问题</td>
+</tr>
+<tr>
+<td>2</td>
+<td>工具调用仅一轮</td>
+<td><code>ChatAgent.chat_with_tools</code> 仅支持单次工具调用</td>
+<td>无法完成多步任务（检索 → 判断 → 下载/订阅）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>无记忆沉淀</td>
+<td>仅最近 10 轮会话缓存</td>
+<td>上下文理解有限</td>
+</tr>
+<tr>
+<td>4</td>
+<td>工具治理弱</td>
+<td>工具未绑定 RBAC，危险操作无确认</td>
+<td>权限风险</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注：评审后明确 —— <strong>MCP 不是本项目的核心缺口</strong>（见 Decision §3），默认不引入。</p>
+</blockquote>
+<hr>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">¶</a></h2>
+<p>在 <code>src/app/agent/</code> 下扩展为<strong>主流 Agent + RAG 架构</strong>，MCP 作为<strong>可选适配层</strong>（默认关闭）。遵循项目既有约定：不可变 <code>AppContext</code> + Builder、事件驱动、复用 <code>pydantic-ai</code>（原生多步工具调用）、所有 import 置顶、ruff / pyright 校验。</p>
+<h3 id="1-目标架构mvp-优先">1. 目标架构（MVP 优先）<a class="headerlink" href="#1-目标架构mvp-优先" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌────────────────────────────── 应用层 ──────────────────────────────┐
+│  API Routers: chat / kb                                            │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               ▼
+┌──────────────────── 对话 Agent（pydantic-ai） ─────────────────────┐
+│  ChatAgent：多步工具调用循环（plan → act → observe → reflect）      │
+│  工具集 = 内部 ToolExecutor 工具  +  kb_search（RAG 检索工具）      │
+│  记忆 = 短程会话（DB 持久化 + 缓存热路径，详见 §5）                 │
+│  结构化工具 = MediaRecognizer / SearchIntentAgent（复用现有）       │
+└──────┬────────────────────────────────────────────┬───────────────┘
+       ▼                                            ▼
+┌─────────────────┐                       ┌──────────────────┐
+│  RAG Pipeline   │                       │ 治理 Guardrails   │
+│  Chunker        │                       │ 复用 RBAC 工具鉴权 │
+│  Ingestor       │                       │ 危险操作需确认     │
+│  Retriever(混合)│                       │ 脱敏 + 用量日志    │
+│  Context        │                       └──────────────────┘
+└──────┬──────────┘
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  VectorStore: LanceDB（默认，嵌入式） / Qdrant（可选）        │
+│  Provider Layer: Chat + Embedding（Ollama / OpenAI / Gemini） │
+└─────────────────────────────────────────────────────────────┘
+
+可选（默认关闭）：
+┌─────────────────────────────────────────────────────────────┐
+│  MCP 适配层：MCP Server（对外暴露内部工具）/ MCP Client        │
+└─────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>数据流（一次智能请求）</strong>
+<code>用户输入 → 会话上下文 → ChatAgent 工具循环（按需调用 kb_search 检索知识 / 调用内部工具执行动作，RBAC 鉴权 + 危险确认）→ 汇总输出 → 写会话记忆 + 用量日志</code></p>
+<h3 id="2-向量库选型评审修正-2">2. 向量库选型（评审修正 ×2）<a class="headerlink" href="#2-向量库选型评审修正-2" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>模式</th>
+<th>混合检索</th>
+<th>CPU 兼容</th>
+<th>运维</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SQLite-vec + FTS5</strong></td>
+<td>嵌入式（复用现有 SQLite 基建）</td>
+<td>FTS5 BM25（trigram 中文分词）+ vec KNN + Python RRF 融合</td>
+<td>✅ 全平台（纯 C 扩展，无 SIMD 要求）</td>
+<td>零运维（单文件，随现有备份流程）</td>
+<td><strong>默认</strong></td>
+</tr>
+<tr>
+<td><strong>LanceDB</strong></td>
+<td>嵌入式</td>
+<td>原生 FTS + 向量 + 混合 + 重排</td>
+<td>⚠️ 预编译库需 <strong>AVX2</strong>（实测无 AVX2 机器 SIGILL，老 NAS CPU 中招）</td>
+<td>零运维</td>
+<td><strong>可选加速</strong>（运行时检测，不支持则明确报错）</td>
+</tr>
+<tr>
+<td><strong>Qdrant</strong></td>
+<td>local 嵌入式 / server</td>
+<td>❌ 无原生 FTS scoring（BM25 需另拼）；local 模式官方定位 dev/test（暴力检索、无 HNSW、单写锁）</td>
+<td>local 可跑（实测 1.3ms/2000 向量）</td>
+<td>local 零运维；server 需额外容器</td>
+<td><strong>可选</strong>（已有 Qdrant server / 大规模库用户）</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>默认 <strong>SQLite 混合检索</strong>：本项目知识库为千级向量（docs 数百 chunk + 媒体库数千条目），暴力 KNN 毫秒级，HNSW 无意义；真正影响中文问答质量的是 BM25 全文检索——Qdrant 空白、FTS5 强项</li>
+<li>可选 <strong>LanceDB</strong>：AVX2 机器上的加速选择（原生混合检索 + 重排）</li>
+<li>可选 <strong>Qdrant</strong>：server 模式供进阶用户；不做默认因 ① 无原生 BM25 ② server 违反单容器约束 ③ local 模式 dev 级 ④ grpcio 重依赖</li>
+<li>统一 <code>VectorStore</code> 抽象，按 <code>settings.agent.vector_store</code> 选择（<code>sqlite</code> 默认 / <code>lancedb</code> / <code>qdrant</code>）</li>
+</ul>
+<h3 id="3-mcp是否服务化评审修正">3. MCP：是否服务化（评审修正）<a class="headerlink" href="#3-mcp是否服务化评审修正" title="Permanent link">¶</a></h3>
+<p><strong>结论：默认不需要 MCP 服务化，降级为可选适配层、默认关闭。</strong></p>
+<p>理由：</p>
+<ol>
+<li><strong>内部工具抽象已足够</strong>：<code>ToolRegistry</code> / <code>ToolExecutor</code> 已是干净边界，Agent 通过它调用全部内部能力，无需再包一层 MCP 协议</li>
+<li><strong>MCP Server 价值低、风险高</strong>：等于把已有 REST API 复制一份协议面，并把下载 / 删除 / 同步等破坏性操作暴露给任意外部客户端</li>
+<li><strong>MCP Client 属小众</strong>：媒体管理的主要价值来自内部工具（搜索 / 下载 / 订阅），而非外部通用工具</li>
+<li><strong>主流 MCP 红利在异构 Agent 生态互通</strong>，本项目是单一紧耦合内部 Agent，收益小、安全面大</li>
+</ol>
+<p>因此：
+- MCP 不做核心、不默认启用
+- 若未来确有需求（如把媒体管理接入 Claude Desktop / IDE Agent），以<strong>可选插件形式</strong>提供 MCP Server 适配：<strong>opt-in + token 鉴权 + RBAC + allow/deny 治理</strong>，默认 <code>enabled: false</code></p>
+<h3 id="4-范围裁剪评审修正">4. 范围裁剪（评审修正）<a class="headerlink" href="#4-范围裁剪评审修正" title="Permanent link">¶</a></h3>
+<p>为避免过度工程化，明确 MVP 与延后项：</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>决策</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单对话 Agent + 多步工具循环</td>
+<td><strong>MVP</strong></td>
+<td>基于 pydantic-ai，替代原"Orchestrator + 4 专家子代理"</td>
+</tr>
+<tr>
+<td>RAG 检索（LanceDB）+ <code>kb_search</code> 工具</td>
+<td><strong>MVP</strong></td>
+<td>核心价值</td>
+</tr>
+<tr>
+<td>短程会话记忆（持久化 + 滚动摘要）</td>
+<td><strong>MVP</strong></td>
+<td>DB 存储 + token 预算 + 三维作用域（见详细设计 §5）</td>
+</tr>
+<tr>
+<td>RBAC 工具鉴权 + 危险操作确认</td>
+<td><strong>MVP</strong></td>
+<td>轻量复用现有 RBAC，对话内确认，不建独立审批子系统</td>
+</tr>
+<tr>
+<td>用量日志（token / 延迟）</td>
+<td><strong>MVP</strong></td>
+<td>落 loguru</td>
+</tr>
+<tr>
+<td>MediaRecognizer / SearchIntentAgent</td>
+<td><strong>保留</strong></td>
+<td>作为结构化工具复用，非编排子代理</td>
+</tr>
+<tr>
+<td>多代理编排（Orchestrator + 专家子代理）</td>
+<td><strong>延后</strong></td>
+<td>MVP 不需要</td>
+</tr>
+<tr>
+<td>长程语义记忆（用户偏好 / 情节记忆）</td>
+<td><strong>设计定稿，Phase 4 可选</strong></td>
+<td>见详细设计 §5，复用 LanceDB，默认关闭</td>
+</tr>
+<tr>
+<td>OpenTelemetry</td>
+<td><strong>延后</strong></td>
+<td>用量日志先行</td>
+</tr>
+<tr>
+<td>独立审批工作流子系统</td>
+<td><strong>延后</strong></td>
+<td>对话内确认即可</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="详细设计">详细设计<a class="headerlink" href="#详细设计" title="Permanent link">¶</a></h2>
+<h3 id="0-分层与依赖规则评审修正">0. 分层与依赖规则（评审修正）<a class="headerlink" href="#0-分层与依赖规则评审修正" title="Permanent link">¶</a></h3>
+<h4 id="现状违规实测">现状违规（实测）<a class="headerlink" href="#现状违规实测" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>位置</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>反向依赖</td>
+<td><code>media/parser/llm.py:1</code></td>
+<td>media 组件层 import agent 层 <code>MediaRecognizer</code></td>
+</tr>
+<tr>
+<td>反向依赖</td>
+<td><code>services/search_web_service.py:11</code>、<code>services/system/info.py:9</code></td>
+<td>services 层 import <code>SearchIntentAgent</code></td>
+</tr>
+<tr>
+<td>反向依赖</td>
+<td><code>services/search_message_service.py:10</code></td>
+<td>services 层 import <code>AgentService</code></td>
+</tr>
+<tr>
+<td>反向装配</td>
+<td><code>di/builders/services_builder.py:299</code></td>
+<td>将 <code>search_intent_agent</code> 注入 services</td>
+</tr>
+<tr>
+<td>跨层跳过</td>
+<td><code>tools/handlers_media.py:7-10</code></td>
+<td>tools 直接 import <code>domain.*</code> / <code>media.models</code> / <code>infrastructure.cache_system</code></td>
+</tr>
+<tr>
+<td>跨层跳过</td>
+<td><code>tools/handlers_message_template.py:6</code>、<code>handlers_system_command.py:6</code></td>
+<td>tools import <code>message.templates</code> / <code>schemas.scheduler</code></td>
+</tr>
+<tr>
+<td>循环依赖</td>
+<td><code>agent/service.py</code> <code>set_tool_executor</code> + <code>coordinators_builder.py:143</code></td>
+<td>AgentService ↔ ToolExecutor 互持，靠后门注入解环</td>
+</tr>
+<tr>
+<td>循环调用</td>
+<td><code>tools/handlers_media.py</code> <code>deps["search_intent_agent"]</code></td>
+<td>tool → agent，而 agent → tool，成环</td>
+</tr>
+<tr>
+<td>自相矛盾</td>
+<td><code>tools/base.py</code> docstring</td>
+<td>自称"零依赖"，handlers 却大量越层 import</td>
+</tr>
+</tbody>
+</table>
+<h4 id="修正规则">修正规则<a class="headerlink" href="#修正规则" title="Permanent link">¶</a></h4>
+<ol>
+<li><strong>分层固定，只允许上层 → 下层</strong>：</li>
+</ol>
+<div class="highlight"><pre><span></span><code>Layer 5: API Routers
+Layer 4: Agent 层（service / agents / tools / rag / mcp）   ← 顶层能力
+Layer 3: Services 业务服务层
+Layer 2: Business Components（media / message / sites ...）
+Layer 1: Domain（enums / models / ports 端口接口）
+Layer 0: Infrastructure（events / cache / http）
+</code></pre></div>
+<ol>
+<li><strong>端口下沉（依赖倒置）</strong>：下层需要的 LLM 能力抽象为 <strong>Protocol 端口定义在下层</strong>，agent 层实现端口，Builder 注入：</li>
+<li><code>media/parser/llm.py</code> 改为只依赖已有的 <code>BaseParser</code> 端口；<code>MediaRecognizer</code> 作为 <code>BaseParser</code> 实现注册进来</li>
+<li><code>services</code> 需要意图解析 → 定义 <code>IntentResolver</code> Protocol；<code>SearchIntentAgent</code> 实现之</li>
+<li><code>services</code> 需要对话 → 定义 <code>ChatPort</code> Protocol；<code>AgentService</code> 实现之</li>
+<li><strong>禁止</strong> services / media / domain 任何文件 <code>import app.agent.*</code>；<strong>插件是能力消费方</strong>（现状：<code>autosignin</code> 用 <code>QuestionAnswerAgent</code>、<code>autosub</code> 用 <code>translate_to_zh</code>），允许经 <code>PluginContext</code> 注入 agent 能力，不视为反向依赖</li>
+<li><strong>tools 分层</strong>：<code>tools/schemas/</code> 真零依赖（仅 jsonschema）；<code>tools/handlers/</code> 只依赖 <strong>Services 门面</strong>（经 <code>ToolContext</code> 注入），禁止直接 import <code>domain / media.models / schemas / message.templates / infrastructure</code>；所需 DTO 由 services 层提供</li>
+<li><strong>解环</strong>：<code>AgentService</code> 不再持有 <code>ToolExecutor</code>；Builder 单向装配：<code>ports 实现 → services → ToolContext/ToolExecutor → ChatAgent → AgentService(facade)</code>；删除 <code>set_tool_executor</code> 后门；工具 handler 内不再回调 agent（意图解析已由 <code>media_search</code> 内嵌流程或编排器负责）</li>
+<li><strong>CI 防护</strong>：引入 import-linter（或等效检查），契约化禁止下层 import <code>app.agent</code></li>
+</ol>
+<h3 id="1-搜索与意图统一评审修正">1. 搜索与意图统一（评审修正）<a class="headerlink" href="#1-搜索与意图统一评审修正" title="Permanent link">¶</a></h3>
+<h4 id="现状重复实测">现状重复（实测）<a class="headerlink" href="#现状重复实测" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>重复点</th>
+<th>位置</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>意图解析 ×4</td>
+<td><code>agent/agents/search_intent.py</code>（LLM）、<code>search_web_service.py:58-90</code>（正则+LLM 双解析并存）、<code>search_orchestrator.py::_identify_media</code>（正则+TMDB）、<code>tools/handlers_media.py::media_search</code>（LLM 再来一遍）</td>
+<td>同一"查询→意图"四种实现，结果不一致</td>
+</tr>
+<tr>
+<td>搜索编排 ×2+</td>
+<td><code>search_web_service.search_medias_for_web</code>（294 行，<strong>活跃</strong>，由 <code>system/info.py:201</code> <code>WebSearchService</code> 调用）vs <code>search_orchestrator.orchestrate</code>（301 行，<strong>死代码</strong>——全库零调用方，docstring 声称的"合并三条路径"是未完成的迁移）</td>
+<td>一套在跑、一套未接线；<code>Searcher</code> 内还有与 orchestrator 重复的排序/入库/下载组件</td>
+</tr>
+<tr>
+<td>工具绕过流水线</td>
+<td><code>tools/handlers_media.py::media_search</code> 直接调 <code>indexer.search_by_keyword</code></td>
+<td>无去重 / 排序 / 入库 / 进度，与 Web 搜索结果不一致</td>
+</tr>
+<tr>
+<td>意图模型 ×3</td>
+<td><code>SearchIntent</code>(pydantic) vs <code>get_keyword_from_string</code> 6 元组 vs message <code>_parse_intent</code> 字符串枚举</td>
+<td>同一概念三种表示</td>
+</tr>
+</tbody>
+</table>
+<h4 id="修正单一意图端口--单一编排入口">修正：单一意图端口 + 单一编排入口<a class="headerlink" href="#修正单一意图端口--单一编排入口" title="Permanent link">¶</a></h4>
+<ol>
+<li><strong>统一意图模型</strong>：<code>SearchIntent</code>（pydantic：keywords / media_type / year / season / episode / raw_text）作为唯一表示，放 domain 层</li>
+<li><strong>意图端口</strong>：<code>IntentResolver</code> Protocol 定义在 domain；<code>IntentResolverChain</code>（services 层）：规则解析（<code>get_keyword_from_string</code>）→ LLM 增强（可选，端口注入）→ 归一化；<code>SearchIntentAgent</code> 改造为实现该端口，services 只依赖端口</li>
+<li><strong>唯一编排入口</strong>：<strong>接线已存在的 <code>SearchOrchestrator</code></strong>（当前零调用方，实质是完成未完成的迁移）为搜索唯一流水线（识别 → 多关键词 → 并发 → 去重 → 排序 → 入库 → 可选下载）；<strong>删除 <code>search_medias_for_web</code>（294 行）</strong>；<code>WebSearchService</code>（<code>system/info.py</code>）/ 消息渠道 / Agent 工具统一构建 <code>SearchContext</code> 调用</li>
+<li><strong>Searcher 收敛</strong>：仅保留单关键词执行器；<code>sort_results</code> / <code>persist_results</code> / <code>batch_download</code> 归并到 orchestrator</li>
+<li><strong>命令意图归位</strong>：消息渠道 <code>_parse_intent</code>（DOWNLOAD/ASK/SUBSCRIBE）是命令路由而非搜索意图 → 明确为 CommandRouter，其搜索请求同样汇入 orchestrator</li>
+<li><strong>工具零编排</strong>：<code>media_search</code> 工具只调 <code>SearchService.search(query)</code> 门面，工具内不做识别 / 去重 / 排序</li>
+</ol>
+<div class="highlight"><pre><span></span><code>Web API ──┐
+消息渠道 ──┼─▶ SearchService 门面 ─▶ SearchOrchestrator.orchestrate(SearchContext)
+Agent 工具 ┘            ▲                      │
+              IntentResolverChain       Searcher（单关键词执行）
+              （规则 → LLM 端口）              ▼
+                                         IndexerService
+</code></pre></div>
+<h3 id="2-provider-层扩展providers">2. Provider 层扩展（<code>providers/</code>）<a class="headerlink" href="#2-provider-层扩展providers" title="Permanent link">¶</a></h3>
+<p>新增 embedding 能力，保留现有聊天 provider。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># providers/base.py — 新增抽象</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseEmbeddingProvider</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">embed_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>   <span class="c1"># 由模型运行时获取，不硬编码</span>
+</code></pre></div>
+<ul>
+<li><code>openai.py</code> / <code>ollama.py</code> / <code>gemini.py</code> 各自实现 <code>embed</code>，复用现有连接配置</li>
+<li>本地首选 Ollama（如 <code>nomic-embed-text</code>），云端可选 OpenAI / Gemini</li>
+<li>embedding 结果接入 <code>lru_cache_with_ttl</code> 缓存</li>
+</ul>
+<h3 id="3-rag-pipeline新增-rag">3. RAG Pipeline（新增 <code>rag/</code>）<a class="headerlink" href="#3-rag-pipeline新增-rag" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>rag/
+├── models.py           # Chunk / ScoredChunk
+├── chunker.py          # MarkdownChunker（标题分段 + 滑动窗口）
+├── embedding.py        # EmbeddingService（分批 + 缓存）
+├── vector_store.py     # VectorStore ABC（不导入任何实现，防循环导入）
+├── sqlite_vec_store.py # SQLiteVecStore（默认：sqlite-vec + FTS5 trigram + Python RRF）
+├── lancedb_store.py    # LanceDBStore（可选加速；无 AVX2 时 import 即 SIGILL，仅工厂惰性加载）
+├── factory.py          # create_vector_store + 路径解析（settings.data_path）+ AVX2 预检
+├── ingestor.py         # 知识库采集 + 索引构建 + 增量更新
+├── retriever.py        # 混合检索 + 截断重排
+└── namespaces.py       # 知识域命名空间
+</code></pre></div>
+<ul>
+<li><strong>知识库来源</strong>（贴合业务）</li>
+<li>媒体库元数据（<code>media_library_service</code>）→ 回答"库里有啥 / 某作品详情"</li>
+<li><code>docs/</code>（FAQ、配置、插件指南）→ 运维问答</li>
+<li>消息模板 / RSS 规则 / 站点配置 → 操作建议</li>
+<li><strong>命名空间</strong>：<code>media_library</code> / <code>messages</code> / <code>faq</code> / <code>operations</code>，隔离检索范围</li>
+<li><strong>检索方式</strong>：LanceDB 混合检索（FTS + 向量），可选重排；Qdrant 后端时用其混合 / 融合能力</li>
+<li><strong>检索暴露为工具</strong>：<code>kb_search(query, namespace?)</code> 注册进 <code>ToolRegistry</code>，供 ChatAgent 在工具循环中按需调用（而非独立 QA Agent 管道）</li>
+</ul>
+<h3 id="4-agent-core重构-agentsmvp-单-agent">4. Agent Core（重构 <code>agents/</code>，MVP 单 Agent）<a class="headerlink" href="#4-agent-core重构-agentsmvp-单-agent" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>agents/
+├── chat_agent.py        # 重构：pydantic-ai 多步工具调用循环
+├── media_recognizer.py  # 保留（结构化识别工具）
+├── search_intent.py     # 保留（改造为 IntentResolver 端口实现）
+├── question_answer.py   # 保留（autosignin 插件答题依赖）
+└── memory/             # 记忆子系统，详见 §5
+</code></pre></div>
+<ul>
+<li><strong>工具调用循环</strong>：将 <code>ChatAgent.chat_with_tools</code> 单次调用重构为循环——LLM 输出工具请求 → 执行 → 结果回灌 → 直到最终回答（步数上限 <code>max_steps</code>，默认 8）</li>
+<li><strong>工具集</strong> = 内部 <code>ToolExecutor</code> 工具 + <code>kb_search</code> 检索工具，统一经 <code>ToolRegistry.validate_and_execute</code></li>
+<li><strong>优先用 pydantic-ai 的 <code>Agent</code></strong>（项目已依赖 <code>pydantic-ai&gt;=1.107</code>），原生支持多步工具调用、结构化输出、会话；<code>AgentService</code> 作为门面保留</li>
+</ul>
+<h3 id="5-记忆子系统评审修正">5. 记忆子系统（评审修正）<a class="headerlink" href="#5-记忆子系统评审修正" title="Permanent link">¶</a></h3>
+<h4 id="现状问题实测">现状问题（实测）<a class="headerlink" href="#现状问题实测" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>位置</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>仅内存存储</td>
+<td><code>caches.py:237</code> <code>OpenAISessionCache</code> → <code>MemoryCacheAdapter</code></td>
+<td>重启即丢，30d TTL 形同虚设</td>
+</tr>
+<tr>
+<td>无作用域</td>
+<td><code>chat_agent.py</code> 只传 <code>session_id</code> 字符串</td>
+<td>无 user / channel 维度，跨渠道可能串会话</td>
+</tr>
+<tr>
+<td>粗暴裁剪</td>
+<td><code>MAX_HISTORY_MESSAGES=20</code> 固定条数</td>
+<td>无 token 预算、无滚动摘要，长上下文丢失</td>
+</tr>
+<tr>
+<td>魔法命令</td>
+<td><code>#清除</code> 硬编码在 <code>chat_agent.py</code></td>
+<td>非结构化控制</td>
+</tr>
+<tr>
+<td>无 DB 模型</td>
+<td><code>db/models/</code> 无会话表</td>
+<td>会话无法持久化 / 审计</td>
+</tr>
+<tr>
+<td>无长程记忆</td>
+<td>—</td>
+<td>用户偏好 / 历史完全不沉淀</td>
+</tr>
+</tbody>
+</table>
+<h4 id="记忆分层">记忆分层<a class="headerlink" href="#记忆分层" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>内容</th>
+<th>存储</th>
+<th>作用域</th>
+<th>生命周期</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>短程（工作记忆）</td>
+<td>当前会话消息 + 滚动摘要</td>
+<td>DB 表 + 缓存热路径</td>
+<td><code>(user_id, channel, session_id)</code></td>
+<td>TTL 30d，可清除</td>
+</tr>
+<tr>
+<td>长程（语义记忆）</td>
+<td>用户偏好 / 事实（如"偏好 4K REMUX"）</td>
+<td>LanceDB namespace <code>user_memory</code>（复用 §3 向量库，零新基建）</td>
+<td><code>user_id</code></td>
+<td>无 TTL，用户可删</td>
+</tr>
+<tr>
+<td>情节记忆（可选）</td>
+<td>历史会话摘要检索</td>
+<td>LanceDB 同上</td>
+<td><code>user_id</code></td>
+<td>可配置</td>
+</tr>
+</tbody>
+</table>
+<h4 id="存储选型说明为什么短程不用向量库">存储选型说明（为什么短程不用向量库）<a class="headerlink" href="#存储选型说明为什么短程不用向量库" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>短程会话状态</strong>的访问模式是<strong>精确、保序、追加式</strong>读取最近 N 条消息；向量库是模糊语义匹配，会打乱语序、丢失精确内容，且每次读写都要过 embedding（延迟 + 成本）——不适合。主流框架（LangGraph checkpointer、MemGPT/Letta recall store）的会话状态一律用关系库 / KV</li>
+<li><strong>长程语义记忆</strong>的访问模式是<strong>模糊语义召回</strong>（"用户喜欢什么画质？"），正是向量库的用途 → LanceDB namespace，复用 §3 基建</li>
+<li>即：<strong>会话状态用关系库（SQLite/MySQL/PG），语义召回用向量库（LanceDB）</strong>，与 MemGPT / Mem0 的双层结构一致</li>
+</ul>
+<h4 id="读写路径">读写路径<a class="headerlink" href="#读写路径" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>读</strong>：短程历史（DB 为准，缓存加速）+ 长程 top-k 检索（开启时）→ 组装进 system / context</li>
+<li><strong>写</strong>：每轮追加消息；超 token 预算 → LLM 滚动摘要最早段（summary buffer，摘要消息固定头部保留）；会话结束 / 达阈值 → 异步事实抽取（事件总线，不阻塞对话）→ 长程库（opt-in）</li>
+</ul>
+<h4 id="组件">组件<a class="headerlink" href="#组件" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>agents/memory/
+├── key.py         # MemoryKey(user_id, channel, session_id)
+├── short_term.py  # ConversationStore：DB + 缓存双写，token 预算裁剪 + 滚动摘要
+├── long_term.py   # SemanticMemory：LanceDB user_memory，事实 CRUD + top-k 检索
+├── extractor.py   # 事实抽取（LLM，异步，opt-in）
+└── summarizer.py  # 滚动摘要
+</code></pre></div>
+<h4 id="db-模型新增配-alembic-迁移">DB 模型（新增，配 Alembic 迁移）<a class="headerlink" href="#db-模型新增配-alembic-迁移" title="Permanent link">¶</a></h4>
+<ul>
+<li><code>agent_conversation</code>：id / user_id / channel / session_id / summary / token_usage / created_at / updated_at</li>
+<li><code>agent_message</code>：id / conversation_id / role / content / tool_calls / tokens / created_at</li>
+</ul>
+<h4 id="治理">治理<a class="headerlink" href="#治理" title="Permanent link">¶</a></h4>
+<ul>
+<li>写入前脱敏（复用 §7）</li>
+<li><code>memory_clear</code>（清会话）/ <code>memory_forget</code>（删长程事实）工具，write 级；替代 <code>#清除</code> 魔法字符串</li>
+<li>长程记忆默认关闭（<code>agent.memory.long_term.enabled: false</code>），开启后事实用户可见、可查、可删</li>
+</ul>
+<h4 id="mvp-范围">MVP 范围<a class="headerlink" href="#mvp-范围" title="Permanent link">¶</a></h4>
+<p>短程持久化（DB）+ token 预算 + 滚动摘要 + 三维作用域 + <code>memory_clear</code>；长程语义记忆设计定稿、Phase 4 可选实现。</p>
+<h3 id="6-内部工具层重设计评审修正">6. 内部工具层重设计（评审修正）<a class="headerlink" href="#6-内部工具层重设计评审修正" title="Permanent link">¶</a></h3>
+<h4 id="现状问题">现状问题<a class="headerlink" href="#现状问题" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>覆盖面窄</td>
+<td>仅 6 个工具（search/download/subscribe/filter/system_command/message_template），系统能力面为 19 个路由域 / 30+ Service</td>
+</tr>
+<tr>
+<td>巨型枚举工具</td>
+<td><code>system_command</code> 单工具塞 18 个 action，读写混杂（<code>scheduler_list</code> 与 <code>restart_server</code> 同级），LLM 选择困难、无法分级</td>
+</tr>
+<tr>
+<td>反模式工具</td>
+<td><code>resource_filter</code> 要求模型把资源列表完整传回参数，浪费 token 且易错；过滤应内置于 search 工具参数</td>
+</tr>
+<tr>
+<td>双模式混杂</td>
+<td><code>media_download</code> 模式1/模式2 条件必填，schema 对模型不友好，应拆分</td>
+</tr>
+<tr>
+<td>返回契约不统一</td>
+<td><code>data</code> 时而 str 时而 dict；"未找到"返回 <code>success=True</code> + str，错误语义混乱</td>
+</tr>
+<tr>
+<td>无分级</td>
+<td>查询 / 写 / 危险操作无区分，无法映射 RBAC 与确认</td>
+</tr>
+<tr>
+<td>prompt 拼装调用</td>
+<td>ChatAgent 靠解析文本 JSON 调用工具，非原生 function calling，单轮单工具、易解析失败</td>
+</tr>
+<tr>
+<td>deps 字典传递</td>
+<td><code>ToolExecutor</code> 23 个位置参数 + dict，无类型、脆弱</td>
+</tr>
+</tbody>
+</table>
+<h4 id="设计原则">设计原则<a class="headerlink" href="#设计原则" title="Permanent link">¶</a></h4>
+<ol>
+<li><strong>一动作一工具</strong>（细粒度），禁止巨型枚举工具</li>
+<li><strong>三级分级</strong>：<code>read</code> / <code>write</code> / <code>dangerous</code>；write 需 RBAC 权限，dangerous 需对话内确认</li>
+<li><strong>统一返回契约</strong>：<code>ToolResult(success, data, error)</code>，<code>data</code> 恒为结构化 dict，失败恒走 <code>error</code></li>
+<li><strong>过滤 / 排序内置为 search 工具参数</strong>，不做"模型传回列表"类工具</li>
+<li><strong>原生 function calling</strong>（pydantic-ai），支持多步循环与并行调用，替代 prompt JSON 解析</li>
+<li><strong>双模式工具拆分</strong>（如 <code>download_add_link</code> 与 <code>media_download</code>）</li>
+<li><strong>deps 类型化</strong>：<code>ToolContext</code> frozen dataclass，替代 dict</li>
+<li><strong>结果大小控制</strong>：列表类工具默认 limit + 摘要字段，避免爆 token</li>
+</ol>
+<h4 id="工具全景按域标注分级">工具全景（按域，标注分级）<a class="headerlink" href="#工具全景按域标注分级" title="Permanent link">¶</a></h4>
+<p><strong>A. 媒体检索与元数据（read）</strong>
+- <code>media_search</code> 资源搜索（保留，修正返回结构；site / seeders / size / quality 过滤参数内置）
+- <code>media_detail</code> TMDB 详情（标题 / 年份 / 类型 / 简介）
+- <code>media_recommend</code> / <code>media_calendar</code>（可选）
+- <code>kb_search</code> RAG 知识检索（见 RAG Pipeline）</p>
+<p><strong>B. 下载管理</strong>
+- <code>download_list</code>（read）下载中任务 + 进度
+- <code>download_add_link</code>（write）磁力 / 种子 / URL 下载
+- <code>media_download</code>（write）搜索并下载最佳匹配
+- <code>download_control</code>（write；remove 为 dangerous）start / stop / recheck / remove
+- <code>downloader_status</code>（read）下载器状态 / 剩余空间 / 速度</p>
+<p><strong>C. 订阅管理</strong>
+- <code>subscribe_add</code>（write）
+- <code>subscribe_list</code>（read）含缺失集
+- <code>subscribe_update</code> / <code>subscribe_delete</code>（write；delete 确认）
+- <code>subscribe_history</code>（read）/ <code>subscribe_redo</code>（write）</p>
+<p><strong>D. 媒体库（read）</strong>
+- <code>library_overview</code> 数量 / 空间 / 库列表
+- <code>library_latest</code> / <code>library_history</code> 最新入库 / 播放历史
+- <code>library_check</code> 某作品是否已入库 / 缺哪几集</p>
+<p><strong>E. 整理与转移</strong>
+- <code>transfer_run</code>（write）手动整理
+- <code>transfer_history</code> / <code>transfer_statistics</code>（read）
+- <code>unknown_list</code>（read）/ <code>re_identify</code>（write）/ <code>unknown_delete</code>（dangerous）
+- <code>sync_run</code>（write）/ <code>sync_paths</code>（read）</p>
+<p><strong>F. 站点与索引器</strong>
+- <code>site_list</code> / <code>site_statistics</code>（read，上传下载量 / 分享率）
+- <code>site_refresh</code> / <code>site_test</code>（write）
+- <code>indexer_statistics</code>（read）</p>
+<p><strong>G. 任务与调度</strong>
+- <code>scheduler_list</code>（read）/ <code>scheduler_run</code> / <code>scheduler_pause</code> / <code>scheduler_resume</code>（write）
+- <code>rss_task_list</code>（read）/ <code>rss_task_run</code>（write）
+- <code>brush_list</code>（read）/ <code>brush_delete</code>（dangerous）
+- <code>torrent_remove_candidates</code>（read）/ <code>torrent_remove_run</code>（write）</p>
+<p><strong>H. 系统</strong>
+- <code>system_status</code> / <code>system_logs</code>（read）
+- <code>cache_clear</code> / <code>net_test</code>（write）
+- <code>system_restart</code>（dangerous，确认）
+- <code>message_send</code>（write）</p>
+<p><strong>I. 消息模板（可选，低优先）</strong>
+- <code>message_template_get</code> / <code>message_template_update</code></p>
+<h4 id="mvp-工具集17-个覆盖-80-对话场景">MVP 工具集（17 个，覆盖 80% 对话场景）<a class="headerlink" href="#mvp-工具集17-个覆盖-80-对话场景" title="Permanent link">¶</a></h4>
+<p><code>media_search</code>、<code>media_detail</code>、<code>kb_search</code>、<code>download_add_link</code>、<code>media_download</code>、<code>download_list</code>、<code>download_control</code>、<code>downloader_status</code>、<code>subscribe_add</code>、<code>subscribe_list</code>、<code>subscribe_delete</code>、<code>library_check</code>、<code>transfer_run</code>、<code>scheduler_list</code>、<code>scheduler_run</code>、<code>system_status</code>、<code>memory_clear</code></p>
+<h4 id="工具代码组织">工具代码组织<a class="headerlink" href="#工具代码组织" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>tools/
+├── base.py            # ToolResult / BaseTool（+ level/permission）/ ToolRegistry
+├── context.py         # ToolContext frozen dataclass（类型化依赖）
+├── handlers/          # 按域拆分 handler：media.py download.py subscribe.py
+│                      #   library.py transfer.py site.py scheduler.py system.py
+└── schemas/           # 按域的工具 Schema 定义（同名注册）
+</code></pre></div>
+<h3 id="7-治理与可观测轻量">7. 治理与可观测（轻量）<a class="headerlink" href="#7-治理与可观测轻量" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>RBAC 绑定</strong>：工具 <code>to_schema()</code> 增加 <code>permission</code> 字段；执行前经 <code>rbac_service</code> 鉴权</li>
+<li><strong>危险操作确认</strong>：下载 / 删除 / 同步等写操作在对话中显式确认后执行（MVP 不建独立审批子系统）</li>
+<li><strong>脱敏</strong>：日志 / 提示词中隐藏 api_key、cookie</li>
+<li><strong>用量日志</strong>：检索命中、工具调用、耗时、token 成本落 loguru；OpenTelemetry 延后</li>
+</ul>
+<h3 id="8-反哺路径让系统更符合用户评审补充">8. 反哺路径：让系统更符合用户（评审补充）<a class="headerlink" href="#8-反哺路径让系统更符合用户评审补充" title="Permanent link">¶</a></h3>
+<p>Agent 不只是对话入口，其记忆 / 检索 / 意图能力应回流核心流程：</p>
+<table>
+<thead>
+<tr>
+<th>反哺点</th>
+<th>Agent 能力 → 系统触点</th>
+<th>用户价值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>识别越用越准</td>
+<td>长程记忆存用户纠正历史（unknown_list 手动修正）→ few-shot 注入 <code>MediaRecognizer</code></td>
+<td>同一剧集 / 字幕组下次自动识别对</td>
+</tr>
+<tr>
+<td>订阅决策个性化</td>
+<td>长程偏好（画质 / 字幕组 / 站点）→ 自动调 <code>subscribe_add</code> 过滤与 <code>Searcher</code> 择优权重</td>
+<td>不用每次重复说偏好</td>
+</tr>
+<tr>
+<td>主动式服务</td>
+<td>事件总线触发（订阅更新 / 下载完成 / 磁盘将满 / 分享率危险）→ Agent 生成摘要经 <code>message_send</code> 推送</td>
+<td>从"人问系统"变"系统提醒人"</td>
+</tr>
+<tr>
+<td>自然语言配规则</td>
+<td>用户口述 → Agent 生成过滤规则 / 刷流规则 / 识别词（<code>filter_service</code> / <code>brush_service</code> / <code>words_service</code>）</td>
+<td>告别手写规则语法</td>
+</tr>
+<tr>
+<td>推荐贴合口味</td>
+<td>播放历史（<code>library_history</code>）+ 记忆 → <code>media_recommendation</code> 重排</td>
+<td>推荐真正符合口味</td>
+</tr>
+<tr>
+<td>运维洞察</td>
+<td>Agent 读 <code>system_status</code> / <code>site_statistics</code> / 日志 → 周期健康报告 / 异常告警</td>
+<td>分享率下降、磁盘预警早知道</td>
+</tr>
+<tr>
+<td>意图理解一致</td>
+<td><code>IntentResolverChain</code> 统一 Web / 消息 / Agent 三路搜索理解</td>
+<td>任何入口自然语言都被正确理解</td>
+</tr>
+<tr>
+<td>知识库自助</td>
+<td><code>kb_search</code> 覆盖 docs / FAQ / 配置 → 应用内即时答疑</td>
+<td>不用翻文档</td>
+</tr>
+</tbody>
+</table>
+<p>支撑点：长程记忆（偏好沉淀）、事件总线（主动触发）、端口下沉（识别 / 意图反哺 services）、工具全景（执行能力）。
+<strong>MVP 落地</strong>：订阅个性化 + 主动通知（事件触发 + message_send）；其余随长程记忆（Phase 4）逐步开放。</p>
+<h3 id="9-mcp-适配层可选默认关闭">9. MCP 适配层（可选，默认关闭）<a class="headerlink" href="#9-mcp-适配层可选默认关闭" title="Permanent link">¶</a></h3>
+<p>仅当 <code>agent.mcp.enabled: true</code> 时启用。分两个方向，定位均为<strong>补充通道，不替代原生集成</strong>：</p>
+<div class="highlight"><pre><span></span><code>mcp/
+├── server.py     # 方向1：把内部工具以 MCP 协议暴露给外部 Agent（opt-in）
+├── client.py     # 方向2：连接外部 MCP server，动态拉取 tools（插件化）
+├── bridge.py     # MCP tool schema ⇄ ToolRegistry 桥接（命名空间 + 分级映射）
+└── governance.py # token 鉴权 + RBAC + allow/deny
+</code></pre></div>
+<h4 id="方向1mcp-server对外暴露默认关闭">方向1：MCP Server（对外暴露，默认关闭）<a class="headerlink" href="#方向1mcp-server对外暴露默认关闭" title="Permanent link">¶</a></h4>
+<ul>
+<li>与 REST API 共用 <code>ToolExecutor</code> 与治理逻辑，不复制业务代码</li>
+<li>破坏性工具默认 deny，需显式 allow；token 鉴权 + RBAC</li>
+</ul>
+<h4 id="方向2mcp-client接入外部服务插件化集成">方向2：MCP Client（接入外部服务，插件化集成）<a class="headerlink" href="#方向2mcp-client接入外部服务插件化集成" title="Permanent link">¶</a></h4>
+<p><strong>定位：长尾通用能力的补充通道。</strong> 核心域（下载器 / 媒体服务器 / 消息 / 索引器 / 站点）已有原生集成，不接 MCP 重复建设。</p>
+<ul>
+<li><strong>集成方式：走插件框架</strong>——一个 MCP 连接 = 一个插件实例，安装 / 启用 / 配置 / 禁用复用 <code>plugin_framework</code> 生命周期与配置 UI</li>
+<li><strong>工具注册</strong>：连接后动态发现工具，按命名空间注册进 <code>ToolRegistry</code>（<code>mcp__&lt;server&gt;__&lt;tool&gt;</code>），Schema 经 <code>bridge.py</code> 转换，统一走 §6 分级与 §7 治理（默认 write 级，危险需确认）</li>
+</ul>
+<p>候选评估：</p>
+<table>
+<thead>
+<tr>
+<th>MCP 服务</th>
+<th>判断</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web 搜索 / Fetch（Tavily / Brave / Fetch）</td>
+<td>✅ 值得</td>
+<td>增强问答与媒体资讯检索，补 <code>WebSearchService</code> 短板</td>
+</tr>
+<tr>
+<td>Bangumi / TMDB 社区 MCP</td>
+<td>✅ 值得</td>
+<td>动漫 / 影视元数据补充，与 <code>MediaInfoService</code> 互补</td>
+</tr>
+<tr>
+<td>官方 Memory MCP（知识图谱）</td>
+<td>🟡 可选</td>
+<td>可作长程记忆替代后端，但 §5 已有 LanceDB 方案</td>
+</tr>
+<tr>
+<td>qBittorrent / Transmission MCP</td>
+<td>❌ 不值得</td>
+<td>已有原生下载器客户端</td>
+</tr>
+<tr>
+<td>Emby / Jellyfin / Plex MCP</td>
+<td>❌ 不值得</td>
+<td>已有原生 <code>mediaserver</code> 客户端</td>
+</tr>
+<tr>
+<td>Telegram / Slack MCP</td>
+<td>❌ 不值得</td>
+<td>已有原生消息客户端</td>
+</tr>
+<tr>
+<td>SQLite / 文件系统 MCP</td>
+<td>⚠️ 谨慎</td>
+<td>安全面大，系统已有 file_index / media_file 服务</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="文件与目录变更清单">文件与目录变更清单<a class="headerlink" href="#文件与目录变更清单" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>动作</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/app/agent/rag/</code></td>
+<td>新增</td>
+<td>分块 / 向量 / 检索 / 上下文（MVP）</td>
+</tr>
+<tr>
+<td><code>src/app/agent/agents/memory/</code></td>
+<td>新增</td>
+<td><code>key.py</code> / <code>short_term.py</code> / <code>long_term.py</code> / <code>extractor.py</code> / <code>summarizer.py</code>（§5）</td>
+</tr>
+<tr>
+<td><code>src/app/db/models/agent_memory.py</code></td>
+<td>新增</td>
+<td><code>agent_conversation</code> / <code>agent_message</code> 表 + Alembic 迁移</td>
+</tr>
+<tr>
+<td><code>src/app/agent/providers/base.py</code></td>
+<td>修改</td>
+<td>加 <code>BaseEmbeddingProvider</code></td>
+</tr>
+<tr>
+<td><code>src/app/agent/providers/{openai,ollama,gemini}.py</code></td>
+<td>修改</td>
+<td>加 embedding 方法</td>
+</tr>
+<tr>
+<td><code>src/app/agent/tools/base.py</code></td>
+<td>修改</td>
+<td>加 <code>level</code> / <code>permission</code> 分级；统一 ToolResult 契约</td>
+</tr>
+<tr>
+<td><code>src/app/agent/tools/</code></td>
+<td>重构</td>
+<td>按域拆分 schemas/handlers；新增 <code>context.py</code>（ToolContext）；拆 system_command；删 resource_filter；新增 <code>kb_search</code> 等 MVP 工具</td>
+</tr>
+<tr>
+<td><code>src/app/domain/ports/</code></td>
+<td>新增</td>
+<td><code>SearchIntent</code> 统一模型 + <code>IntentResolver</code> / <code>ChatPort</code> Protocol（端口下沉）</td>
+</tr>
+<tr>
+<td><code>src/app/services/search_web_service.py</code></td>
+<td>删除</td>
+<td>294 行旧流水线；<code>WebSearchService</code>（<code>system/info.py</code>）改构建 <code>SearchContext</code> 调 orchestrator</td>
+</tr>
+<tr>
+<td><code>src/app/services/search_orchestrator.py</code></td>
+<td>修改</td>
+<td><strong>接线为唯一搜索编排入口</strong>（当前零调用方，死代码激活）；接入 <code>IntentResolverChain</code>；归并 <code>Searcher</code> 重复组件</td>
+</tr>
+<tr>
+<td><code>src/app/services/search_message_service.py</code></td>
+<td>修改</td>
+<td><code>_parse_intent</code> 归位为 CommandRouter；搜索请求汇入 orchestrator</td>
+</tr>
+<tr>
+<td><code>src/app/agent/agents/search_intent.py</code></td>
+<td>修改</td>
+<td>改造为 <code>IntentResolver</code> 端口实现</td>
+</tr>
+<tr>
+<td><code>src/app/agent/agents/chat_agent.py</code></td>
+<td>修改</td>
+<td>重构为多步工具循环</td>
+</tr>
+<tr>
+<td><code>src/app/agent/service.py</code></td>
+<td>修改</td>
+<td>组合 RAG + 记忆 + 循环，加流式</td>
+</tr>
+<tr>
+<td><code>src/app/agent/mcp/</code></td>
+<td>新增（可选）</td>
+<td>MCP 适配层（server/client/bridge/governance），默认关闭；client 侧经插件框架集成</td>
+</tr>
+<tr>
+<td><code>src/app/di/builders/*.py</code></td>
+<td>修改</td>
+<td>注册 VectorStore / Retriever / Ingestor / 记忆</td>
+</tr>
+<tr>
+<td><code>src/app/di/context.py</code></td>
+<td>修改</td>
+<td>增加 Agent RAG 字段</td>
+</tr>
+<tr>
+<td><code>config/config.yaml.example</code></td>
+<td>修改</td>
+<td>加 <code>agent:</code> 配置块</td>
+</tr>
+<tr>
+<td><code>src/api/routers/</code></td>
+<td>新增</td>
+<td><code>chat.py</code> <code>kb.py</code>（<code>mcp.py</code> 可选）</td>
+</tr>
+<tr>
+<td><code>src/app/agent/context.py</code></td>
+<td>新增</td>
+<td><code>ContextBuilder</code>：system + 记忆 + 检索 + 历史 分层组装（预算/优先级）</td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>新增</td>
+<td>RAG / 检索工具 / 工具循环单测；<code>tests/evals/</code> 黄金集（意图/检索/工具选择，CI 可选）</td>
+</tr>
+<tr>
+<td><code>docs/architecture.md</code></td>
+<td>修改</td>
+<td>补充 Agent RAG 章节</td>
+</tr>
+</tbody>
+</table>
+<h2 id="配置设计configyamlexample-新增-agent">配置设计（<code>config.yaml.example</code> 新增 <code>agent:</code>）<a class="headerlink" href="#配置设计configyamlexample-新增-agent" title="Permanent link">¶</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">default_provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<span class="w">  </span><span class="nt">providers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ollama</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">api_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:11434</span>
+<span class="w">      </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qwen2.5:32b</span>
+<span class="w">    </span><span class="nt">openai</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
+<span class="w">      </span><span class="nt">api_url</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
+<span class="w">      </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">embedding</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span><span class="w">          </span><span class="c1"># ollama | openai | gemini</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nomic-embed-text</span>
+<span class="w">  </span><span class="nt">vector_store</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sqlite</span><span class="w">        </span><span class="c1"># sqlite | lancedb | qdrant</span>
+<span class="w">  </span><span class="nt">sqlite</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">""</span><span class="w">                  </span><span class="c1"># 留空 = {数据目录}/vectordb/kb.sqlite；相对路径基于数据目录解析（settings.data_path）</span>
+<span class="w">  </span><span class="nt">lancedb</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">""</span><span class="w">                  </span><span class="c1"># 留空 = {数据目录}/vectordb/lancedb；需 AVX2 CPU，不支持则启动报错提示</span>
+<span class="w">  </span><span class="nt">qdrant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">embedded</span><span class="w">            </span><span class="c1"># embedded | server</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data/qdrant</span><span class="w">       </span><span class="c1"># embedded 模式</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">""</span><span class="w">                   </span><span class="c1"># server 模式</span>
+<span class="w">  </span><span class="nt">rag</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">chunk_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span>
+<span class="w">    </span><span class="nt">chunk_overlap</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">top_k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<span class="w">    </span><span class="nt">rerank_top_k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">namespaces</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">media_library</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">messages</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">faq</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">operations</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">fallback</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                 </span><span class="c1"># provider 故障转移链，如 [ollama, openai]，空 = 不启用</span>
+<span class="w">  </span><span class="nt">memory</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">               </span><span class="c1"># 工具循环步数上限</span>
+<span class="w">    </span><span class="nt">short_term</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">store</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db</span><span class="w">                </span><span class="c1"># db | redis | memory</span>
+<span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4000</span><span class="w">         </span><span class="c1"># 超出触发滚动摘要</span>
+<span class="w">      </span><span class="nt">ttl_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">    </span><span class="nt">long_term</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">           </span><span class="c1"># opt-in，默认关闭</span>
+<span class="w">      </span><span class="nt">top_k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">      </span><span class="nt">extraction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">on_session_end</span><span class="w">  </span><span class="c1"># on_turn_end | on_session_end</span>
+<span class="w">  </span><span class="nt">mcp</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">             </span><span class="c1"># 默认关闭，opt-in</span>
+<span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="s">""</span><span class="w">                  </span><span class="c1"># 启用后必填</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                  </span><span class="c1"># 默认空 = 全 deny，需显式放行</span>
+<span class="w">    </span><span class="nt">deny</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"media_download.*"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"sync.*"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"delete.*"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h2 id="di-组装builder-侧">DI 组装（Builder 侧）<a class="headerlink" href="#di-组装builder-侧" title="Permanent link">¶</a></h2>
+<p>沿用 <code>app/di/builders/</code> 分层组装，新增 <code>agent_builder.py</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/di/builders/agent_builder.py</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_agent</span><span class="p">(</span><span class="n">infra</span><span class="p">,</span> <span class="n">facades</span><span class="p">,</span> <span class="n">services</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentObjects</span><span class="p">:</span>
+    <span class="n">vector_store</span> <span class="o">=</span> <span class="n">build_vector_store</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">agent</span><span class="p">)</span>   <span class="c1"># lancedb / qdrant</span>
+    <span class="n">embedding</span> <span class="o">=</span> <span class="n">EmbeddingService</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="n">get_embedding_provider</span><span class="p">())</span>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="n">Retriever</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">)</span>
+    <span class="n">ingestor</span> <span class="o">=</span> <span class="n">Ingestor</span><span class="p">(</span><span class="n">chunker</span><span class="o">=</span><span class="n">Chunker</span><span class="p">(),</span> <span class="n">embedding</span><span class="o">=</span><span class="n">embedding</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">)</span>
+    <span class="n">memory</span> <span class="o">=</span> <span class="n">ConversationStore</span><span class="p">(</span>           <span class="c1"># 短程：DB + 缓存双写 + 滚动摘要</span>
+        <span class="n">repo</span><span class="o">=</span><span class="n">AgentConversationRepo</span><span class="p">(),</span> <span class="n">cache</span><span class="o">=</span><span class="n">OpenAISessionCache</span><span class="p">,</span> <span class="n">summarizer</span><span class="o">=</span><span class="n">Summarizer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">semantic_memory</span> <span class="o">=</span> <span class="n">SemanticMemory</span><span class="p">(</span>     <span class="c1"># 长程（可选）：LanceDB user_memory</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">long_term</span><span class="o">.</span><span class="n">enabled</span>
+    <span class="p">)</span>
+    <span class="n">register_kb_search_tool</span><span class="p">(</span><span class="n">retriever</span><span class="p">)</span>                  <span class="c1"># 注册 kb_search 工具</span>
+    <span class="n">chat_agent</span> <span class="o">=</span> <span class="n">ChatAgent</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>                         <span class="c1"># 多步工具循环</span>
+    <span class="k">return</span> <span class="n">AgentObjects</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=...</span><span class="p">,</span> <span class="n">retriever</span><span class="o">=...</span><span class="p">,</span> <span class="n">ingestor</span><span class="o">=...</span><span class="p">,</span> <span class="n">memory</span><span class="o">=...</span><span class="p">,</span> <span class="n">chat_agent</span><span class="o">=...</span><span class="p">)</span>
+</code></pre></div>
+<p>事件侧：订阅媒体库 / 订阅 / 插件变更事件，触发 <code>ingestor</code> 增量刷新对应命名空间。</p>
+<hr>
+<h2 id="测试策略">测试策略<a class="headerlink" href="#测试策略" title="Permanent link">¶</a></h2>
+<ul>
+<li><code>tests/unit/agent/</code>：chunker、vector_store（LanceDB 内存 / 临时目录）、retriever（mock embedding）、<code>kb_search</code> 工具、工具循环（mock provider）</li>
+<li><code>tests/integration/agent/</code>：RAG 端到端（docs 入库 → 检索 → ChatAgent 回答）</li>
+<li>沿用现有 <code>tests/conftest.py</code>（内存数据库 + mock 配置）</li>
+<li>校验命令：<code>uv run ruff check .</code>、<code>uv run pyright src/ tests/</code>、<code>uv run pytest tests/ -v</code></li>
+</ul>
+<hr>
+<h2 id="实施路线">实施路线<a class="headerlink" href="#实施路线" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>内容</th>
+<th>交付</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Provider 扩展：<code>BaseEmbeddingProvider</code> + 3 提供方 embedding；<code>VectorStore</code> 抽象 + <strong>LanceDB</strong> 适配器</td>
+<td>embedding / 向量库可独立使用</td>
+</tr>
+<tr>
+<td>2</td>
+<td>RAG 最小闭环：<code>chunker → ingestor → retriever</code> + <code>kb_search</code> 工具；docs + 媒体库元数据入库；<code>kb.py</code> API</td>
+<td>知识库检索可用</td>
+</tr>
+<tr>
+<td>3</td>
+<td>搜索/意图统一 + 工具层重构 + ChatAgent 多步循环（async + SSE 流式 + ContextBuilder + provider fallback）+ 短程记忆（DB 持久化 / token 预算 / 滚动摘要 / <code>memory_clear</code>）；RBAC + 危险确认；用量日志</td>
+<td>智能对话 Agent 可用（MVP 17 工具）</td>
+</tr>
+<tr>
+<td>4</td>
+<td>（可选）长程语义记忆（LanceDB <code>user_memory</code> + 异步事实抽取 + <code>memory_forget</code>）；（可选）MCP 适配层 + <code>mcp.py</code> API；（可选）Qdrant 适配器；（可选）Langfuse 接入 / evals 黄金集 / 查询改写</td>
+<td>个性化记忆 / 外部工具互通 / 现代化增强（opt-in）</td>
+</tr>
+<tr>
+<td>延后</td>
+<td>多代理编排（Graph 状态机）/ OpenTelemetry / 独立审批流</td>
+<td>按需再做</td>
+</tr>
+</tbody>
+</table>
+<p>每步独立交付，可用 <code>uv run pytest tests/ -v</code> 验证。</p>
+<hr>
+<h2 id="附录现代化对标2025-2026-主流实践">附录：现代化对标（2025-2026 主流实践）<a class="headerlink" href="#附录现代化对标2025-2026-主流实践" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>主流实践（代表）</th>
+<th>本设计</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原生 function calling + 多步循环（OpenAI / pydantic-ai / LangGraph）</td>
+<td>pydantic-ai Agent 循环</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>Agentic RAG：检索即工具，循环内可多次检索</td>
+<td><code>kb_search</code> 在工具循环内可反复调用</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>混合检索 + 重排（LanceDB / Qdrant 原生）</td>
+<td>§3</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>双层记忆：会话状态(关系库) + 语义记忆(向量)（MemGPT / Mem0）</td>
+<td>§5</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>端口 / 适配器分层、依赖倒置（Clean Architecture）</td>
+<td>§0</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>MCP 双向 + 治理</td>
+<td>§9 可选</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>Human-in-the-loop 确认</td>
+<td>危险操作对话确认</td>
+<td>✅ 已对齐</td>
+</tr>
+<tr>
+<td>流式输出（SSE token 流）</td>
+<td>见下方补齐 1</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>异步优先（async 全链路，FastAPI 契合）</td>
+<td>见下方补齐 2</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>Provider 故障转移（litellm 式 fallback）</td>
+<td>见下方补齐 3</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>评估体系（黄金集 + 回归）</td>
+<td>见下方补齐 4</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>可观测性：Langfuse（自托管）/ OTel GenAI 语义约定</td>
+<td>见下方补齐 5</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>上下文工程：ContextBuilder 形式化组装</td>
+<td>见下方补齐 6</td>
+<td>⚠️ 补齐</td>
+</tr>
+<tr>
+<td>查询改写 / HyDE（RAG 增强）</td>
+<td>—</td>
+<td>🟡 Phase 4</td>
+</tr>
+<tr>
+<td>Graph 编排（LangGraph 状态机）</td>
+<td>已明确延后</td>
+<td>🟡 有规划</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对标补齐项">对标补齐项<a class="headerlink" href="#对标补齐项" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>流式输出</strong>：Chat API 走 SSE（复用项目已有 SSE 模式，如 <code>/download/events</code>、<code>/system/search/progress</code>）；pydantic-ai <code>run_stream</code> 原生支持 token 流 + 工具事件流</li>
+<li><strong>异步优先</strong>：Agent 层全链路 async（<code>AsyncHttpClient</code> 已存在；pydantic-ai 原生 async）；同步 Service 经 <code>thread_executor</code> 桥接，不阻塞事件循环</li>
+<li><strong>Provider 故障转移</strong>：<code>AgentService</code> 支持 <code>fallback_providers</code> 链（主失败→次），配 <code>agent.fallback: [ollama, openai]</code>；与现有缓存/重试叠加</li>
+<li><strong>评估体系</strong>：<code>tests/evals/</code> 黄金集——意图解析准确率（规则 vs LLM 链）、<code>kb_search</code> 检索命中率、工具选择正确率；CI 可选跑（非阻塞），防回归</li>
+<li><strong>可观测性</strong>：用量日志先行（MVP）；预留 <strong>Langfuse</strong>（自托管）接入点——trace = 一次对话，span = 检索/工具/LLM 调用；不上 OTel 全家桶</li>
+<li><strong>上下文工程形式化</strong>：<code>ContextBuilder</code> 统一组装 <code>system prompt + 长程记忆 top-k + kb 检索结果 + 会话历史（含滚动摘要）</code>，每层独立预算与优先级，替代散落的字符串拼接</li>
+</ol>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ol>
+<li>问答类功能具备知识检索能力，回答准确度显著提升（核心价值）</li>
+<li>多步工具循环支持复杂任务（检索 → 判断 → 下载 / 订阅）</li>
+<li>LanceDB 嵌入式零运维，原生混合检索，契合自托管单节点</li>
+<li>治理复用 RBAC，危险操作需确认，权限风险可控</li>
+<li>范围收敛为 MVP，复杂度与运维成本可控</li>
+<li>MCP 可选化，避免默认引入安全面</li>
+</ol>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ol>
+<li>引入新依赖：<code>lancedb</code>（默认）、可选 <code>qdrant-client</code> / <code>mcp</code></li>
+<li>embedding / 向量存储增加资源开销（嵌入式可控）</li>
+<li>MCP 默认关闭，若需要外部 Agent 互通需手动启用并配置治理</li>
+</ol>
+<h3 id="缓解措施">缓解措施<a class="headerlink" href="#缓解措施" title="Permanent link">¶</a></h3>
+<ul>
+<li>向量库默认 LanceDB 嵌入式，零运维、可按需升级 Qdrant</li>
+<li>治理走配置（allow / deny），MCP 默认 <code>enabled: false</code> 且 <code>allow: []</code></li>
+<li>工具循环设 <code>max_steps</code> 上限，避免失控</li>
+<li>所有新增依赖纳入 <code>pyproject.toml</code>，勿改 <code>requirements.txt</code>；通过 <code>just safety</code> / <code>bandit</code> 安全检查</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

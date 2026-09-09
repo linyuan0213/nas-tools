@@ -1,0 +1,2327 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/plugins/">
+      
+      
+        <link rel="prev" href="../users/">
+      
+      
+        <link rel="next" href="../plugin_development_guide/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>插件使用 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#插件配置指南" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              插件使用
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#插件列表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件列表
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="插件列表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#自动签到插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动签到插件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="自动签到插件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#功能概述" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        功能概述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#前置准备" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前置准备
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="前置准备">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-安装-nexus-chrome-容器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 安装 nexus-chrome 容器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-配置网页自动化服务器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 配置网页自动化服务器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-安装cookiecloud浏览器插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 安装CookieCloud浏览器插件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-配置cookiecloud插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 配置CookieCloud插件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-手动登录网站" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 手动登录网站
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-同步cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 同步Cookie
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="插件配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cookiecloud同步插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CookieCloud同步插件配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#自动签到插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动签到插件配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#浏览器自动化功能说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        浏览器自动化功能说明
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="浏览器自动化功能说明">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#何时需要开启浏览器自动化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        何时需要开启浏览器自动化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#浏览器站点配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        浏览器站点配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#常见问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="常见问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-签到失败提示cookie已失效" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 签到失败，提示"Cookie已失效"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-站点被cloudflare防护无法签到" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 站点被Cloudflare防护，无法签到
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-签到结果通知不显示" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 签到结果通知不显示
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最佳实践
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="最佳实践">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-签到时间安排" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 签到时间安排
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-队列数量设置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 队列数量设置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-重试策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 重试策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-安全注意事项" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 安全注意事项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#故障排除" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        故障排除
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="故障排除">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#检查日志" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        检查日志
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#手动测试" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        手动测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#插件列表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件列表
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="插件列表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#自动签到插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动签到插件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="自动签到插件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#功能概述" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        功能概述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#前置准备" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前置准备
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="前置准备">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-安装-nexus-chrome-容器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 安装 nexus-chrome 容器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-配置网页自动化服务器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 配置网页自动化服务器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-安装cookiecloud浏览器插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 安装CookieCloud浏览器插件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-配置cookiecloud插件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 配置CookieCloud插件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-手动登录网站" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 手动登录网站
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-同步cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 同步Cookie
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="插件配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cookiecloud同步插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CookieCloud同步插件配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#自动签到插件配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动签到插件配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#浏览器自动化功能说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        浏览器自动化功能说明
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="浏览器自动化功能说明">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#何时需要开启浏览器自动化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        何时需要开启浏览器自动化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#浏览器站点配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        浏览器站点配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#常见问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="常见问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-签到失败提示cookie已失效" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 签到失败，提示"Cookie已失效"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-站点被cloudflare防护无法签到" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 站点被Cloudflare防护，无法签到
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-签到结果通知不显示" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q: 签到结果通知不显示
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最佳实践
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="最佳实践">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-签到时间安排" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 签到时间安排
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-队列数量设置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 队列数量设置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-重试策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 重试策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-安全注意事项" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 安全注意事项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#故障排除" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        故障排除
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="故障排除">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#检查日志" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        检查日志
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#手动测试" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        手动测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/plugins.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="插件配置指南">插件配置指南<a class="headerlink" href="#插件配置指南" title="Permanent link">¶</a></h1>
+<p>Nexus Media 提供了丰富的插件系统，可以扩展系统的功能。本章将详细介绍各个插件的使用方法。</p>
+<p>入口：<strong>插件中心 → 插件市场</strong>（<code>/plugin/market</code>）安装插件，<strong>插件中心 → 已安装插件</strong>（<code>/plugin/installed</code>）管理插件。</p>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../assets/images/plugin/market.png" data-desc-position="bottom"><img alt="插件市场" class="screenshot" src="../assets/images/plugin/market.png"></a></p>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../assets/images/plugin/installed.png" data-desc-position="bottom"><img alt="已安装插件" class="screenshot" src="../assets/images/plugin/installed.png"></a></p>
+<h2 id="插件列表">插件列表<a class="headerlink" href="#插件列表" title="Permanent link">¶</a></h2>
+<h3 id="自动签到插件">自动签到插件<a class="headerlink" href="#自动签到插件" title="Permanent link">¶</a></h3>
+<p>自动签到插件是 Nexus Media 中用于自动执行PT站点签到的重要功能，可以帮助用户保持站点活跃度，避免因长时间不登录而被清理账号。</p>
+<h4 id="功能概述">功能概述<a class="headerlink" href="#功能概述" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>自动签到</strong>：支持定时自动执行站点签到</li>
+<li><strong>Cookie同步</strong>：通过CookieCloud同步浏览器Cookie</li>
+<li><strong>浏览器自动化签到</strong>：支持浏览器自动化签到，应对Cloudflare防护</li>
+</ul>
+<h4 id="前置准备">前置准备<a class="headerlink" href="#前置准备" title="Permanent link">¶</a></h4>
+<h5 id="1-安装-nexus-chrome-容器">1. 安装 nexus-chrome 容器<a class="headerlink" href="#1-安装-nexus-chrome-容器" title="Permanent link">¶</a></h5>
+<p>自动签到的浏览器自动化功能依赖 nexus-chrome 组件，安装与参数说明见 <a href="../installation/#可选组件nexus-verify-与-nexus-chrome">安装指南 → 可选组件</a>。</p>
+<h5 id="2-配置网页自动化服务器">2. 配置网页自动化服务器<a class="headerlink" href="#2-配置网页自动化服务器" title="Permanent link">¶</a></h5>
+<p>在 Nexus Media 中配置网页自动化服务器：</p>
+<ol>
+<li>进入 <strong>基础设置</strong>（<code>/system/basic</code>） → <strong>实验室</strong>，开启「启用网页自动化」</li>
+<li>「网页自动化服务器」填写 nexus-chrome 容器的访问地址，如 <code>http://192.168.1.151:9850</code></li>
+<li>确保地址可访问，端口 9850 是 DrissionPage 服务的默认端口</li>
+</ol>
+<h5 id="3-安装cookiecloud浏览器插件">3. 安装CookieCloud浏览器插件<a class="headerlink" href="#3-安装cookiecloud浏览器插件" title="Permanent link">¶</a></h5>
+<p>首先需要在浏览器中安装CookieCloud插件：</p>
+<ol>
+<li>访问 <a href="https://github.com/easychen/CookieCloud">CookieCloud GitHub页面</a></li>
+<li>根据浏览器类型安装对应的插件：</li>
+<li>Chrome/Edge: 从Chrome Web Store安装</li>
+<li>Firefox: 从Firefox Add-ons安装</li>
+</ol>
+<h5 id="4-配置cookiecloud插件">4. 配置CookieCloud插件<a class="headerlink" href="#4-配置cookiecloud插件" title="Permanent link">¶</a></h5>
+<p>安装完成后，配置CookieCloud插件：</p>
+<ol>
+<li>打开CookieCloud插件设置</li>
+<li>设置服务器地址（可使用公共服务器或自建服务器）</li>
+<li>生成用户KEY和端对端加密密码</li>
+<li><strong>重要：设置是否同步 Local Storage 选「是」</strong></li>
+<li>设置同步域名关键词（需要同步的 PT 站点域名）</li>
+</ol>
+<h5 id="5-手动登录网站">5. 手动登录网站<a class="headerlink" href="#5-手动登录网站" title="Permanent link">¶</a></h5>
+<p>在配置CookieCloud同步前，需要手动登录一次目标PT网站：</p>
+<ol>
+<li>打开浏览器，访问目标PT站点</li>
+<li>正常登录账号</li>
+<li>确保登录状态正常</li>
+</ol>
+<h5 id="6-同步cookie">6. 同步Cookie<a class="headerlink" href="#6-同步cookie" title="Permanent link">¶</a></h5>
+<p>在CookieCloud插件中执行同步操作：</p>
+<ol>
+<li>点击CookieCloud插件的同步按钮</li>
+<li>确认Cookie数据已成功上传到云端</li>
+<li>在 Nexus Media 中配置CookieCloud参数</li>
+</ol>
+<h4 id="插件配置">插件配置<a class="headerlink" href="#插件配置" title="Permanent link">¶</a></h4>
+<h5 id="cookiecloud同步插件配置">CookieCloud同步插件配置<a class="headerlink" href="#cookiecloud同步插件配置" title="Permanent link">¶</a></h5>
+<p>在 Nexus Media 中配置CookieCloud同步：</p>
+<ol>
+<li>进入 <strong>已安装插件</strong>（<code>/plugin/installed</code>） → <strong>CookieCloud同步</strong></li>
+<li>填写配置参数：</li>
+<li><strong>服务器地址</strong>: CookieCloud服务器地址</li>
+<li><strong>用户KEY</strong>: CookieCloud插件中生成的KEY</li>
+<li><strong>端对端加密密码</strong>: CookieCloud插件中设置的密码</li>
+<li><strong>执行周期</strong>: 设置自动同步周期（如：<code>0 0 * * *</code> 每天零点执行）</li>
+<li><strong>白名单</strong>: 需要同步的域名关键词（每行一个，支持正则）</li>
+<li><strong>黑名单</strong>: 需要排除的域名关键词</li>
+</ol>
+<h5 id="自动签到插件配置">自动签到插件配置<a class="headerlink" href="#自动签到插件配置" title="Permanent link">¶</a></h5>
+<p>在 Nexus Media 中配置自动签到：</p>
+<ol>
+<li>进入 <strong>已安装插件</strong>（<code>/plugin/installed</code>） → <strong>站点自动签到</strong></li>
+<li>填写配置参数：</li>
+<li><strong>开启定时签到</strong>: 启用自动签到功能</li>
+<li><strong>签到周期</strong>: 设置签到执行时间<ul>
+<li>间隔时间：如 <code>23.5</code>（23.5小时）</li>
+<li>固定时间：如 <code>08:00</code>（每天8点）</li>
+<li>时间范围：如 <code>08:00-09:00</code>（8-9点间随机执行）</li>
+<li>Cron表达式：如 <code>0 8 * * *</code>（每天8点）</li>
+</ul>
+</li>
+<li><strong>签到队列</strong>: 同时签到的站点数量（默认10）</li>
+<li><strong>重试关键词</strong>: 失败时重试的关键词（支持正则）</li>
+<li><strong>运行时通知</strong>: 开启签到结果通知</li>
+<li>
+<p><strong>立即运行一次</strong>: 首次配置时测试功能</p>
+</li>
+<li>
+<p>选择签到站点：</p>
+</li>
+<li><strong>签到站点</strong>: 选择需要自动签到的站点</li>
+<li><strong>特殊站点</strong>: 选择无论是否失败都强制重签的站点<ul>
+<li><strong>浏览器站点</strong>: 选择需要开启浏览器自动化的站点</li>
+</ul>
+</li>
+</ol>
+<h4 id="浏览器自动化功能说明">浏览器自动化功能说明<a class="headerlink" href="#浏览器自动化功能说明" title="Permanent link">¶</a></h4>
+<h5 id="何时需要开启浏览器自动化">何时需要开启浏览器自动化<a class="headerlink" href="#何时需要开启浏览器自动化" title="Permanent link">¶</a></h5>
+<p>以下情况建议开启浏览器自动化功能：</p>
+<ol>
+<li><strong>Cloudflare 5秒盾防护</strong>的站点</li>
+<li><strong>雷池防护</strong>的站点  </li>
+<li>其他使用复杂反爬虫机制的站点</li>
+</ol>
+<h5 id="浏览器站点配置">浏览器站点配置<a class="headerlink" href="#浏览器站点配置" title="Permanent link">¶</a></h5>
+<p>在自动签到插件的"浏览器站点"选项中，选择需要开启浏览器自动化的站点：</p>
+<ul>
+<li>有Cloudflare防护的站点建议选中</li>
+<li>浏览器自动化会使用真实浏览器进行登录，成功率更高但耗时较长</li>
+</ul>
+<h4 id="常见问题">常见问题<a class="headerlink" href="#常见问题" title="Permanent link">¶</a></h4>
+<h5 id="q-签到失败提示cookie已失效">Q: 签到失败，提示"Cookie已失效"<a class="headerlink" href="#q-签到失败提示cookie已失效" title="Permanent link">¶</a></h5>
+<p>A: 需要重新同步Cookie：
+1. 在浏览器中重新登录网站
+2. 在CookieCloud插件中重新同步
+3. 在 Nexus Media 中执行CookieCloud同步</p>
+<h5 id="q-站点被cloudflare防护无法签到">Q: 站点被Cloudflare防护，无法签到<a class="headerlink" href="#q-站点被cloudflare防护无法签到" title="Permanent link">¶</a></h5>
+<p>A: 需要开启浏览器自动化功能：
+1. 在自动签到插件中，将该站点添加到"浏览器站点"
+2. 确保DrissionPage服务正常运行</p>
+<h5 id="q-签到结果通知不显示">Q: 签到结果通知不显示<a class="headerlink" href="#q-签到结果通知不显示" title="Permanent link">¶</a></h5>
+<p>A: 检查通知配置：
+1. 确认已开启"运行时通知"选项
+2. 检查消息通知渠道是否配置正确
+3. 查看系统日志确认通知发送状态</p>
+<h4 id="最佳实践">最佳实践<a class="headerlink" href="#最佳实践" title="Permanent link">¶</a></h4>
+<h5 id="1-签到时间安排">1. 签到时间安排<a class="headerlink" href="#1-签到时间安排" title="Permanent link">¶</a></h5>
+<ul>
+<li>建议设置在网站访问量较少的时段</li>
+<li>避免在网站维护时段执行签到</li>
+<li>考虑不同站点的时区差异</li>
+</ul>
+<h5 id="2-队列数量设置">2. 队列数量设置<a class="headerlink" href="#2-队列数量设置" title="Permanent link">¶</a></h5>
+<ul>
+<li>高性能服务器可设置较大队列（10-20）</li>
+<li>低性能服务器建议设置较小队列（5-10）</li>
+<li>根据实际签到成功率调整</li>
+</ul>
+<h5 id="3-重试策略">3. 重试策略<a class="headerlink" href="#3-重试策略" title="Permanent link">¶</a></h5>
+<ul>
+<li>设置合理的重试关键词（如：失败|错误|异常）</li>
+<li>对于重要站点可设置为特殊站点强制重签</li>
+<li>定期检查签到历史，优化配置</li>
+</ul>
+<h5 id="4-安全注意事项">4. 安全注意事项<a class="headerlink" href="#4-安全注意事项" title="Permanent link">¶</a></h5>
+<ul>
+<li>使用自建CookieCloud服务器提高安全性</li>
+<li>定期更换CookieCloud的KEY和密码</li>
+<li>不要在公共网络中泄露CookieCloud配置信息</li>
+</ul>
+<h4 id="故障排除">故障排除<a class="headerlink" href="#故障排除" title="Permanent link">¶</a></h4>
+<h5 id="检查日志">检查日志<a class="headerlink" href="#检查日志" title="Permanent link">¶</a></h5>
+<p>查看系统日志了解详细的签到过程：
+- 成功站点的签到记录
+- 失败站点的错误信息
+- 浏览器自动化签到的执行状态</p>
+<h5 id="手动测试">手动测试<a class="headerlink" href="#手动测试" title="Permanent link">¶</a></h5>
+<p>在配置完成后，建议：
+1. 使用"立即运行一次"功能测试
+2. 检查签到结果通知
+3. 根据结果调整配置参数</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚">
+        
+          
+          <a href="../users/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 用户与权限">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                用户与权限
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../plugin_development_guide/" class="md-footer__link md-footer__link--next" aria-label="下一页: 插件开发">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                插件开发
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

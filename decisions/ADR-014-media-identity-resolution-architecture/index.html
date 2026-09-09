@@ -1,0 +1,2200 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-014-media-identity-resolution-architecture/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-014: 媒体身份解析与匹配架构（分词→识别→匹配→重映射） - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-014-媒体身份解析与匹配架构分词识别匹配重映射" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-014: 媒体身份解析与匹配架构（分词→识别→匹配→重映射）
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#问题背景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题背景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#根因分析" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        根因分析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#可行性约束评审修订" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可行性约束（评审修订）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="目标">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#非目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        非目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#核心设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="核心设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-总体分层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 总体分层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-数据模型" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 数据模型
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 数据模型">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-parsedrelease分词层输出" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 ParsedRelease（分词层输出）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-work--alias--franchise元数据拆分" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Work / Alias / Franchise（元数据拆分）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-editiongraph系列版本关系" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 EditionGraph（系列/版本关系）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-aliasindex本地别名索引" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 AliasIndex（本地别名索引）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-identityresolution识别层输出" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 IdentityResolution（识别层输出）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-分层职责" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 分层职责
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 分层职责">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-分词层-releaseparser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 分词层 ReleaseParser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-识别层-identityresolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 识别层 IdentityResolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-匹配层-targetmatcher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 匹配层 TargetMatcher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-重映射层-episoderemapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 重映射层 EpisodeRemapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-性能设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 性能设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-反馈环含防污染" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 反馈环（含防污染）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-与现有组件的映射" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 与现有组件的映射
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#集成方案四期每期独立交付可回滚" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        集成方案（四期，每期独立交付可回滚）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="集成方案（四期，每期独立交付可回滚）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1--元数据层地基" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — 元数据层（地基）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2--识别层核心" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — 识别层（核心）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3--重映射与匹配" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — 重映射与匹配
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4--反馈环与站点扩展" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — 反馈环与站点扩展
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#验收集必须全部通过" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        验收集（必须全部通过）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#风险与回滚" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险与回滚
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-014-media-identity-resolution-architecture.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-014-媒体身份解析与匹配架构分词识别匹配重映射">ADR-014: 媒体身份解析与匹配架构（分词→识别→匹配→重映射）<a class="headerlink" href="#adr-014-媒体身份解析与匹配架构分词识别匹配重映射" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Proposed（v2，已按可行性评审修订）</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-07-25</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<h3 id="问题背景">问题背景<a class="headerlink" href="#问题背景" title="Permanent link">¶</a></h3>
+<p>搜索识别链在长期演进中以「字符串匹配」隐式完成「作品身份解析」，导致每次修复一个问题就引入新问题。2026-07-25 一天内的真实事故序列：</p>
+<ol>
+<li><strong>穹庐下的魔女</strong>：英文名 <code>Jaadugar: A Witch in Mongolia</code> 与 TMDB 条目名（<code>天幕のジャードゥーガル</code>）无法比对 → 全部「识别出错」，有效 0</li>
+<li><strong>攻壳机动队（2026)</strong>：SAC_2045 / ARISE / Stand Alone Complex / 1995 电影全部被误配到 2026 新剧</li>
+<li><strong>750 条泛词搜索</strong>：识别风暴打爆 TMDB 限流，90 秒无结果</li>
+<li><strong>缓存键共享</strong>：<code>v2_攻壳机动队_S2_E12</code> 把 SAC_2045 和 2026 新剧汇成一组，先入者带偏全组</li>
+<li><strong>解析层丢信息</strong>：<code>prepare_title</code> 丢弃斜杠前中文名、AKA 截断丢区分信息、<code>中字</code> 标签污染直通</li>
+</ol>
+<h3 id="根因分析">根因分析<a class="headerlink" href="#根因分析" title="Permanent link">¶</a></h3>
+<p><strong>作品身份（Work Identity）不是一等公民。</strong> 剧名、别名、子系列、版本、季集结构全部糊在字符串比较里：</p>
+<div class="highlight"><pre><span></span><code>现状（隐式身份解析）:
+  标题 → 解析器 → 名字字符串 → [和目标的字符串比来比去] → 对/错
+                                    ↑
+  "攻壳机动队" 指向哪个作品？这不是字符串问题，是身份问题。
+</code></pre></div>
+<p>已落地的修复（共识仲裁、别名扩充、缓存键隔离、严格匹配、直通三分流）都有效，但它们是<strong>启发式规则的堆叠</strong>：每个新命名变体、每个同名系列都可能成为下一个 bug。需要把这些被验证正确的思想沉淀为<strong>数据模型和分层管线</strong>。</p>
+<h3 id="可行性约束评审修订">可行性约束（评审修订）<a class="headerlink" href="#可行性约束评审修订" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>TMDB 无 TV 系列关系 API</strong>：<code>episode_groups</code> 仅是单剧内部的集顺序变体（DVD 序/播出序），不能表达 SAC→2nd GIG→SAC_2045 这类跨作品关系。跨作品关系边的唯一可靠机器来源是 <strong>Bangumi relations</strong>，辅以手工补充表。</li>
+<li><strong>Bangumi relations 端点未集成</strong>：现有 <code>Bangumi</code> 类仅有 <code>calendar</code>/<code>detail</code>，需新增 <code>v0/subjects/{id}/relations</code> 调用（纳入 P1）。</li>
+<li><strong>别名索引是「见过即缓存」，不是全量库</strong>：冷启动作品必须回退外部解析，性能声明按此修正（见「性能设计」）。</li>
+</ul>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>正确性</strong>：同名系列（franchise/sub-series）不再误配，身份解析显式化、可解释、可测试</li>
+<li><strong>速度</strong>：已索引作品热路径零网络调用，P95 搜索延迟 &lt; 40s（含慢站熔断）</li>
+<li><strong>覆盖</strong>：支持常见 PT/BT 站点与字幕组命名习惯，且可通过配置扩展而非改代码</li>
+<li><strong>可演进</strong>：失败样本自动沉淀，识别能力随使用单调增长</li>
+</ol>
+<h3 id="非目标">非目标<a class="headerlink" href="#非目标" title="Permanent link">¶</a></h3>
+<ul>
+<li>不重写索引器抓取层（HtmlSearcher/ApiSiteSearcher 保持现状）</li>
+<li>不改变订阅/RSS 的业务语义（只替换其内部的识别匹配实现）</li>
+<li>不引入新的外部数据库服务（复用 Redis + SQLite/MySQL）</li>
+<li>不做豆瓣解析通道（douban ID 本期不纳入直通，见 3.2 备注）</li>
+</ul>
+<h2 id="核心设计">核心设计<a class="headerlink" href="#核心设计" title="Permanent link">¶</a></h2>
+<h3 id="1-总体分层">1. 总体分层<a class="headerlink" href="#1-总体分层" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────────────────────┐
+│ 1. 分词层 ReleaseParser                                           │
+│    标题/描述 → ParsedRelease（结构化，字段带置信度）                │
+├──────────────────────────────────────────────────────────────────┤
+│ 2. 元数据层 MediaIdentityGraph（元数据拆分的核心）                  │
+│    Work / Alias / Franchise / EditionGraph / AliasIndex          │
+│    Redis（长TTL） + 进程内 LRU，访问时按需构建                      │
+├──────────────────────────────────────────────────────────────────┤
+│ 3. 识别层 IdentityResolver                                        │
+│    ParsedRelease → IdentityResolution { work_id, confidence }    │
+│    直通快路径（目标已知时的别名判等）也在本层                       │
+├──────────────────────────────────────────────────────────────────┤
+│ 4. 匹配层 TargetMatcher                                           │
+│    work_id 相等 + EditionGraph 距离 → 匹配/拒绝（带原因）           │
+├──────────────────────────────────────────────────────────────────┤
+│ 5. 重映射层 EpisodeRemapper                                       │
+│    发布组编号 → 规范编号（绝对集/合并季/SP/合集包展开）              │
+└──────────────────────────────────────────────────────────────────┘
+                              ↕
+┌──────────────────────────────────────────────────────────────────┐
+│ 反馈环 FeedbackLoop                                               │
+│    miss → 语料 → 新命名规则；成功解析 → 新别名回写索引（防污染）    │
+└──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="2-数据模型">2. 数据模型<a class="headerlink" href="#2-数据模型" title="Permanent link">¶</a></h3>
+<h4 id="21-parsedrelease分词层输出">2.1 ParsedRelease（分词层输出）<a class="headerlink" href="#21-parsedrelease分词层输出" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NameCandidate</span><span class="p">:</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># 原始名称</span>
+    <span class="n">lang</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># cn / en / ja / romaji / unknown</span>
+    <span class="n">script</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># latn / hans / hant / jpan</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># pattern / title / description / aka / subtitle</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>    <span class="c1"># 见下方映射表</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedRelease</span><span class="p">:</span>
+    <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NameCandidate</span><span class="p">]</span>
+    <span class="n">year</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>     <span class="c1"># 与现有链路一致用 str，识别层内部转 int</span>
+    <span class="n">season</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">episode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">episode_end</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">edition_markers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>   <span class="c1"># SAC_2045 / ARISE / 剧场版 / OVA / 第二季 ...</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="nb">dict</span>                <span class="c1"># 分辨率/编码/音轨/字幕/平台</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>            <span class="c1"># 发布组</span>
+    <span class="n">is_season_pack</span><span class="p">:</span> <span class="nb">bool</span>
+</code></pre></div>
+<p><strong>confidence 具体映射</strong>（可复现，下游评分依赖）：</p>
+<table>
+<thead>
+<tr>
+<th>source</th>
+<th>confidence</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pattern（命名模式库命中）</td>
+<td>0.95</td>
+<td>人工规则，最可信</td>
+</tr>
+<tr>
+<td>description（描述提取中文名）</td>
+<td>0.90</td>
+<td>站点编辑填写</td>
+</tr>
+<tr>
+<td>title-anitopy</td>
+<td>0.75</td>
+<td>动漫解析器</td>
+</tr>
+<tr>
+<td>title-regex</td>
+<td>0.70</td>
+<td>正则影视解析器</td>
+</tr>
+<tr>
+<td>aka（AKA 后段）</td>
+<td>0.85</td>
+<td>官方别名</td>
+</tr>
+<tr>
+<td>id-link（IMDb/TMDB/BGM 链接）</td>
+<td>1.00</td>
+<td>直接身份证据</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键约束</strong>：<code>edition_markers</code> 是消歧的关键证据，<strong>必须保留为结构化字段，绝不允许清洗进名称字符串</strong>。本轮事故中 <code>SAC_2045</code> 被 <code>clean_name</code> 当垃圾剥掉，是误配的根源之一。</p>
+<h4 id="22-work--alias--franchise元数据拆分">2.2 Work / Alias / Franchise（元数据拆分）<a class="headerlink" href="#22-work--alias--franchise元数据拆分" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Alias</span><span class="p">:</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">lang</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># zh-Hans / zh-Hant / en / ja / romaji</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># official / translation / romanization / fan</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># tmdb:alternative_titles / tmdb:translations / bgm / learned</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Work</span><span class="p">:</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># tmdb / bgm</span>
+    <span class="n">work_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># tv / movie / anime（遵循 ADR-009 类型统一策略）</span>
+    <span class="n">year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">official_titles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">aliases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Alias</span><span class="p">]</span>
+    <span class="n">franchise_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>   <span class="c1"># 所属虚拟 franchise 节点</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Franchise</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""虚拟系列节点 —— 「攻壳机动队」作为概念在 TMDB/BGM 都不是条目，</span>
+<span class="sd">    EditionGraph 需要一个虚拟根承载跨作品关系。"""</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>             <span class="c1"># 归一化名或手工指定，如 "ghost-in-the-shell"</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">members</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>  <span class="c1"># [(source, work_id)]</span>
+</code></pre></div>
+<p>别名按 <code>kind</code> 拆分存储的意义：<strong>匹配策略按 kind 分级</strong>，不再用一个 compare 函数通吃：</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>匹配策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>official</td>
+<td>归一化后精确相等</td>
+</tr>
+<tr>
+<td>translation</td>
+<td>归一化后精确相等</td>
+</tr>
+<tr>
+<td>romanization</td>
+<td>归一化相等 + 音译变体表（Jādūgar↔Jaadugar）</td>
+</tr>
+<tr>
+<td>fan（学成）</td>
+<td>仅作证据参与评分，<strong>不可单独确定身份</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="23-editiongraph系列版本关系">2.3 EditionGraph（系列/版本关系）<a class="headerlink" href="#23-editiongraph系列版本关系" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>Franchise: ghost-in-the-shell（虚拟节点）
+├── Movie 1995 (tmdb:movie/9323)
+├── Stand Alone Complex (tmdb:tv/xxx)      ← relation: 续作/系列
+│   ├── 2nd GIG                            ← relation: 续作
+│   └── Solid State Society (OVA)          ← relation: 番外
+├── ARISE                                  ← relation: 衍生
+├── SAC_2045 ── SAC_2045 S2                ← relation: 续作
+├── The New Movie 2015
+└── 攻壳机动队 (2026)                      ← relation: 新作/重启
+</code></pre></div>
+<ul>
+<li><strong>节点</strong>：Franchise（虚拟）或 Work；<strong>边</strong>：<code>sequel</code> / <code>spinoff</code> / <code>special</code> / <code>remake</code> / <code>compilation</code></li>
+<li><strong>数据源（按优先级）</strong>：</li>
+<li><strong>Bangumi relations</strong>（<code>GET /v0/subjects/{id}/subjects</code>，本期新增集成）——动漫领域覆盖最好的跨作品关系来源</li>
+<li><strong>手工补充表</strong> <code>config/edition_overrides.yaml</code>——长尾/国产/真人剧</li>
+<li>TMDB movie <code>collection</code>（仅电影合集可用，TV 无此能力；<strong>不使用 episode_groups 表达跨作品关系</strong>，它只用于 3.5 重映射的集序）</li>
+<li>存储：Redis <code>identity:v1:edition:{source}:{work_id}</code> + 反向索引 <code>identity:v1:franchise:{key}</code>；全部 key 带 <code>v1</code> 版本前缀以便 schema 演进双读</li>
+</ul>
+<h4 id="24-aliasindex本地别名索引">2.4 AliasIndex（本地别名索引）<a class="headerlink" href="#24-aliasindex本地别名索引" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>identity:v1:alias:{md5(normalized_text)} → [{source, work_id, kind, lang}]
+</code></pre></div>
+<ul>
+<li>normalized_text = <code>handler_special_chars(text).upper().strip()</code>（与现有归一化一致）；key 用 md5 避免超长与多语言字符问题</li>
+<li><strong>别名→多作品是常态</strong>（<code>攻壳机动队</code> 映射 10 个 work_id）：索引返回的是<strong>候选集合</strong>，本身不定身份；集合 &gt;1 时必须进入识别层的年份/edition 消歧流程（3.2 第 3-4 步）</li>
+<li>写入时机：Work 详情首次拉取时、外部解析成功时（学成，受限）、手工/规则补充时</li>
+</ul>
+<h4 id="25-identityresolution识别层输出">2.5 IdentityResolution（识别层输出）<a class="headerlink" href="#25-identityresolution识别层输出" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IdentityResolution</span><span class="p">:</span>
+    <span class="n">work</span><span class="p">:</span> <span class="n">Work</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>          <span class="c1"># 0.0-1.0</span>
+    <span class="n">evidence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>        <span class="c1"># ["alias:Tenmaku no Jaadugar", "year:2026", "edition:SAC_2045"]</span>
+    <span class="n">rejected</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Work</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>  <span class="c1"># 被淘汰的候选及原因（可解释性）</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>                <span class="c1"># HIT / NOT_FOUND / ERROR</span>
+</code></pre></div>
+<h3 id="3-分层职责">3. 分层职责<a class="headerlink" href="#3-分层职责" title="Permanent link">¶</a></h3>
+<h4 id="31-分词层-releaseparser">3.1 分词层 ReleaseParser<a class="headerlink" href="#31-分词层-releaseparser" title="Permanent link">¶</a></h4>
+<p>输入：种子标题 + 描述 + 站点名。输出：ParsedRelease。</p>
+<p>处理链（有序，先赢）：</p>
+<ol>
+<li><strong>命名模式库</strong>（已有 <code>config/naming_patterns.yaml</code>）：字幕组/站点格式，命中最可信</li>
+<li><strong>anitopy + 动漫规则</strong>（已有，含中文名恢复、英前中后、release_group 跳过）</li>
+<li><strong>正则影视解析器</strong>（已有）</li>
+<li><strong>description 特征提取</strong>：中文短语、IMDb/TMDB/BGM 链接（ID 直通证据）</li>
+<li><strong>edition 标记抽取</strong>：独立正则扫描（SAC_2045、ARISE、2nd GIG、第X季、剧场版、OVA…），写入 <code>edition_markers</code> 而非并入名称</li>
+</ol>
+<p>改动要点：
+- 现有 <code>_clean_name</code> 的「清洗」语义改为「字段拆分」：质量词进 <code>quality</code>，版本词进 <code>edition_markers</code>，<strong>名称只保留名称</strong>
+- AKA 继续解析（已修复）并将 AKA 后段作为独立 NameCandidate（source=aka）</p>
+<h4 id="32-识别层-identityresolver">3.2 识别层 IdentityResolver<a class="headerlink" href="#32-识别层-identityresolver" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>输入 ParsedRelease
+  │
+  ├─ 0. 直通快路径（目标已知 = 搜索/订阅场景）:
+  │     组内名称 ⊆ 目标别名集（AliasIndex 判等，非模糊字符串比较）
+  │     → 全部命中 → 直接落目标 work_id，零外部调用
+  │     → 零重叠 → 本地排除（候选与目标无关）
+  │     → 部分重叠 → 进入完整流程
+  │
+  ├─ 1. ID 直通: description 提取到 tmdb/imdb/bgm 链接
+  │     → 直接定位 Work（最高置信）
+  │     注: douban 链接本期不做（无 douban→Work 解析器，避免半吊子映射）
+  │
+  ├─ 2. 别名索引: 每个 NameCandidate 查 AliasIndex
+  │     → 候选 work_id 集合 + 命中别名（证据）
+  │     → 未命中任何候选 → 第 5 步外部解析
+  │
+  ├─ 3. 版本下钻: edition_markers 非空时
+  │     → 候选落到同一 Franchise 后，沿 EditionGraph 导航到子版本
+  │     → 例: franchise(ghost-in-the-shell) + marker SAC_2045
+  │            → 落地 SAC_2045 work，而非 2026 新剧
+  │
+  ├─ 4. 候选评分: 集合 &gt;1 或下钻后仍多候选时
+  │     score = Σ(名称置信度 × kind 权重) × 年份一致 × 版本一致
+  │     → 最高分且超阈值 → HIT；否则 NOT_FOUND（记录 rejected 原因）
+  │
+  ├─ 5. 外部解析（冷启动）: TMDB/BGM search
+  │     → 阻塞式限流（已有 rate_limit_timeout）
+  │     → 并发预算: max_workers=2，tmdb 2.5/s，bgm 1/s
+  │     → 结果回写 AliasIndex（学成，受防污染策略约束，见 §5）
+  │
+  └─ 输出 IdentityResolution
+</code></pre></div>
+<p>与现有代码的关系：<code>MediaService.identify_groups</code> 的「多名共识 + 冲突采信最具体名」是第 4 步的雏形；<code>BatchIdentifier</code> 的「三分流」是第 0 步的雏形。本设计把它们统一到<strong>带证据和置信度的模型</strong>里，且大部分查询在本地索引完成。</p>
+<h4 id="33-匹配层-targetmatcher">3.3 匹配层 TargetMatcher<a class="headerlink" href="#33-匹配层-targetmatcher" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>matched = (resolution.work.work_id == target.work_id)
+        and edition_distance(resolution.work, target) == 0
+        and 年份/类型/季集/规则过滤通过
+</code></pre></div>
+<ul>
+<li>同 franchise 不同 edition → 拒绝，原因可解释（<code>子系列 SAC_2045 ≠ 目标 2026</code>）</li>
+<li><strong>匹配层只有 ID 判等与图距离，没有名称比较</strong>；所有名称不确定性（含直通快路径的别名判等）都在识别层消化</li>
+<li>类型兼容性遵循 ADR-009（media-type-unification）的统一策略</li>
+</ul>
+<h4 id="34-重映射层-episoderemapper">3.4 重映射层 EpisodeRemapper<a class="headerlink" href="#34-重映射层-episoderemapper" title="Permanent link">¶</a></h4>
+<ul>
+<li>发布组编号 → 规范编号：绝对集（anime [12]）、合并季（S1+S2+SP 包）、OVA/SP 编号、合集包展开（全集 → episode range）</li>
+<li>数据源：TMDB episode_groups（集序变体的正确用途）、Bangumi 集数列表、手工映射表</li>
+<li>XEM（thexem.de）作为<strong>可选</strong>第三方映射源：默认关闭，开启失败时静默降级到前两者</li>
+<li>现有 <code>EpisodeMapper</code>（动漫合并季/绝对集）并入本层统一实现</li>
+</ul>
+<h3 id="4-性能设计">4. 性能设计<a class="headerlink" href="#4-性能设计" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>条件</th>
+<th>成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直通快路径</td>
+<td>目标已知（搜索/订阅），别名已索引</td>
+<td>零网络，毫秒级</td>
+</tr>
+<tr>
+<td>热路径</td>
+<td>已索引作品（重搜/常见番）</td>
+<td>分词 + Redis O(1) + 图查询，毫秒级</td>
+</tr>
+<tr>
+<td>冷路径</td>
+<td>未见过的作品/别名</td>
+<td>外部解析，限流内；结果回写，<strong>同作品第二次起转热路径</strong></td>
+</tr>
+<tr>
+<td>取数</td>
+<td>站点×关键词并行 + 单站 30s 熔断</td>
+<td>上界 ≈ 30s + 流水线</td>
+</tr>
+</tbody>
+</table>
+<p><strong>明确的边界</strong>：别名索引是「见过即缓存」。泛词搜索中未索引的非目标作品仍会产生外部解析调用——「零 TMDB」只在<strong>目标及其 franchise 已索引</strong>后成立（验收标准按此表述）。冷启动批量场景的耗时上界 = 组数 × 名称数 / (2.5/s × 2 workers)，由三级缓存语义（HIT 3600s / NOT_FOUND 600s / ERROR 不缓存）控制重试风暴。</p>
+<h3 id="5-反馈环含防污染">5. 反馈环（含防污染）<a class="headerlink" href="#5-反馈环含防污染" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>MissCollector</strong>（已有）：快速名称不匹配 / 未匹配样本落 <code>data/identify_misses.jsonl</code></li>
+<li><strong>学成机制</strong>：外部解析成功后，<code>查询名 → work_id</code> 回写 AliasIndex，<code>kind=fan</code>。防污染约束：</li>
+<li>fan 别名<strong>仅作评分证据，不可单独确定身份</strong>（数据模型 2.2 已约束）</li>
+<li>同一映射被独立命中 ≥2 次才从 fan 升格为 translation</li>
+<li>发现错配（人工/冲突报告）时按 <code>md5(normalized_text)</code> 单条逐出</li>
+<li><strong>规则沉淀</strong>：miss 样本 → <code>naming_tool.py misses</code> 复审 → 新命名规则入 YAML + 回归测试</li>
+<li><strong>EditionGraph 补充</strong>：冲突案例（同名不同作）审核后写入 <code>config/edition_overrides.yaml</code></li>
+</ul>
+<h3 id="6-与现有组件的映射">6. 与现有组件的映射<a class="headerlink" href="#6-与现有组件的映射" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>新组件</th>
+<th>复用/迁移</th>
+<th>新建</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ReleaseParser</td>
+<td>命名模式库、anitopy/regex 解析器、description 提取、AKA 修复</td>
+<td>字段拆分（edition/quality 结构化）、ID 链接提取器、confidence 映射</td>
+</tr>
+<tr>
+<td>MediaIdentityGraph</td>
+<td><code>get_all_names</code>（别名获取）、Redis 缓存设施</td>
+<td>Work/Alias/Franchise 模型、AliasIndex、<strong>Bangumi relations 集成</strong></td>
+</tr>
+<tr>
+<td>IdentityResolver</td>
+<td>共识仲裁、限流短路、三级缓存语义、直通三分流</td>
+<td>索引查询、版本下钻、评分模型</td>
+</tr>
+<tr>
+<td>TargetMatcher</td>
+<td>tmdb_id 判等、过滤链</td>
+<td>EditionGraph 距离、可解释拒绝</td>
+</tr>
+<tr>
+<td>EpisodeRemapper</td>
+<td>EpisodeMapper</td>
+<td>编号习惯映射、包展开、XEM 可选源</td>
+</tr>
+<tr>
+<td>FeedbackLoop</td>
+<td>MissCollector、naming_tool</td>
+<td>学成回写（防污染）、edition_overrides</td>
+</tr>
+</tbody>
+</table>
+<h2 id="集成方案四期每期独立交付可回滚">集成方案（四期，每期独立交付可回滚）<a class="headerlink" href="#集成方案四期每期独立交付可回滚" title="Permanent link">¶</a></h2>
+<p>依赖关系：<strong>P2 依赖 P1 的索引与 Bangumi relations 端点；P3 依赖 P2 的 Resolution 契约；P4 依赖 P2 的回写通路。</strong> 每期由独立灰度开关控制，回退即关开关回旧路径。</p>
+<h3 id="p1--元数据层地基">P1 — 元数据层（地基）<a class="headerlink" href="#p1--元数据层地基" title="Permanent link">¶</a></h3>
+<ul>
+<li>定义 <code>Work/Alias/Franchise/EditionGraph</code> 数据模型与 Redis schema（<code>identity:v1:*</code>）</li>
+<li><strong>新增 Bangumi relations 集成</strong>（<code>GET /v0/subjects/{id}/subjects</code>）</li>
+<li><code>AliasIndex</code> 构建器：TMDB detail（alternative_titles/translations）+ BGM subject(+relations)</li>
+<li><code>get_all_names</code> 等现有调用切到读 AliasIndex（外部行为不变）</li>
+<li>灰度开关：<code>laboratory.identity_index</code></li>
+<li>验收：别名查询不再产生重复 TMDB 请求（索引命中日志可证）</li>
+</ul>
+<h3 id="p2--识别层核心">P2 — 识别层（核心）<a class="headerlink" href="#p2--识别层核心" title="Permanent link">¶</a></h3>
+<ul>
+<li><code>IdentityResolver</code>：直通快路径 → ID 直通 → 索引查询 → 版本下钻 → 评分 → 外部解析回写</li>
+<li>EditionGraph 构建器（Bangumi relations + <code>config/edition_overrides.yaml</code>）</li>
+<li><code>BatchIdentifier.identify</code> 内部改调 Resolver（外部契约不变）</li>
+<li>灰度开关：<code>laboratory.identity_resolver</code></li>
+<li>验收：本轮三个事故场景（穹庐下的魔女 / GITS-2026 / 750 泛词）全对</li>
+</ul>
+<h3 id="p3--重映射与匹配">P3 — 重映射与匹配<a class="headerlink" href="#p3--重映射与匹配" title="Permanent link">¶</a></h3>
+<ul>
+<li><code>EpisodeRemapper</code>：合并 EpisodeMapper + 发布组编号习惯 + 包展开</li>
+<li><code>TargetMatcher</code> 替换 match_filter 的 tmdb 比对段（保留其余过滤逻辑）</li>
+<li>灰度开关：<code>laboratory.target_matcher</code></li>
+<li>验收：合并季/绝对集/OVA 场景回归全过</li>
+</ul>
+<h3 id="p4--反馈环与站点扩展">P4 — 反馈环与站点扩展<a class="headerlink" href="#p4--反馈环与站点扩展" title="Permanent link">¶</a></h3>
+<ul>
+<li>学成回写 AliasIndex（含防污染升格/逐出）；miss 样本周报复审机制</li>
+<li>站点维度命名规则下沉到站点 JSON 配置（命名模式库按站点分流）</li>
+</ul>
+<h2 id="验收集必须全部通过">验收集（必须全部通过）<a class="headerlink" href="#验收集必须全部通过" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>穹庐下的魔女</strong>：FROGWeb/MWeb/CHDWEB/字幕组全格式 → tmdb 288971，有效资源数 ≥ 修复后基线</li>
+<li><strong>攻壳机动队（2026)</strong>：SAC/SAC_2045/ARISE/1995/2004/2015 全部排除，仅 2026 新剧条目命中</li>
+<li><strong>泛词 750 条</strong>：P95 &lt; 40s；<strong>目标 franchise 索引完成后</strong>，重搜识别阶段零 TMDB 调用；误配率 0</li>
+<li><strong>AKA 格式</strong>：<code>Ghost in the Shell AKA ... Stand Alone Complex</code> → SAC 不误配 2026；<code>肖申克 AKA 月黑高飞</code> → 中文别名正常提取</li>
+<li><strong>回归</strong>：既有 1361 测试全过 + 新增验收集测试</li>
+</ol>
+<h2 id="风险与回滚">风险与回滚<a class="headerlink" href="#风险与回滚" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EditionGraph 数据不全（新番无关系边）</td>
+<td>无边时退化为现有共识仲裁；学成机制逐步补边</td>
+</tr>
+<tr>
+<td>AliasIndex 冷启动空转</td>
+<td>未命中自动落回现有 identify_groups 路径，结果回写</td>
+</tr>
+<tr>
+<td>Bangumi 不可用/限流</td>
+<td>relations 拉取失败静默降级为「无图」状态，不阻塞识别</td>
+</tr>
+<tr>
+<td>评分模型误判</td>
+<td>保留 <code>evidence/rejected</code> 可解释日志，阈值可配置，灰度开关一键回退</td>
+</tr>
+<tr>
+<td>fan 别名污染</td>
+<td>仅作证据、命中≥2 次升格、单条逐出路径（见 §5）</td>
+</tr>
+<tr>
+<td>Redis schema 演进</td>
+<td>key 带 <code>v1</code> 版本前缀，迁移期双读</td>
+</tr>
+</tbody>
+</table>
+<h2 id="决策">决策<a class="headerlink" href="#决策" title="Permanent link">¶</a></h2>
+<p><strong>采用本架构，按 P1→P4 渐进实施。</strong> 不是重写：把本轮补丁中被验证正确的思想（共识、别名、隔离、消歧、熔断）沉淀为数据模型和分层管线；现有管线在迁移完成前持续工作，每期独立可回滚。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

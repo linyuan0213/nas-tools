@@ -1,0 +1,2436 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-017-httpclient-browser-automation/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-017: HttpClient 浏览器自动化透明集成 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-017-httpclient-浏览器自动化透明集成" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-017: HttpClient 浏览器自动化透明集成
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-配置层httpclientconfig-增加浏览器字段" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 配置层：HttpClientConfig 增加浏览器字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-transport-层新增-chrometransport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Transport 层：新增 ChromeTransport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#21-响应构造httpxresponse-组装要求" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 响应构造：httpx.Response 组装要求
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-客户端池_make_key-纳入浏览器身份session_key-纳入配置指纹" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 客户端池：_make_key 纳入浏览器身份，session_key 纳入配置指纹
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-配置解析站点级开关来自用户维护的站点配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 配置解析：站点级开关（来自用户维护的站点配置）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-渲染-html-与原始-html-的差异及兼容归一化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 渲染 HTML 与原始 HTML 的差异及兼容归一化
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 渲染 HTML 与原始 HTML 的差异及兼容归一化">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#核心风险浏览器自动插入--会破坏现有站点规则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心风险：浏览器自动插入 &lt;tbody&gt; 会破坏现有站点规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#决策兼容性由系统在解析层归一化不转嫁给用户" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策：兼容性由系统在解析层归一化，不转嫁给用户
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#默认策略与站点级配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        默认策略与站点级配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-调用点最小改动示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 调用点最小改动示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 调用点最小改动示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#html-站点html_searcherpy--site_resolverpy--enginepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTML 站点（html_searcher.py / site_resolver.py / engine.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-站点api_searcherpy--engine_tools_call_endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API 站点（api_searcher.py / engine_tools._call_endpoint）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-交互式流程签到--点击--输入--验证码" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 交互式流程（签到 / 点击 / 输入 / 验证码）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 交互式流程（签到 / 点击 / 输入 / 验证码）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#新增-browsersessionsrcappinfrastructurechromesessionpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增 BrowserSession（src/app/infrastructure/chrome/session.py）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#签到改造示例chromesigninsimulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        签到改造示例（ChromeSigninSimulator）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#异步版本" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        异步版本
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#与-transport-的分工" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 transport 的分工
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-移除旧-chromeclient不保留兼容" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 移除旧 ChromeClient（不保留兼容）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chrome-服务器侧改动nexus-chrome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chrome 服务器侧改动（nexus-chrome）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chrome 服务器侧改动（nexus-chrome）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-post-sessions-幂等化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. POST /sessions 幂等化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-新增聚合端点-post-sessionsidrequest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 新增聚合端点 POST /sessions/{id}/request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-补充能力" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 补充能力
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-清理-tabs-文档残留" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 清理 /tabs 文档残留
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-安全与日志脱敏" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 安全与日志脱敏
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-浏览器自动化使用边界" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 浏览器自动化使用边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#数据流站点搜索为例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据流（站点搜索为例）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#关键设计权衡" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键设计权衡
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面--风险" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面 / 风险
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#测试策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试策略
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#落地顺序增量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        落地顺序（增量）
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-017-httpclient-browser-automation.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-017-httpclient-浏览器自动化透明集成">ADR-017: HttpClient 浏览器自动化透明集成<a class="headerlink" href="#adr-017-httpclient-浏览器自动化透明集成" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Proposed</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-07-10</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<p>站点抓取需要绕过 Cloudflare、五秒盾、雷池等 WAF/CDN 防护。这类挑战无法用纯 HTTP 完成，必须通过真实浏览器执行 JS、过盾并提取 <code>cf_clearance</code> 等 Cookie。</p>
+<p>项目当前存在两条互不相通的抓取路径，且已出现契约错配：</p>
+<ol>
+<li>
+<p><strong>纯 HTTP 路径</strong>：<code>HttpClient</code> / <code>AsyncHttpClient</code>（<code>src/app/infrastructure/http/</code>）是统一 Facade，内置 tenacity 重试、<code>HttpCacheConfig</code> 缓存、<code>RateLimitEngine</code> 限流、中间件链路、<code>register_global_host_mapping</code> DNS 映射。全项目约 <strong>196 处</strong> <code>HttpClient(...)</code> 调用点。</p>
+</li>
+<li>
+<p><strong>浏览器路径</strong>：<code>ChromeClient</code>（<code>src/app/infrastructure/chrome/client.py</code>）独立于 <code>HttpClient</code> 之外，调用远端 Chrome 服务器（nexus-chrome）。</p>
+</li>
+</ol>
+<p>存在的问题：</p>
+<ul>
+<li><strong>契约错配</strong>：<code>ChromeClient</code> 仍在调用 Chrome 服务器的<strong>旧 <code>/tabs</code> API</strong>（<code>POST /tabs</code>、<code>GET /tabs/{id}/html</code>、<code>POST /tabs/click/</code>），而 Chrome 服务器已重构为 <strong>Session 架构</strong>（<code>/sessions/{id}/navigate</code>、<code>/fetch</code>、<code>/cookies</code>），旧 <code>/tabs</code> 路由已移除。当前浏览器自动化调用会 404。</li>
+<li><strong>能力割裂</strong>：196 个 <code>HttpClient</code> 调用点无法享受浏览器绕过能力。要让某个站点走浏览器，必须在业务代码里手动改用 <code>ChromeClient</code>，并自行处理 Cookie 复用、重试、限流。</li>
+<li><strong>Cookie 复用缺失</strong>：过盾拿到的 Cookie 未能自动回灌到后续 HTTP 请求，导致每次抓取都可能重新过盾。</li>
+</ul>
+<p><strong>目标</strong>：让 <code>HttpClient</code> 原生支持浏览器自动化。对某站点开启浏览器自动化后，该站点的请求自动经由 Chrome 服务器过盾并复用 Cookie，而<strong>上层 196 个调用点的代码保持不变</strong>。</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">¶</a></h2>
+<p>采用 <strong>自定义 httpx Transport（<code>ChromeTransport</code>）</strong> 作为集成点，而非新增并行客户端。</p>
+<p><code>HttpClient</code> / <code>AsyncHttpClient</code> 的重试、缓存、限流、中间件、DNS 映射全部构建在 <code>httpx.Client(transport=...)</code> / <code>httpx.AsyncClient(transport=...)</code> 之上。只要替换底层 transport，<code>.get()</code> / <code>.post()</code> / <code>res.text</code> / <code>res.json()</code> / <code>res.status_code</code> 对所有调用点保持 100% 兼容。</p>
+<div class="highlight"><pre><span></span><code>                     HttpClient Facade (不变)
+        retry / cache / rate-limit / middleware (不变)
+                          │
+              ┌───────────┴────────────┐
+     browser.enabled=False       browser.enabled=True
+              │                          │
+     _MappedTransport            ChromeTransport  ← 新增
+     (直连 httpx)                     │
+                          HTTP → Chrome Server /sessions/*
+                                     │
+                          浏览器过盾 + Cookie 复用
+</code></pre></div>
+<h3 id="1-配置层httpclientconfig-增加浏览器字段">1. 配置层：<code>HttpClientConfig</code> 增加浏览器字段<a class="headerlink" href="#1-配置层httpclientconfig-增加浏览器字段" title="Permanent link">¶</a></h3>
+<p><code>src/app/infrastructure/http/config.py</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BrowserModeConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""浏览器自动化模式配置."""</span>
+
+    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>                     <span class="c1"># chrome_server_host</span>
+    <span class="n">session_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span>             <span class="c1"># 最终会话隔离键（含站点标识 + 配置指纹）</span>
+    <span class="n">site_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span>                <span class="c1"># 基础站点标识（如域名），用于与 BrowserSession 对齐</span>
+    <span class="n">fingerprint_profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"stealth"</span>     <span class="c1"># default / stealth / paranoid</span>
+    <span class="n">user_agent</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">proxy_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>             <span class="c1"># 透传给浏览器 session 的代理</span>
+    <span class="n">navigate_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span>               <span class="c1"># 过盾超时（秒）</span>
+    <span class="n">auto_navigate_on_challenge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># fetch 命中挑战时自动回退 navigate</span>
+    <span class="n">render_html</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>                <span class="c1"># True=返回浏览器渲染后 HTML；False=HTTP fetch</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HttpClientConfig</span><span class="p">:</span>
+    <span class="c1"># ...existing fields...</span>
+    <span class="n">browser</span><span class="p">:</span> <span class="n">BrowserModeConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+<h3 id="2-transport-层新增-chrometransport">2. Transport 层：新增 <code>ChromeTransport</code><a class="headerlink" href="#2-transport-层新增-chrometransport" title="Permanent link">¶</a></h3>
+<p>新增 <code>src/app/infrastructure/http/browser_transport.py</code>，包含同步 <code>ChromeTransport(httpx.BaseTransport)</code> 与异步 <code>AsyncChromeTransport(httpx.AsyncBaseTransport)</code> 两个类。</p>
+<p>职责：把一个 <code>httpx.Request</code> 翻译为 Chrome 服务器调用，再组装回 <code>httpx.Response</code>。</p>
+<div class="highlight"><pre><span></span><code>handle_request(request):
+  1. ensure_session()          → POST /sessions (幂等，409 视为已存在)
+  2. 发起数据请求:
+       POST /sessions/{key}/request
+         { url, method, headers, data,
+           navigate_if_challenge=auto_navigate_on_challenge,
+           return_html=render_html, timeout=navigate_timeout }
+       服务端内部：先 fetch → 命中挑战则自动 navigate 过盾 → 再 fetch，
+       Cookie 由该 session 持有并自动复用
+  3. 用返回的 status_code / headers / body（或 html）构造 httpx.Response 交还上层
+</code></pre></div>
+<p>关键点：</p>
+<ul>
+<li><strong>Cookie 生命周期</strong>由 Chrome 服务器 session 管理，backend 无需自己持久化 <code>cf_clearance</code>，避免同步复杂度。</li>
+<li>backend 侧原有 <code>cookie</code> / <code>CookieAuth</code> 通过请求的 <code>cookie</code> 字段透传给浏览器作为初始 Cookie。</li>
+<li><strong>Cookie 合并规则</strong>：服务端 <code>fetch</code> 与 <code>request</code> 需先合并 session 内的 Cookie 与请求传入的 Cookie，<strong>同名键以 session Cookie 优先</strong>（session 可能已通过 JS 刷新或获取 <code>cf_clearance</code>）。合并后的 Cookie 再发送给目标站点。</li>
+<li><strong>代理 / UA / 指纹</strong>在创建 session 时透传；若配置变化，需生成新的 session_key（见第 3 节）。</li>
+<li>transport 内部对 Chrome 服务器的 HTTP 调用<strong>使用独立、无缓存、无中间件、无限流的简化 HTTP 客户端</strong>（直接用 <code>httpx.Client</code>/<code>httpx.AsyncClient</code>），避免递归与缓存污染。</li>
+<li>交互类操作（click / input / execute）不属于 request/response 语义，<strong>不走 transport</strong>，继续直连 Session API。</li>
+</ul>
+<h3 id="21-响应构造httpxresponse-组装要求">2.1 响应构造：<code>httpx.Response</code> 组装要求<a class="headerlink" href="#21-响应构造httpxresponse-组装要求" title="Permanent link">¶</a></h3>
+<p><code>ChromeTransport</code> 收到 Chrome 服务器返回的 JSON 后，必须组装成标准 <code>httpx.Response</code>，使上层 <code>.text</code>、<code>.json()</code>、<code>.status_code</code>、<code>.headers</code> 行为与直连一致：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_response</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Request</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""把 Chrome 服务器 /sessions/{id}/request 返回的 JSON 组装成 httpx.Response。"""</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">status_code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status_code"</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"headers"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="c1"># return_html=True 时取 html，否则取 body</span>
+    <span class="n">content</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html"</span><span class="p">)</span> <span class="k">if</span> <span class="n">render_html</span> <span class="k">else</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">))</span> <span class="ow">or</span> <span class="s2">""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># 根据响应头编码；未指定时默认 utf-8</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="s2">"utf-8"</span>
+        <span class="k">if</span> <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-type"</span><span class="p">):</span>
+            <span class="n">ct</span> <span class="o">=</span> <span class="n">headers</span><span class="p">[</span><span class="s2">"content-type"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">"charset="</span> <span class="ow">in</span> <span class="n">ct</span><span class="p">:</span>
+                <span class="n">encoding</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"charset="</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">";"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">(</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="n">status_code</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<p><strong>服务端必须保证</strong>：
+- <code>headers</code> 包含 <code>Content-Type</code>（含 <code>charset</code>）和 <code>Content-Length</code> 等关键头；<code>Content-Type</code> 决定 <code>res.text</code> 与 <code>res.json()</code> 是否正确。
+- <code>render_html=False</code> 时 <code>body</code> 是原始 HTTP 响应体（未解码 bytes 或字符串）。
+- <code>render_html=True</code> 时 <code>html</code> 是浏览器 DOM 序列化字符串（UTF-8），backend 在解析前做归一化（见第 5 节）。</p>
+<p><code>httpx.Response</code> 自带 <code>iter_bytes()</code> 支持内存内容，故 <code>HttpClient.stream()</code> 在返回非超大响应时仍可用；但浏览器 transport<strong>不应用于下载大文件</strong>（见第 7.3 节边界说明）。</p>
+<h3 id="3-客户端池_make_key-纳入浏览器身份session_key-纳入配置指纹">3. 客户端池：<code>_make_key</code> 纳入浏览器身份，session_key 纳入配置指纹<a class="headerlink" href="#3-客户端池_make_key-纳入浏览器身份session_key-纳入配置指纹" title="Permanent link">¶</a></h3>
+<p><code>client.py</code> / <code>async_client.py</code> 的 <code>_ClientPool._make_key</code> 追加浏览器相关字段（<code>enabled, server_url, session_key, site_key, fingerprint_profile, user_agent, proxy_url, render_html</code>），保证不同 session 的浏览器客户端不被错误复用。</p>
+<p><code>_build_client</code> 中按开关选择 transport：</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">browser</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+    <span class="n">transport</span> <span class="o">=</span> <span class="n">ChromeTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">browser</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="n">limits</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">transport</span> <span class="o">=</span> <span class="n">_MappedTransport</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="n">limits</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>session_key 必须随 UA/代理/指纹变化</strong>：<code>session_key</code> 用于在 Chrome 服务器上隔离 session。若用户修改站点 UA、代理或指纹 profile，旧 session 不能复用，否则请求仍使用旧配置。定义：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_session_key</span><span class="p">(</span><span class="n">site_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">browser</span><span class="p">:</span> <span class="n">BrowserModeConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""会话隔离键包含站点标识与浏览器配置指纹，配置变化自动换新 session。"""</span>
+    <span class="n">config_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">browser</span><span class="o">.</span><span class="n">fingerprint_profile</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">browser</span><span class="o">.</span><span class="n">user_agent</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">browser</span><span class="o">.</span><span class="n">proxy_url</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">browser</span><span class="o">.</span><span class="n">render_html</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">8</span><span class="p">]</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">site_key</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">config_hash</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+<p>调用方通常传 <code>site_key=site_info.get("domain") or site_info.get("name")</code>。</p>
+<p>这样不同站点天然隔离；同一站点配置变化（如换 UA）也会自动创建新 session，旧 session 由 Chrome 服务器 TTL 回收。</p>
+<h3 id="4-配置解析站点级开关来自用户维护的站点配置">4. 配置解析：站点级开关（来自用户维护的站点配置）<a class="headerlink" href="#4-配置解析站点级开关来自用户维护的站点配置" title="Permanent link">¶</a></h3>
+<p>浏览器自动化是<strong>用户在站点维护里配置的运行时开关</strong>，存储于 DB 的 <code>CONFIG_SITE.NOTE</code> JSON，而非静态站点定义（<code>config/sites/*</code> 的 <code>SiteDefinition</code>）。</p>
+<p>项目<strong>已存在同类的 <code>chrome</code> 布尔开关</strong>，走完整链路：</p>
+<div class="highlight"><pre><span></span><code>CONFIG_SITE.NOTE (JSON)   ← 用户在站点管理 UI 配置
+  └─ SiteEntity.note       (domain/entities/site.py，JSON 反序列化为 dict)
+       └─ SiteCache._build_site_info()   (sites/site_cache.py)
+            └─ site_info["chrome"] = bool(note.get("chrome"))
+                 └─ 运行时经 site_info.get("chrome") 读取（site_userinfo.py / site_resolver.py 已在用）
+</code></pre></div>
+<p>本方案<strong>沿用该机制</strong>，将浏览器自动化开关作为站点运行时配置：</p>
+<ul>
+<li><strong>写入路径</strong>：<code>SiteService.update_site()</code>（<code>services/site_service.py</code>）的 <code>switch_keys</code> 中已包含 <code>chrome</code>；浏览器模式直接复用 <code>chrome</code> 语义，或按需在 <code>switch_keys</code> 增补新键（如 <code>browser_render</code>），由站点管理 UI 提交。<strong>不修改任何站点 JSON。</strong></li>
+<li><strong>读取路径</strong>：<code>SiteCache._build_site_info()</code> 已输出 <code>site_info["chrome"]</code>；运行时从 <code>site_info</code>（<code>SiteCache.get_sites()</code> 的返回）取值。</li>
+<li><strong>API 站点透传</strong>：<code>searcher_factory</code> / <code>engine_tools._call_endpoint</code> / <code>site_resolver</code> 组装 <code>user_config</code> 时，需把 <code>chrome</code> 与 <code>browser_render</code> 透传给 <code>ApiSiteSearcher</code>，否则 API 站点无法判断是否开启浏览器模式。</li>
+</ul>
+<p>调用方从传入的站点运行时配置（<code>site_info</code> / <code>user_config</code>）读取开关，再构造 <code>BrowserModeConfig</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_browser_mode</span><span class="p">(</span>
+    <span class="n">site_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">site_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">proxy_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BrowserModeConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""从站点运行时配置构造浏览器模式配置。开关来自 site_info，非静态 JSON。"""</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"laboratory"</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chrome_server_host"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">host</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chrome"</span><span class="p">):</span>  <span class="c1"># 用户维护的站点级开关</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">browser</span> <span class="o">=</span> <span class="n">BrowserModeConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">server_url</span><span class="o">=</span><span class="n">host</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">),</span>
+        <span class="n">session_key</span><span class="o">=</span><span class="n">site_key</span><span class="p">,</span>  <span class="c1"># 仅基础站点标识，内部 make_session_key 会追加配置指纹</span>
+        <span class="n">fingerprint_profile</span><span class="o">=</span><span class="s2">"stealth"</span><span class="p">,</span>
+        <span class="n">user_agent</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ua"</span><span class="p">),</span>
+        <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+        <span class="n">render_html</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"browser_render"</span><span class="p">)),</span>  <span class="c1"># 站点级；默认 False=原始 HTML</span>
+    <span class="p">)</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">session_key</span> <span class="o">=</span> <span class="n">make_session_key</span><span class="p">(</span><span class="n">site_key</span><span class="p">,</span> <span class="n">browser</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">browser</span>
+</code></pre></div>
+<blockquote>
+<p>说明：是否新增独立的 <code>browser_emulation</code> 键、还是直接复用现有 <code>chrome</code> 键作为「浏览器自动化」总开关，属实现细节。二者都从<strong>用户维护的站点配置（<code>NOTE</code> JSON → <code>site_info</code>）</strong>流入，均不涉及静态站点 JSON。且 session 键必须随 UA/代理/指纹/渲染模式变化，避免旧 session 被错误复用。</p>
+</blockquote>
+<h3 id="5-渲染-html-与原始-html-的差异及兼容归一化">5. 渲染 HTML 与原始 HTML 的差异及兼容归一化<a class="headerlink" href="#5-渲染-html-与原始-html-的差异及兼容归一化" title="Permanent link">¶</a></h3>
+<p>开启浏览器自动化后，取回的 HTML 有<strong>两种来源，内容不同</strong>，由 <code>render_html</code> 决定：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>render_html=False</code>（默认，Session 内 HTTP fetch）</th>
+<th><code>render_html=True</code>（浏览器渲染 DOM）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>内容来源</td>
+<td>过盾后用会话 Cookie 发普通 HTTP 请求</td>
+<td><code>tab.html</code>，执行完 JS 后的 DOM 序列化</td>
+</tr>
+<tr>
+<td>JS 执行</td>
+<td>否，拿到<strong>服务端原始 HTML</strong></td>
+<td>是，拿到<strong>渲染后 DOM 快照</strong></td>
+</tr>
+<tr>
+<td>动态内容（SPA/Ajax 列表）</td>
+<td>缺失</td>
+<td>完整</td>
+</tr>
+<tr>
+<td>DOM 形态</td>
+<td>原样标签</td>
+<td>浏览器规范化（自动补 <code>&lt;tbody&gt;</code>、属性重排、实体解码）</td>
+</tr>
+<tr>
+<td>适用站点</td>
+<td>SSR 站点（多数 PT 站）</td>
+<td>JS 前端渲染的站点</td>
+</tr>
+</tbody>
+</table>
+<p>即：浏览器渲染的页面与 httpx 抓取的页面<strong>通常不同</strong>——前者是执行 JS 后的 DOM，后者是服务端原始 HTML。</p>
+<h4 id="核心风险浏览器自动插入--会破坏现有站点规则">核心风险：浏览器自动插入 <code>&lt;tbody&gt;</code> 会破坏现有站点规则<a class="headerlink" href="#核心风险浏览器自动插入--会破坏现有站点规则" title="Permanent link">¶</a></h4>
+<p>现状实测（本仓库）：</p>
+<ul>
+<li>站点解析规则用 <strong>CSS selector（经 <code>_css_to_xpath</code> 转 XPath，<code>lxml</code> 解析）</strong>，其中 <strong>269 处 <code>&gt; tr</code> 直接子选择器，遍布 90 个站点配置</strong>（如 <code>table.torrents &gt; tr</code>）。</li>
+<li><code>_css_to_xpath</code> 把 <code>&gt;</code> 转为<strong>直接子轴 <code>/</code></strong>（<code>.//table[...]/tr</code>）。</li>
+<li><code>lxml</code> 解析<strong>原始 HTML 不会</strong>自行补 <code>&lt;tbody&gt;</code>，故 <code>table/tr</code> 命中正常。</li>
+<li>但<strong>浏览器渲染后的 HTML 已含 <code>&lt;tbody&gt;</code></strong>，结构变为 <code>table/tbody/tr</code>，<strong>直接子选择器全部失配（命中 0）</strong>。</li>
+</ul>
+<p>结论：<code>render_html=True</code> 若不做处理，会导致 90 个站点的种子列表解析集体失败。</p>
+<h4 id="决策兼容性由系统在解析层归一化不转嫁给用户">决策：兼容性由系统在解析层归一化，不转嫁给用户<a class="headerlink" href="#决策兼容性由系统在解析层归一化不转嫁给用户" title="Permanent link">¶</a></h4>
+<p><strong>不要求用户修改任何 XPath / selector</strong>。而是在浏览器渲染 HTML <strong>进入解析前统一预处理</strong>：</p>
+<ol>
+<li><strong>剥离 <code>&lt;tbody&gt;</code>（提升其子节点到 <code>&lt;table&gt;</code>）</strong>，使渲染 HTML 的表格结构与原始 HTML 同构。实测后 269 处 <code>&gt; tr</code> 规则无需改动即可继续命中：</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_rendered_html</span><span class="p">(</span><span class="n">doc</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""将浏览器渲染 DOM 归一化到与服务端原始 HTML 同构（供现有规则复用）。"""</span>
+    <span class="k">for</span> <span class="n">tb</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="s2">"//tbody"</span><span class="p">):</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">tb</span><span class="o">.</span><span class="n">getparent</span><span class="p">()</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">tb</span><span class="p">)):</span>
+            <span class="n">parent</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span>
+        <span class="n">parent</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">doc</span>
+</code></pre></div>
+<ol>
+<li>归一化在浏览器渲染路径<strong>统一入口</strong>执行（<code>ChromeTransport</code> 返回 <code>render_html</code> 内容时打标，或解析层 <code>etree.HTML</code> 后按来源判断），对上层解析代码透明。</li>
+<li><code>render_html=False</code>（fetch 原始 HTML）与现有 httpx 路径<strong>天然同构</strong>，不触发归一化。</li>
+</ol>
+<h4 id="默认策略与站点级配置">默认策略与站点级配置<a class="headerlink" href="#默认策略与站点级配置" title="Permanent link">¶</a></h4>
+<ol>
+<li><strong>默认 <code>render_html=False</code></strong>：多数 PT 站为 SSR，种子列表在原始 HTML 里就有，走 fetch（原始 HTML + 过盾 Cookie）即可，最大程度复用现有规则、零解析风险。</li>
+<li><strong><code>render_html</code> 是站点级开关</strong>：「是否需要 JS 渲染」是站点特性，与 <code>browser_emulation</code> 一样作为<strong>用户维护的站点配置</strong>（<code>NOTE</code> JSON → <code>site_info</code>），由 <code>build_browser_mode</code> 从 <code>site_info</code> 读取，不在调用点写死。开启 <code>render_html=True</code> 时归一化自动兜底，仍无需改规则。</li>
+<li><strong>API 站点不需要渲染 HTML</strong>：API 站点（<code>api_searcher.py</code>）返回 JSON，不存在 <code>&lt;tbody&gt;</code> 等 DOM 差异，因此即使开启浏览器自动化，也应使用 <code>render_html=False</code>，仅用于过盾后 fetch 原始 JSON。归一化逻辑对 API 响应无影响。</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_browser_mode</span><span class="p">(</span><span class="n">site_info</span><span class="p">,</span> <span class="n">site_key</span><span class="p">,</span> <span class="n">proxy_url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"laboratory"</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chrome_server_host"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">host</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chrome"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">browser</span> <span class="o">=</span> <span class="n">BrowserModeConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">server_url</span><span class="o">=</span><span class="n">host</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">),</span>
+        <span class="n">session_key</span><span class="o">=</span><span class="n">site_key</span><span class="p">,</span>  <span class="c1"># 内部会被 make_session_key 扩展</span>
+        <span class="n">fingerprint_profile</span><span class="o">=</span><span class="s2">"stealth"</span><span class="p">,</span>
+        <span class="n">user_agent</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ua"</span><span class="p">),</span>
+        <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+        <span class="n">render_html</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"browser_render"</span><span class="p">)),</span>  <span class="c1"># 站点级；默认 False=原始 HTML</span>
+    <span class="p">)</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">session_key</span> <span class="o">=</span> <span class="n">make_session_key</span><span class="p">(</span><span class="n">site_key</span><span class="p">,</span> <span class="n">browser</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">browser</span>
+</code></pre></div>
+<h3 id="6-调用点最小改动示例">6. 调用点最小改动示例<a class="headerlink" href="#6-调用点最小改动示例" title="Permanent link">¶</a></h3>
+<h4 id="html-站点html_searcherpy--site_resolverpy--enginepy">HTML 站点（<code>html_searcher.py</code> / <code>site_resolver.py</code> / <code>engine.py</code>）<a class="headerlink" href="#html-站点html_searcherpy--site_resolverpy--enginepy" title="Permanent link">¶</a></h4>
+<p>已持有站点运行时配置 <code>site_info</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="n">client</span> <span class="o">=</span> <span class="n">HttpClient</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">HttpClientConfig</span><span class="p">(</span>
+        <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+        <span class="n">browser</span><span class="o">=</span><span class="n">build_browser_mode</span><span class="p">(</span>
+            <span class="n">site_info</span><span class="o">=</span><span class="n">site_info</span><span class="p">,</span> <span class="n">site_key</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+        <span class="p">),</span>  <span class="c1"># 开关与 render_html 均来自站点配置；未开启返回 None，等同直连</span>
+    <span class="p">),</span>
+    <span class="n">rate_limiter</span><span class="o">=</span><span class="n">rate_limiter_engine</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>  <span class="c1"># 未开启则直连，开启则走浏览器</span>
+<span class="n">html</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span>                                     <span class="c1"># 上层代码不变；渲染 HTML 已归一化</span>
+</code></pre></div>
+<h4 id="api-站点api_searcherpy--engine_tools_call_endpoint">API 站点（<code>api_searcher.py</code> / <code>engine_tools._call_endpoint</code>）<a class="headerlink" href="#api-站点api_searcherpy--engine_tools_call_endpoint" title="Permanent link">¶</a></h4>
+<p>API 站点返回 JSON，通常不需要渲染 HTML，但可能被 WAF 拦截。同样传 <code>browser</code> 参数，<strong>强制 <code>render_html=False</code></strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="n">client</span> <span class="o">=</span> <span class="n">HttpClient</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">HttpClientConfig</span><span class="p">(</span>
+        <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+        <span class="n">browser</span><span class="o">=</span><span class="n">build_browser_mode</span><span class="p">(</span>
+            <span class="n">site_info</span><span class="o">=</span><span class="n">site_info</span><span class="p">,</span> <span class="n">site_key</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+            <span class="c1"># API 站点只过盾，不渲染；user_config 需包含 chrome 开关</span>
+            <span class="n">render_html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">rate_limiter</span><span class="o">=</span><span class="n">rate_limiter_engine</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>  <span class="c1"># 返回 JSON，.json() 正常</span>
+<span class="n">resp_data</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</code></pre></div>
+<p>实现前提：
+- <code>ApiSiteSearcher</code> 需要能访问 <code>site_info</code>（或 <code>user_config</code> 里包含 <code>chrome</code> 和 <code>browser_render</code>）。
+- <code>searcher_factory</code> 组装 <code>user_config</code> 时，需把 <code>site_info["chrome"]</code> 和 <code>site_info["browser_render"]</code> 透传进去；否则 <code>api_searcher</code> 无法判断是否开启浏览器模式。</p>
+<blockquote>
+<p>注意：调用点仍需在构造 <code>HttpClient</code> 时传入 <code>browser</code> 配置，并非完全无改动。改动量极小（只在已有 <code>HttpClient</code> 构造处增加 <code>browser=</code> 参数），解析逻辑完全不变。</p>
+</blockquote>
+<h3 id="7-交互式流程签到--点击--输入--验证码">7. 交互式流程（签到 / 点击 / 输入 / 验证码）<a class="headerlink" href="#7-交互式流程签到--点击--输入--验证码" title="Permanent link">¶</a></h3>
+<p>签到这类流程是<strong>多步、有状态的会话</strong>：打开页面 → 检测是否已签 → 找签到按钮 → 点击 → 等待渲染 → 校验结果，中间可能还要输入验证码答案。这不是单次 request/response，<strong>不能走 <code>ChromeTransport</code></strong>（transport 只翻译单个 <code>httpx.Request</code>）。</p>
+<p>这类场景直连 Chrome 服务器的 <strong>Session API</strong>，用一个显式的会话客户端 <code>BrowserSession</code> 封装交互原语。</p>
+<h4 id="新增-browsersessionsrcappinfrastructurechromesessionpy">新增 <code>BrowserSession</code>（<code>src/app/infrastructure/chrome/session.py</code>）<a class="headerlink" href="#新增-browsersessionsrcappinfrastructurechromesessionpy" title="Permanent link">¶</a></h4>
+<p>对 <code>/sessions/{id}/*</code> 的薄封装，内部所有对 Chrome 服务器的 HTTP 调用复用独立简化 <code>httpx</code> 客户端（避免缓存/中间件/限流）：</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BrowserSession</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""交互式浏览器会话客户端，用于签到等多步流程。"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fingerprint</span><span class="o">=</span><span class="s2">"stealth"</span><span class="p">,</span>
+                 <span class="n">user_agent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">proxy_url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BrowserSession"</span><span class="p">:</span>     <span class="c1"># POST /sessions（幂等）</span>
+        <span class="c1"># 内部通过 make_session_key(site_key, config) 生成 session_key</span>
+        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">exc</span><span class="p">):</span>                     <span class="c1"># 可选：DELETE /sessions/{id}</span>
+        <span class="o">...</span>
+
+    <span class="c1"># —— 导航与读取（自动过盾，Cookie 入会话）——</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">navigate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cookie</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">referer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="c1"># POST /sessions/{id}/navigate -&gt; {html, cookies, challenge}</span>
+        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">html</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>                        <span class="c1"># GET  /sessions/{id}/html</span>
+        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cookies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>       <span class="c1"># GET  /sessions/{id}/cookies</span>
+        <span class="o">...</span>
+
+    <span class="c1"># —— 交互原语 ——</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>       <span class="c1"># POST /sessions/{id}/click</span>
+        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># POST /sessions/{id}/input</span>
+        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>               <span class="c1"># POST /sessions/{id}/execute</span>
+        <span class="o">...</span>
+
+    <span class="c1"># —— 交互后复用会话 Cookie 走 HTTP 快路径 ——</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"GET"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>  <span class="c1"># POST /sessions/{id}/fetch</span>
+        <span class="o">...</span>
+</code></pre></div>
+<h4 id="签到改造示例chromesigninsimulator">签到改造示例（<code>ChromeSigninSimulator</code>）<a class="headerlink" href="#签到改造示例chromesigninsimulator" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">signin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">site</span> <span class="o">=</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+    <span class="n">home_url</span> <span class="o">=</span> <span class="n">StringUtils</span><span class="o">.</span><span class="n">get_base_url</span><span class="p">(</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"signurl"</span><span class="p">))</span>
+    <span class="n">site_key</span> <span class="o">=</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">site</span>
+    <span class="k">with</span> <span class="n">BrowserSession</span><span class="p">(</span>
+        <span class="n">site_key</span><span class="o">=</span><span class="n">site_key</span><span class="p">,</span>                                   <span class="c1"># 与 ChromeTransport 同一会话键</span>
+        <span class="n">user_agent</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ua"</span><span class="p">),</span>
+        <span class="n">proxy_url</span><span class="o">=</span><span class="n">_proxy</span><span class="p">(</span><span class="n">site_info</span><span class="p">),</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">navigate</span><span class="p">(</span><span class="n">home_url</span><span class="p">,</span> <span class="n">cookie</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cookie"</span><span class="p">))</span>  <span class="c1"># 自动过盾</span>
+        <span class="n">html_text</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"html"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"已签|签到成功"</span><span class="p">,</span> <span class="n">html_text</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">]今日已签到"</span>
+        <span class="c1"># 找签到按钮 XPath（沿用现有 siteconf.get_checkin_conf）</span>
+        <span class="n">xpath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_match_checkin_xpath</span><span class="p">(</span><span class="n">html_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">xpath</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">]模拟登录成功"</span>
+        <span class="n">sess</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="sa">f</span><span class="s2">"xpath:</span><span class="si">{</span><span class="n">xpath</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>                    <span class="c1"># 点击签到</span>
+        <span class="n">html_text</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">html</span><span class="p">()</span>                          <span class="c1"># 点击后重新取 HTML</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_judge_result</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">html_text</span><span class="p">)</span>
+</code></pre></div>
+<p>验证码类（如 tjupt）：图像识别答案仍用 <code>HttpClient</code> 做（豆瓣/Google 识图），命中后：
+- 站点走普通 HTTP 提交：直接 <code>HttpClient</code> <code>POST</code>（现状保留）；
+- 若提交前有 Cloudflare，则用 <code>BrowserSession.navigate</code> 过盾后 <code>sess.fetch(...)</code> 提交，复用会话 Cookie。</p>
+<h4 id="异步版本">异步版本<a class="headerlink" href="#异步版本" title="Permanent link">¶</a></h4>
+<p>后端存在 <code>AsyncHttpClient</code>（如 <code>image_proxy</code>）。浏览器交互目前多为同步签到流程，但 <code>BrowserSession</code> 应同时提供 <code>AsyncBrowserSession</code>（<code>async with</code> 版本），供异步路径调用，与 <code>AsyncChromeTransport</code> 对齐。</p>
+<h4 id="与-transport-的分工">与 transport 的分工<a class="headerlink" href="#与-transport-的分工" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>走法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>抓 HTML / API（单次请求）</td>
+<td><code>HttpClient(browser=...)</code> → <code>ChromeTransport</code></td>
+<td>透明，196 调用点改动极小</td>
+</tr>
+<tr>
+<td>签到 / 登录 / 点击 / 输入 / 执行 JS</td>
+<td><code>BrowserSession</code>（直连 Session API）</td>
+<td>多步有状态流程</td>
+</tr>
+<tr>
+<td>交互完成后再取数据</td>
+<td><code>BrowserSession.fetch()</code></td>
+<td>复用同一会话 Cookie，走 HTTP 快路径</td>
+</tr>
+</tbody>
+</table>
+<p>两者<strong>共用同一个会话隔离键</strong>（站点域名）：签到 <code>BrowserSession</code> 过盾产生的 Cookie 存在同名 session，后续该站点的 <code>HttpClient(browser)</code> 请求可直接命中同一 session 的 Cookie，无需重复过盾。</p>
+<h3 id="8-移除旧-chromeclient不保留兼容">8. 移除旧 <code>ChromeClient</code>（不保留兼容）<a class="headerlink" href="#8-移除旧-chromeclient不保留兼容" title="Permanent link">¶</a></h3>
+<p>旧 <code>ChromeClient</code>（<code>src/app/infrastructure/chrome/client.py</code>）<strong>全部移除，不做兼容层</strong>。它仍在调用 Chrome 服务器早已移除的 <code>/tabs</code> 路由，属 404 死代码，保留兼容只会拖累维护。</p>
+<ul>
+<li><strong>Backend</strong>：删除 <code>ChromeClient</code>，现有 6 处调用改写：</li>
+<li>纯抓取场景（<code>site_userinfo</code> / <code>site_resolver</code> / <code>autogenrss</code>）→ <code>HttpClient</code> 浏览器模式（<code>ChromeTransport</code>）。</li>
+<li>交互场景（<code>autosignin</code> / <code>tjupt</code> / <code>weworkipchange</code>）→ <code>BrowserSession</code>（并补充 <code>AsyncBrowserSession</code> 给异步路径）。</li>
+<li><code>app.infrastructure.chrome.__init__</code> 改为导出 <code>BrowserSession</code> / <code>AsyncBrowserSession</code>，不再导出 <code>ChromeClient</code>。</li>
+<li><strong>Chrome 服务器</strong>：<code>/tabs</code> 路由已随 Session 重构移除，仅需清理 <code>README</code> / <code>PKG-INFO</code> 文档残留。</li>
+<li><strong>迁移策略</strong>：按模块逐步替换，<strong>同一模块内不保留新旧并存</strong>；跨模块可分批提交，但每个模块内必须完整切换。如因依赖关系必须分步，可短暂保留 shim，但应在后续 PR 立即清理。</li>
+</ul>
+<h2 id="chrome-服务器侧改动nexus-chrome">Chrome 服务器侧改动（nexus-chrome）<a class="headerlink" href="#chrome-服务器侧改动nexus-chrome" title="Permanent link">¶</a></h2>
+<p>现有 Session API 基本满足，需补齐 transport 诉求：</p>
+<h3 id="1-post-sessions-幂等化">1. <code>POST /sessions</code> 幂等化<a class="headerlink" href="#1-post-sessions-幂等化" title="Permanent link">¶</a></h3>
+<p>已存在会话时返回 200（当前抛 409）。建议服务端实现 <code>get_or_create</code>，或 transport 容忍 409。</p>
+<h3 id="2-新增聚合端点-post-sessionsidrequest">2. 新增聚合端点 <code>POST /sessions/{id}/request</code><a class="headerlink" href="#2-新增聚合端点-post-sessionsidrequest" title="Permanent link">¶</a></h3>
+<p>把「按需 navigate 过盾 + fetch」合并为一次调用，减少 backend↔chrome 往返：</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// POST /sessions/{id}/request</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://protected.com/api"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GET"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">    </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"navigate_if_challenge"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"return_html"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span>
+<span class="p">}</span>
+
+<span class="c1">// Response</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"status_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">        </span><span class="nt">"body"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"html"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"challenge"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"detected"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cloudflare"</span><span class="p">,</span><span class="w"> </span><span class="nt">"solved"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"cookies_used"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"cf_clearance"</span><span class="p">,</span><span class="w"> </span><span class="s2">"session"</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>服务端逻辑：内部先 <code>fetch</code>，若命中挑战特征则自动 <code>navigate</code> 过盾 → 再 <code>fetch</code>，一步返回。backend transport 逻辑收敛为一次 HTTP 调用。</p>
+<p><strong>挑战检测规则（服务端实现）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>触发条件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>状态码 403 / 503 / 429</td>
+<td>常见 WAF 拦截状态码</td>
+</tr>
+<tr>
+<td>响应头含 <code>cf-mitigated</code> / <code>server: cloudflare</code> 且状态非 200</td>
+<td>Cloudflare 特征</td>
+</tr>
+<tr>
+<td>响应体包含挑战标识</td>
+<td>如 <code>Just a moment...</code>、<code>cf-turnstile-response</code>、<code>Checking your browser</code>、五秒盾倒计时、雷池 <code>safeline</code> 等</td>
+</tr>
+<tr>
+<td><code>navigate_if_challenge=true</code> 且命中以上任一</td>
+<td>自动走 <code>navigate</code> 过盾</td>
+</tr>
+</tbody>
+</table>
+<p>最多执行一次 navigate 回退；若一次过盾仍失败，则返回 <code>challenge.solved=false</code>，由 backend 的 tenacity 重试策略决定是否重试。</p>
+<p><code>body</code> 与 <code>html</code> 字段：
+- <code>return_html=false</code> 时，返回 HTTP 原始响应体 <code>body</code> 和 <code>headers</code>。
+- <code>return_html=true</code> 时，先 <code>navigate</code> 到目标 URL，返回 <code>html</code>（浏览器 DOM 序列化），并附带 <code>status_code</code> 与 <code>headers</code>（用最终页面 URL 的响应头填充）。
+- 服务端返回的 JSON 中 <code>headers</code> 必须包含 <code>Content-Type</code>，否则 backend 无法正确编码和解析。</p>
+<h3 id="3-补充能力">3. 补充能力<a class="headerlink" href="#3-补充能力" title="Permanent link">¶</a></h3>
+<ul>
+<li>navigate/session 支持 <code>proxy</code>（确保 tab 级生效）。</li>
+<li><code>/status</code> 返回浏览器就绪状态（已有），供 backend 探活缓存复用。</li>
+<li>会话 TTL / 空闲回收：backend 长期运行会累积 session，服务端加 <code>last_active</code> + 后台清理，避免 tab 泄漏。</li>
+</ul>
+<h3 id="4-清理-tabs-文档残留">4. 清理 <code>/tabs</code> 文档残留<a class="headerlink" href="#4-清理-tabs-文档残留" title="Permanent link">¶</a></h3>
+<p>Chrome 服务器代码中 <code>/tabs</code> 路由<strong>已随 Session 重构移除</strong>（<code>main.py</code> 仅注册 <code>sessions_router</code>），仅 <code>README</code> / <code>PKG-INFO</code> 文档尚有残留。同步清理这些过时文档，避免误导。</p>
+<h3 id="5-安全与日志脱敏">5. 安全与日志脱敏<a class="headerlink" href="#5-安全与日志脱敏" title="Permanent link">¶</a></h3>
+<p>Chrome 服务器会接触站点 Cookie、请求头、响应 HTML，必须避免敏感信息泄露：</p>
+<ul>
+<li><strong>日志禁止打印</strong> <code>Cookie</code>、<code>Authorization</code>、<code>Proxy-Authorization</code>、<code>X-Api-Key</code> 等请求头内容。</li>
+<li><strong>日志禁止打印</strong>完整响应 HTML 或响应体（可记录 URL、状态码、 challenge 类型、耗时）。</li>
+<li><strong>Session 数据不落盘</strong>：Cookie 仅保存在内存中的 session 对象，不持久化到文件或日志。</li>
+<li><strong>请求头白名单</strong>：<code>/sessions/{id}/request</code> 透传给目标站点的 headers 应按需透传，避免把 Chrome 服务器内部头（如 <code>Host</code>）误发。</li>
+<li><strong>超时保护</strong>：所有浏览器操作必须有硬超时，防止无头页面卡死占用资源。</li>
+</ul>
+<h3 id="6-浏览器自动化使用边界">6. 浏览器自动化使用边界<a class="headerlink" href="#6-浏览器自动化使用边界" title="Permanent link">¶</a></h3>
+<p>浏览器 transport <strong>仅用于 HTML/API 抓取与过盾</strong>，不适用于以下场景：</p>
+<table>
+<thead>
+<tr>
+<th>不适用场景</th>
+<th>原因</th>
+<th>替代方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>下载种子文件等大文件</td>
+<td>二进制大文件经 Chrome 服务器中转，性能差、易超时</td>
+<td>在 <code>HttpClient</code> 中显式禁用 browser 模式，用直连或已获取的 Cookie 下载</td>
+</tr>
+<tr>
+<td>大文件上传</td>
+<td>同上</td>
+<td>直连</td>
+</tr>
+<tr>
+<td>长流式响应</td>
+<td>浏览器 transport 返回的是完整内存响应</td>
+<td>直连</td>
+</tr>
+<tr>
+<td>WebSocket / SSE</td>
+<td>非 request/response 语义</td>
+<td>不适用浏览器自动化</td>
+</tr>
+</tbody>
+</table>
+<p>调用点应在发起下载前判断：如果是 <code>.torrent</code> / 大文件下载 URL，构造 <code>HttpClientConfig(browser=None)</code> 或临时关闭 <code>browser.enabled</code>。</p>
+<h2 id="数据流站点搜索为例">数据流（站点搜索为例）<a class="headerlink" href="#数据流站点搜索为例" title="Permanent link">¶</a></h2>
+<div class="highlight"><pre><span></span><code>html_searcher.get(url)
+  └─ HttpClient(browser.enabled=True, site_key=site.domain)
+       └─ ChromeTransport.handle_request
+            ├─ POST /sessions {id:site.domain:stealth:ua_hash:proxy_hash, ...}  (幂等，含配置指纹)
+            ├─ POST /sessions/{domain_hash}/request {url, return_html:False}
+            │     ├─ 浏览器已有有效 cf_clearance → 直接 HTTP 命中
+            │     └─ 命中 Cloudflare → 自动 navigate 过盾 → 再取
+            └─ 组装 httpx.Response(200, body=html)
+  └─ res.text → 上层解析种子列表（代码不变）
+</code></pre></div>
+<p>后续同域名请求复用同一 session 的 Cookie，走快速 HTTP 路径，仅在 Cookie 失效时才重新过盾。</p>
+<h2 id="关键设计权衡">关键设计权衡<a class="headerlink" href="#关键设计权衡" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>决策</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>集成点</td>
+<td>自定义 Transport</td>
+<td>196 调用点改动极小（仅增加 <code>browser=</code> 参数），复用重试 / 缓存 / 限流</td>
+</tr>
+<tr>
+<td>会话粒度</td>
+<td>按站点域名</td>
+<td>Cookie 隔离与复用的平衡</td>
+</tr>
+<tr>
+<td>过盾触发</td>
+<td>fetch 优先 + 挑战回退 navigate</td>
+<td>快路径优先，仅必要时启动浏览器</td>
+</tr>
+<tr>
+<td>Cookie 存储</td>
+<td>Chrome 服务器 session 持有</td>
+<td>backend 无状态，避免 <code>cf_clearance</code> 同步复杂度</td>
+</tr>
+<tr>
+<td>交互场景</td>
+<td><code>BrowserSession</code> 直连 Session API（不走 transport）</td>
+<td>click/input/execute 是多步有状态流程，非 request/response 语义</td>
+</tr>
+<tr>
+<td>同步 / 异步</td>
+<td>双 Transport + <code>BrowserSession</code> / <code>AsyncBrowserSession</code></td>
+<td>对齐现有 <code>HttpClient</code> / <code>AsyncHttpClient</code> 双栈</td>
+</tr>
+</tbody>
+</table>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面">正面<a class="headerlink" href="#正面" title="Permanent link">¶</a></h3>
+<ul>
+<li>对 196 个 <code>HttpClient</code> 调用点基本透明：只需在构造 <code>HttpClient</code> 时增加 <code>browser=build_browser_mode(...)</code>，上层 <code>.get()</code>/<code>.post()</code>/<code>.text</code>/<code>.json()</code> 解析逻辑完全不变。</li>
+<li>浏览器过盾能力自动继承重试、缓存、限流、DNS 映射。</li>
+<li>Cookie 由 Chrome 服务器 session 统一托管复用，减少重复过盾。</li>
+<li>修复当前 <code>ChromeClient</code> 与 Chrome 服务器的 <code>/tabs</code> 契约错配。</li>
+</ul>
+<h3 id="负面--风险">负面 / 风险<a class="headerlink" href="#负面--风险" title="Permanent link">¶</a></h3>
+<ul>
+<li>依赖外部 Chrome 服务器可用性；<code>chrome_server_host</code> 未配置时须优雅降级为直连。若已配置但服务器不可达，当前设计<strong>不静默回退</strong>（避免在已知有 WAF 的站点上直接请求被拉黑），应抛明确异常。</li>
+<li>transport 内嵌「过盾 + 重试」增加单请求延迟；需限制自动 navigate 回退次数（建议最多 1 次）。</li>
+<li><code>render_html=True</code> 的渲染 HTML 与原始 HTML 结构不同（<code>&lt;tbody&gt;</code> 等），若归一化遗漏会导致 90 个站点的 <code>&gt; tr</code> 规则失配；已通过解析层剥离 <code>&lt;tbody&gt;</code> 兜底，需单测保障。</li>
+<li>大文件下载/上传不能走浏览器 transport，调用点需显式关闭。</li>
+<li>长期运行需 Chrome 服务器实现会话回收，否则 tab 泄漏。</li>
+<li>需前后端协同发布：Chrome 服务器先上线 <code>POST /sessions/{id}/request</code> 与幂等 <code>POST /sessions</code>，backend 再对接。</li>
+</ul>
+<h2 id="测试策略">测试策略<a class="headerlink" href="#测试策略" title="Permanent link">¶</a></h2>
+<p>每个核心模块都需要独立单测，通过 mock Chrome 服务器避免依赖真实浏览器：</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>关键场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChromeTransport</code> / <code>AsyncChromeTransport</code></td>
+<td>挑战触发 navigate 回退；已有 Cookie 直接 fetch；<code>httpx.Response</code> 编码/headers 正确；连接池 key 随配置变化；服务器不可达时抛明确异常</td>
+</tr>
+<tr>
+<td><code>build_browser_mode</code> / <code>make_session_key</code></td>
+<td>站点开关关闭返回 None；配置变化生成新 session_key；<code>render_html</code> 从 <code>site_info</code> 读取</td>
+</tr>
+<tr>
+<td><code>BrowserSession</code> / <code>AsyncBrowserSession</code></td>
+<td>创建/退出 session；<code>navigate</code> 过盾；<code>click</code>/<code>input</code>/<code>execute</code> 调用正确端点；<code>fetch</code> 复用 Cookie</td>
+</tr>
+<tr>
+<td>HTML 归一化</td>
+<td>渲染 HTML 含 <code>&lt;tbody&gt;</code> 时 <code>&gt; tr</code> 选择器命中；含 <code>&lt;thead&gt;</code>/<code>&lt;tfoot&gt;</code> 时扁平化后命中；原始 HTML 路径不变</td>
+</tr>
+<tr>
+<td>Cookie 合并</td>
+<td>session Cookie 优先于请求传入 Cookie；同名键覆盖正确；不同名键合并</td>
+</tr>
+<tr>
+<td>集成测试</td>
+<td>起真实 Chrome 服务器容器，对 1 个测试站点走完整「过盾 → fetch → 解析」流程</td>
+</tr>
+</tbody>
+</table>
+<h2 id="落地顺序增量">落地顺序（增量）<a class="headerlink" href="#落地顺序增量" title="Permanent link">¶</a></h2>
+<ol>
+<li>Chrome 服务器：<code>POST /sessions</code> 幂等 + <code>POST /sessions/{id}/request</code> 聚合端点 + 会话回收。</li>
+<li>Backend：<code>BrowserModeConfig</code> + <code>ChromeTransport</code>（同步先行）+ <code>_make_key</code> / <code>_build_client</code> 接入。</li>
+<li>Backend：<code>build_browser_mode</code>（从 <code>site_info</code> 读取用户维护的站点开关，含 <code>render_html</code>）。</li>
+<li>Backend：渲染 HTML 归一化（剥离 <code>&lt;tbody&gt;</code>）+ 单测覆盖 <code>&gt; tr</code> 直接子选择器场景。</li>
+<li>试点 1 个 Cloudflare 站点（<code>site_resolver</code> / <code>html_searcher</code>）验证抓取路径（默认 <code>render_html=False</code>）。</li>
+<li>试点 1 个被 WAF 拦截的 API 站点（<code>api_searcher</code>）验证 <code>render_html=False</code> 下过盾 fetch JSON。</li>
+<li>Backend：<code>BrowserSession</code> 交互客户端；迁移 <code>autosignin</code> 签到到 <code>BrowserSession</code> 验证交互路径。</li>
+<li>异步 <code>AsyncChromeTransport</code> + <code>AsyncHttpClient</code> 接入。</li>
+<li>删除旧 <code>ChromeClient</code>，6 处调用按模块逐步改写（同一模块内不保留新旧并存）：</li>
+<li>纯抓取场景 → <code>HttpClient</code> 浏览器模式（<code>ChromeTransport</code>）。</li>
+<li>交互场景 → <code>BrowserSession</code> / <code>AsyncBrowserSession</code>。</li>
+<li>清理 Chrome 服务器 <code>/tabs</code> 文档残留。</li>
+<li>补测试：transport 单测 + <code>BrowserSession</code> 单测（均 mock Chrome 服务器）+ HTML 归一化单测 + Cookie 合并单测 + 集成测试。</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

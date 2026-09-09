@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "消息通知与插件",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [900, 1100],
+    "views": [
+      {
+        "id": "msg",
+        "label": "消息推送",
+        "focus": ["plugin", "msg-center", "channels", "platform"],
+        "note": "业务经通知中心按渠道注册表推送外部平台。"
+      },
+      {
+        "id": "plugin",
+        "label": "插件调用",
+        "focus": ["trigger", "plugin-fw", "plugin", "svc"],
+        "note": "内置插件被调度/事件触发并复用服务层与通知中心。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "trigger", "type": "backend", "label": "调度 / 事件", "sublabel": "scheduler_core · event", "pos": [300, 80], "size": [190, 62] },
+    { "id": "plugin-fw", "type": "backend", "label": "插件框架", "sublabel": "plugin_framework_service", "pos": [300, 250], "size": [190, 62] },
+    { "id": "plugin", "type": "backend", "label": "内置插件", "sublabel": "autogenrss/autosignin\nmsg_*/torrenttransfer 等", "pos": [300, 420], "size": [190, 62] },
+    { "id": "msg-center", "type": "backend", "label": "通知中心", "sublabel": "message/message_center", "pos": [300, 610], "size": [190, 62] },
+    { "id": "svc", "type": "backend", "label": "服务层", "sublabel": "download_service · indexer · sites", "pos": [640, 610], "size": [190, 62] },
+    { "id": "channels", "type": "backend", "label": "渠道客户端", "sublabel": "client_registry · msg_*", "pos": [300, 800], "size": [190, 62] },
+    { "id": "platform", "type": "external", "label": "消息平台", "sublabel": "Telegram / 微信 / 邮件", "pos": [300, 990], "size": [190, 62] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "应用与插件", "wraps": ["trigger", "plugin-fw", "plugin", "msg-center", "svc"] },
+    { "kind": "region", "label": "通知基础设施", "wraps": ["channels"] },
+    { "kind": "region", "label": "外部平台", "wraps": ["platform"] }
+  ],
+  "connections": [
+    { "id": "t-fw", "from": "trigger", "to": "plugin-fw", "label": "触发/加载", "fromSide": "bottom", "toSide": "top", "labelDy": 50 },
+    { "id": "fw-p", "from": "plugin-fw", "to": "plugin", "label": "执行", "fromSide": "bottom", "toSide": "top", "labelDy": 50 },
+    { "id": "p-msg", "from": "plugin", "to": "msg-center", "label": "通知", "fromSide": "bottom", "toSide": "top", "labelDy": 60 },
+    { "id": "p-svc", "from": "plugin", "to": "svc", "label": "调用服务", "fromSide": "bottom", "toSide": "left", "labelDy": 60 },
+    { "id": "mc-ch", "from": "msg-center", "to": "channels", "label": "投递", "fromSide": "bottom", "toSide": "top", "labelDy": 50 },
+    { "id": "ch-pl", "from": "channels", "to": "platform", "label": "推送", "fromSide": "bottom", "toSide": "top", "labelDy": 50 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "插件", "items": ["内置插件随事件/调度触发", "插件复用服务层，不直接访问外部接口"] },
+    { "dot": "emerald", "title": "通知", "items": ["通知中心按渠道注册表分发", "内置 msg_* 插件适配各平台"] }
+  ]
+}

@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nexus Media 完整架构（大图）",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [
+      1750,
+      1150
+    ],
+    "views": [
+      {
+        "id": "full",
+        "label": "全貌",
+        "focus": [
+          "web",
+          "api",
+          "dl",
+          "transfer",
+          "media",
+          "indexer",
+          "sites",
+          "eventbus",
+          "db"
+        ],
+        "note": "Web → API → 下载/识别/检索服务 → 外部系统，基础设施承载数据与通信。"
+      },
+      {
+        "id": "pipeline",
+        "label": "下载识别链路",
+        "focus": [
+          "scheduler",
+          "dl",
+          "down-ext",
+          "eventbus",
+          "transfer",
+          "storage-ext",
+          "media",
+          "media-srv"
+        ],
+        "note": "调度投递下载，完成事件经总线驱动识别转移与媒体库刷新。"
+      },
+      {
+        "id": "search",
+        "label": "检索链路",
+        "focus": [
+          "api",
+          "indexer",
+          "sites",
+          "site-ext"
+        ],
+        "note": "索引器经站点引擎直连检索（降级见小图）。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "web",
+      "type": "external",
+      "label": "Web 前端",
+      "sublabel": "nexus-media-web",
+      "pos": [
+        620,
+        90
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "security",
+      "type": "security",
+      "label": "安全层",
+      "sublabel": "RBAC · APIKey · JWT",
+      "pos": [
+        60,
+        280
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "routers · lifespan",
+      "pos": [
+        620,
+        280
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "di",
+      "type": "backend",
+      "label": "DI 装配",
+      "sublabel": "di/builders",
+      "pos": [
+        1180,
+        280
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "scheduler",
+      "type": "backend",
+      "label": "任务调度",
+      "sublabel": "scheduler_core",
+      "pos": [
+        60,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "dl",
+      "type": "backend",
+      "label": "下载编排",
+      "sublabel": "download_service",
+      "pos": [
+        340,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "transfer",
+      "type": "backend",
+      "label": "识别转移",
+      "sublabel": "filetransfer",
+      "pos": [
+        620,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "media",
+      "type": "backend",
+      "label": "媒体服务",
+      "sublabel": "media_service · scraper",
+      "pos": [
+        900,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "indexer",
+      "type": "backend",
+      "label": "索引器",
+      "sublabel": "indexer · pipeline",
+      "pos": [
+        1180,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "sites",
+      "type": "backend",
+      "label": "站点引擎",
+      "sublabel": "sites/engine",
+      "pos": [
+        1460,
+        500
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "eventbus",
+      "type": "messagebus",
+      "label": "事件总线",
+      "sublabel": "infrastructure/event",
+      "pos": [
+        60,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "down-ext",
+      "type": "external",
+      "label": "下载客户端",
+      "sublabel": "qB/T/aria2",
+      "pos": [
+        340,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "storage-ext",
+      "type": "external",
+      "label": "存储后端",
+      "sublabel": "Minio/Rclone/local",
+      "pos": [
+        620,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "media-srv",
+      "type": "external",
+      "label": "媒体服务器",
+      "sublabel": "Emby/Jellyfin",
+      "pos": [
+        900,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "tmdb-ext",
+      "type": "external",
+      "label": "元数据源",
+      "sublabel": "TMDB/豆瓣",
+      "pos": [
+        1180,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "site-ext",
+      "type": "external",
+      "label": "PT 站点",
+      "sublabel": "API/HTML",
+      "pos": [
+        1460,
+        750
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "业务数据库",
+      "sublabel": "SQLite/MySQL",
+      "pos": [
+        60,
+        990
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "缓存/限流/锁",
+      "pos": [
+        340,
+        990
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "缓存系统",
+      "sublabel": "cache_system",
+      "pos": [
+        620,
+        990
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "HTTP 客户端",
+      "sublabel": "连接池 · 限速",
+      "pos": [
+        900,
+        990
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "chrome",
+      "type": "backend",
+      "label": "Chrome 客户端",
+      "sublabel": "infrastructure/chrome",
+      "pos": [
+        1180,
+        990
+      ],
+      "size": [
+        190,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "接入",
+      "wraps": [
+        "web"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "API / 装配层",
+      "wraps": [
+        "security",
+        "api",
+        "di"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "应用服务层",
+      "wraps": [
+        "scheduler",
+        "dl",
+        "transfer",
+        "media",
+        "indexer",
+        "sites"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "外部 / 消息层",
+      "wraps": [
+        "eventbus",
+        "down-ext",
+        "storage-ext",
+        "media-srv",
+        "tmdb-ext",
+        "site-ext"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "基础设施层",
+      "wraps": [
+        "db",
+        "redis",
+        "cache",
+        "http",
+        "chrome"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "web-api",
+      "from": "web",
+      "to": "api",
+      "label": "REST/SSE",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "sec-api",
+      "from": "security",
+      "to": "api",
+      "label": "鉴权",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "di-api",
+      "from": "di",
+      "to": "api",
+      "label": "装配",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "api-dl",
+      "from": "api",
+      "to": "dl",
+      "label": "下载控制",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "api-idx",
+      "from": "api",
+      "to": "indexer",
+      "label": "搜索/订阅",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "sch-dl",
+      "from": "scheduler",
+      "to": "dl",
+      "label": "投递"
+    },
+    {
+      "id": "dl-tr",
+      "from": "dl",
+      "to": "transfer",
+      "label": "完成识别"
+    },
+    {
+      "id": "tr-md",
+      "from": "transfer",
+      "to": "media",
+      "label": "识别/刮削"
+    },
+    {
+      "id": "tr-st",
+      "from": "transfer",
+      "to": "storage-ext",
+      "label": "复制/移动",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "md-tmdb",
+      "from": "media",
+      "to": "tmdb-ext",
+      "label": "刮削元数据",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "idx-sites",
+      "from": "indexer",
+      "to": "sites",
+      "label": "检索"
+    },
+    {
+      "id": "sites-ext",
+      "from": "sites",
+      "to": "site-ext",
+      "label": "API/HTML",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "dl-evt",
+      "from": "dl",
+      "to": "eventbus",
+      "label": "完成事件",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "evt-tr",
+      "from": "eventbus",
+      "to": "transfer",
+      "label": "订阅",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -60
+    },
+    {
+      "id": "dl-down",
+      "from": "dl",
+      "to": "down-ext",
+      "label": "控制",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "调度与下载",
+      "items": [
+        "APScheduler 驱动刷流/订阅/RSS 定时任务",
+        "下载完成经事件总线异步驱动识别转移"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "识别与入库",
+      "items": [
+        "识别 → 转移 → 后台刮削",
+        "媒体库文件落库；媒体服务器刷新由 libraryrefresh 插件可配触发"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "检索与降级",
+      "items": [
+        "索引器经站点引擎直连 API/HTML",
+        "挑战页自动降级 nexus-chrome（详见小图）"
+      ]
+    }
+  ]
+}

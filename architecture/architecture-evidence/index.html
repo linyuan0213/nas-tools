@@ -1,0 +1,1851 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/architecture/architecture-evidence/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>架构图依据（图元素 ↔ 代码证据） - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#架构图依据图元素--代码证据" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              架构图依据（图元素 ↔ 代码证据）
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#大图-docsarchitecturejsonarchitecturehtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        大图 docs/architecture.json（architecture.html）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="大图 docs/architecture.json（architecture.html）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#接入与-api-层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        接入与 API 层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#应用服务层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        应用服务层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#连线语义与出处" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        连线语义与出处
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#小图-docsarchitecture-sitesjsonarchitecture-siteshtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小图 docs/architecture-sites.json（architecture-sites.html）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#小图-docsarchitecture-agentjsonarchitecture-agenthtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小图 docs/architecture-agent.json（architecture-agent.html）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#小图-docsarchitecture-msgjsonarchitecture-msghtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小图 docs/architecture-msg.json（architecture-msg.html）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-brush-flowjsondataflow刷流订阅" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        architecture-brush-flow.json（dataflow，刷流/订阅）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-scrapejsondataflow刮削队列" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        architecture-scrape.json（dataflow，刮削队列）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-brush-lifecyclejsonlifecycle刷流任务状态" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        architecture-brush-lifecycle.json（lifecycle，刷流任务状态）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-pluginjsonarchitecture-pluginhtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        architecture-plugin.json（architecture-plugin.html）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-indexerjsonarchitecture-indexerhtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        architecture-indexer.json（architecture-indexer.html）
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/architecture/architecture-evidence.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="架构图依据图元素--代码证据">架构图依据（图元素 ↔ 代码证据）<a class="headerlink" href="#架构图依据图元素--代码证据" title="Permanent link">¶</a></h1>
+<blockquote>
+<p>目的：说明 <code>docs/architecture*.json/html</code> 中每个节点与连线的出处，禁止猜测性绘制。
+引用路径均相对 <code>backend/src/</code>；行号为提交时的源码位置，模块级引用为主。</p>
+</blockquote>
+<h2 id="大图-docsarchitecturejsonarchitecturehtml">大图 <code>docs/architecture.json</code>（architecture.html）<a class="headerlink" href="#大图-docsarchitecturejsonarchitecturehtml" title="Permanent link">¶</a></h2>
+<h3 id="接入与-api-层">接入与 API 层<a class="headerlink" href="#接入与-api-层" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>图元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>web → FastAPI</td>
+<td>前端 <code>nexus-media-web</code> 通过 REST 调 <code>/api/*</code>；后端入口 <code>api/main.py</code>，路由注册于 <code>api/routers/</code>（download/media/site/chat 等）</td>
+</tr>
+<tr>
+<td>安全层</td>
+<td><code>api/routers/rbac.py</code>、<code>api/routers/auth.py</code>、<code>api/routers/apikey.py</code>；依赖注入鉴权在 <code>api/deps.py</code></td>
+</tr>
+<tr>
+<td>DI 装配</td>
+<td><code>app/di/builders/*</code>（facades/services/infrastructure/agent/context/coordinators）；无 DI 框架，<code>api/main.py</code> 通过 builders 装配</td>
+</tr>
+<tr>
+<td>API→下载/索引/媒体</td>
+<td><code>api/routers/download.py</code>、<code>api/routers/media.py</code>、<code>api/routers/sync.py</code>、<code>api/routers/subscription.py</code> 调用 <code>app/services/*</code> 与 <code>app/indexer/indexer.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="应用服务层">应用服务层<a class="headerlink" href="#应用服务层" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>图元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>任务调度 scheduler_core</td>
+<td><code>app/services/scheduler/scheduler_core.py</code>（APScheduler）</td>
+</tr>
+<tr>
+<td>刷流中心 services/brush</td>
+<td><code>app/services/brush/</code>（scheduler_core 中注册，见 <code>app/services/brush/scheduler.py</code>）</td>
+</tr>
+<tr>
+<td>下载编排</td>
+<td><code>app/services/download_service.py</code>、<code>app/services/downloader_core.py</code>、<code>app/services/download_monitor.py</code></td>
+</tr>
+<tr>
+<td>识别转移</td>
+<td><code>app/services/transfer/filetransfer_service.py</code>、<code>app/services/transfer/history_manager.py</code></td>
+</tr>
+<tr>
+<td>媒体服务</td>
+<td><code>app/media/service.py</code>、<code>app/media/scraper/__init__.py</code>（刮削走后台队列 <code>scrape_queue_service</code>）</td>
+</tr>
+<tr>
+<td>索引器</td>
+<td><code>app/indexer/indexer.py</code>、<code>app/indexer/core/pipeline.py</code></td>
+</tr>
+<tr>
+<td>站点引擎</td>
+<td><code>app/sites/engine.py</code>、<code>app/sites/siteuserinfo/config_html.py</code>、<code>app/sites/html_searcher.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="连线语义与出处">连线语义与出处<a class="headerlink" href="#连线语义与出处" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>连线</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scheduler → brush → dl</td>
+<td><code>scheduler_core</code> 注册刷流/订阅任务；<code>services/brush/helpers.py</code> 与 <code>downloader/pipeline.py</code> 调用 <code>siteconf.check_torrent_attr</code> / 投递下载</td>
+</tr>
+<tr>
+<td>dl → 下载客户端</td>
+<td><code>app/downloader/</code> 客户端抽象（qB/T/Aria2）通过 <code>downloader_core</code> 控制</td>
+</tr>
+<tr>
+<td>dl → 事件总线 → transfer</td>
+<td>下载完成经 <code>app/infrastructure/event.py</code> 发布；<code>initializer.init_event_handlers()</code> 注册事件桥接订阅（见 <code>src/initializer.py</code>）</td>
+</tr>
+<tr>
+<td>transfer → media</td>
+<td>转移成功调用 <code>media.get_tmdb_info</code> / 提交刮削（<code>transfer/filetransfer_service.py:801-836</code>）</td>
+</tr>
+<tr>
+<td>transfer → 存储后端</td>
+<td>目的目录写入经存储抽象（<code>app/storage/backends/base.py</code>、<code>cross_backend.py</code>，dst_backend 可为 local/Minio/Rclone）</td>
+</tr>
+<tr>
+<td>media → 媒体库目录 / Emby·Jellyfin</td>
+<td>刮削写入媒体库目录（存储后端）；媒体服务器刷新由内置 <code>libraryrefresh</code> / <code>libraryscraper</code> 插件或手动触发（<code>plugin_framework/builtin_plugins/libraryrefresh/backend/plugin.py</code>），非默认直连</td>
+</tr>
+<tr>
+<td>media → TMDB/豆瓣</td>
+<td><code>app/media/service.py</code> 与 <code>external/douban.py</code>、<code>external/bangumi.py</code>、TMDB lookup</td>
+</tr>
+<tr>
+<td>indexer → sites → site-ext</td>
+<td><code>indexer</code> 调站点引擎按 <code>config/sites/*.json</code>（api/html）检索；直连逻辑见 <code>sites/engine.py</code></td>
+</tr>
+<tr>
+<td>sites → Chrome（小图中）</td>
+<td><code>sites/engine.py</code> 直连失败/挑战时 <code>build_browser_mode</code> → <code>HttpClient</code> ChromeTransport（<code>infrastructure/http/browser_transport.py</code>）→ nexus-chrome</td>
+</tr>
+<tr>
+<td>dl → 事件总线（下载完成）</td>
+<td><code>download_event_queue.py</code> / <code>event.py</code> publish（<code>app/services/download_event_queue.py</code>）</td>
+</tr>
+<tr>
+<td>基础设施 db/redis/cache</td>
+<td><code>app/db/database_factory.py</code>（SQLite/MySQL）、<code>app/infrastructure/cache_system/</code>（Redis+内存）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="小图-docsarchitecture-sitesjsonarchitecture-siteshtml">小图 <code>docs/architecture-sites.json</code>（architecture-sites.html）<a class="headerlink" href="#小图-docsarchitecture-sitesjsonarchitecture-siteshtml" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>图元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>站点引擎</td>
+<td><code>app/sites/engine.py</code>（<code>_fetch_page</code> 直连失败→<code>build_browser_mode</code>）</td>
+</tr>
+<tr>
+<td>直连 PT 站点</td>
+<td><code>sites/engine.py</code>、<code>config/sites/api/*.json</code>、<code>config/sites/html/*.json</code></td>
+</tr>
+<tr>
+<td>Chrome 客户端</td>
+<td><code>app/infrastructure/http/browser_transport.py</code>（ChromeTransport/AsyncChromeTransport + 会话删除）、<code>app/infrastructure/chrome/session.py</code></td>
+</tr>
+<tr>
+<td>nexus-chrome</td>
+<td><code>infrastructure/chrome/</code> 对接外部 nexus-chrome 服务（抓取/指纹/会话）</td>
+</tr>
+<tr>
+<td>非持久会话用完即删</td>
+<td><code>browser_transport.py</code> <code>_BaseChromeTransport.close()</code>（delete_session）与 <code>client.py</code> 池释放</td>
+</tr>
+<tr>
+<td>browser_persistent</td>
+<td><code>browser_mode.build_browser_mode()</code>、站点 note <code>browser_persistent</code>（<code>site_cache.py:198</code>）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>覆盖说明：AI 助手工具循环、消息渠道、插件框架等在本仓库代码中确有实现
+（<code>agent/</code>、<code>message/</code>、<code>plugin_framework/</code>），未在大图主链路展开，可作为独立小图继续产出。</p>
+</blockquote>
+<h2 id="小图-docsarchitecture-agentjsonarchitecture-agenthtml">小图 <code>docs/architecture-agent.json</code>（architecture-agent.html）<a class="headerlink" href="#小图-docsarchitecture-agentjsonarchitecture-agenthtml" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>图元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>路由/SSE</td>
+<td><code>api/routers/chat.py</code>；推理内容实时 SSE 推送见 <code>agent/pydantic_agent.py</code> 与相关 API</td>
+</tr>
+<tr>
+<td>助手核心</td>
+<td><code>app/agent/pydantic_agent.py</code>、<code>app/agent/service.py</code>（多步工具循环）</td>
+</tr>
+<tr>
+<td>工具执行</td>
+<td><code>app/agent/tool_executor.py</code>；系统工具在 <code>app/agent/tools/handlers/</code>（搜索/下载/订阅/知识库/浏览器）</td>
+</tr>
+<tr>
+<td>会话与记忆</td>
+<td><code>app/agent/agents/memory/</code>（会话/长程记忆）、<code>app/agent/rag/</code></td>
+</tr>
+<tr>
+<td>推理提供方</td>
+<td><code>app/agent/providers/</code>（openai/gemini/ollama base）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="小图-docsarchitecture-msgjsonarchitecture-msghtml">小图 <code>docs/architecture-msg.json</code>（architecture-msg.html）<a class="headerlink" href="#小图-docsarchitecture-msgjsonarchitecture-msghtml" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>图元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>插件框架</td>
+<td><code>app/plugin_framework/</code>（service + sandbox + builtin_plugins）；启动/事件触发见 <code>initializer.py</code> 与 <code>di/builders/agent_reload.py</code></td>
+</tr>
+<tr>
+<td>内置插件</td>
+<td><code>app/plugin_framework/builtin_plugins/</code>：autogenrss、autosignin、torrenttransfer、msg_bark/chanify/dingtalk/…（消息渠道为 msg_* 子目录）</td>
+</tr>
+<tr>
+<td>通知中心</td>
+<td><code>app/message/message_center.py</code>、<code>app/message/message.py</code>、<code>message/formatter.py</code></td>
+</tr>
+<tr>
+<td>渠道注册表</td>
+<td><code>app/message/client_registry.py</code> 与 <code>app/message/client/</code></td>
+</tr>
+<tr>
+<td>插件调用服务</td>
+<td>插件后端 handler 复用服务层（如 autogenrss/backend/handlers/mteam.py 调搜索/下载服务）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="architecture-brush-flowjsondataflow刷流订阅"><code>architecture-brush-flow.json</code>（dataflow，刷流/订阅）<a class="headerlink" href="#architecture-brush-flowjsondataflow刷流订阅" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>订阅匹配</td>
+<td><code>app/services/subscription/</code>（subscribe_tv/movie、matcher）；<code>app/services/filter_service.py</code> 过滤规则</td>
+</tr>
+<tr>
+<td>刷流筛选</td>
+<td><code>app/services/brush/</code>：<code>scheduler.py</code>、<code>rss_checker.py</code>、<code>helpers.py</code>、<code>matcher</code>（free/hr/大小/排除）</td>
+</tr>
+<tr>
+<td>投递下载</td>
+<td><code>app/services/download_service.py</code> / <code>downloader/pipeline.py</code>（check_torrent_attr 后投递）</td>
+</tr>
+<tr>
+<td>做种保种/清理</td>
+<td><code>app/services/brush/torrent_lifecycle.py</code>（做种时长/免费/HR 检查）；删除与磁盘回收在 brush 删除规则、内置 <code>torrentremover</code> / <code>diskspacesaver</code> 插件</td>
+</tr>
+</tbody>
+</table>
+<h2 id="architecture-scrapejsondataflow刮削队列"><code>architecture-scrape.json</code>（dataflow，刮削队列）<a class="headerlink" href="#architecture-scrapejsondataflow刮削队列" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>非阻塞提交</td>
+<td><code>app/services/scrape_queue_service.py</code>（<code>submit_file_scrape</code> / <code>submit_folder_scrape</code>）；调用点 <code>transfer/filetransfer_service.py</code></td>
+</tr>
+<tr>
+<td>刮削类别</td>
+<td><code>app/media/scraper/__init__.py</code>（NFO/海报/图片），FFmpeg 见 <code>app/infrastructure/ffmpeg/</code></td>
+</tr>
+<tr>
+<td>写库目录</td>
+<td><code>app/storage/backends/*</code>（dst_backend 本地/Minio/Rclone）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="architecture-brush-lifecyclejsonlifecycle刷流任务状态"><code>architecture-brush-lifecycle.json</code>（lifecycle，刷流任务状态）<a class="headerlink" href="#architecture-brush-lifecyclejsonlifecycle刷流任务状态" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RUNNING / STOPPED / DISABLED</td>
+<td><code>app/domain/entities/brush.py</code>（BrushTaskState: Y/S/N）；启停更新 <code>app/services/brush/task_service.py</code>（update_brushtask_state）</td>
+</tr>
+<tr>
+<td>周期性执行</td>
+<td><code>app/services/brush/scheduler.py</code> 注册到 <code>scheduler_core</code>（APScheduler）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注：本图聚焦任务级状态（运行/停止）；单次异常不改变任务状态、仅日志记录；禁用态（N）作为配置标记存在，可在刷流管理操作，未单独绘制以免引入状态穿越歧义。</p>
+</blockquote>
+<h2 id="architecture-pluginjsonarchitecture-pluginhtml"><code>architecture-plugin.json</code>（architecture-plugin.html）<a class="headerlink" href="#architecture-pluginjsonarchitecture-pluginhtml" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>注册表</td>
+<td><code>app/plugin_framework/registry.py</code>（scan/install/uninstall/enable/disable/config）</td>
+</tr>
+<tr>
+<td>依赖与钩子</td>
+<td><code>dependency_manager.py</code>、<code>hook_system.py</code>、<code>api_registry.py</code>（扩展端点）</td>
+</tr>
+<tr>
+<td>沙箱注入</td>
+<td><code>sandbox.py</code>；宿主服务注入见 <code>di/builders/services_builder.py</code>（searcher/downloader/subscribe/media_server/sync_engine/site_cache/filetransfer）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="architecture-indexerjsonarchitecture-indexerhtml"><code>architecture-indexer.json</code>（architecture-indexer.html）<a class="headerlink" href="#architecture-indexerjsonarchitecture-indexerhtml" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>搜索编排</td>
+<td><code>app/indexer/core/pipeline.py</code>、<code>app/indexer/indexer.py</code>、<code>app/indexer/registry.py</code>（配置选择）</td>
+</tr>
+<tr>
+<td>客户端</td>
+<td><code>app/indexer/client/_base.py</code>（search 契约）、<code>builtin.py</code>（内置 API/HTML）、<code>jackett.py</code>、<code>prowlarr.py</code></td>
+</tr>
+<tr>
+<td>站点直连</td>
+<td>内置客户端经 <code>app/sites/engine.py</code> / <code>html_searcher.py</code>（可降级 nexus-chrome）</td>
+</tr>
+<tr>
+<td>结果过滤</td>
+<td><code>app/indexer/core/filter_engine.py</code>、<code>result_filter.py</code>、<code>batch_identifier.py</code>、<code>miss_collector.py</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

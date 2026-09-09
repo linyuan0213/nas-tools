@@ -1,0 +1,2965 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/installation/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>安装部署 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#安装指南" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              安装部署
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#镜像特点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        镜像特点
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#端口约定重要" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        端口约定（重要）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-compose-安装推荐" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose 安装（推荐）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose 安装（推荐）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#第一步先确认容器间网络互通常见坑" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一步：先确认容器间网络互通（常见坑）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#简单示例开箱即用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        简单示例（开箱即用）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#完整-compose-文件3-个独立文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        完整 compose 文件（3 个独立文件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#可选组件nexus-verify-与-nexus-chrome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可选组件：nexus-verify 与 nexus-chrome
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-修改配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 修改配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-启动服务" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 启动服务
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-访问" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 访问
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#单独部署后端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        单独部署后端
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#单独部署前端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        单独部署前端
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#反向代理部署" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        反向代理部署
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redis-配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis 配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Redis 配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#compose-模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compose 模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#外部-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        外部 Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#数据库配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据库配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="数据库配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#基础版sqlite--redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基础版（SQLite + Redis）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mysql--postgresqlcompose-模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MySQL / PostgreSQL（compose 模式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#外部数据库" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        外部数据库
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#环境变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        环境变量
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="环境变量">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-镜像专用变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker 镜像专用变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#前后端配置变量app-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前后端配置变量（app 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#数据库配置变量database-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据库配置变量（database 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-配置变量redis-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis 配置变量（redis 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#其他常用变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        其他常用变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目录说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#puid--pgid-说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PUID / PGID 说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#首次使用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        首次使用
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#镜像特点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        镜像特点
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#端口约定重要" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        端口约定（重要）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-compose-安装推荐" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose 安装（推荐）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose 安装（推荐）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#第一步先确认容器间网络互通常见坑" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一步：先确认容器间网络互通（常见坑）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#简单示例开箱即用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        简单示例（开箱即用）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#完整-compose-文件3-个独立文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        完整 compose 文件（3 个独立文件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#可选组件nexus-verify-与-nexus-chrome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可选组件：nexus-verify 与 nexus-chrome
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-修改配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 修改配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-启动服务" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 启动服务
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-访问" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 访问
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#单独部署后端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        单独部署后端
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#单独部署前端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        单独部署前端
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#反向代理部署" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        反向代理部署
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redis-配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis 配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Redis 配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#compose-模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compose 模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#外部-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        外部 Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#数据库配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据库配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="数据库配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#基础版sqlite--redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基础版（SQLite + Redis）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mysql--postgresqlcompose-模式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MySQL / PostgreSQL（compose 模式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#外部数据库" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        外部数据库
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#环境变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        环境变量
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="环境变量">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-镜像专用变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker 镜像专用变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#前后端配置变量app-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前后端配置变量（app 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#数据库配置变量database-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据库配置变量（database 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-配置变量redis-节点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis 配置变量（redis 节点）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#其他常用变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        其他常用变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目录说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#puid--pgid-说明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PUID / PGID 说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#首次使用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        首次使用
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/installation.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="安装指南">安装指南<a class="headerlink" href="#安装指南" title="Permanent link">¶</a></h1>
+<h2 id="镜像特点">镜像特点<a class="headerlink" href="#镜像特点" title="Permanent link">¶</a></h2>
+<ul>
+<li>基于 Debian（<code>python:3.14-slim-trixie</code>）</li>
+<li>支持 amd64 / arm64 架构</li>
+<li>内嵌 nginx 反代，后端容器统一 <strong>8080</strong> 端口对外（内部服务监听 3000）</li>
+<li>非 root 用户运行（nexus:nexus，UID 911，可用 PUID/PGID 覆盖）</li>
+<li>s6-overlay 进程管理，支持优雅退出</li>
+<li>数据库迁移在容器启动时自动执行（<code>alembic upgrade head</code>，幂等，无需独立 migration 容器）</li>
+</ul>
+<h2 id="端口约定重要">端口约定（重要）<a class="headerlink" href="#端口约定重要" title="Permanent link">¶</a></h2>
+<p>后端镜像内嵌 nginx：nginx 监听容器内 <strong>8080</strong>，反向代理到内部 nexus-media 服务（3000）。因此：</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>容器内端口</th>
+<th>实际 compose 宿主机映射</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>后端（经 nginx）</td>
+<td>8080</td>
+<td><code>3000:8080</code></td>
+</tr>
+<tr>
+<td>前端 Web UI</td>
+<td>8080</td>
+<td><code>8080:8080</code></td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>6379</td>
+<td>不映射（仅内网）</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td>3306</td>
+<td><code>3306:3306</code>（可选）</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>5432</td>
+<td><code>5432:5432</code>（可选）</td>
+</tr>
+<tr>
+<td>nexus-chrome</td>
+<td>9850 / 6080</td>
+<td><code>9850:9850</code> / <code>6080:6080</code></td>
+</tr>
+<tr>
+<td>nexus-verify</td>
+<td>9300</td>
+<td><code>9300:9300</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="docker-compose-安装推荐">Docker Compose 安装（推荐）<a class="headerlink" href="#docker-compose-安装推荐" title="Permanent link">¶</a></h2>
+<p>项目根目录提供 <strong>3 个独立 compose 文件</strong>，按部署场景选一个：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>场景</th>
+<th>启动</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker-compose.yml</code></td>
+<td>前后端 + Redis（SQLite，开箱即用）</td>
+<td><code>docker compose up -d</code></td>
+</tr>
+<tr>
+<td><code>docker-compose.mysql.yml</code></td>
+<td>MySQL 完整版（+Redis+OCR+Chrome）</td>
+<td><code>docker compose -f docker-compose.mysql.yml up -d</code></td>
+</tr>
+<tr>
+<td><code>docker-compose.postgresql.yml</code></td>
+<td>PostgreSQL 完整版</td>
+<td><code>docker compose -f docker-compose.postgresql.yml up -d</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>三个文件<strong>互斥</strong>（<code>container_name</code>/端口/网络名相同），只选一个部署。</p>
+</blockquote>
+<h3 id="第一步先确认容器间网络互通常见坑">第一步：先确认容器间网络互通（常见坑）<a class="headerlink" href="#第一步先确认容器间网络互通常见坑" title="Permanent link">¶</a></h3>
+<p><code>docker compose up</code> 启动后，后端会通过网桥访问 <code>mysql</code>/<code>postgresql</code>、<code>redis</code>（服务名即主机名）。<strong>网桥不通、容器连不上数据库/redis 是最常见的部署失败原因</strong>，表现为后端反复重试数据库连接、一直超时、<code>unhealthy</code>。</p>
+<p><strong>0. 先看状态与日志</strong></p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>ps<span class="w">          </span><span class="c1"># 查看各容器状态</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>logs<span class="w"> </span>backend<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-30<span class="w">    </span><span class="c1"># 后端启动日志，看连接报错</span>
+</code></pre></div>
+<p><strong>1. 验证容器间是否互通</strong></p>
+<p>所有服务都应在同一个自定义网桥 <code>nexus-media-network</code> 上。进入后端容器测试能否解析并连接 mysql：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>nexus-media<span class="w"> </span>getent<span class="w"> </span>hosts<span class="w"> </span>mysql<span class="w">            </span><span class="c1"># 应解析出容器 IP（如 172.x.x.x）</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>nexus-media<span class="w"> </span>wget<span class="w"> </span>-qO-<span class="w"> </span>http://mysql:3306/<span class="w">  </span><span class="c1"># 能连则返回（即使非 200 也算通）</span>
+</code></pre></div>
+<ul>
+<li><code>getent hosts mysql</code> 无输出 → <strong>DNS/网络不通</strong>，见下</li>
+<li>能解析但连接超时 → 网络层问题，见下</li>
+</ul>
+<p><strong>2. 检查网络是否残留/冲突（最常见原因）</strong></p>
+<p>compose 显式指定网络名 <code>nexus-media-network</code>。如果之前部署过、或不同目录的项目用了同名网络，旧网络/旧容器可能残留：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>ls<span class="w">                        </span><span class="c1"># 看 nexus-media-network 是否存在</span>
+docker<span class="w"> </span>network<span class="w"> </span>inspect<span class="w"> </span>nexus-media-network<span class="w"> </span>--format<span class="w"> </span><span class="s1">'{{range .Containers}}{{.Name}} {{end}}'</span>
+</code></pre></div>
+<p>若网络里只有部分容器、或容器没加入，先清理后重新启动：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>down<span class="w">        </span><span class="c1"># 停掉本次 compose 的容器（不删数据卷）</span>
+docker<span class="w"> </span>network<span class="w"> </span>rm<span class="w"> </span>nexus-media-network<span class="w">    </span><span class="c1"># 删掉残留网络（若仍被占用先停对应容器）</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p><strong>3. 检查旧容器残留</strong></p>
+<p>同名容器（<code>nexus-media</code>、<code>nexus-media-mysql</code> 等）若残留自旧部署，<code>up</code> 会报 <code>name already in use</code> 或挂到旧网络：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>ps<span class="w"> </span>-a<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>nexus
+docker<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>nexus-media<span class="w"> </span>nexus-media-mysql<span class="w"> </span>nexus-media-redis<span class="w"> </span>nexus-media-web
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p><strong>4. 确认启动顺序</strong></p>
+<p><code>backend</code> 依赖 <code>mysql</code>/<code>postgresql</code> 健康后才启动（<code>depends_on: service_healthy</code>），数据库未就绪会导致后端起不来：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>logs<span class="w"> </span>backend<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-30<span class="w">   </span><span class="c1"># 数据库连接/迁移报错在这里</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>mysql<span class="w">           </span><span class="c1"># 看 mysql 是否 healthy</span>
+</code></pre></div>
+<p>迁移失败常见原因：数据库密码与 <code>.env</code> 配置不一致。</p>
+<p><strong>常见错误排查</strong></p>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>原因</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Can't connect to MySQL server ... (Connection refused)</code></td>
+<td>后端连不上 mysql 容器</td>
+<td>按第 1 步验证网络；确认 mysql 已健康（<code>docker compose ps</code>）</td>
+</tr>
+<tr>
+<td><code>getent hosts mysql</code> 无输出</td>
+<td>容器不在同一网桥 / DNS 失败</td>
+<td>按第 2、3 步清理网络与旧容器后重启</td>
+</tr>
+<tr>
+<td><code>name already in use</code></td>
+<td>旧容器残留</td>
+<td>按第 3 步 <code>docker rm -f</code> 后重启</td>
+</tr>
+<tr>
+<td>后端反复重试、一直 <code>unhealthy</code></td>
+<td>数据库未就绪或密码不一致</td>
+<td>看后端日志确认是网络还是认证；核对 <code>.env</code> 密码</td>
+</tr>
+<tr>
+<td>启动报错提示密码必填</td>
+<td><code>.env</code> 未配置</td>
+<td>按「完整 compose 文件」章节在 <code>.env</code> 设置密码</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>最快恢复路径</strong>：<code>docker compose -f &lt;文件&gt; down</code> → 删残留网络与容器（数据卷 <code>./data</code>、<code>./mysql_data</code> 保留即可）→ 重新 <code>up -d</code>。多数"第一步连不上 mysql"问题由此解决。</p>
+</blockquote>
+<h3 id="简单示例开箱即用">简单示例（开箱即用）<a class="headerlink" href="#简单示例开箱即用" title="Permanent link">¶</a></h3>
+<p>如果觉得完整 <code>docker-compose.yml</code> 复杂，可以直接使用下面两个简化版。</p>
+<p><strong>版本一：前后端 + Redis + MySQL（推荐）</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">frontend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media-web:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-web</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8080:8080"</span><span class="w">                    </span><span class="c1"># 前端访问端口</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_HOST=backend</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_PORT=3000</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+<span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"3000:8080"</span><span class="w">                    </span><span class="c1"># 后端访问端口（容器内 nginx 8080）</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span><span class="w">                   </span><span class="c1"># 配置/数据库/插件数据</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/media:/media</span><span class="w">              </span><span class="c1"># ← 替换为你的媒体库目录</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UMASK=000</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NEXUS_PORT=3000</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__HOST=redis</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__PORT=6379</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__DB=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__TYPE=mysql</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__HOST=mysql</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__PORT=3306</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__USERNAME=nexus_media</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__PASSWORD=nexus_media_password</span><span class="w">   </span><span class="c1"># 与 mysql 服务保持一致</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__DATABASE=nexus_media</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_started</span>
+<span class="w">      </span><span class="nt">mysql</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span><span class="w">          </span><span class="c1"># 等 mysql 健康后再启动，避免连不上超时</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis:7-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-redis</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data/redis_data:/data</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis-server --save "" --appendonly no --dir /data</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="w">  </span><span class="nt">mysql</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysql:8.4</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-mysql</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MYSQL_ROOT_PASSWORD=root_password</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MYSQL_DATABASE=nexus_media</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MYSQL_USER=nexus_media</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MYSQL_PASSWORD=nexus_media_password</span><span class="w">   </span><span class="c1"># 与 backend 保持一致</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TZ=Asia/Shanghai</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./mysql_data:/var/lib/mysql</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"mysqladmin"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"ping"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-h"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"localhost"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-u"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"root"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-p$$MYSQL_ROOT_PASSWORD"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">      </span><span class="nt">start_period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nexus-media-network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bridge</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+</code></pre></div>
+<p>将上面的 YAML 保存为 <code>docker-compose.simple.yml</code>（放在项目或任意目录下）后启动：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.simple.yml<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p><strong>版本二：仅前后端（SQLite，无需 Redis/数据库，适合体验）</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">frontend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media-web:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-web</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8080:8080"</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_HOST=backend</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_PORT=3000</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+<span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"3000:8080"</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/media:/media</span><span class="w">              </span><span class="c1"># ← 替换为你的媒体库目录</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UMASK=000</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NEXUS_PORT=3000</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nexus-media-network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bridge</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-network</span>
+</code></pre></div>
+<blockquote>
+<p>简单示例中后端<strong>不设置 <code>SKIP_MIGRATION</code></strong>，启动时自动执行数据库迁移（<code>alembic upgrade head</code>）；项目自带的完整 compose 文件同样由后端启动时自动迁移，无需独立 migration 容器。</p>
+</blockquote>
+<h3 id="完整-compose-文件3-个独立文件">完整 compose 文件（3 个独立文件）<a class="headerlink" href="#完整-compose-文件3-个独立文件" title="Permanent link">¶</a></h3>
+<p>需要 OCR/Chrome 组件、PostgreSQL、密码自定义时，使用项目根目录的 compose 文件：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>场景</th>
+<th>启动命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker-compose.yml</code></td>
+<td>前后端 + Redis（SQLite）</td>
+<td><code>docker compose up -d</code></td>
+</tr>
+<tr>
+<td><code>docker-compose.mysql.yml</code></td>
+<td>前端 + 后端 + Redis + MySQL + OCR + Chrome</td>
+<td><code>docker compose -f docker-compose.mysql.yml up -d</code></td>
+</tr>
+<tr>
+<td><code>docker-compose.postgresql.yml</code></td>
+<td>前端 + 后端 + Redis + PostgreSQL + OCR + Chrome</td>
+<td><code>docker compose -f docker-compose.postgresql.yml up -d</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>三个文件互斥，只选一个部署。MySQL/PostgreSQL 版已包含完整组件；基础版（SQLite + Redis）无需外部数据库。</p>
+</blockquote>
+<h3 id="可选组件nexus-verify-与-nexus-chrome">可选组件：nexus-verify 与 nexus-chrome<a class="headerlink" href="#可选组件nexus-verify-与-nexus-chrome" title="Permanent link">¶</a></h3>
+<p>MySQL / PostgreSQL 完整版已随 compose 自动启动两个可选组件：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>镜像</th>
+<th>端口</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nexus-verify</td>
+<td><code>linyuan0213/nexus-verify</code></td>
+<td>9300</td>
+<td>OCR 验证码识别，用于站点自动签到</td>
+</tr>
+<tr>
+<td>nexus-chrome</td>
+<td><code>linyuan0213/nexus-chrome</code></td>
+<td>9850 / 6080</td>
+<td>浏览器自动化，用于站点 Cookie 更新、网页自动化登录、AI 助手网页抓取</td>
+</tr>
+</tbody>
+</table>
+<p>组件已随 compose 自动配置好网络互通。若需单独部署，后端通过以下设置启用对应能力：</p>
+<ul>
+<li>验证码识别：<strong>系统设置 → 基础设置 → 实验室</strong> 中「启用验证码识别服务器」，填 <code>http://nexus-verify:9300</code></li>
+<li>网页自动化：<strong>系统设置 → 基础设置 → 实验室</strong> 中「启用网页自动化」，填 <code>http://nexus-chrome:9850</code></li>
+</ul>
+<p><strong>nexus-chrome 认证（可选）</strong>：nexus-chrome 设置 <code>AUTH_PASSWORD</code> 环境变量后会启用登录页 + API 鉴权。此时需在实验室「访问凭证（API Key）」中填写凭证，否则所有浏览器请求会被 401 拒绝：</p>
+<ol>
+<li>在 nexus-chrome 管理台（<code>http://&lt;host&gt;:9850/ui/api-keys</code>）创建 API Key，权限范围建议选「会话」+「画像」</li>
+<li>将生成的 Key（<code>ncmk_</code> 前缀）填入实验室「访问凭证（API Key）」</li>
+<li>该配置同时用作指纹画像配置中心的推送凭证（也可直接填 nexus-chrome 的 <code>FP_ADMIN_TOKEN</code>）</li>
+</ol>
+<p>nexus-chrome 未设置 <code>AUTH_PASSWORD</code> 时该字段留空即可（本地模式，不鉴权）。</p>
+<blockquote>
+<p>nexus-chrome 的浏览器页面可通过 VNC（端口 6080）实时查看。
+<strong>安全提示</strong>：VNC 密码为必填项，<strong>禁止使用默认值 <code>password</code></strong>。请在项目目录 <code>.env</code> 中配置，例如：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env</span>
+<span class="nv">VNC_PASSWORD</span><span class="o">=</span>你的强密码
+</code></pre></div>
+<p>未设置 <code>VNC_PASSWORD</code> 时 <code>docker compose up</code> 会直接报错并提示，避免默认弱口令暴露 VNC 远程桌面。</p>
+</blockquote>
+<p><strong>nexus-chrome 数据持久化</strong>：指纹配置中心数据库（<code>fp_config_center.db</code>）、会话记录（<code>sessions.json</code>）、指纹画像、浏览器用户数据（Cookie/登录态）统一存放在容器 <code>/app/data</code>，compose 已将其挂载到宿主机 <code>./data/chrome</code>，重建/升级容器不会丢失数据。</p>
+<h3 id="1-修改配置">1. 修改配置<a class="headerlink" href="#1-修改配置" title="Permanent link">¶</a></h3>
+<p>克隆项目后，按需修改所选 compose 文件与 <code>.env</code>：</p>
+<p><strong>目录挂载</strong>（后端服务）：</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span><span class="w">                </span><span class="c1"># 配置、数据库、插件数据（必须）</span>
+<span class="w">      </span><span class="c1"># 替换为你的实际媒体目录：</span>
+<span class="w">      </span><span class="c1"># - /mnt/media:/media          # 媒体库目录（必须，否则无法转移）</span>
+</code></pre></div>
+<p><strong>密码</strong>（MySQL / PostgreSQL 版）：项目根目录 <code>.env</code> 中设置，<code>docker compose</code> 自动读取，必填项缺失会报错提示：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env</span>
+<span class="nv">MYSQL_ROOT_PASSWORD</span><span class="o">=</span>你的root密码
+<span class="nv">MYSQL_PASSWORD</span><span class="o">=</span>你的应用密码
+<span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>你的PostgreSQL密码<span class="w">    </span><span class="c1"># PostgreSQL 版</span>
+<span class="nv">VNC_PASSWORD</span><span class="o">=</span>你的Chrome<span class="w"> </span>VNC密码
+</code></pre></div>
+<h3 id="2-启动服务">2. 启动服务<a class="headerlink" href="#2-启动服务" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 基础版（SQLite + Redis）</span>
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 或 MySQL 完整版</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.mysql.yml<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 或 PostgreSQL 完整版</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.postgresql.yml<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>数据库迁移由后端启动时自动执行（<code>alembic upgrade head</code>），无需单独操作。</p>
+<h3 id="3-访问">3. 访问<a class="headerlink" href="#3-访问" title="Permanent link">¶</a></h3>
+<ul>
+<li>前端 Web UI: http://localhost:8080</li>
+<li>后端 API: http://localhost:3000</li>
+</ul>
+<h2 id="单独部署后端">单独部署后端<a class="headerlink" href="#单独部署后端" title="Permanent link">¶</a></h2>
+<p><strong>docker cli</strong></p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>nexus-media<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--hostname<span class="w"> </span>nexus-media<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">3000</span>:8080<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/data:/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/mnt/media:/media<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">PUID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">PGID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UMASK</span><span class="o">=</span><span class="m">000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">NEXUS_PORT</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>linyuan0213/nexus-media:latest
+</code></pre></div>
+<blockquote>
+<p>容器内 nginx 监听 8080，<code>-p 3000:8080</code> 表示宿主机 3000 访问后端。</p>
+</blockquote>
+<p><strong>docker-compose</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nexus-media</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media:latest</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000:8080</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/media:/media</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGID=0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UMASK=000</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NEXUS_PORT=3000</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media</span>
+</code></pre></div>
+<blockquote>
+<p>单独部署后端时（无 compose 内 Redis/DB），需配置 <code>REDIS__HOST</code> 与 <code>DATABASE__*</code> 指向外部 Redis / 数据库。</p>
+</blockquote>
+<h2 id="单独部署前端">单独部署前端<a class="headerlink" href="#单独部署前端" title="Permanent link">¶</a></h2>
+<p>前端 Docker 镜像内嵌 nginx，通过环境变量指向后端地址，所有 <code>/api/</code>、<code>/ws</code> 请求由 nginx 转发到后端。</p>
+<p><strong>docker cli</strong></p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>nexus-media-web<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">BACKEND_HOST</span><span class="o">=</span><span class="m">192</span>.168.1.100<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">BACKEND_PORT</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>linyuan0213/nexus-media-web:latest
+</code></pre></div>
+<p><strong>docker-compose</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nexus-media-web</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linyuan0213/nexus-media-web:latest</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080:8080</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_HOST=nexus-media</span><span class="w">   </span><span class="c1"># 后端服务地址（compose 内为服务名）</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BACKEND_PORT=3000</span><span class="w">          </span><span class="c1"># 后端宿主机映射端口</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-web</span>
+</code></pre></div>
+<blockquote>
+<p><code>BACKEND_PORT</code> 填后端<strong>宿主机映射端口</strong>（compose 示例中后端 <code>3000:8080</code>，故填 <code>3000</code>）；前端 nginx 会转发到 <code>BACKEND_HOST:BACKEND_PORT</code>。</p>
+</blockquote>
+<h2 id="反向代理部署">反向代理部署<a class="headerlink" href="#反向代理部署" title="Permanent link">¶</a></h2>
+<p>通过 Nginx 将 Nexus Media 挂到域名下对外访问时，只需代理<strong>前端端口</strong>（宿主机 <code>8080</code>）。前端容器内嵌 nginx 会继续将 <code>/api</code>、<code>/ws</code> 转发到后端。</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>必须配置 WebSocket 转发头，否则日志、进度等实时推送功能不可用。</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">http2</span><span class="w"> </span><span class="no">on</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="s">media.example.com</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://127.0.0.1:8080</span><span class="p">;</span>
+
+<span class="w">        </span><span class="c1"># WebSocket 支持（必须）</span>
+<span class="w">        </span><span class="kn">proxy_http_version</span><span class="w"> </span><span class="mi">1</span><span class="s">.1</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Upgrade</span><span class="w"> </span><span class="nv">$http_upgrade</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Connection</span><span class="w"> </span><span class="s">"upgrade"</span><span class="p">;</span>
+
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$host</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Real-IP</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-For</span><span class="w"> </span><span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="nv">$scheme</span><span class="p">;</span>
+
+<span class="w">        </span><span class="c1"># 大文件上传（备份恢复等场景）</span>
+<span class="w">        </span><span class="kn">client_max_body_size</span><span class="w"> </span><span class="mi">100m</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_read_timeout</span><span class="w"> </span><span class="s">300s</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">80</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="s">media.example.com</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">return</span><span class="w"> </span><span class="mi">301</span><span class="w"> </span><span class="s">https://</span><span class="nv">$host$request_uri</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>配合设置：</p>
+<ol>
+<li>在 <strong>系统设置 → 基础设置 → 系统</strong> 中将「外网访问地址」填为 <code>https://media.example.com</code>，消息通知中的链接才能正确跳转</li>
+<li>子路径部署（如 <code>/nexus</code>）暂不支持，请使用独立域名或端口</li>
+<li>使用<strong>企业微信交互功能</strong>时，还需把 <code>/wechat</code> 直接转发到后端端口（前端 nginx 不转发该路径），详见 <a href="../notifications/#交互功能可选">通知渠道配置</a></li>
+</ol>
+<h2 id="redis-配置">Redis 配置<a class="headerlink" href="#redis-配置" title="Permanent link">¶</a></h2>
+<h3 id="compose-模式">compose 模式<a class="headerlink" href="#compose-模式" title="Permanent link">¶</a></h3>
+<p>compose 中 Redis 服务已配置好（无密码、使用 <code>/data/redis_data</code> 持久化）：</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis:7-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nexus-media-redis</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data/redis_data:/data</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis-server --save "" --appendonly no --dir /data</span>
+</code></pre></div>
+<p>后端通过 <code>REDIS__*</code> 环境变量连接（compose 的 <code>x-env-db-common</code> 已设置）：</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__HOST=nexus-media-redis</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__PORT=6379</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__DB=0</span>
+</code></pre></div>
+<h3 id="外部-redis">外部 Redis<a class="headerlink" href="#外部-redis" title="Permanent link">¶</a></h3>
+<p>单独部署后端且使用外部 Redis 时，设置：</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__HOST=你的redis地址</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__PORT=6379</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__PASSWORD=你的redis密码</span><span class="w">   </span><span class="c1"># 无密码则省略</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS__DB=0</span>
+</code></pre></div>
+<h2 id="数据库配置">数据库配置<a class="headerlink" href="#数据库配置" title="Permanent link">¶</a></h2>
+<h3 id="基础版sqlite--redis">基础版（SQLite + Redis）<a class="headerlink" href="#基础版sqlite--redis" title="Permanent link">¶</a></h3>
+<p><code>docker-compose.yml</code>（基础版）使用 SQLite + Redis（compose 自带），无需外部数据库：</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>数据文件保存在 <code>./data/db/</code>（由 <code>NEXUS_MEDIA_DATA=/data</code> 决定）。</p>
+<h3 id="mysql--postgresqlcompose-模式">MySQL / PostgreSQL（compose 模式）<a class="headerlink" href="#mysql--postgresqlcompose-模式" title="Permanent link">¶</a></h3>
+<p>MySQL / PostgreSQL 版 compose 已配置好，后端通过 <code>DATABASE__*</code> 环境变量连接（服务名即主机名）：</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__TYPE=postgresql</span><span class="w">      </span><span class="c1"># 或 mysql</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__HOST=postgresql</span><span class="w">      </span><span class="c1"># 或 mysql（compose 服务名）</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__PORT=5432</span><span class="w">            </span><span class="c1"># mysql 为 3306</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__USERNAME=nexus_media</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__PASSWORD=${POSTGRES_PASSWORD}</span><span class="w">   </span><span class="c1"># 从 .env 读取</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE__DATABASE=nexus_media</span>
+</code></pre></div>
+<p>数据库迁移由后端启动时自动执行（<code>alembic upgrade head</code>），无需独立 migration 服务。</p>
+<h3 id="外部数据库">外部数据库<a class="headerlink" href="#外部数据库" title="Permanent link">¶</a></h3>
+<p>单独部署后端使用外部数据库时，设置 <code>DATABASE__*</code> 指向外部实例，后端启动时同样自动迁移（如需跳过可设 <code>SKIP_MIGRATION=true</code> 后手动执行）。</p>
+<h2 id="环境变量">环境变量<a class="headerlink" href="#环境变量" title="Permanent link">¶</a></h2>
+<p>环境变量优先级：<code>环境变量 &gt; .env &gt; config.yaml</code>。除 Docker 镜像专用变量外，其余变量对应 <code>src/app/core/settings.py</code> 中的配置节点，使用 <code>__</code> 作为嵌套分隔符，例如 <code>APP__WEB_HOST</code>、<code>DATABASE__TYPE</code>、<code>REDIS__HOST</code>。</p>
+<h3 id="docker-镜像专用变量">Docker 镜像专用变量<a class="headerlink" href="#docker-镜像专用变量" title="Permanent link">¶</a></h3>
+<p><strong>后端镜像 (<code>linyuan0213/nexus-media</code>)</strong></p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PUID</code></td>
+<td>0</td>
+<td>运行用户 UID</td>
+</tr>
+<tr>
+<td><code>PGID</code></td>
+<td>0</td>
+<td>运行用户 GID</td>
+</tr>
+<tr>
+<td><code>UMASK</code></td>
+<td>000</td>
+<td>文件权限掩码</td>
+</tr>
+<tr>
+<td><code>NEXUS_PORT</code></td>
+<td>3000</td>
+<td>容器内部 nexus-media 服务端口（nginx 反代到该端口）</td>
+</tr>
+<tr>
+<td><code>SKIP_MIGRATION</code></td>
+<td>false</td>
+<td>设为 <code>true</code> 跳过启动时数据库迁移（默认自动执行，幂等）</td>
+</tr>
+<tr>
+<td><code>TZ</code></td>
+<td>Asia/Shanghai</td>
+<td>时区</td>
+</tr>
+<tr>
+<td><code>NEXUS_MEDIA_DATA</code></td>
+<td>/data</td>
+<td>数据目录（config.yaml、数据库、插件数据）</td>
+</tr>
+<tr>
+<td><code>NEXUS_MEDIA_CONFIG</code></td>
+<td>/data/config.yaml</td>
+<td>配置文件路径（可选，默认自动发现 <code>data/config.yaml</code>）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>前端镜像 (<code>linyuan0213/nexus-media-web</code>)</strong></p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BACKEND_HOST</code></td>
+<td><code>nexus-media</code></td>
+<td>后端服务地址（compose 内为服务名，独立部署时设为 IP 或域名）</td>
+</tr>
+<tr>
+<td><code>BACKEND_PORT</code></td>
+<td><code>3000</code></td>
+<td>后端宿主机映射端口（前端 nginx 转发目标）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="前后端配置变量app-节点">前后端配置变量（<code>app</code> 节点）<a class="headerlink" href="#前后端配置变量app-节点" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APP__WEB_HOST</code></td>
+<td>::</td>
+<td>Web 监听地址</td>
+</tr>
+<tr>
+<td><code>APP__WEB_PORT</code></td>
+<td>3000</td>
+<td>Web 监听端口</td>
+</tr>
+<tr>
+<td><code>APP__LOGIN_USER</code></td>
+<td>admin</td>
+<td>默认登录用户名</td>
+</tr>
+<tr>
+<td><code>APP__LOGIN_PASSWORD</code></td>
+<td>password</td>
+<td>默认登录密码</td>
+</tr>
+<tr>
+<td><code>APP__TMDB_DOMAIN</code></td>
+<td>api.themoviedb.org</td>
+<td>TMDB API 域名</td>
+</tr>
+<tr>
+<td><code>APP__DEBUG</code></td>
+<td>false</td>
+<td>Debug 模式，开启后提供 <code>/docs</code> API 文档，生产环境保持关闭</td>
+</tr>
+</tbody>
+</table>
+<h3 id="数据库配置变量database-节点">数据库配置变量（<code>database</code> 节点）<a class="headerlink" href="#数据库配置变量database-节点" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATABASE__TYPE</code></td>
+<td>sqlite</td>
+<td>数据库类型：<code>sqlite</code> / <code>mysql</code> / <code>postgresql</code></td>
+</tr>
+<tr>
+<td><code>DATABASE__HOST</code></td>
+<td>localhost</td>
+<td>数据库地址</td>
+</tr>
+<tr>
+<td><code>DATABASE__PORT</code></td>
+<td>0</td>
+<td>数据库端口</td>
+</tr>
+<tr>
+<td><code>DATABASE__USERNAME</code></td>
+<td>—</td>
+<td>数据库用户名</td>
+</tr>
+<tr>
+<td><code>DATABASE__PASSWORD</code></td>
+<td>—</td>
+<td>数据库密码</td>
+</tr>
+<tr>
+<td><code>DATABASE__DATABASE</code></td>
+<td>nexus_media</td>
+<td>数据库名称</td>
+</tr>
+<tr>
+<td><code>DATABASE__SQLITE_PATH</code></td>
+<td>data/user.db</td>
+<td>SQLite 数据库文件路径（<code>TYPE=sqlite</code> 时生效）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="redis-配置变量redis-节点">Redis 配置变量（<code>redis</code> 节点）<a class="headerlink" href="#redis-配置变量redis-节点" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>REDIS__HOST</code></td>
+<td>127.0.0.1</td>
+<td>Redis 地址（compose 内为 <code>nexus-media-redis</code>）</td>
+</tr>
+<tr>
+<td><code>REDIS__PORT</code></td>
+<td>6379</td>
+<td>Redis 端口</td>
+</tr>
+<tr>
+<td><code>REDIS__PASSWORD</code></td>
+<td>—</td>
+<td>Redis 密码</td>
+</tr>
+<tr>
+<td><code>REDIS__DB</code></td>
+<td>0</td>
+<td>Redis 数据库索引</td>
+</tr>
+</tbody>
+</table>
+<h3 id="其他常用变量">其他常用变量<a class="headerlink" href="#其他常用变量" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEXUS_MEDIA_CONFIG</code></td>
+<td>/data/config.yaml</td>
+<td>配置文件路径（可选，默认自动发现）</td>
+</tr>
+<tr>
+<td><code>NEXUS_MEDIA_DATA</code></td>
+<td>/data</td>
+<td>数据目录路径（可选，默认 <code>./data</code>）</td>
+</tr>
+<tr>
+<td><code>LOG__FORMAT</code></td>
+<td>text</td>
+<td>设为 <code>json</code> 输出 ELK 兼容日志</td>
+</tr>
+</tbody>
+</table>
+<h2 id="目录说明">目录说明<a class="headerlink" href="#目录说明" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>容器路径</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/data</code></td>
+<td>配置文件（config.yaml）、数据库、插件数据（必须挂载）</td>
+</tr>
+<tr>
+<td><code>/data/redis_data</code></td>
+<td>Redis 持久化数据（compose 内）</td>
+</tr>
+<tr>
+<td><code>/data/chrome</code></td>
+<td>nexus-chrome 数据（指纹数据库、会话、指纹画像、浏览器用户数据）</td>
+</tr>
+<tr>
+<td><code>/nexus-media</code></td>
+<td>应用代码目录</td>
+</tr>
+<tr>
+<td><code>/media</code></td>
+<td>媒体库目录（需自行映射，例如 <code>/mnt/media:/media</code>）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="puid--pgid-说明">PUID / PGID 说明<a class="headerlink" href="#puid--pgid-说明" title="Permanent link">¶</a></h2>
+<ul>
+<li>若同时使用 Emby / Jellyfin / Plex / qBittorrent 等 Docker 镜像，建议保持 PUID / PGID 一致</li>
+<li>在宿主机上执行 <code>id -u</code> 和 <code>id -g</code> 获取对应值</li>
+</ul>
+<h2 id="首次使用">首次使用<a class="headerlink" href="#首次使用" title="Permanent link">¶</a></h2>
+<ol>
+<li>访问前端页面 http://localhost:8080</li>
+<li>默认账号密码：</li>
+<li>用户名: <code>admin</code></li>
+<li>密码: <code>password</code></li>
+<li><strong>首次登录后必须修改默认密码</strong></li>
+<li>进入 <strong>设置 &gt; 基础设置 &gt; 媒体</strong> 配置 TMDB API Key（必须）</li>
+<li>进入 <strong>设置 &gt; 下载器</strong> 添加下载器</li>
+<li>进入 <strong>设置 &gt; 媒体服务器</strong> 添加 Emby/Jellyfin/Plex</li>
+<li>进入 <strong>站点 &gt; 站点维护</strong> 添加 PT 站点</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚">
+        
+          
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="上一页: 首页">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                首页
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../configuration/" class="md-footer__link md-footer__link--next" aria-label="下一页: 基础配置">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                基础配置
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "插件框架架构",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [1350, 760],
+    "views": [
+      {
+        "id": "main",
+        "label": "插件运行架构",
+        "focus": ["entry", "registry", "plugins", "sandbox", "hook"],
+        "note": "注册表管理生命周期，沙箱注入宿主能力，钩子系统承载事件响应。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "entry", "type": "backend", "label": "插件服务/路由", "sublabel": "plugin_framework_service · routers", "pos": [130, 90], "size": [200, 62] },
+    { "id": "registry", "type": "backend", "label": "插件注册表", "sublabel": "registry\nscan/install/enable/config", "pos": [130, 300], "size": [200, 62] },
+    { "id": "plugins", "type": "backend", "label": "插件运行时", "sublabel": "内置/第三方插件实例", "pos": [130, 520], "size": [200, 62] },
+    { "id": "sandbox", "type": "backend", "label": "能力沙箱", "sublabel": "sandbox · 注入宿主服务", "pos": [620, 520], "size": [200, 62] },
+    { "id": "hook", "type": "backend", "label": "钩子系统", "sublabel": "hook_system · 事件/生命周期", "pos": [620, 300], "size": [200, 62] },
+    { "id": "api-reg", "type": "backend", "label": "API 注册", "sublabel": "api_registry · 扩展端点", "pos": [1100, 300], "size": [200, 62] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "插件管理", "wraps": ["entry", "registry"] },
+    { "kind": "region", "label": "插件运行时与宿主能力", "wraps": ["plugins", "sandbox", "hook", "api-reg"] }
+  ],
+  "connections": [
+    { "id": "entry-registry", "from": "entry", "to": "registry", "label": "启停/安装/配置", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "registry-plugins", "from": "registry", "to": "plugins", "label": "加载实例", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "registry-hook", "from": "registry", "to": "hook", "label": "注册钩子", "fromSide": "right", "toSide": "left" },
+    { "id": "sandbox-plugins", "from": "sandbox", "to": "plugins", "label": "注入能力", "fromSide": "left", "toSide": "right" },
+    { "id": "hook-api", "from": "hook", "to": "api-reg", "label": "扩展端点", "fromSide": "right", "toSide": "left" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "生命周期", "items": ["注册表扫描内置/安装第三方插件", "enable/disable/config 由注册表持久化"] },
+    { "dot": "emerald", "title": "宿主能力", "items": ["沙箱注入 searcher/downloader/subscribe 等服务", "插件经沙箱访问宿主，不直接触碰外部"] }
+  ]
+}

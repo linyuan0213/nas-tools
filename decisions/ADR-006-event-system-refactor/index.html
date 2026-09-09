@@ -1,0 +1,2023 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-006-event-system-refactor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-006: 事件驱动模块重构方案 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-006-事件驱动模块重构方案" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-006: 事件驱动模块重构方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#重构前的问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        重构前的问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#当前实际状况" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当前实际状况
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#方案设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="方案设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#架构图" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构图
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#目录结构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心设计决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心设计决策
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="核心设计决策">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-事件命名规范" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 事件命名规范
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-插件桥接零映射直接转发" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 插件桥接：零映射，直接转发
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-eventbus同步--异步统一" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. EventBus：同步 + 异步统一
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-handler-注册装饰器--自动扫描" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Handler 注册：装饰器 + 自动扫描
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#di-容器集成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DI 容器集成
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#调用方改造示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        调用方改造示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#插件注册新事件示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件注册新事件示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施记录" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施记录
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施记录">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1基础设施搭建已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1：基础设施搭建（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2发布端迁移已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2：发布端迁移（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3消费端落地已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3：消费端落地（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4下载完成事件驱动转移已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4：下载完成事件驱动转移（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#待验证检查清单" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        待验证检查清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-006-event-system-refactor.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-006-事件驱动模块重构方案">ADR-006: 事件驱动模块重构方案<a class="headerlink" href="#adr-006-事件驱动模块重构方案" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Accepted / Implemented</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-05-30（决策）/ 2026-06-01（部分实施）</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<h3 id="重构前的问题">重构前的问题<a class="headerlink" href="#重构前的问题" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>全局可变单例</strong>：<code>EventHandler = EventManager()</code> 作为模块级全局变量，不可测试、不可 Mock</li>
+<li><strong>无类型安全</strong>：事件数据为裸 <code>dict</code>，生产者和消费者之间无结构契约</li>
+<li><strong>同步阻塞</strong>：<code>send_event</code> 为同步串行执行，一个 Handler 阻塞会拖慢所有后续 Handler 和调用方</li>
+<li><strong>职责混合</strong>：<code>EventManager</code> 同时管理本地 Handler 注册和 Plugin HookSystem 转发</li>
+</ol>
+<h3 id="当前实际状况">当前实际状况<a class="headerlink" href="#当前实际状况" title="Permanent link">¶</a></h3>
+<p>新事件系统（<code>app/events/</code>）已全面落地，发布端和消费端均已打通。</p>
+<p><strong>发布端现状</strong>：
+- 已全面迁移到 <code>EventBus.publish(Event(...))</code>，约 15+ 处调用
+- Payload 已定义类型化 dataclass（<code>app/events/payloads.py</code>）</p>
+<p><strong>消费端现状</strong>：
+- <code>@on_event</code> 装饰器已全面使用，共 5 个 handler 模块：
+  - <code>subscribe/handlers.py</code> — 4 个 handler
+  - <code>transfer/handlers.py</code> — 3 个 handler
+  - <code>download/handlers.py</code> — 2 个 handler
+  - <code>search/handlers.py</code> — 1 个 handler
+  - <code>system/handlers.py</code> — 3 个 handler
+- 已消除手动 <code>event_bus.subscribe()</code> 注册
+- 消费者通过 <code>register_modules()</code> 显式注册，避免隐式导入和运行时扫描</p>
+<p><strong>注册机制</strong>：
+- <code>app/events/config.py</code> 集中声明 <code>EVENT_HANDLER_MODULES</code> 列表
+- <code>app/events/decorators.py</code> 提供 <code>register_modules()</code> 显式导入
+- <code>initializer.py</code> 中 <code>init_event_handlers()</code> 统一调用注册</p>
+<hr>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ul>
+<li>解耦事件生产者和消费者</li>
+<li>引入类型安全的事件负载（dataclass）</li>
+<li>支持同步+异步两种投递模式</li>
+<li>统一事件注册入口，消除全局单例</li>
+<li>提供中间件扩展点</li>
+<li><strong>消费者应能通过声明式方式订阅事件，无需手动注册和解析 payload</strong></li>
+</ul>
+<hr>
+<h2 id="方案设计">方案设计<a class="headerlink" href="#方案设计" title="Permanent link">¶</a></h2>
+<h3 id="架构图">架构图<a class="headerlink" href="#架构图" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Producer   │────▶│  EventBus    │────▶│  Middleware  │
+│  (Service)   │     │              │     │   Chain      │
+└──────────────┘     └──────────────┘     └──────────────┘
+                                                   │
+                          ┌────────────────────────┼────────────────────────┐
+                          ▼                        ▼                        ▼
+                   ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+                   │ LocalHandler │        │ HookSystem   │        │    DLQ       │
+                   │  (Consumer)  │        │  (Plugin)    │        │  (Retry)     │
+                   └──────────────┘        └──────────────┘        └──────────────┘
+</code></pre></div>
+<h3 id="目录结构">目录结构<a class="headerlink" href="#目录结构" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>src/app/events/
+├── __init__.py          # export Event, EventBus, on_event, auto_register
+├── types.py             # Event dataclass
+├── bus.py               # EventBus：同步执行 + 异步队列投递
+├── registry.py          # EventHandlerRegistry：按 event_type + priority 管理 handlers
+├── middleware.py        # MiddlewareChain + LoggingMiddleware + ErrorHandlingMiddleware
+└── decorators.py        # @on_event 装饰器 + _subscribers 注册表
+
+业务 Payload 放在各业务模块（如 app/services/transfer/events.py）
+</code></pre></div>
+<h3 id="核心设计决策">核心设计决策<a class="headerlink" href="#核心设计决策" title="Permanent link">¶</a></h3>
+<h4 id="1-事件命名规范">1. 事件命名规范<a class="headerlink" href="#1-事件命名规范" title="Permanent link">¶</a></h4>
+<p>统一采用 <code>domain.action</code> 格式，下划线连接多词：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 正确</span>
+<span class="s2">"media.transfer_finished"</span>
+<span class="s2">"media.episode_transferred"</span>
+<span class="s2">"site.cookie_sync"</span>
+
+<span class="c1"># 错误（不要混用点号和驼峰）</span>
+<span class="s2">"media.transfer.finished"</span>
+<span class="s2">"media.episodeTransferred"</span>
+</code></pre></div>
+<h4 id="2-插件桥接零映射直接转发">2. 插件桥接：零映射，直接转发<a class="headerlink" href="#2-插件桥接零映射直接转发" title="Permanent link">¶</a></h4>
+<p><strong>旧方案的问题</strong>：bridge 维护硬编码映射表，新增事件需要改核心代码。</p>
+<p><strong>新方案</strong>：
+- EventBus 的事件类型直接作为 HookSystem 的 hook name
+- 删除 HookSystem 的 EVENTS 白名单限制
+- 插件通过 <code>HookSystem().on("my_plugin.custom_event", handler)</code> 自由注册
+- bridge 只做一件事：将 Event 的 payload 序列化后调用 <code>HookSystem().emit()</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PluginBridge</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="vm">__dict__</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span> <span class="s2">"__dict__"</span><span class="p">)</span> <span class="k">else</span> <span class="n">event</span><span class="o">.</span><span class="n">payload</span>
+        <span class="n">HookSystem</span><span class="p">()</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">event_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="3-eventbus同步--异步统一">3. EventBus：同步 + 异步统一<a class="headerlink" href="#3-eventbus同步--异步统一" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EventBus</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">registry</span><span class="p">:</span> <span class="n">EventHandlerRegistry</span><span class="p">,</span>
+        <span class="n">message_queue</span><span class="p">:</span> <span class="n">MessageQueue</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">middleware</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Middleware</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">async_event_types</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">handlers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="o">.</span><span class="n">get_handlers</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">event_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handlers</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_types</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">():</span>
+            <span class="c1"># 1. 执行本地 handlers（同步）</span>
+            <span class="k">if</span> <span class="n">handlers</span><span class="p">:</span>
+                <span class="n">chain</span> <span class="o">=</span> <span class="n">MiddlewareChain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_middleware</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">])</span>
+                <span class="n">chain</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="c1"># 2. 转发到插件（无论是否有本地 handler）</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bridge</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_types</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_execute</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"event:</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">event_type</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_execute</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>关键点</strong>：
+- 同步事件：调用方阻塞等待 handlers 完成（适合转移后更新数据库等关键操作）
+- 异步事件：通过 <code>MessageQueue</code> 投递，调用方立即返回（适合通知、日志等非关键操作）
+- 插件转发<strong>始终执行</strong>，不依赖是否有本地 handler</p>
+<h4 id="4-handler-注册装饰器--自动扫描">4. Handler 注册：装饰器 + 自动扫描<a class="headerlink" href="#4-handler-注册装饰器--自动扫描" title="Permanent link">¶</a></h4>
+<p><strong>当前问题</strong>：<code>@on_event</code> 装饰器已存在但零使用，消费者仍需手动 <code>event_bus.subscribe()</code> 注册。</p>
+<p><strong>目标用法</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/services/subscribe/handlers.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_event</span><span class="p">,</span> <span class="n">Event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA_EPISODE_TRANSFERRED</span>
+
+<span class="nd">@on_event</span><span class="p">(</span><span class="n">MEDIA_EPISODE_TRANSFERRED</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_subscribe_progress</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">payload</span>
+    <span class="c1"># payload 是 EpisodeTransferredPayload dataclass</span>
+    <span class="o">...</span>
+
+<span class="c1"># app/initializer.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">auto_register</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">init_event_handlers</span><span class="p">():</span>
+    <span class="n">bus</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">event_bus</span><span class="p">()</span>
+    <span class="n">auto_register</span><span class="p">(</span><span class="n">bus</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="di-容器集成">DI 容器集成<a class="headerlink" href="#di-容器集成" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/di/builders/infrastructure_builder.py</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_infrastructure</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">InfrastructureObjects</span><span class="p">:</span>
+    <span class="o">...</span>
+    <span class="n">event_bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="p">(</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">EventHandlerRegistry</span><span class="p">(),</span>
+        <span class="n">bridge</span><span class="o">=</span><span class="n">PluginBridge</span><span class="p">(</span><span class="n">hook_system</span><span class="o">=</span><span class="n">hook_system</span><span class="p">),</span>
+        <span class="n">message_queue</span><span class="o">=</span><span class="n">message_queue</span><span class="p">,</span>
+        <span class="n">middleware</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">LoggingMiddleware</span><span class="p">(),</span>
+            <span class="n">ErrorHandlingMiddleware</span><span class="p">(),</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">register_modules</span><span class="p">(</span><span class="n">EVENT_HANDLER_MODULES</span><span class="p">)</span>
+    <span class="n">auto_register</span><span class="p">(</span><span class="n">event_bus</span><span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>注意：<code>async_event_types</code> 当前未配置，所有事件默认同步执行。如需将通知类事件改为异步投递，可在创建 EventBus 时传入 <code>async_event_types</code> 集合。</p>
+<h3 id="调用方改造示例">调用方改造示例<a class="headerlink" href="#调用方改造示例" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 改造前</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">eventmanager</span><span class="o">.</span><span class="n">send_event</span><span class="p">(</span>
+    <span class="n">EventType</span><span class="o">.</span><span class="n">TransferFinished</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">"media_info"</span><span class="p">:</span> <span class="n">media</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="s2">"path"</span><span class="p">:</span> <span class="n">dest_path</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># 改造后</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA_TRANSFER_FINISHED</span>
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransferFinishedPayload</span><span class="p">:</span>
+    <span class="n">media_info</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">_event_bus</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="o">=</span><span class="n">MEDIA_TRANSFER_FINISHED</span><span class="p">,</span>
+    <span class="n">payload</span><span class="o">=</span><span class="n">TransferFinishedPayload</span><span class="p">(</span>
+        <span class="n">media_info</span><span class="o">=</span><span class="n">media</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="n">path</span><span class="o">=</span><span class="n">dest_path</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">))</span>
+</code></pre></div>
+<h3 id="插件注册新事件示例">插件注册新事件示例<a class="headerlink" href="#插件注册新事件示例" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 插件代码（无需修改核心）</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.plugin_framework.hook_system</span><span class="w"> </span><span class="kn">import</span> <span class="n">HookSystem</span>
+
+<span class="c1"># 注册自定义事件</span>
+<span class="n">HookSystem</span><span class="p">()</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">"my_plugin.custom_event"</span><span class="p">,</span> <span class="n">my_handler</span><span class="p">)</span>
+
+<span class="c1"># 业务代码发送自定义事件</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+
+<span class="n">event_bus</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="o">=</span><span class="s2">"my_plugin.custom_event"</span><span class="p">,</span>
+    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"key"</span><span class="p">:</span> <span class="s2">"value"</span><span class="p">},</span>
+<span class="p">))</span>
+</code></pre></div>
+<hr>
+<h2 id="实施记录">实施记录<a class="headerlink" href="#实施记录" title="Permanent link">¶</a></h2>
+<h3 id="phase-1基础设施搭建已完成">Phase 1：基础设施搭建（已完成）<a class="headerlink" href="#phase-1基础设施搭建已完成" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>新建 <code>app/events/</code> 包</strong>：types, bus, registry, middleware, decorators, bridge</li>
+<li><strong>删除旧代码</strong>：EventManager, EventType, event_compat.py</li>
+<li><strong>DI Container</strong>：<code>app/di/builders/infrastructure_builder.py</code> 创建 EventBus，注册 middleware，并显式调用 <code>register_modules()</code> + <code>auto_register()</code> 注册所有 <code>@on_event</code> handler</li>
+<li><strong>生命周期集成</strong>：<code>SystemLifecycleService</code> 从 DI 接收真实 EventBus 实例，<code>init_event_handlers()</code> 只做缓存事件桥接 (<code>init_event_bridge</code>)</li>
+</ul>
+<h3 id="phase-2发布端迁移已完成">Phase 2：发布端迁移（已完成）<a class="headerlink" href="#phase-2发布端迁移已完成" title="Permanent link">¶</a></h3>
+<p>约 15+ 处 <code>send_event</code> 调用已迁移到 <code>EventBus.publish()</code>：
+- <code>subscribe/management/finish_service.py</code> — <code>SUBSCRIBE_FINISHED</code>
+- <code>subscribe/management/add_service.py</code> — <code>DOWNLOAD_SUBSCRIBE_SUCCESS</code>
+- <code>subscribe/management/update_service.py</code> — <code>DOWNLOAD_SUBSCRIBE_SUCCESS</code>
+- <code>transfer/filetransfer_service.py</code> — <code>MEDIA_TRANSFER_FINISHED</code>, <code>MEDIA_EPISODE_TRANSFERRED</code>, <code>SUBTITLE_DOWNLOAD</code>, <code>TRANSFER_FAIL</code>
+- <code>downloader/pipeline.py</code> — <code>DOWNLOAD_STARTED</code>, <code>DOWNLOAD_FAILED</code>, <code>DOWNLOAD_FINISHED</code>
+- <code>search_service.py</code> — <code>DOWNLOAD_FINISHED</code>
+- <code>rss_automation/executor.py</code> — <code>DOWNLOAD_SUBSCRIBE_SUCCESS</code>
+- <code>media_file_service.py</code> — <code>SUBTITLE_DOWNLOAD</code>
+- <code>transfer/cleanup_service.py</code> — <code>TRANSFER_FAIL</code>
+- <code>system/message.py</code> — <code>DOWNLOAD_FINISHED</code>
+- <code>infrastructure/cache_system/events.py</code> — <code>CACHE_EVENT</code></p>
+<h3 id="phase-3消费端落地已完成">Phase 3：消费端落地（已完成）<a class="headerlink" href="#phase-3消费端落地已完成" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>Payload 类型化</strong>：新建 <code>app/events/payloads.py</code>，定义全部事件的 dataclass</li>
+<li><code>MediaTransferFinishedPayload</code>, <code>MediaEpisodeTransferredPayload</code></li>
+<li><code>DownloadStartedPayload</code>, <code>DownloadFailedPayload</code></li>
+<li><code>SubscribeFinishedPayload</code>, <code>SubscribeAddPayload</code>, <code>RssAutoSubscribeRequestedPayload</code></li>
+<li><code>SearchStartPayload</code>, <code>SubtitleDownloadPayload</code>, <code>TransferFailPayload</code></li>
+<li>
+<p><code>MessageIncomingPayload</code>, <code>MediaSourceDeletedPayload</code>, <code>LibraryFileDeletedPayload</code></p>
+</li>
+<li>
+<p><strong>提取独立 Handler</strong>：5 个 handler 文件，13 个消费者
+   | 文件 | Handler 数 | 事件 |
+   |------|-----------|------|
+   | <code>subscribe/handlers.py</code> | 4 | SUBSCRIBE_FINISHED, SUBSCRIBE_ADD, RSS_AUTO_SUBSCRIBE_REQUESTED, MEDIA_EPISODE_TRANSFERRED |
+   | <code>transfer/handlers.py</code> | 4 | MEDIA_TRANSFER_FINISHED, SUBTITLE_DOWNLOAD, TRANSFER_FAIL, DOWNLOAD_COMPLETED |
+   | <code>download/handlers.py</code> | 2 | DOWNLOAD_STARTED, DOWNLOAD_FAILED |
+   | <code>search/handlers.py</code> | 1 | SEARCH_START |
+   | <code>system/handlers.py</code> | 3 | MESSAGE_INCOMING, MEDIA_SOURCE_DELETED, LIBRARY_FILE_DELETED |</p>
+</li>
+<li>
+<p><strong>消费者注册机制</strong>：集中式显式注册表</p>
+</li>
+<li><code>app/events/config.py</code> — <code>EVENT_HANDLER_MODULES</code> 列表</li>
+<li><code>app/events/decorators.py</code> — <code>register_modules()</code> 显式导入</li>
+<li>
+<p><code>initializer.py</code> — <code>init_event_handlers()</code> 统一调用</p>
+</li>
+<li>
+<p><strong>消除手动 <code>event_bus.subscribe()</code> 调用</strong>：</p>
+</li>
+<li>删除 <code>SubscribeService._register_event_handlers()</code> 和 <code>_handle_rss_auto_subscribe()</code></li>
+<li>RSS_AUTO_SUBSCRIBE_REQUESTED 处理逻辑迁移到 <code>subscribe/handlers.py</code></li>
+<li>例外：<code>transfer/handlers.py</code> 的 <code>handle_download_completed</code> 需要注入 <code>TransferPipeline</code>，保留 <code>register_download_completed_handler()</code> 显式注册，由 <code>services_builder</code> 在创建 pipeline 后调用</li>
+</ol>
+<h3 id="phase-4下载完成事件驱动转移已完成">Phase 4：下载完成事件驱动转移（已完成）<a class="headerlink" href="#phase-4下载完成事件驱动转移已完成" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>新建 <code>DownloadMonitor</code> 服务</strong>（<code>app/services/download_monitor.py</code>）</li>
+<li>ThreadPoolExecutor 并发检查多个下载器</li>
+<li>30 秒高频轮询，检测下载器中的新完成任务</li>
+<li>发布 <code>download.completed</code> 事件</li>
+<li>预热机制避免启动时大量触发</li>
+<li>
+<p><code>_processed_ids</code> 去重，防止重复处理</p>
+</li>
+<li>
+<p><strong>添加 <code>DownloadCompletedPayload</code></strong> 到 <code>app/events/payloads.py</code></p>
+</li>
+<li>
+<p><strong>添加 <code>handle_download_completed</code> handler</strong>（<code>transfer/handlers.py</code>）</p>
+</li>
+<li>接收 <code>download.completed</code> 事件</li>
+<li>获取下载器配置（operation, post_process）</li>
+<li>构建 <code>TransferTask</code> 调用 <code>TransferPipeline.process()</code></li>
+<li>
+<p>支持 move/link/copy 模式的后处理（删种/标记状态）</p>
+</li>
+<li>
+<p><strong>修改 <code>TransferCoordinator</code></strong>（低频兜底）</p>
+</li>
+<li><code>PT_TRANSFER_INTERVAL</code>：300 秒 → 30 秒（DownloadMonitor 轮询间隔）</li>
+<li>新增 <code>PT_TRANSFER_INTERVAL_FALLBACK</code>：1800 秒（30 分钟，pttransfer 兜底扫描）</li>
+<li>
+<p>兜底扫描处理因系统重启/事件丢失而未被转移的任务</p>
+</li>
+<li>
+<p><strong>生命周期集成</strong></p>
+</li>
+<li>DI Container 注册 <code>download_monitor</code> provider</li>
+<li><code>SystemLifecycleService.start_service()</code> 启动 DownloadMonitor</li>
+<li><code>SystemLifecycleService.stop_service()</code> 优雅停止 DownloadMonitor</li>
+<li>删除 <code>SubscribeService._register_event_handlers()</code> 和 <code>_handle_rss_auto_subscribe()</code></li>
+<li>RSS_AUTO_SUBSCRIBE_REQUESTED 处理逻辑迁移到 <code>subscribe/handlers.py</code></li>
+</ol>
+<hr>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">¶</a></h2>
+<p>全部实施完成。事件系统从全局单例迁移到 DI 驱动的声明式事件总线：</p>
+<ul>
+<li>发布端：裸 dict payload → 类型化 dataclass payload</li>
+<li>消费者：手动 <code>event_bus.subscribe()</code> → <code>@on_event</code> 装饰器 + 集中式注册表</li>
+<li>注册机制：隐式导入/文件扫描 → <code>EVENT_HANDLER_MODULES</code> 显式配置</li>
+</ul>
+<hr>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>发布端已解耦</strong>：不再依赖全局单例，通过 DI 获取 EventBus</li>
+<li><strong>事件命名统一</strong>：采用 <code>domain.action</code> 格式，避免旧 <code>EventType</code> 枚举膨胀</li>
+<li><strong>插件桥接简化</strong>：零映射直接转发，新增事件无需改核心代码</li>
+<li><strong>同步/异步分离</strong>：关键事件同步执行，非关键事件异步投递</li>
+</ul>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>发布端 payload 仍为裸 dict</strong>：dataclass 已定义但发布端尚未全面替换，消费者侧通过 <code>**event.payload</code> 解包使用</li>
+</ul>
+<h3 id="待验证检查清单">待验证检查清单<a class="headerlink" href="#待验证检查清单" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. 检查 @on_event 使用情况</span>
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">"@on_event"</span><span class="w"> </span>src/app/services/<span class="w"> </span>--include<span class="o">=</span><span class="s2">"*.py"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"def on_event"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+
+<span class="c1"># 2. 检查注册表完整性</span>
+cat<span class="w"> </span>src/app/events/config.py
+
+<span class="c1"># 3. 检查手动 event_bus.subscribe()（应为 0）</span>
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">"\.subscribe("</span><span class="w"> </span>src/app/services/<span class="w"> </span>--include<span class="o">=</span><span class="s2">"*.py"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"registry.subscribe\|bus.subscribe"</span>
+
+<span class="c1"># 4. 检查事件消费者覆盖率</span>
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">"publish("</span><span class="w"> </span>src/app/services/<span class="w"> </span>--include<span class="o">=</span><span class="s2">"*.py"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w">  </span><span class="c1"># 发布数</span>
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">"@on_event"</span><span class="w"> </span>src/app/services/<span class="w"> </span>--include<span class="o">=</span><span class="s2">"*.py"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w">  </span><span class="c1"># 消费数</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

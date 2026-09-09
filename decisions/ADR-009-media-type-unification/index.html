@@ -1,0 +1,2084 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-009-media-type-unification/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-009: 媒体类型命名统一重构方案 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-009-媒体类型命名统一重构方案" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-009: 媒体类型命名统一重构方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#重构前命名混乱现状" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        重构前命名混乱现状
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="重构前命名混乱现状">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-枚举层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 枚举层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-字符串层至少-6-种表示" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 字符串层（至少 6 种表示）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-代码中混用示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 代码中混用示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-具体问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 具体问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#方案设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="方案设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#新枚举定义" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新枚举定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#统一规则" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        统一规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心工具方法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心工具方法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#代码改造示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        代码改造示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施记录" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施记录
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施记录">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1重构枚举和工具已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1：重构枚举和工具（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2数据库迁移已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2：数据库迁移（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3代码层改造已完成" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3：代码层改造（已完成）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4前端适配待前端仓库实施" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4：前端适配（待前端仓库实施）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#验证检查清单" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        验证检查清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#质量检查结果" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        质量检查结果
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-009-media-type-unification.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-009-媒体类型命名统一重构方案">ADR-009: 媒体类型命名统一重构方案<a class="headerlink" href="#adr-009-媒体类型命名统一重构方案" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Accepted / Implemented</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-05-31（决策）/ 2026-06-01（实施完成）</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<p>系统中存在电影、电视剧、动漫三种媒体类型，但在枚举值、字符串表示、数据库存储、API 返回、前端展示等层面使用了多种不同的命名，导致维护困难和潜在 bug。</p>
+<h3 id="重构前命名混乱现状">重构前命名混乱现状<a class="headerlink" href="#重构前命名混乱现状" title="Permanent link">¶</a></h3>
+<h4 id="1-枚举层">1. 枚举层<a class="headerlink" href="#1-枚举层" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/utils/types.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MediaType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">MOVIE</span> <span class="o">=</span> <span class="s2">"电影"</span>      <span class="c1"># 枚举名 MOVIE，值是中文</span>
+    <span class="n">TV</span> <span class="o">=</span> <span class="s2">"剧集"</span>         <span class="c1"># 枚举名 TV，值是中文</span>
+    <span class="n">ANIME</span> <span class="o">=</span> <span class="s2">"动漫"</span>      <span class="c1"># 枚举名 ANIME，值是中文</span>
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s2">"未知"</span>
+</code></pre></div>
+<p>问题：枚举值是中文字符串，序列化到 JSON/数据库时不稳定。</p>
+<h4 id="2-字符串层至少-6-种表示">2. 字符串层（至少 6 种表示）<a class="headerlink" href="#2-字符串层至少-6-种表示" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>含义</th>
+<th>枚举名</th>
+<th>枚举值</th>
+<th>数据库</th>
+<th>API 返回</th>
+<th>站点 cat</th>
+<th>缩写</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>电影</td>
+<td><code>MOVIE</code></td>
+<td><code>"电影"</code></td>
+<td><code>"电影"</code> / <code>"MOV"</code></td>
+<td><code>"MOV"</code> / <code>"movie"</code></td>
+<td><code>"MOVIE"</code></td>
+<td><code>"mo"</code></td>
+</tr>
+<tr>
+<td>电视剧</td>
+<td><code>TV</code></td>
+<td><code>"剧集"</code></td>
+<td><code>"剧集"</code> / <code>"TV"</code></td>
+<td><code>"TV"</code> / <code>"tv"</code></td>
+<td><code>"TV"</code></td>
+<td><code>"tv"</code></td>
+</tr>
+<tr>
+<td>动漫</td>
+<td><code>ANIME</code></td>
+<td><code>"动漫"</code></td>
+<td><code>"动漫"</code> / <code>"ANI"</code></td>
+<td><code>"ANI"</code> / <code>"anime"</code></td>
+<td><code>"ANIME"</code></td>
+<td><code>"an"</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="3-代码中混用示例">3. 代码中混用示例<a class="headerlink" href="#3-代码中混用示例" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. 数据库查询映射 — 枚举值是中文</span>
+<span class="k">if</span> <span class="n">media_item</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"TV"</span>
+<span class="k">elif</span> <span class="n">media_item</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"MOVIE"</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"ANI"</span>
+
+<span class="c1"># 2. API 返回 — 枚举值直接返回中文</span>
+<span class="k">return</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">media_info</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">value</span><span class="p">}</span>  <span class="c1"># 返回 "电影" / "剧集" / "动漫"</span>
+
+<span class="c1"># 3. 站点分类映射 — 枚举名转站点代码</span>
+<span class="n">cat_map</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"MOVIE"</span><span class="p">:</span> <span class="s2">"mo"</span><span class="p">,</span> <span class="s2">"TV"</span><span class="p">:</span> <span class="s2">"tv"</span><span class="p">,</span> <span class="s2">"ANIME"</span><span class="p">:</span> <span class="s2">"an"</span><span class="p">}</span>
+
+<span class="c1"># 4. TMDB 查询 — 枚举转字符串（ANIME 被忽略）</span>
+<span class="n">typestr</span> <span class="o">=</span> <span class="s2">"MOV"</span> <span class="k">if</span> <span class="n">mtype</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span> <span class="k">else</span> <span class="s2">"TV"</span>
+<span class="c1"># 注意：这里没有 ANIME 分支，动漫被当成 TV 处理</span>
+
+<span class="c1"># 5. 条件判断 — 枚举比较（正确用法，但值是中文）</span>
+<span class="nb">getattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">,</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">ANIME</span><span class="p">)</span>
+
+<span class="c1"># 6. 数据库存储 — TYPE 字段存中文</span>
+<span class="n">TYPE</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>  <span class="c1"># 存 "电影", "剧集", "动漫"</span>
+</code></pre></div>
+<h4 id="4-具体问题">4. 具体问题<a class="headerlink" href="#4-具体问题" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>位置</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>枚举值是中文</td>
+<td><code>MediaType</code></td>
+<td>JSON 序列化后无法反序列化（中文字段名问题）</td>
+</tr>
+<tr>
+<td>数据库 TYPE 存中文</td>
+<td>多张表</td>
+<td>查询时需要字符串匹配，易出错；国际化困难</td>
+</tr>
+<tr>
+<td>API 返回不统一</td>
+<td><code>subscription.py</code>, <code>search.py</code></td>
+<td>前端需要处理 <code>"MOV"</code>, <code>"TV"</code>, <code>"ANI"</code>, <code>"movie"</code>, <code>"tv"</code> 等多种格式</td>
+</tr>
+<tr>
+<td>动漫类型被忽略</td>
+<td><code>tmdb_lookup.py:575</code></td>
+<td><code>typestr = "MOV" if mtype == MediaType.MOVIE else "TV"</code> — ANIME 被当成 TV</td>
+</tr>
+<tr>
+<td>缩写不一致</td>
+<td><code>search_repository.py</code></td>
+<td>TV 用 <code>"TV"</code>, 电影用 <code>"MOVIE"</code>, 动漫用 <code>"ANI"</code></td>
+</tr>
+<tr>
+<td>站点映射硬编码</td>
+<td><code>html_searcher.py</code></td>
+<td>每个站点可能有自己的 cat 编码，目前集中在代码里</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>单一事实来源</strong>：所有媒体类型通过 <code>MediaType</code> 枚举表示，消除字符串硬编码</li>
+<li><strong>序列化统一</strong>：数据库、API、缓存中的媒体类型使用统一的小写英文格式</li>
+<li><strong>前端展示隔离</strong>：中文名称（<code>电影</code>/<code>电视剧</code>/<code>动漫</code>）仅在前端本地化层使用</li>
+<li><strong>消除隐式转换</strong>：禁止在代码中手写 <code>"MOV"</code> / <code>"TV"</code> / <code>"ANI"</code> 等字符串判断</li>
+<li><strong>动漫类型正确处理</strong>：TMDB 查询等场景不再把 ANIME 隐式当成 TV</li>
+</ol>
+<hr>
+<h2 id="方案设计">方案设计<a class="headerlink" href="#方案设计" title="Permanent link">¶</a></h2>
+<h3 id="新枚举定义">新枚举定义<a class="headerlink" href="#新枚举定义" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/utils/types.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MediaType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""媒体类型枚举</span>
+
+<span class="sd">    - name: 大写英文（代码中使用，如 MediaType.MOVIE）</span>
+<span class="sd">    - value: 小写英文（序列化/数据库存储/API 返回）</span>
+<span class="sd">    - display: 中文名称（仅前端展示，通过 display_name() 获取）</span>
+<span class="sd">    """</span>
+    <span class="n">MOVIE</span> <span class="o">=</span> <span class="s2">"movie"</span>
+    <span class="n">TV</span> <span class="o">=</span> <span class="s2">"tv"</span>
+    <span class="n">ANIME</span> <span class="o">=</span> <span class="s2">"anime"</span>
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s2">"unknown"</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">display_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""获取前端展示名称"""</span>
+        <span class="k">return</span> <span class="n">_MEDIA_TYPE_DISPLAY_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"未知"</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_string</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"MediaType"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""从字符串反序列化，统一归一化为小写英文"""</span>
+        <span class="n">normalized</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">member</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">member</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">normalized</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">member</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">UNKNOWN</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""默认字符串表示为小写英文 value"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+
+
+<span class="c1"># 中文展示名称映射（仅用于前端/日志）</span>
+<span class="n">_MEDIA_TYPE_DISPLAY_NAMES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">MediaType</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">:</span> <span class="s2">"电影"</span><span class="p">,</span>
+    <span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">:</span> <span class="s2">"电视剧"</span><span class="p">,</span>
+    <span class="n">MediaType</span><span class="o">.</span><span class="n">ANIME</span><span class="p">:</span> <span class="s2">"动漫"</span><span class="p">,</span>
+    <span class="n">MediaType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">:</span> <span class="s2">"未知"</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="统一规则">统一规则<a class="headerlink" href="#统一规则" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>重构前</th>
+<th>重构后</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>枚举名</strong></td>
+<td><code>MediaType.MOVIE</code></td>
+<td><code>MediaType.MOVIE</code>（不变）</td>
+</tr>
+<tr>
+<td><strong>枚举值</strong></td>
+<td><code>"电影"</code> / <code>"剧集"</code> / <code>"动漫"</code></td>
+<td><code>"movie"</code> / <code>"tv"</code> / <code>"anime"</code></td>
+</tr>
+<tr>
+<td><strong>数据库存储</strong></td>
+<td><code>"电影"</code> / <code>"剧集"</code> / <code>"ANI"</code> 等</td>
+<td><code>"movie"</code> / <code>"tv"</code> / <code>"anime"</code></td>
+</tr>
+<tr>
+<td><strong>API 返回</strong></td>
+<td><code>"MOV"</code> / <code>"TV"</code> / <code>"ANI"</code></td>
+<td><code>"movie"</code> / <code>"tv"</code> / <code>"anime"</code></td>
+</tr>
+<tr>
+<td><strong>前端展示</strong></td>
+<td>直接使用 API 返回值</td>
+<td>通过 <code>MediaType.display_name</code> 映射为中文</td>
+</tr>
+<tr>
+<td><strong>日志输出</strong></td>
+<td>混用</td>
+<td>统一使用 <code>media_type.value</code>（小写英文）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="核心工具方法">核心工具方法<a class="headerlink" href="#核心工具方法" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># app/utils/media_type_utils.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MediaTypeMapper</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""媒体类型映射器 — 统一管理类型转换"""</span>
+
+    <span class="c1"># TMDB 类型映射</span>
+    <span class="n">TMDB_MAP</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MediaType</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"movie"</span><span class="p">:</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">,</span>
+        <span class="s2">"tv"</span><span class="p">:</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># 站点 cat 映射（按站点可配置）</span>
+    <span class="n">SITE_CAT_MAP</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MediaType</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"default"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"movie"</span><span class="p">:</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">,</span>
+            <span class="s2">"tv"</span><span class="p">:</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">,</span>
+            <span class="s2">"anime"</span><span class="p">:</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">ANIME</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="c1"># 可按站点扩展</span>
+    <span class="p">}</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_tmdb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">tmdb_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MediaType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""从 TMDB 类型字符串转枚举"""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">TMDB_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tmdb_type</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_tmdb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">media_type</span><span class="p">:</span> <span class="n">MediaType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""从枚举转 TMDB 类型字符串"""</span>
+        <span class="k">if</span> <span class="n">media_type</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"movie"</span>
+        <span class="k">if</span> <span class="n">media_type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">,</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">ANIME</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"tv"</span>
+        <span class="k">return</span> <span class="s2">""</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_site_cat</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cat</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MediaType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""从站点分类编码转枚举"""</span>
+        <span class="n">site_map</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SITE_CAT_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SITE_CAT_MAP</span><span class="p">[</span><span class="s2">"default"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">site_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_site_cat</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">media_type</span><span class="p">:</span> <span class="n">MediaType</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""从枚举转站点分类编码"""</span>
+        <span class="n">site_map</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SITE_CAT_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SITE_CAT_MAP</span><span class="p">[</span><span class="s2">"default"</span><span class="p">])</span>
+        <span class="c1"># 反向查找</span>
+        <span class="k">for</span> <span class="n">cat</span><span class="p">,</span> <span class="n">mt</span> <span class="ow">in</span> <span class="n">site_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">mt</span> <span class="o">==</span> <span class="n">media_type</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">cat</span>
+        <span class="k">return</span> <span class="s2">""</span>
+</code></pre></div>
+<h3 id="代码改造示例">代码改造示例<a class="headerlink" href="#代码改造示例" title="Permanent link">¶</a></h3>
+<p><strong>重构前</strong>：
+</p><div class="highlight"><pre><span></span><code><span class="c1"># 1. 数据库查询 — 手动字符串映射</span>
+<span class="k">if</span> <span class="n">media_item</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">TV</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"TV"</span>
+<span class="k">elif</span> <span class="n">media_item</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"MOVIE"</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">mtype</span> <span class="o">=</span> <span class="s2">"ANI"</span>
+
+<span class="c1"># 2. API 返回 — 中文转缩写</span>
+<span class="s2">"type"</span><span class="p">:</span> <span class="s2">"MOV"</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">TYPE</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"电影"</span> <span class="k">else</span> <span class="s2">"TV"</span>
+
+<span class="c1"># 3. TMDB 查询 — 枚举转字符串（ANIME 被忽略）</span>
+<span class="n">typestr</span> <span class="o">=</span> <span class="s2">"MOV"</span> <span class="k">if</span> <span class="n">mtype</span> <span class="o">==</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span> <span class="k">else</span> <span class="s2">"TV"</span>
+
+<span class="c1"># 4. 条件判断 — 硬编码字符串</span>
+<span class="k">if</span> <span class="n">media_info</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">"电影"</span> <span class="ow">and</span> <span class="n">media_info</span><span class="o">.</span><span class="n">get_episode_list</span><span class="p">():</span>
+    <span class="o">...</span>
+</code></pre></div><p></p>
+<p><strong>重构后</strong>：
+</p><div class="highlight"><pre><span></span><code><span class="c1"># 1. 数据库查询 — 直接用枚举值</span>
+<span class="n">mtype</span> <span class="o">=</span> <span class="n">media_item</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># "movie" / "tv" / "anime"</span>
+
+<span class="c1"># 2. API 返回 — 直接用枚举值</span>
+<span class="s2">"type"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">TYPE</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># "movie" / "tv" / "anime"</span>
+
+<span class="c1"># 3. TMDB 查询 — 使用映射器</span>
+<span class="n">typestr</span> <span class="o">=</span> <span class="n">MediaTypeMapper</span><span class="o">.</span><span class="n">to_tmdb</span><span class="p">(</span><span class="n">mtype</span><span class="p">)</span>  <span class="c1"># "movie" / "tv"</span>
+
+<span class="c1"># 4. 条件判断 — 用枚举比较</span>
+<span class="k">if</span> <span class="n">media_info</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">MediaType</span><span class="o">.</span><span class="n">MOVIE</span> <span class="ow">and</span> <span class="n">media_info</span><span class="o">.</span><span class="n">get_episode_list</span><span class="p">():</span>
+    <span class="o">...</span>
+</code></pre></div><p></p>
+<hr>
+<h2 id="实施记录">实施记录<a class="headerlink" href="#实施记录" title="Permanent link">¶</a></h2>
+<h3 id="phase-1重构枚举和工具已完成">Phase 1：重构枚举和工具（已完成）<a class="headerlink" href="#phase-1重构枚举和工具已完成" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>修改 <code>app/utils/types.py</code></strong>：<code>MediaType</code> 枚举值改为小写英文；添加 <code>display_name</code> property、<code>from_string()</code> 类方法、<code>__str__()</code> 返回 <code>self.value</code>；删除 <code>MovieTypes</code> / <code>TvTypes</code></li>
+<li><strong>新建 <code>app/utils/media_type_utils.py</code></strong>：<code>MediaTypeMapper</code> 类，TMDB / 站点 cat 映射</li>
+</ul>
+<h3 id="phase-2数据库迁移已完成">Phase 2：数据库迁移（已完成）<a class="headerlink" href="#phase-2数据库迁移已完成" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>Alembic 迁移脚本</strong>：<code>1fd6712c2b1f_unify_media_type_to_lowercase.py</code></li>
+<li>更新 7 张表的媒体类型字段：<code>DOWNLOAD_HISTORY</code>, <code>SUBSCRIBE_HISTORY</code>, <code>SUBSCRIBE_TORRENTS</code>, <code>SEARCH_RESULT_INFO</code>, <code>TRANSFER_HISTORY</code>, <code>TMDB_BLACKLIST</code>, <code>MEDIASYNC_ITEMS</code></li>
+<li>映射规则：<code>电影</code>/<code>MOVIE</code>/<code>MOV</code> → <code>movie</code>，<code>剧集</code>/<code>电视剧</code>/<code>TV</code> → <code>tv</code>，<code>动漫</code>/<code>ANIME</code>/<code>ANI</code> → <code>anime</code></li>
+</ul>
+<h3 id="phase-3代码层改造已完成">Phase 3：代码层改造（已完成）<a class="headerlink" href="#phase-3代码层改造已完成" title="Permanent link">¶</a></h3>
+<p>涉及约 40+ 文件：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>修改文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API Routers</td>
+<td><code>subscription.py</code>, <code>media.py</code>, <code>words.py</code>, <code>sync.py</code></td>
+</tr>
+<tr>
+<td>Services</td>
+<td><code>media_info_service.py</code>, <code>sync_service.py</code>, <code>search_result_service.py</code>, <code>search_message_service.py</code>, <code>tmdb_blacklist_service.py</code>, <code>transfer/filetransfer_service.py</code>, <code>rss_automation/executor.py</code>, <code>transfer_history_service.py</code>, <code>media_file_service.py</code>, <code>system/info.py</code>, <code>media_recommendation_service.py</code>, <code>search_web_service.py</code></td>
+</tr>
+<tr>
+<td>Subscribe</td>
+<td><code>monitor.py</code>, <code>finish_service.py</code>, <code>history_service.py</code>, <code>rss_feed.py</code>, <code>base_search.py</code>, <code>refresh_service.py</code>, <code>add_service.py</code>, <code>update_service.py</code>, <code>query_service.py</code>, <code>matcher.py</code>, <code>search_engine.py</code></td>
+</tr>
+<tr>
+<td>Media/Lookup</td>
+<td><code>tmdb_lookup.py</code>, <code>tmdb_discover.py</code>, <code>html_searcher.py</code>, <code>bangumi.py</code>, <code>douban.py</code></td>
+</tr>
+<tr>
+<td>Mediaserver</td>
+<td><code>plex.py</code>, <code>emby.py</code>, <code>jellyfin.py</code>, <code>fnos.py</code>, <code>media_server.py</code></td>
+</tr>
+<tr>
+<td>Repository/Domain</td>
+<td><code>search_repository.py</code>, <code>media_repository.py</code>, <code>download.py</code>, <code>word.py</code></td>
+</tr>
+<tr>
+<td>Message/Plugins</td>
+<td><code>message_builder.py</code>, <code>doubanrank/plugin.py</code>, <code>doubansync/plugin.py</code></td>
+</tr>
+<tr>
+<td>Agent</td>
+<td><code>tool_executor.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-4前端适配待前端仓库实施">Phase 4：前端适配（待前端仓库实施）<a class="headerlink" href="#phase-4前端适配待前端仓库实施" title="Permanent link">¶</a></h3>
+<ul>
+<li>前端接收 <code>movie</code> / <code>tv</code> / <code>anime</code>，通过映射表转为中文展示</li>
+<li>删除前端所有硬编码 <code>"MOV"</code> / <code>"TV"</code> / <code>"ANI"</code> 判断</li>
+<li><code>zh-CN/page.json</code> 中添加 <code>media_type</code> 映射：
+  <div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"media_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"movie"</span><span class="p">:</span><span class="w"> </span><span class="s2">"电影"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"tv"</span><span class="p">:</span><span class="w"> </span><span class="s2">"电视剧"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"anime"</span><span class="p">:</span><span class="w"> </span><span class="s2">"动漫"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"unknown"</span><span class="p">:</span><span class="w"> </span><span class="s2">"未知"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></li>
+</ul>
+<hr>
+<h2 id="决策">决策<a class="headerlink" href="#决策" title="Permanent link">¶</a></h2>
+<p>按本方案四阶段全部实施。</p>
+<hr>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>单一事实来源</strong>：<code>MediaType</code> 枚举是唯一的类型定义，消除字符串硬编码</li>
+<li><strong>序列化稳定</strong>：枚举值为小写英文，JSON/API/数据库通用</li>
+<li><strong>国际化友好</strong>：中文展示名称集中在前端本地化文件，支持多语言切换</li>
+<li><strong>类型安全</strong>：IDE 自动补全和类型检查生效，减少 typo</li>
+<li><strong>ANIME 类型不再被隐式当成 TV</strong>：<code>MediaTypeMapper.to_tmdb()</code> 正确处理动漫类型</li>
+</ul>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>数据库迁移</strong>：需要更新所有 TYPE 字段，大表可能有性能影响</li>
+<li><strong>前端适配</strong>：前端需同步更新类型映射</li>
+<li><strong>外部接口影响</strong>：站点 cat 映射变更可能影响已有站点的搜索/刷流</li>
+</ul>
+<h3 id="验证检查清单">验证检查清单<a class="headerlink" href="#验证检查清单" title="Permanent link">¶</a></h3>
+<p>实施后运行以下检查确保无遗漏：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. 检查代码中是否还有非标准格式字符串</span>
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s1">'"电影"\|"剧集"\|"动漫"\|"MOV"\|"ANI"\|"movie"\|"tv"\|"anime"'</span><span class="w"> </span>src/<span class="w"> </span>--include<span class="o">=</span><span class="s2">"*.py"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"display_name"</span>
+
+<span class="c1"># 2. 检查数据库 TYPE 字段是否统一</span>
+<span class="c1"># SQL: SELECT DISTINCT type FROM subscribe_movies UNION SELECT DISTINCT type FROM subscribe_tvs;</span>
+
+<span class="c1"># 3. 检查 API 返回是否统一</span>
+<span class="c1"># curl /api/media/list | jq '.data[].type' | sort | uniq</span>
+</code></pre></div>
+<h3 id="质量检查结果">质量检查结果<a class="headerlink" href="#质量检查结果" title="Permanent link">¶</a></h3>
+<ul>
+<li><code>ruff check src/ tests/</code> — 通过</li>
+<li><code>pyright src/ tests/</code> — 0 errors</li>
+<li><code>pytest tests/ -v</code> — 621 passed, 0 failed</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,2361 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-018-autosignin-site-driven-refactor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-018: 自动签到插件站点驱动重构 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-018-自动签到插件站点驱动重构" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-018: 自动签到插件站点驱动重构
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives Considered
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Alternatives Considered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-在-configsitesjson-中增加-signin-段" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 在 config/sites/*.json 中增加 signin 段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-插件内完全独立的签到配置含-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 插件内完全独立的签到配置（含 URL）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-维持-adr-012-现状" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 维持 ADR-012 现状
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-插件目录新增-signin_configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 插件目录新增 signin_configs/
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-插件本地签到配置格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 插件本地签到配置格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-sitesignincontext-扩展" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. SiteSigninContext 扩展
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-signinconfigstore替代-siteconfigstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. SigninConfigStore（替代 SiteConfigStore）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-自定义-handler-按-site_id-注册" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 自定义 Handler 按 site_id 注册
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-handlerregistry-改造" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. HandlerRegistry 改造
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-通用策略实现" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 通用策略实现
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 通用策略实现">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-apisigninhandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 ApiSigninHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-httpsigninhandler原-genericsigninhandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 HttpSigninHandler（原 GenericSigninHandler）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-browsersigninhandler原-chromesigninsimulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 BrowserSigninHandler（原 ChromeSigninSimulator）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-signinengine-调用流程" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. SigninEngine 调用流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#risks-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks and Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-adrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related ADRs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-018-autosignin-site-driven-refactor.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-018-自动签到插件站点驱动重构">ADR-018: 自动签到插件站点驱动重构<a class="headerlink" href="#adr-018-自动签到插件站点驱动重构" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Proposed</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-07-15</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<p>ADR-012 已落地，自动签到插件从 21 个独立 Python 文件收敛到“自定义 Handler + 声明式配置 + 通用兜底”三层架构。但运行一段时间后出现以下问题：</p>
+<ol>
+<li><strong>站点 URL 仍硬编码</strong>：<code>MTeam.site_url = "kp.m-team.cc"</code>、<code>HDSky.site_url = "hdsky.me"</code>，<code>site_config_store.py</code> 中仍用 <code>site_url="rousi.pro"</code> 等字符串作为注册键。站点域名变更或添加镜像域名时，必须改插件代码。</li>
+<li><strong>无 API / HTML 站点区分</strong>：<code>DeclarativeSigninHandler</code> 的 <code>auth_type</code> 与 <code>response_type</code> 是补丁式字段，没有明确区分“API 站点走 JSON 端点”和“HTML 站点走页面或浏览器”。</li>
+<li><strong>浏览器自动化是兜底策略</strong>：<code>ChromeSigninSimulator</code> 只在“无 handler 且 <code>chrome=True</code>”时触发，无法作为某些站点的首选签到方式，也没有复用站点定义中的选择器。</li>
+<li><strong>注册键是域名</strong>：<code>HandlerRegistry.get(signurl)</code> 按 domain 查找，没有利用更稳定的 <code>site_id</code>，导致同一站点多个域名时匹配失败。</li>
+</ol>
+<p>因此需要进一步重构，使签到逻辑完全由站点定义驱动，URL/认证类型从系统 <code>SiteEngine</code> 获取，签到策略作为插件自治配置。</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">¶</a></h2>
+<p>采用 <strong>“站点定义驱动、插件配置自治、策略分层”</strong> 的架构：</p>
+<ol>
+<li><strong>URL 来源唯一</strong>：所有站点 URL、认证类型、API/HTML 分类从系统 <code>SiteEngine</code> / <code>SiteCache</code> 获取，handler 不再硬编码 <code>site_url</code>。</li>
+<li><strong>插件本地配置</strong>：签到策略（method、path、markers、selectors）放在插件目录下的 <code>signin_configs/*.json</code>，不污染系统站点 schema。</li>
+<li><strong>按 <code>site_id</code> 注册</strong>：自定义 handler 与通用策略都通过 <code>site_id</code> 匹配，避免域名漂移问题。</li>
+<li><strong>三类通用策略</strong>：</li>
+<li><code>ApiSigninHandler</code>：API 站点，调用 JSON 端点，按 <code>json_success_path/value</code> 校验。</li>
+<li><code>HttpSigninHandler</code>：HTML 站点，直接 HTTP GET/POST，按字符串 markers 匹配。</li>
+<li><code>BrowserSigninHandler</code>：HTML 站点需浏览器自动化，使用 <code>BrowserSession</code> 点击签到元素。</li>
+<li><strong>自定义 Handler 保留</strong>：问答、OCR、滑块、LocalStorage 等特殊流程仍用 Python handler，但按 <code>site_id</code> 注册并从 <code>SiteSigninContext</code> 获取 URL。</li>
+</ol>
+<h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">¶</a></h2>
+<h3 id="1-在-configsitesjson-中增加-signin-段">1. 在 <code>config/sites/*.json</code> 中增加 <code>signin</code> 段<a class="headerlink" href="#1-在-configsitesjson-中增加-signin-段" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>Pros</strong>：URL 和签到配置都在同一个文件，单点维护。</li>
+<li><strong>Cons</strong>：签到是插件级行为，污染系统站点 schema；每新增站点签到都要修改核心配置；系统 schema 变更影响面大。</li>
+<li><strong>Rejected</strong>：站点 JSON 的核心职责是搜索/下载/用户信息，签到不应侵入。</li>
+</ul>
+<h3 id="2-插件内完全独立的签到配置含-url">2. 插件内完全独立的签到配置（含 URL）<a class="headerlink" href="#2-插件内完全独立的签到配置含-url" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>Pros</strong>：插件完全自治，不依赖系统 schema。</li>
+<li><strong>Cons</strong>：URL、domain、api base_url 与系统站点定义重复，易产生漂移；新增站点需要同时在系统和插件里配置 URL。</li>
+<li><strong>Rejected</strong>：URL 应以系统站点定义为准，避免双写。</li>
+</ul>
+<h3 id="3-维持-adr-012-现状">3. 维持 ADR-012 现状<a class="headerlink" href="#3-维持-adr-012-现状" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>Pros</strong>：无需改动。</li>
+<li><strong>Cons</strong>：URL 硬编码、API/HTML 不区分、浏览器自动化是兜底，无法支持新站点快速接入。</li>
+<li><strong>Rejected</strong>：不能解决当前痛点。</li>
+</ul>
+<h2 id="detailed-design">Detailed Design<a class="headerlink" href="#detailed-design" title="Permanent link">¶</a></h2>
+<h3 id="1-插件目录新增-signin_configs">1. 插件目录新增 <code>signin_configs/</code><a class="headerlink" href="#1-插件目录新增-signin_configs" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>src/app/plugin_framework/builtin_plugins/autosignin/
+├── backend/
+│   ├── signin_configs/              # 新增
+│   │   ├── rousi.json
+│   │   ├── hdarea.json
+│   │   ├── yemapt.json
+│   │   ├── tnode.json
+│   │   ├── btschool.json
+│   │   └── ...
+│   ├── handlers/
+│   │   ├── base.py
+│   │   ├── mteam.py                 # 改为 site_id 注册，API + HMAC 签名
+│   │   ├── hdsky.py
+│   │   ├── chdbits.py
+│   │   ├── _api.py                  # 新增
+│   │   ├── _http.py                 # 新增（原 _generic）
+│   │   └── _browser.py              # 新增（原 simulator）
+│   ├── signin_config_store.py       # 新增/替代 site_config_store.py
+│   ├── registry.py
+│   ├── signer.py
+│   └── simulator.py                 # 删除，合并到 _browser.py
+</code></pre></div>
+<h3 id="2-插件本地签到配置格式">2. 插件本地签到配置格式<a class="headerlink" href="#2-插件本地签到配置格式" title="Permanent link">¶</a></h3>
+<p>按 <code>site_id</code> 索引，策略字段与站点类型解耦。自定义 handler 不需要配置。</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// signin_configs/hdarea.json</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">"site_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HDarea"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"attendance.php"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sign_in"</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"success_markers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"此次签到您获得"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"already_markers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"请不要重复签到"</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">// signin_configs/rousi.json</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">"site_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rousi"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"POST"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"body"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"auth"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bearer"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"auth_source"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"header"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"x-sign-token"</span><span class="p">,</span><span class="w"> </span><span class="nt">"strip_prefix"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer "</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"content-type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application/json"</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"already_markers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"已签到"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"json_success_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"code"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"json_success_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">// signin_configs/yemapt.json</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">"site_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"yemapt"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"auth"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cookie_raw"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"success_markers"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">"already_markers"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="p">}</span>
+</code></pre></div>
+<ul>
+<li><code>type</code>：<code>api</code> / <code>http</code> / <code>browser</code>。</li>
+<li><code>auth</code>：可选，默认从系统站点定义推断（api_key / bearer / cookie）。</li>
+<li><code>path</code>：相对于 <code>site_url</code> 或 <code>api.base_url</code> 的路径。</li>
+</ul>
+<h3 id="3-sitesignincontext-扩展">3. <code>SiteSigninContext</code> 扩展<a class="headerlink" href="#3-sitesignincontext-扩展" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.config_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_proxies</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SiteSigninContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""从 site_info 提取的标准化上下文，站点模块是 URL/凭据唯一来源。"""</span>
+
+    <span class="n">site</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">site_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">site_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cookie</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">bearer_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">ua</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">proxy_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">api_key_header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">is_browser</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_site_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">site_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">site_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SiteSigninContext"</span><span class="p">:</span>
+        <span class="n">proxy</span> <span class="o">=</span> <span class="n">get_proxies</span><span class="p">()</span> <span class="k">if</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"proxy"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">proxy_url</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">site_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">site_engine</span> <span class="ow">and</span> <span class="p">(</span><span class="n">site_url</span> <span class="o">:=</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"signurl"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"strict_url"</span><span class="p">)):</span>
+            <span class="n">site_def</span> <span class="o">=</span> <span class="n">site_engine</span><span class="o">.</span><span class="n">get_by_url</span><span class="p">(</span><span class="n">site_url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">site_def</span><span class="p">:</span>
+                <span class="n">site_id</span> <span class="o">=</span> <span class="n">site_def</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">site</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">site_id</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span>
+            <span class="n">site_url</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"signurl"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">cookie</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cookie"</span><span class="p">),</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_key"</span><span class="p">),</span>
+            <span class="n">bearer_token</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bearer_token"</span><span class="p">),</span>
+            <span class="n">ua</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ua"</span><span class="p">),</span>
+            <span class="n">proxy_url</span><span class="o">=</span><span class="n">proxy_url</span><span class="p">,</span>
+            <span class="n">api_key_header</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_key_header"</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"headers"</span><span class="p">),</span>
+            <span class="n">is_browser</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">site_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_browser"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="n">raw</span><span class="o">=</span><span class="n">site_info</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+<h3 id="4-signinconfigstore替代-siteconfigstore">4. <code>SigninConfigStore</code>（替代 <code>SiteConfigStore</code>）<a class="headerlink" href="#4-signinconfigstore替代-siteconfigstore" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="sd">"""插件本地签到配置加载，运行时从 SiteEngine 补全 URL。"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.core.root_path</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_project_root</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.json_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">JsonUtils</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.plugin_framework.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">PluginContext</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SigninConfigStore</span><span class="p">:</span>
+    <span class="n">_CONFIG_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">get_project_root</span><span class="p">(),</span>
+        <span class="s2">"src"</span><span class="p">,</span>
+        <span class="s2">"app"</span><span class="p">,</span>
+        <span class="s2">"plugin_framework"</span><span class="p">,</span>
+        <span class="s2">"builtin_plugins"</span><span class="p">,</span>
+        <span class="s2">"autosignin"</span><span class="p">,</span>
+        <span class="s2">"backend"</span><span class="p">,</span>
+        <span class="s2">"signin_configs"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_USER_FILE</span> <span class="o">=</span> <span class="s2">"signin_configs.json"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">:</span> <span class="n">PluginContext</span><span class="p">,</span> <span class="n">site_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span> <span class="o">=</span> <span class="n">plugin_ctx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span> <span class="o">=</span> <span class="n">site_engine</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_builtin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="n">configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_CONFIG_DIR</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">configs</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_CONFIG_DIR</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fname</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".json"</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">fpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_CONFIG_DIR</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fpath</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JsonUtils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"加载签到配置失败: </span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">configs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_USER_FILE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">JsonUtils</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"读取 </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_USER_FILE</span><span class="si">}</span><span class="s2"> 失败，使用内置配置"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""用户配置覆盖内置配置，按 site_id 合并。"""</span>
+        <span class="n">builtin</span> <span class="o">=</span> <span class="p">{</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"site_id"</span><span class="p">]:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_builtin</span><span class="p">()}</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="p">{</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"site_id"</span><span class="p">]:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_user</span><span class="p">()}</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">builtin</span><span class="p">)</span>
+        <span class="n">merged</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</code></pre></div>
+<h3 id="5-自定义-handler-按-site_id-注册">5. 自定义 Handler 按 <code>site_id</code> 注册<a class="headerlink" href="#5-自定义-handler-按-site_id-注册" title="Permanent link">¶</a></h3>
+<p>自定义 handler 用于无法静态配置的特殊流程（OCR、AI 问答、滑块、动态 HMAC 签名等），但不再硬编码站点 URL。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># handlers/mteam.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTeam</span><span class="p">(</span><span class="n">SiteSigninHandler</span><span class="p">):</span>
+    <span class="n">site_id</span> <span class="o">=</span> <span class="s2">"mteam"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">signin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SigninResult</span><span class="p">:</span>
+        <span class="c1"># URL 从 ctx.resolve_base_url(site_engine) 获取，不再硬编码</span>
+        <span class="c1"># 1. 从 localStorage 读取 auth / did / visitorId / webversion</span>
+        <span class="c1"># 2. 从主站 JS 动态提取 HMAC 密钥</span>
+        <span class="c1"># 3. 计算签名并 POST api.m-team.io/api/member/updateLastBrowse</span>
+        <span class="o">...</span>
+</code></pre></div>
+<h3 id="6-handlerregistry-改造">6. <code>HandlerRegistry</code> 改造<a class="headerlink" href="#6-handlerregistry-改造" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.submodule_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubmoduleLoader</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.handlers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SiteSigninHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.handlers._api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ApiSigninHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.handlers._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">HttpSigninHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.handlers._browser</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSigninHandler</span>
+
+<span class="n">HandlerFactory</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">SiteSigninHandler</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HandlerRegistry</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">,</span> <span class="n">site_engine</span><span class="p">,</span> <span class="n">signin_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">agent_service</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span> <span class="o">=</span> <span class="n">plugin_ctx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span> <span class="o">=</span> <span class="n">rate_limiter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span> <span class="o">=</span> <span class="n">site_engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_service</span> <span class="o">=</span> <span class="n">agent_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_signin_configs</span> <span class="o">=</span> <span class="p">{</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"site_id"</span><span class="p">]:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">signin_configs</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">HandlerFactory</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="c1"># 1. 自定义 handler（按 site_id 注册）</span>
+        <span class="n">custom_classes</span> <span class="o">=</span> <span class="n">SubmoduleLoader</span><span class="o">.</span><span class="n">import_submodules</span><span class="p">(</span>
+            <span class="s2">"app.plugin_framework.builtin_plugins.autosignin.backend.handlers"</span><span class="p">,</span>
+            <span class="n">filter_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">"site_id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">custom_classes</span><span class="p">:</span>
+            <span class="n">site_ids</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"site_ids"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">site_id</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">site_ids</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="o">=</span><span class="bp">cls</span><span class="p">:</span> <span class="n">c</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="p">,</span>
+                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_filter_kwargs</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">{</span><span class="s2">"agent_service"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_service</span><span class="p">}),</span>
+                <span class="p">)</span>
+
+        <span class="c1"># 2. 通用策略（按插件本地 signin_configs）</span>
+        <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signin_configs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">strategy_type</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">,</span> <span class="s2">"http"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">strategy_type</span> <span class="o">==</span> <span class="s2">"api"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="o">=</span><span class="n">cfg</span><span class="p">:</span> <span class="n">ApiSigninHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">strategy_type</span> <span class="o">==</span> <span class="s2">"browser"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="o">=</span><span class="n">cfg</span><span class="p">:</span> <span class="n">BrowserSigninHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="o">=</span><span class="n">cfg</span><span class="p">:</span> <span class="n">HttpSigninHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter_kwargs</span><span class="p">(</span><span class="n">handler_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">deps</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">handler_class</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">deps</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">params</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HandlerFactory</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">site_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_generic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HandlerFactory</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">HttpSigninHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="7-通用策略实现">7. 通用策略实现<a class="headerlink" href="#7-通用策略实现" title="Permanent link">¶</a></h3>
+<h4 id="71-apisigninhandler">7.1 <code>ApiSigninHandler</code><a class="headerlink" href="#71-apisigninhandler" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># handlers/_api.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.infrastructure.http.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">ApiKeyAuth</span><span class="p">,</span> <span class="n">BearerAuth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">JsonUtils</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SigninResult</span><span class="p">,</span> <span class="n">SiteSigninContext</span><span class="p">,</span> <span class="n">SiteSigninHandler</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ApiSigninHandler</span><span class="p">(</span><span class="n">SiteSigninHandler</span><span class="p">):</span>
+    <span class="n">site_id</span> <span class="o">=</span> <span class="s2">"__api__"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">signin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SigninResult</span><span class="p">:</span>
+        <span class="n">base_url</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">resolve_base_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="o">.</span><span class="n">site_engine</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"endpoint"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="n">base_url</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"endpoint"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"POST"</span><span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"endpoint"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_headers</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+
+        <span class="n">auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_auth</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth</span><span class="p">,</span> <span class="n">SigninResult</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">auth</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_http_client</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"POST"</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">SITE_UNREACHABLE</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_response</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_auth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">):</span>
+        <span class="n">auth_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"auth"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">auth_type</span> <span class="o">==</span> <span class="s2">"api_key"</span> <span class="ow">or</span> <span class="p">(</span><span class="n">auth_type</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ctx</span><span class="o">.</span><span class="n">site_type</span> <span class="o">==</span> <span class="s2">"api"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ctx</span><span class="o">.</span><span class="n">api_key</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="s2">"未配置 api_key"</span><span class="p">)</span>
+            <span class="n">header_name</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">api_key_header</span> <span class="ow">or</span> <span class="s2">"X-Api-Key"</span>
+            <span class="k">return</span> <span class="n">ApiKeyAuth</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span> <span class="n">header_name</span><span class="o">=</span><span class="n">header_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">auth_type</span> <span class="o">==</span> <span class="s2">"bearer"</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bearer_token</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="s2">"未配置 bearer_token"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">BearerAuth</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">bearer_token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SigninResult</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">JsonUtils</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="s2">"解析 JSON 响应失败"</span><span class="p">)</span>
+
+        <span class="n">success_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"json_success_path"</span><span class="p">)</span>
+        <span class="n">success_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"json_success_value"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">success_path</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">success_path</span><span class="p">)</span> <span class="o">==</span> <span class="n">success_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success_markers"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"already_markers"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">already</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"接口返回 </span><span class="si">{</span><span class="n">text</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="72-httpsigninhandler原-genericsigninhandler">7.2 <code>HttpSigninHandler</code>（原 <code>GenericSigninHandler</code>）<a class="headerlink" href="#72-httpsigninhandler原-genericsigninhandler" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># handlers/_http.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.infrastructure.http.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">CookieAuth</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SigninResult</span><span class="p">,</span> <span class="n">SiteSigninContext</span><span class="p">,</span> <span class="n">SiteSigninHandler</span>
+
+<span class="n">DEFAULT_SUCCESS_MARKERS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"签到成功"</span><span class="p">,</span> <span class="s2">"此次签到您获得"</span><span class="p">,</span> <span class="s2">"获得.*魔力值"</span><span class="p">,</span> <span class="s2">"获得.*积分"</span><span class="p">,</span> <span class="s2">"已获取"</span>
+<span class="p">]</span>
+<span class="n">DEFAULT_ALREADY_MARKERS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"今日已签到"</span><span class="p">,</span> <span class="s2">"今日已签"</span><span class="p">,</span> <span class="s2">"已经签到"</span><span class="p">,</span> <span class="s2">"请不要重复签到"</span><span class="p">,</span>
+    <span class="s2">"签到已得"</span><span class="p">,</span> <span class="s2">"重复签到"</span><span class="p">,</span> <span class="s2">"今天已经签过到了"</span>
+<span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HttpSigninHandler</span><span class="p">(</span><span class="n">SiteSigninHandler</span><span class="p">):</span>
+    <span class="n">site_id</span> <span class="o">=</span> <span class="s2">"__http__"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_success_markers</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success_markers"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_SUCCESS_MARKERS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_already_markers</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"already_markers"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_ALREADY_MARKERS</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">signin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SigninResult</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ctx</span><span class="o">.</span><span class="n">site_url</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">custom</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+
+        <span class="n">base_url</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">resolve_base_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="o">.</span><span class="n">site_engine</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="n">base_url</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"get"</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_headers</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+
+        <span class="n">auth</span> <span class="o">=</span> <span class="n">CookieAuth</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">cookie</span><span class="p">)</span> <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">cookie</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_http_client</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"POST"</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">SITE_UNREACHABLE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cookie_result</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_cookie</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cookie_result</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_success_markers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_already_markers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">already</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"签到接口返回 </span><span class="si">{</span><span class="n">text</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="73-browsersigninhandler原-chromesigninsimulator">7.3 <code>BrowserSigninHandler</code>（原 <code>ChromeSigninSimulator</code>）<a class="headerlink" href="#73-browsersigninhandler原-chromesigninsimulator" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># handlers/_browser.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lxml</span><span class="w"> </span><span class="kn">import</span> <span class="n">etree</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.infrastructure.chrome</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSession</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.sites.siteconf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SiteConf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.sites.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_logged_in</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExceptionUtils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.browser_mode</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chrome_server_url</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SigninResult</span><span class="p">,</span> <span class="n">SiteSigninContext</span><span class="p">,</span> <span class="n">SiteSigninHandler</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BrowserSigninHandler</span><span class="p">(</span><span class="n">SiteSigninHandler</span><span class="p">):</span>
+    <span class="n">site_id</span> <span class="o">=</span> <span class="s2">"__browser__"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">plugin_ctx</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">signin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">SiteSigninContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SigninResult</span><span class="p">:</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">site</span>
+        <span class="n">home_url</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">resolve_base_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="o">.</span><span class="n">site_engine</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"1ptba"</span> <span class="ow">in</span> <span class="n">home_url</span><span class="p">:</span>
+            <span class="n">home_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">home_url</span><span class="si">}</span><span class="s2">/index.php"</span>
+
+        <span class="n">server_url</span> <span class="o">=</span> <span class="n">get_chrome_server_url</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">server_url</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"Chrome 服务器未配置"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"开始浏览器签到：</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">BrowserSession</span><span class="p">(</span><span class="n">site_key</span><span class="o">=</span><span class="n">site</span><span class="p">,</span> <span class="n">server_url</span><span class="o">=</span><span class="n">server_url</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">navigate</span><span class="p">(</span><span class="n">home_url</span><span class="p">,</span> <span class="n">cookie</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">cookie</span><span class="p">)</span>
+                <span class="n">html_text</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">html_text</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"无法打开网站"</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_already_signed</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">already</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_logged_in</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"登录状态异常"</span><span class="p">)</span>
+
+                <span class="n">selectors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"checkin_selectors"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">SiteConf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugin_ctx</span><span class="o">.</span><span class="n">site_engine</span><span class="p">)</span><span class="o">.</span><span class="n">get_checkin_conf</span><span class="p">()</span>
+                <span class="n">xpath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_checkin_xpath</span><span class="p">(</span><span class="n">html_text</span><span class="p">,</span> <span class="n">selectors</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">xpath</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">custom</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">]模拟登录成功"</span><span class="p">)</span>
+
+                <span class="n">session</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="sa">f</span><span class="s2">"xpath:</span><span class="si">{</span><span class="n">xpath</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+                <span class="n">html_text</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">html</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_success</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">custom</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">]浏览器签到成功"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_already_signed</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">already</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_two_factor</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"需要两步验证"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error</span><span class="p">(</span><span class="n">html_text</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"页面显示错误"</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="s2">"浏览器签到失败，未知原因"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ExceptionUtils</span><span class="o">.</span><span class="n">exception_traceback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SigninResult</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_checkin_xpath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">html_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">selectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span><span class="n">html_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">html</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">xpath</span> <span class="ow">in</span> <span class="n">selectors</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">html</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="n">xpath</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">xpath</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_already_signed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"已签|签到已得|今日已签|已签到|签到成功"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">markers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success_markers"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="n">markers</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">markers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"已签|签到成功|获得.*积分|签到.*积分"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_two_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"完成两步验证|两步验证|2FA|二次验证"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"错误|失败|异常|error|fail"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="8-signinengine-调用流程">8. <code>SigninEngine</code> 调用流程<a class="headerlink" href="#8-signinengine-调用流程" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># signer.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SigninEngine</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">HandlerRegistry</span><span class="p">,</span> <span class="n">site_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span> <span class="o">=</span> <span class="n">ctx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span> <span class="o">=</span> <span class="n">registry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_cache</span> <span class="o">=</span> <span class="n">site_cache</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_signin_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">site_ctx</span> <span class="o">=</span> <span class="n">SiteSigninContext</span><span class="o">.</span><span class="n">from_site_info</span><span class="p">(</span><span class="n">site_info</span><span class="p">)</span>
+        <span class="n">factory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site_ctx</span><span class="o">.</span><span class="n">site_id</span><span class="p">)</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">factory</span><span class="p">:</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="n">factory</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handler</span> <span class="ow">and</span> <span class="n">site_ctx</span><span class="o">.</span><span class="n">is_browser</span><span class="p">:</span>
+            <span class="n">browser_handler</span> <span class="o">=</span> <span class="n">BrowserSigninHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">browser_handler</span><span class="o">.</span><span class="n">signin</span><span class="p">(</span><span class="n">site_ctx</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">msg</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site_ctx</span><span class="o">.</span><span class="n">site</span><span class="si">}</span><span class="s2">]浏览器签到失败：</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handler</span><span class="p">:</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="o">.</span><span class="n">get_generic</span><span class="p">()()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">signin</span><span class="p">(</span><span class="n">site_ctx</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">msg</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">site_ctx</span><span class="o">.</span><span class="n">site</span><span class="si">}</span><span class="s2">]签到失败：</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+<h2 id="implementation-plan">Implementation Plan<a class="headerlink" href="#implementation-plan" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>内容</th>
+<th>产出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>新增 <code>SigninConfigStore</code> + <code>signin_configs/</code> JSON</td>
+<td>插件本地配置体系</td>
+</tr>
+<tr>
+<td>2</td>
+<td>新增 <code>ApiSigninHandler</code> / <code>HttpSigninHandler</code> / <code>BrowserSigninHandler</code></td>
+<td>三类通用策略</td>
+</tr>
+<tr>
+<td>3</td>
+<td>改造 <code>SiteSigninContext</code> 和 <code>HandlerRegistry</code></td>
+<td>按 <code>site_id</code> 注册、URL 从 <code>SiteEngine</code> 获取</td>
+</tr>
+<tr>
+<td>4</td>
+<td>迁移自定义 handler：<code>MTeam</code>、<code>HDSky</code>、<code>CHDBits</code> 等</td>
+<td>去掉 <code>site_url</code> 硬编码</td>
+</tr>
+<tr>
+<td>5</td>
+<td>删除 <code>simulator.py</code> 和旧 <code>site_config_store.py</code></td>
+<td>代码精简</td>
+</tr>
+<tr>
+<td>6</td>
+<td>更新 <code>signer.py</code> 和 <code>plugin.py</code></td>
+<td>适配新 registry 和 context</td>
+</tr>
+<tr>
+<td>7</td>
+<td>补充测试</td>
+<td><code>test_signin_config_store.py</code>、<code>test_registry.py</code>、<code>test_api_handler.py</code>、<code>test_http_handler.py</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>跑 <code>uv run ruff check .</code> 和 <code>uv run pyright src/ tests/</code></td>
+<td>质量门禁</td>
+</tr>
+</tbody>
+</table>
+<h2 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">¶</a></h2>
+<ul>
+<li>旧 <code>site_configs.json</code> 中用户自定义的声明式配置可自动迁移到新的 <code>signin_configs.json</code> 格式：脚本读取旧配置，按 <code>site_url</code> 反查 <code>SiteEngine.get_by_domain()</code> 得到 <code>site_id</code>，重写为新的 JSON。</li>
+<li>自定义 handler 的 <code>site_url</code> 字段需要改为 <code>site_id</code>。</li>
+<li>旧 <code>GenericSigninHandler</code> 的默认 markers 由 <code>HttpSigninHandler</code> 继承。</li>
+<li><code>ChromeSigninSimulator</code> 的能力由 <code>BrowserSigninHandler</code> 继承，配置从 <code>signin_configs/*.json</code> 读取。</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="positive">Positive<a class="headerlink" href="#positive" title="Permanent link">¶</a></h3>
+<ul>
+<li>URL 不再硬编码在 handler 中，站点域名变更无需改插件代码。</li>
+<li>新增站点签到只需在插件目录加一个 JSON 文件，无需修改系统 schema。</li>
+<li>API 与 HTML 站点有明确不同的通用策略，接入成本低。</li>
+<li>浏览器自动化成为一等策略，可按站点配置显式启用。</li>
+<li><code>site_id</code> 注册比域名匹配更稳定，支持多域名/镜像站点。</li>
+</ul>
+<h3 id="negative">Negative<a class="headerlink" href="#negative" title="Permanent link">¶</a></h3>
+<ul>
+<li>重构期间需要同步迁移现有 handler 和配置。</li>
+<li>插件目录增加 <code>signin_configs/</code> 文件，文件数量变多。</li>
+<li>用户自定义配置格式变化，需要一次迁移脚本。</li>
+</ul>
+<h2 id="risks-and-mitigations">Risks and Mitigations<a class="headerlink" href="#risks-and-mitigations" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>site_id</code> 与系统定义不一致</td>
+<td>加载时校验 <code>SiteEngine.get_by_id(site_id)</code>，不存在则 warn 跳过</td>
+</tr>
+<tr>
+<td>通用策略误报/漏报</td>
+<td>为每个站点单独提供 <code>signin_configs/*.json</code> 精确控制；兜底策略 markers 可覆盖</td>
+</tr>
+<tr>
+<td>浏览器自动化依赖 Chrome 服务</td>
+<td>保持 <code>get_chrome_server_url()</code> 检查，未配置时返回明确错误</td>
+</tr>
+<tr>
+<td>自定义 handler 迁移遗漏</td>
+<td>单元测试覆盖每个自定义 handler，确保 <code>site_id</code> 存在且能解析 URL</td>
+</tr>
+<tr>
+<td>旧 <code>site_configs.json</code> 不兼容</td>
+<td>提供迁移脚本，首次加载时自动转换</td>
+</tr>
+</tbody>
+</table>
+<h2 id="related-adrs">Related ADRs<a class="headerlink" href="#related-adrs" title="Permanent link">¶</a></h2>
+<ul>
+<li><a href="../ADR-012-autosignin-plugin-refactor/">ADR-012: 自动签到插件重构方案</a> — 前一次重构方案，本次 ADR 在其基础上进一步站点化。</li>
+<li><a href="../ADR-010-http-client-httpx/">ADR-010: HTTP Client httpx 迁移</a> — 通用策略继续使用 <code>HttpClient</code>。</li>
+<li><a href="../ADR-008-site-rate-limiter-refactor/">ADR-008: 站点速率限制器重构</a> — 通用策略继续复用 <code>RateLimitEngine</code>。</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,2686 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/message_templates/">
+      
+      
+        <link rel="prev" href="../notifications/">
+      
+      
+        <link rel="next" href="../service/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>消息通知模板 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#消息通知模板使用指南" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              消息通知模板
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#概述" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概述
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#功能特性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        功能特性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#配置方法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置方法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置方法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-进入消息通知设置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 进入消息通知设置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-配置模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 配置模板
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-模板配置格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 模板配置格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#支持的消息类型" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        支持的消息类型
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#模板语法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模板语法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模板语法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#基本变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基本变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#过滤器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        过滤器
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="过滤器">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#内置过滤器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内置过滤器
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#控制结构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        控制结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#转义字符" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        转义字符
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emoji-支持" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emoji 支持
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#示例模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例模板
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="示例模板">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#下载开始模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载开始模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#下载开始模板简洁格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载开始模板（简洁格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#入库完成模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        入库完成模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#订阅成功模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        订阅成功模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#可用变量详解" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可用变量详解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="可用变量详解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download_start-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        download_start 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transfer_finished-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        transfer_finished 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rss_success-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rss_success 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="常见问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-模板不生效怎么办" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 模板不生效怎么办？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-如何恢复默认模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 如何恢复默认模板？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-可以为不同的消息客户端设置不同的模板吗" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 可以为不同的消息客户端设置不同的模板吗？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-模板支持哪些高级功能" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 模板支持哪些高级功能？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-模板配置保存失败" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 模板配置保存失败？
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最佳实践
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#更新日志" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        更新日志
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#概述" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概述
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#功能特性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        功能特性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#配置方法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置方法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置方法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-进入消息通知设置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 进入消息通知设置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-配置模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 配置模板
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-模板配置格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 模板配置格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#支持的消息类型" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        支持的消息类型
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#模板语法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模板语法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模板语法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#基本变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基本变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#过滤器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        过滤器
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="过滤器">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#内置过滤器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内置过滤器
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#控制结构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        控制结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#转义字符" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        转义字符
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emoji-支持" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emoji 支持
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#示例模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例模板
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="示例模板">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#下载开始模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载开始模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#下载开始模板简洁格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载开始模板（简洁格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#入库完成模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        入库完成模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#订阅成功模板富文本格式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        订阅成功模板（富文本格式）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#可用变量详解" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可用变量详解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="可用变量详解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download_start-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        download_start 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transfer_finished-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        transfer_finished 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rss_success-变量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rss_success 变量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="常见问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-模板不生效怎么办" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 模板不生效怎么办？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-如何恢复默认模板" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 如何恢复默认模板？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-可以为不同的消息客户端设置不同的模板吗" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 可以为不同的消息客户端设置不同的模板吗？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-模板支持哪些高级功能" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 模板支持哪些高级功能？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-模板配置保存失败" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 模板配置保存失败？
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最佳实践
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#更新日志" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        更新日志
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/message_templates.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="消息通知模板使用指南">消息通知模板使用指南<a class="headerlink" href="#消息通知模板使用指南" title="Permanent link">¶</a></h1>
+<p>入口：<strong>系统设置 → 通知设置</strong>（<code>/system/notification</code>）。渠道添加与参数说明见 <a href="../notifications/">通知渠道配置</a>。</p>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../assets/images/system/notification.png" data-desc-position="bottom"><img alt="通知设置" class="screenshot" src="../assets/images/system/notification.png"></a></p>
+<h2 id="概述">概述<a class="headerlink" href="#概述" title="Permanent link">¶</a></h2>
+<p>Nexus Media 的消息通知系统支持自定义模板功能，允许用户为不同类型的消息通知自定义标题和内容格式。使用 Jinja2 模板引擎，您可以灵活地控制消息的显示方式，支持富文本、emoji 等丰富的消息格式。</p>
+<h2 id="功能特性">功能特性<a class="headerlink" href="#功能特性" title="Permanent link">¶</a></h2>
+<ul>
+<li><strong>支持多种消息类型</strong>：下载开始、入库完成、订阅成功等</li>
+<li><strong>Jinja2 模板语法</strong>：支持变量、过滤器、条件判断等高级功能</li>
+<li><strong>丰富的自定义过滤器</strong>：<code>filesize</code>、<code>datetime</code>、<code>default</code>、<code>yesno</code>、<code>truncatestr</code>、<code>striptags</code></li>
+<li><strong>向后兼容</strong>：未配置模板时使用默认消息格式</li>
+<li><strong>每个客户端独立配置</strong>：不同的消息通知渠道可以有不同的模板</li>
+<li><strong>emoji 支持</strong>：模板中可以直接使用 emoji 表情符号</li>
+</ul>
+<h2 id="配置方法">配置方法<a class="headerlink" href="#配置方法" title="Permanent link">¶</a></h2>
+<h3 id="1-进入消息通知设置">1. 进入消息通知设置<a class="headerlink" href="#1-进入消息通知设置" title="Permanent link">¶</a></h3>
+<ol>
+<li>打开 Nexus Media 网页界面</li>
+<li>点击导航栏的「系统设置」</li>
+<li>选择「通知设置」</li>
+<li>点击「新增消息通知」或编辑现有的消息通知客户端</li>
+</ol>
+<h3 id="2-配置模板">2. 配置模板<a class="headerlink" href="#2-配置模板" title="Permanent link">¶</a></h3>
+<p>在消息通知配置模态框中，展开"模板配置"区域：</p>
+<ol>
+<li>点击"模板配置"旁边的展开图标</li>
+<li>在文本区域中输入 JSON 格式的模板配置</li>
+<li>点击"重置为默认模板"可以快速获取示例模板</li>
+<li>点击"保存"应用配置</li>
+</ol>
+<h3 id="3-模板配置格式">3. 模板配置格式<a class="headerlink" href="#3-模板配置格式" title="Permanent link">¶</a></h3>
+<p>模板配置使用 JSON 格式，结构如下：</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"消息类型"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"标题模板"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"内容模板"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="支持的消息类型">支持的消息类型<a class="headerlink" href="#支持的消息类型" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>消息类型</th>
+<th>对应功能</th>
+<th>可用变量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>download_start</code></td>
+<td>开始下载</td>
+<td><code>item</code>, <code>in_from</code>, <code>download_setting_name</code>, <code>downloader_name</code></td>
+</tr>
+<tr>
+<td><code>transfer_finished</code></td>
+<td>入库完成</td>
+<td><code>media_info</code>, <code>in_from</code>, <code>exist_filenum</code>, <code>category_flag</code></td>
+</tr>
+<tr>
+<td><code>rss_success</code></td>
+<td>订阅成功</td>
+<td><code>media_info</code>, <code>in_from</code></td>
+</tr>
+<tr>
+<td><code>download_fail</code></td>
+<td>下载失败</td>
+<td><code>item</code>, <code>error_msg</code></td>
+</tr>
+<tr>
+<td><code>transfer_fail</code></td>
+<td>转移失败</td>
+<td><code>path</code>, <code>count</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>site_message</code></td>
+<td>站点消息</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>brushtask_added</code></td>
+<td>刷流任务添加</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>brushtask_remove</code></td>
+<td>刷流任务删除</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>brushtask_pause</code></td>
+<td>刷流任务暂停</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>mediaserver_message</code></td>
+<td>媒体服务器消息</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>auto_remove_torrents</code></td>
+<td>自动删种</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>user_statistics</code></td>
+<td>用户统计</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>site_signin</code></td>
+<td>站点签到</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+<tr>
+<td><code>custom_message</code></td>
+<td>自定义消息</td>
+<td><code>title</code>, <code>text</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="模板语法">模板语法<a class="headerlink" href="#模板语法" title="Permanent link">¶</a></h2>
+<h3 id="基本变量">基本变量<a class="headerlink" href="#基本变量" title="Permanent link">¶</a></h3>
+<p>使用双花括号 <code>{{ }}</code> 插入变量：</p>
+<div class="highlight"><pre><span></span><code>{{ item.get_title_ep_string() }} 开始下载
+</code></pre></div>
+<h3 id="过滤器">过滤器<a class="headerlink" href="#过滤器" title="Permanent link">¶</a></h3>
+<p>使用管道符 <code>|</code> 应用过滤器：</p>
+<div class="highlight"><pre><span></span><code>大小：{{ item.size|filesize }}
+</code></pre></div>
+<h4 id="内置过滤器">内置过滤器<a class="headerlink" href="#内置过滤器" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>过滤器</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>filesize</code></td>
+<td>格式化文件大小（如 1.5M、2.0K）</td>
+<td><code>{{ size \| filesize }}</code></td>
+</tr>
+<tr>
+<td><code>datetime</code></td>
+<td>格式化日期时间</td>
+<td><code>{{ timestamp \| datetime('%Y-%m-%d %H:%M') }}</code></td>
+</tr>
+<tr>
+<td><code>default</code></td>
+<td>设置默认值</td>
+<td><code>{{ value \| default('未知') }}</code></td>
+</tr>
+<tr>
+<td><code>yesno</code></td>
+<td>布尔值转换为是/否</td>
+<td><code>{{ hit_and_run \| yesno('是','否') }}</code></td>
+</tr>
+<tr>
+<td><code>truncatestr</code></td>
+<td>截断字符串</td>
+<td><code>{{ text \| truncatestr(100, '...') }}</code></td>
+</tr>
+<tr>
+<td><code>striptags</code></td>
+<td>去除 HTML 标签</td>
+<td><code>{{ html \| striptags }}</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="控制结构">控制结构<a class="headerlink" href="#控制结构" title="Permanent link">¶</a></h3>
+<p>支持 Jinja2 的所有控制结构：</p>
+<div class="highlight"><pre><span></span><code>{% if item.site == "测试站点" %}
+来自测试站点
+{% else %}
+来自其他站点
+{% endif %}
+</code></pre></div>
+<h3 id="转义字符">转义字符<a class="headerlink" href="#转义字符" title="Permanent link">¶</a></h3>
+<p>在模板中使用换行符等特殊字符：</p>
+<div class="highlight"><pre><span></span><code>第一行\n第二行
+</code></pre></div>
+<h3 id="emoji-支持">Emoji 支持<a class="headerlink" href="#emoji-支持" title="Permanent link">¶</a></h3>
+<p>模板中可以直接使用 emoji 表情符号：</p>
+<div class="highlight"><pre><span></span><code>🎬 {{ title }} 开始下载
+✅ {{ title }} 已入库
+📌 {{ title }} 已添加订阅
+</code></pre></div>
+<p>常用 emoji 推荐：
+- 🎬 电影/视频相关
+- 📺 电视剧
+- 📌 订阅/固定
+- ✅ 完成/成功
+- ⬇️ 下载
+- 💾 大小/存储
+- 📦 质量/资源
+- 🌐 站点
+- 🧲 种子
+- 🌱 做种
+- ⚡️ 促销
+- 🚨 H&amp;R
+- ⭐ 评分</p>
+<h2 id="示例模板">示例模板<a class="headerlink" href="#示例模板" title="Permanent link">¶</a></h2>
+<h3 id="下载开始模板富文本格式">下载开始模板（富文本格式）<a class="headerlink" href="#下载开始模板富文本格式" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"download_start"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"🎬 {{ title_ep_string|default(item.get_title_ep_string()) }} 开始下载 ⬇️"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"🌐 站点：{{ site|default(item.site)|default('未知') }} ｜ 💾 大小：{{ size_str|default(item.size|filesize) }}\\n📦 质量：{{ resource_type|default(item.get_resource_type_string())|default('未知') }}\\n\\n🧲 种子：{{ org_string|default(item.org_string)|truncatestr(50) }}\\n🌱 做种：{{ seeders|default(item.seeders)|default(0) }} ｜ ⚡️ 促销：{{ volume_factor|default(item.get_volume_factor_string())|default('未知') }} ｜ 🚨 H&amp;R：{{ hit_and_run|default(item.hit_and_run)|yesno('是','否') }}"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>效果示例：
+</p><div class="highlight"><pre><span></span><code>🎬 测试剧集 (2024) S01E05 开始下载 ⬇️
+🌐 站点：测试站点 ｜ 💾 大小：1002.54M
+📦 质量： WEB-DL 2160p
+
+🧲 种子：Test.Show.2024.S01E05.2160p...
+🌱 做种：12 ｜ ⚡️ 促销：免费 ｜ 🚨 H&amp;R：否
+</code></pre></div><p></p>
+<h3 id="下载开始模板简洁格式">下载开始模板（简洁格式）<a class="headerlink" href="#下载开始模板简洁格式" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"download_start"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ title_ep_string|default(item.get_title_ep_string()) }} 开始下载"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"站点：{{ site|default(item.site) }}\\n大小：{{ size_str|default(item.size|filesize) }}\\n质量：{{ resource_type|default(item.get_resource_type_string())|default('未知') }}"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="入库完成模板富文本格式">入库完成模板（富文本格式）<a class="headerlink" href="#入库完成模板富文本格式" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"transfer_finished"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"✅ {{ media_info.get_title_string() }} 已入库"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"⭐ {{ media_info.get_vote_string() }}\\n📺 类型：{{ media_info.type.value }}\\n📦 质量：{{ media_info.get_resource_type_string()|default('未知') }}\\n💾 大小：{{ media_info.size|filesize }}"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="订阅成功模板富文本格式">订阅成功模板（富文本格式）<a class="headerlink" href="#订阅成功模板富文本格式" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"rss_success"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"📌 {{ media_info.get_title_string() }} 已添加订阅"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"⭐ {{ media_info.get_vote_string() }}\\n📺 类型：{{ media_info.type.value }}\\n📅 年份：{{ media_info.year|default('未知') }}"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="可用变量详解">可用变量详解<a class="headerlink" href="#可用变量详解" title="Permanent link">¶</a></h2>
+<h3 id="download_start-变量">download_start 变量<a class="headerlink" href="#download_start-变量" title="Permanent link">¶</a></h3>
+<p><strong>简化变量（推荐使用）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>媒体标题</td>
+<td>仙逆</td>
+</tr>
+<tr>
+<td><code>year</code></td>
+<td>年份</td>
+<td>2023</td>
+</tr>
+<tr>
+<td><code>season</code></td>
+<td>季（Sxx格式）</td>
+<td>S01</td>
+</tr>
+<tr>
+<td><code>episode</code></td>
+<td>集（Exx格式）</td>
+<td>E130</td>
+</tr>
+<tr>
+<td><code>site</code></td>
+<td>站点名称</td>
+<td>观观</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>文件大小（字节）</td>
+<td>1051234567</td>
+</tr>
+<tr>
+<td><code>size_str</code></td>
+<td>格式化后的大小</td>
+<td>1002.76M</td>
+</tr>
+<tr>
+<td><code>seeders</code></td>
+<td>做种数</td>
+<td>12</td>
+</tr>
+<tr>
+<td><code>peers</code></td>
+<td>下载者数</td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>org_string</code></td>
+<td>原始种子名称</td>
+<td>仙逆.Renegade.Immortal.2023.S01E130.2160p.WEB-DL</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>描述（已去除HTML标签）</td>
+<td>种子描述信息...</td>
+</tr>
+<tr>
+<td><code>description_raw</code></td>
+<td>原始描述（含HTML）</td>
+<td><p>种子描述...</p></td>
+</tr>
+<tr>
+<td><code>resource_type</code></td>
+<td>资源类型字符串</td>
+<td>WEB-DL 2160p</td>
+</tr>
+<tr>
+<td><code>volume_factor</code></td>
+<td>促销因子字符串</td>
+<td>免费</td>
+</tr>
+<tr>
+<td><code>hit_and_run</code></td>
+<td>是否Hit&amp;Run（布尔值）</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>user_name</code></td>
+<td>用户名</td>
+<td>admin</td>
+</tr>
+<tr>
+<td><code>page_url</code></td>
+<td>详情页URL</td>
+<td>https://site.com/torrent/123</td>
+</tr>
+<tr>
+<td><code>vote_average</code></td>
+<td>评分</td>
+<td>8.5</td>
+</tr>
+<tr>
+<td><code>star_string</code></td>
+<td>评分星号字符串</td>
+<td>★★★★☆ (8.5)</td>
+</tr>
+<tr>
+<td><code>title_ep_string</code></td>
+<td>标题+季集字符串</td>
+<td>仙逆 (2023) S01E130</td>
+</tr>
+<tr>
+<td><code>title_string</code></td>
+<td>标题+年份字符串</td>
+<td>仙逆 (2023)</td>
+</tr>
+<tr>
+<td><code>in_from</code></td>
+<td>下载来源对象</td>
+<td></td>
+</tr>
+<tr>
+<td><code>in_from.value</code></td>
+<td>来源值（搜索/RSS/订阅等）</td>
+<td>搜索</td>
+</tr>
+<tr>
+<td><code>download_setting_name</code></td>
+<td>下载设置名称</td>
+<td>默认设置</td>
+</tr>
+<tr>
+<td><code>downloader_name</code></td>
+<td>下载器名称</td>
+<td>Transmission</td>
+</tr>
+</tbody>
+</table>
+<p><strong>完整对象访问</strong>：</p>
+<ul>
+<li><code>item</code>：下载项完整对象，可访问所有属性和方法：</li>
+<li><code>item.title</code>、<code>item.year</code>、<code>item.site</code>、<code>item.size</code> 等所有字段</li>
+<li><code>item.get_title_ep_string()</code>：获取标题和集数字符串</li>
+<li><code>item.get_star_string()</code>：获取评分星号字符串</li>
+<li><code>item.get_resource_type_string()</code>：获取资源类型字符串</li>
+<li><code>item.get_volume_factor_string()</code>：获取促销因子字符串</li>
+</ul>
+<p><strong>使用示例</strong>：</p>
+<div class="highlight"><pre><span></span><code>{# 使用简化变量 #}
+{{ title_ep_string }}
+{{ size_str }}
+{{ site|default('未知站点') }}
+
+{# 使用完整对象 #}
+{{ item.get_title_ep_string() }}
+{{ item.size|filesize }}
+{{ item.site|default('未知站点') }}
+</code></pre></div>
+<h3 id="transfer_finished-变量">transfer_finished 变量<a class="headerlink" href="#transfer_finished-变量" title="Permanent link">¶</a></h3>
+<ul>
+<li><code>media_info</code>：媒体信息对象，可直接访问以下字段：</li>
+<li><code>title</code>：标题</li>
+<li><code>year</code>：年份</li>
+<li><code>type</code>：媒体类型对象<ul>
+<li><code>type.value</code>：类型值（"电影"或"电视剧"）</li>
+</ul>
+</li>
+<li><code>vote_average</code>：评分</li>
+<li><code>category</code>：分类</li>
+<li><code>size</code>：文件大小（字节）</li>
+<li><code>resource_type</code>：资源类型</li>
+</ul>
+<p>也可调用以下方法：
+  - <code>media_info.get_title_string()</code>：获取标题字符串
+  - <code>media_info.get_vote_string()</code>：获取评分字符串
+  - <code>media_info.get_resource_type_string()</code>：获取资源类型字符串</p>
+<ul>
+<li><code>in_from</code>：转移来源</li>
+<li>
+<p><code>in_from.value</code>：来源值</p>
+</li>
+<li>
+<p><code>exist_filenum</code>：已存在的文件数（整数）</p>
+</li>
+<li><code>category_flag</code>：二级分类开关（布尔值）</li>
+</ul>
+<h3 id="rss_success-变量">rss_success 变量<a class="headerlink" href="#rss_success-变量" title="Permanent link">¶</a></h3>
+<ul>
+<li><code>media_info</code>：媒体信息对象（同上）</li>
+<li><code>in_from</code>：订阅来源</li>
+<li><code>in_from.value</code>：来源值</li>
+</ul>
+<h2 id="常见问题">常见问题<a class="headerlink" href="#常见问题" title="Permanent link">¶</a></h2>
+<h3 id="1-模板不生效怎么办">1. 模板不生效怎么办？<a class="headerlink" href="#1-模板不生效怎么办" title="Permanent link">¶</a></h3>
+<ul>
+<li>检查模板 JSON 格式是否正确</li>
+<li>确认消息类型名称拼写正确</li>
+<li>检查变量名是否正确</li>
+<li>查看系统日志是否有模板渲染错误</li>
+</ul>
+<h3 id="2-如何恢复默认模板">2. 如何恢复默认模板？<a class="headerlink" href="#2-如何恢复默认模板" title="Permanent link">¶</a></h3>
+<p>点击"重置为默认模板"按钮，或手动删除模板配置后保存。</p>
+<h3 id="3-可以为不同的消息客户端设置不同的模板吗">3. 可以为不同的消息客户端设置不同的模板吗？<a class="headerlink" href="#3-可以为不同的消息客户端设置不同的模板吗" title="Permanent link">¶</a></h3>
+<p>是的，每个消息通知客户端都可以独立配置自己的模板。</p>
+<h3 id="4-模板支持哪些高级功能">4. 模板支持哪些高级功能？<a class="headerlink" href="#4-模板支持哪些高级功能" title="Permanent link">¶</a></h3>
+<p>支持 Jinja2 的所有功能，包括：
+- 变量和表达式
+- 过滤器和测试
+- 条件判断（if/elif/else）
+- 循环（for）
+- 宏和包含</p>
+<h3 id="5-模板配置保存失败">5. 模板配置保存失败？<a class="headerlink" href="#5-模板配置保存失败" title="Permanent link">¶</a></h3>
+<ul>
+<li>检查 JSON 格式是否正确</li>
+<li>确保没有语法错误</li>
+<li>查看浏览器控制台是否有错误信息</li>
+</ul>
+<h2 id="最佳实践">最佳实践<a class="headerlink" href="#最佳实践" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>先测试后应用</strong>：配置模板后，先使用"测试"功能验证模板是否正确渲染</li>
+<li><strong>保持简洁</strong>：模板不宜过于复杂，确保消息清晰易读</li>
+<li><strong>备份配置</strong>：重要的模板配置建议备份</li>
+<li><strong>逐步迁移</strong>：可以先为最常用的消息类型配置模板，逐步完善</li>
+</ol>
+<h2 id="更新日志">更新日志<a class="headerlink" href="#更新日志" title="Permanent link">¶</a></h2>
+<ul>
+<li><strong>2026-03-15</strong>：首次发布消息通知模板功能</li>
+<li>支持 Jinja2 模板引擎</li>
+<li>内置 filesize 过滤器</li>
+<li>支持多种消息类型</li>
+<li>提供默认模板示例</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚">
+        
+          
+          <a href="../notifications/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 通知渠道配置">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                通知渠道配置
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../service/" class="md-footer__link md-footer__link--next" aria-label="下一页: 服务与调度">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                服务与调度
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "刷流与订阅数据流",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [1350, 700],
+    "views": [
+      { "id": "sub", "label": "订阅识别路径", "focus": ["sub-source", "sub-match", "sub-dl", "transfer", "media-lib"], "note": "订阅/搜索命中下载，完成后识别入媒体库。" },
+      { "id": "brush", "label": "刷流保种路径", "focus": ["br-source", "br-match", "br-dl", "seed", "cleanup"], "note": "刷流筛选投递，做种达标后按规则清理。" }
+    ]
+  },
+  "stages": [
+    { "label": "输入" },
+    { "label": "匹配" },
+    { "label": "下载" },
+    { "label": "后续处理" },
+    { "label": "收口" }
+  ],
+  "nodes": [
+    { "id": "sub-source", "type": "external", "label": "订阅源", "sublabel": "RSS · 搜索 · IMDB", "stage": 0, "row": 0 },
+    { "id": "br-source", "type": "external", "label": "刷流 RSS", "sublabel": "站点 RSS 抓取", "stage": 0, "row": 1 },
+    { "id": "sub-match", "type": "backend", "label": "订阅匹配", "sublabel": "filter · subscription", "stage": 1, "row": 0 },
+    { "id": "br-match", "type": "backend", "label": "刷流筛选", "sublabel": "brush 规则(free/hr/大小)", "stage": 1, "row": 1 },
+    { "id": "sub-dl", "type": "backend", "label": "订阅投递", "sublabel": "download_service", "stage": 2, "row": 0 },
+    { "id": "br-dl", "type": "backend", "label": "刷流投递", "sublabel": "brush · 客户端", "stage": 2, "row": 1 },
+    { "id": "transfer", "type": "backend", "label": "识别转移", "sublabel": "filetransfer · 事件驱动", "stage": 3, "row": 0 },
+    { "id": "seed", "type": "backend", "label": "做种保种循环", "sublabel": "torrent_lifecycle · 检查", "stage": 3, "row": 1 },
+    { "id": "media-lib", "type": "external", "label": "媒体库/订阅进度", "sublabel": "媒体服务器 · 刮削", "stage": 4, "row": 0 },
+    { "id": "cleanup", "type": "backend", "label": "清理回收", "sublabel": "删除规则 · 磁盘/连坐", "stage": 4, "row": 1 }
+  ],
+  "flows": [
+    { "from": "sub-source", "to": "sub-match", "label": "命中" },
+    { "from": "sub-match", "to": "sub-dl", "label": "投递" },
+    { "from": "sub-dl", "to": "transfer", "label": "完成事件" },
+    { "from": "transfer", "to": "media-lib", "label": "入库/刮削" },
+    { "from": "br-source", "to": "br-match", "label": "筛选" },
+    { "from": "br-match", "to": "br-dl", "label": "投递" },
+    { "from": "br-dl", "to": "seed", "label": "保种循环" },
+    { "from": "seed", "to": "cleanup", "label": "达标/终止" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "订阅识别", "items": ["订阅/搜索命中即投递", "下载完成经事件总线驱动识别入库"] },
+    { "dot": "rose", "title": "刷流保种", "items": ["按 free/hr/做种时长规则持续检查", "达标或空间不足时按删除规则清理"] }
+  ]
+}

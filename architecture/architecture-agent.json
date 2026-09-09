@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AI 助手工具循环",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [900, 1000],
+    "views": [
+      {
+        "id": "main",
+        "label": "工具循环",
+        "focus": ["api-agent", "agent", "exec", "tools", "prov"],
+        "note": "推理内容实时 SSE 推送，工具调用流式下发。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "web", "type": "external", "label": "用户", "sublabel": "Chat / Web", "pos": [300, 90], "size": [190, 62] },
+    { "id": "api-agent", "type": "backend", "label": "AI/消息路由", "sublabel": "routers/chat", "pos": [300, 270], "size": [190, 62] },
+    { "id": "agent", "type": "backend", "label": "助手核心", "sublabel": "pydantic_agent · service", "pos": [300, 470], "size": [190, 62] },
+    { "id": "exec", "type": "backend", "label": "工具执行", "sublabel": "tool_executor", "pos": [300, 660], "size": [190, 62] },
+    { "id": "tools", "type": "backend", "label": "系统工具", "sublabel": "tools/handlers · 搜索/下载/订阅", "pos": [300, 880], "size": [190, 62] },
+    { "id": "prov", "type": "backend", "label": "推理提供方", "sublabel": "openai · gemini · ollama", "pos": [640, 470], "size": [190, 62] },
+    { "id": "mem", "type": "backend", "label": "会话与记忆", "sublabel": "agents/memory · rag", "pos": [60, 660], "size": [190, 62] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "接入", "wraps": ["web"] },
+    { "kind": "region", "label": "Agent 服务", "wraps": ["api-agent", "agent", "exec", "tools", "prov", "mem"] }
+  ],
+  "connections": [
+    { "id": "web-api", "from": "web", "to": "api-agent", "label": "消息", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "api-agent-core", "from": "api-agent", "to": "agent", "label": "对话", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "core-prov", "from": "agent", "to": "prov", "label": "推理" },
+    { "id": "core-exec", "from": "agent", "to": "exec", "label": "工具调用", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "exec-tools", "from": "exec", "to": "tools", "label": "分发", "fromSide": "bottom", "toSide": "top", "labelDy": 55 },
+    { "id": "core-mem", "from": "agent", "to": "mem", "label": "记忆存取", "variant": "dashed", "fromSide": "left", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "多步循环", "items": ["pydantic_agent 多步工具调用", "推理内容经 SSE 实时推送"] }
+  ]
+}

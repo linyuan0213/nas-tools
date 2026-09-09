@@ -1,0 +1,2849 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-016-multi-indexer-site-management/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-016: 多索引器统一站点管理与并行搜索 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-016-多索引器统一站点管理与并行搜索" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-016: 多索引器统一站点管理与并行搜索
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#当前架构全景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当前架构全景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#关键组件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键组件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="关键组件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#siteengine--indexerconf-转换链" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SiteEngine → IndexerConf 转换链
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#第三方索引器-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第三方索引器 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#搜索结果注入" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        搜索结果注入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#下载设置解析优先级" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载设置解析优先级
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#订阅搜索站点过滤" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        订阅搜索站点过滤
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="目标">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#职责边界" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        职责边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="决策">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#架构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-repository-与-adapter-层" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Repository 与 Adapter 层
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-写入策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 写入策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#21-站点开关替代-userindexersites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 站点开关（替代 UserIndexerSites）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-依赖注入" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 依赖注入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-多客户端搜索" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 多客户端搜索
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-get_indexers-语义调整" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 get_indexers() 语义调整
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-索引器配置保存行为" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 索引器配置保存行为
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-搜索结果注入" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 搜索结果注入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-下载设置解析" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 下载设置解析
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-站点列表合并" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 站点列表合并
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-索引器配置-api-扩展" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 索引器配置 API 扩展
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-新增-api-端点" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 新增 API 端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-订阅搜索站点选择器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 订阅搜索站点选择器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-前端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 前端
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#备选方案" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        备选方案
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="备选方案">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#方案-b-复用-config_site-表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案 B: 复用 CONFIG_SITE 表
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方案-c-第三方站点不在站点列表显示" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案 C: 第三方站点不在站点列表显示
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#风险与缓解" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险与缓解
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施计划" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施计划
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施计划">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-数据库--仓库--adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: 数据库 + 仓库 + Adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-写入链路" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: 写入链路
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-搜索链路" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: 搜索链路
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: 搜索链路">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-31-jackett--prowlarr-重构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3.1: Jackett / Prowlarr 重构
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-站点列表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: 站点列表
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-前端" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: 前端
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#验证标准" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        验证标准
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-016-multi-indexer-site-management.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-016-多索引器统一站点管理与并行搜索">ADR-016: 多索引器统一站点管理与并行搜索<a class="headerlink" href="#adr-016-多索引器统一站点管理与并行搜索" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Accepted</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-06-29</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<h3 id="当前架构全景">当前架构全景<a class="headerlink" href="#当前架构全景" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>配置层:
+  SystemConfig (SYSTEM_DICT 键值存储)
+    ├── SearchIndexer   = "builtin"             (单值, 只能选一个)
+    ├── IndexerConfig   = {jackett:{host,...}}   (第三方配置)
+    └── UserIndexerSites = [1, 2, ...]           (builtin 选中站点的 CONFIG_SITE.ID 列表)
+
+索引器层:
+  Indexer._ensure_client()  →  加载 SearchIndexer 指定的一个客户端
+
+  ┌─── BuiltinIndexer ───────────────────────────────────────┐
+  │                                                          │
+  │  get_indexers():                                        │
+  │    SiteEngine (config/sites/*.json) → SiteDefinition     │
+  │    SiteCache  (CONFIG_SITE 表) → 合并 cookie/note        │
+  │    IndexerHelper → IndexerConf (站点完整配置)             │
+  │                                                          │
+  │  search() → 爬虫搜索 → _base 注入 _indexer_name          │
+  │             builtin:  _indexer_name = "M-Team"           │
+  │             jackett:  _indexer_name = "kickass"          │
+  │             prowlarr: _indexer_name = "1337x"            │
+  └──────────────────────────────────────────────────────────┘
+
+搜索管线:
+  SearchPipeline.process() → ResultFilter
+    提取 _indexer_name → media_info.site
+    输出 media_info 数组 (每个带 site 字段)
+
+下载管线:
+  pipeline._stage_resolve()
+    优先级:
+    ① 显式 download_setting 参数
+    ② media_info.site → SiteCache.get_site_download_setting(name)
+                        → 查 CONFIG_SITE.NOTE.download_setting
+    ③ ClientFactory.default_download_setting_id
+</code></pre></div>
+<h3 id="关键组件">关键组件<a class="headerlink" href="#关键组件" title="Permanent link">¶</a></h3>
+<h4 id="siteengine--indexerconf-转换链">SiteEngine → IndexerConf 转换链<a class="headerlink" href="#siteengine--indexerconf-转换链" title="Permanent link">¶</a></h4>
+<p><code>SiteEngine</code>（<code>src/app/sites/engine.py:175</code>）加载 <code>config/sites/{api,html}/*.json</code>，生成 <code>SiteDefinition</code> 对象。
+<code>BuiltinIndexer.get_indexers()</code>（<code>src/app/indexer/client/builtin.py:86</code>）将 <code>SiteDefinition</code> 转为 flat dict，传给 <code>IndexerHelper.set_indexers()</code>。
+然后遍历 <code>SiteCache.get_sites()</code>（<code>site_cache.py:159</code>），调用 <code>IndexerHelper.get_indexer()</code>（<code>configuration.py:32</code>）合并用户 DB 配置（cookie、ua、headers、api_key、bearer_token、pri、proxy），生成 <code>IndexerConf</code> 对象。</p>
+<h4 id="第三方索引器-api">第三方索引器 API<a class="headerlink" href="#第三方索引器-api" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>索引器</th>
+<th>站点列表 API</th>
+<th>返回的字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jackett</td>
+<td><code>GET /api/v2.0/indexers?configured=true</code></td>
+<td><code>[{id, name, type}]</code></td>
+</tr>
+<tr>
+<td>Prowlarr</td>
+<td><code>GET /api/v1/indexerstats?apikey=</code></td>
+<td><code>{indexers: [{indexerId, indexerName}]}</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="搜索结果注入">搜索结果注入<a class="headerlink" href="#搜索结果注入" title="Permanent link">¶</a></h4>
+<p><code>_IIndexClient.search()</code>（<code>src/app/indexer/client/_base.py:105-111</code>）是基类方法，builtin 和第三方都走这里：</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_array</span><span class="p">:</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">indexer</span><span class="o">.</span><span class="n">name</span>       <span class="c1"># line 107</span>
+</code></pre></div>
+<p>对 builtin 来说 <code>indexer.name</code> = "M-Team"（从 JSON 来）。
+对 Jackett/Prowlarr 来说 <code>indexer.name</code> = 索引器返回的 <code>name</code> 字段（如 "kickass", "1337x"）。</p>
+<p><strong>注意</strong>：第三方索引器返回的站点名（来自 Jackett/Prowlarr API）可能与内置站点的命名不一致（如 <code>MTeam</code> vs <code>M-Team</code>）。搜索结果注入时 <code>_indexer_name</code> 用的是索引器 API 返回的原始名。</p>
+<h4 id="下载设置解析优先级">下载设置解析优先级<a class="headerlink" href="#下载设置解析优先级" title="Permanent link">¶</a></h4>
+<p><code>pipeline._stage_resolve()</code>（<code>src/app/downloader/pipeline.py:270-279</code>）：</p>
+<div class="highlight"><pre><span></span><code>1. 显式 download_setting 参数 → 直接使用
+2. media_info.site → SiteCache.get_site_download_setting(name) → 查站点 NOTE 中的 download_setting
+3. "-2" → download_attr = {}（不绑定任何下载设置）
+4. 以上都无 → ClientFactory.default_download_setting_id
+</code></pre></div>
+<p><code>SiteCache.get_site_download_setting()</code>（<code>site_cache.py:232-238</code>）遍历 <code>_site_by_ids</code>，匹配 <code>site["name"]</code>（来自 <code>SiteEntity.name</code>），返回 <code>site["download_setting"]</code>（来自 <code>CONFIG_SITE.NOTE.download_setting</code>）。</p>
+<h4 id="订阅搜索站点过滤">订阅搜索站点过滤<a class="headerlink" href="#订阅搜索站点过滤" title="Permanent link">¶</a></h4>
+<p>订阅的 <code>search_sites</code> 是站点名列表，存储在 <code>RSS_MOVIES</code>/<code>RSS_TVS</code> 表中。在搜索时经由 <code>BaseSearchStrategy</code> → <code>Searcher.search_one_media()</code> → <code>filter_args["site"]</code> → <code>BuiltinIndexer.search()</code> 过滤——只搜索列表中指定的站点。</p>
+<h3 id="问题">问题<a class="headerlink" href="#问题" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>根因</th>
+<th>严重度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>单索引器限制</strong></td>
+<td><code>SearchIndexer</code> 单值配置，<code>_ensure_client()</code> 只加载一个</td>
+<td>高</td>
+</tr>
+<tr>
+<td><strong>第三方站点无站点级下载设置</strong></td>
+<td><code>_indexer_name</code> 目前虽然注入了但 <code>SiteCache.get_site_download_setting()</code> 只查 <code>CONFIG_SITE</code> 表，第三方无行</td>
+<td>高</td>
+</tr>
+<tr>
+<td><strong>站点列表不含第三方</strong></td>
+<td><code>POST /api/sites</code> → <code>SiteService.get_sites()</code> → <code>SiteCache.get_sites()</code> 只返回 <code>CONFIG_SITE</code> 中的行</td>
+<td>中</td>
+</tr>
+<tr>
+<td><strong>搜索可能重复</strong></td>
+<td>同一 PT 站同时存在于 builtin 和 Jackett，虽各自搜索结果不同但可能重复</td>
+<td>中</td>
+</tr>
+<tr>
+<td><strong>第三方站点不可单独开关</strong></td>
+<td>没有 <code>UserIndexerSites</code> 等价物。<code>get_user_indexers(check=True)</code> 只过滤 builtin</td>
+<td>中</td>
+</tr>
+</tbody>
+</table>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>多索引器并行搜索</strong>：builtin + Jackett + Prowlarr 同时搜索，结果聚合去重</li>
+<li><strong>统一站点下载设置</strong>：所有站点（不论来源）支持站点级 <code>download_setting</code> 绑定</li>
+<li><strong>站点列表合并</strong>：<code>POST /api/sites</code> 返回 builtin + 第三方站点，前端统一管理</li>
+<li><strong>统一站点开关</strong>：<code>INDEXER_SITE_CONFIG.enabled</code> 替代 <code>UserIndexerSites</code></li>
+<li><strong>同名去重</strong>：同一 PT 站出现在多个索引器时，优先使用 builtin 的完整配置</li>
+</ol>
+<h3 id="职责边界">职责边界<a class="headerlink" href="#职责边界" title="Permanent link">¶</a></h3>
+<p>第三方索引器<strong>只参与搜索</strong>，不参与 PT 站点管理功能：</p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>builtin</th>
+<th>第三方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>搜索（手动/订阅/刷流）</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>按站点绑定下载设置</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>站点开关（启用/禁用）</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>站点数据刷新（做种/上传/下载/魔力）</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>RSS 订阅监控</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>自动签到</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>站点连通性测试</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>做种信息查询</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>站点日统计</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p><code>INDEXER_SITE_CONFIG</code> 只存<strong>搜索相关</strong>配置（<code>enabled</code>、<code>download_setting</code>），不含 PT 统计数据。站点列表合并时第三方站点只出现在搜索站点选择器中，不出现在 RSS/刷流/统计过滤结果中。</p>
+<h2 id="决策">决策<a class="headerlink" href="#决策" title="Permanent link">¶</a></h2>
+<h3 id="架构">架构<a class="headerlink" href="#架构" title="Permanent link">¶</a></h3>
+<p>新增 <code>INDEXER_SITE_CONFIG</code> 表作为<strong>所有站点的用户侧配置</strong>。<code>Indexer</code> 改为持有多个客户端。</p>
+<div class="highlight"><pre><span></span><code>INDEXER_SITE_CONFIG (统一数据源)
+  site_name (UNIQUE) | source | public | download_setting | enabled
+─────────────────────┼────────┼────────┼──────────────────┼────────
+  M-Team             │ builtin│ 0      │ 1                │ 1
+  TNode              │ builtin│ 0      │ NULL             │ 0
+  HDArea             │ jackett│ 0      │ 2                │ 1
+
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+  BuiltinIndexer     Jackett        Prowlarr
+  (JSON + DB)        (API)          (API)
+
+         └───────────────┼───────────────┘
+                         ▼
+              Indexer (多客户端)
+              ThreadPoolExecutor 并发搜索
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+       site A,B       site B,D       site C,E
+          │              │              │
+          └──────────────┼──────────────┘
+                         ▼
+              (title, size) 去重
+                         ▼
+                  SearchPipeline
+
+### 1. `INDEXER_SITE_CONFIG` 表
+
+**不复用 `CONFIG_SITE` 的理由**：
+
+- `CONFIG_SITE` 与 `config/sites/*.json` 强绑定。`SiteEngine._load()` 遍历 JSON 目录，`SiteCache._build_site_info()` 依赖 JSON 解析 `api_key_header`/`strict_url`。插入无关行会破坏 `SitesManager` 初始化流程。
+- `CONFIG_SITE` 有 `COOKIE`、`API_KEY`、`RSSURL`、`SIGNURL` 等必填字段（虽然有些 nullable），第三方站点都不需要。
+- `SITE_STATISTICS_HISTORY`、`SITE_USER_INFO_STATS` 等关联表也不适用。
+
+```sql
+CREATE TABLE INDEXER_SITE_CONFIG (
+    id                 INTEGER PRIMARY KEY,
+    site_name          VARCHAR(255) NOT NULL,
+    source             VARCHAR(50)  NOT NULL DEFAULT 'builtin',
+    public             TINYINT      DEFAULT 0,
+    download_setting   INTEGER      DEFAULT NULL,
+    enabled            TINYINT      DEFAULT 1,
+    created_at         DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    updated_at         DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(site_name)
+);
+</code></pre></div>
+<blockquote>
+<p>注：<code>id</code> 列由 SQLAlchemy 根据 dialect 自动处理自增（SQLite 用 <code>AUTOINCREMENT</code>，MySQL/PostgreSQL 用 <code>SERIAL</code>/<code>IDENTITY</code>），避免在 DDL 中写死方言关键字。本表不通过 Alembic 迁移创建，由项目启动时的 <code>Base.metadata.create_all()</code> 自动建表。</p>
+</blockquote>
+<h3 id="11-repository-与-adapter-层">1.1 Repository 与 Adapter 层<a class="headerlink" href="#11-repository-与-adapter-层" title="Permanent link">¶</a></h3>
+<p>遵循项目现有分层：ORM 模型 + Repository（原始 SQLAlchemy 操作）+ Adapter（适配领域接口）。新增：</p>
+<ul>
+<li><strong>领域接口</strong>：<code>src/app/domain/interfaces/indexer_site_config_repo.py</code></li>
+<li><code>IIndexerSiteConfigRepository</code></li>
+<li>
+<p>方法：<code>upsert_site</code>, <code>get_by_name</code>, <code>list_all</code>, <code>list_enabled_names</code>, <code>update_enabled</code>, <code>update_download_setting</code>, <code>get_download_setting</code>, <code>migrate_from_user_indexer_sites</code></p>
+</li>
+<li>
+<p><strong>ORM Repository</strong>：<code>src/app/db/repositories/indexer_site_config_repository.py</code></p>
+</li>
+<li><code>IndexerSiteConfigRepository</code></li>
+<li>
+<p>直接操作 <code>INDEXER_SITE_CONFIG</code> 表，封装 dialect 无关 upsert。</p>
+</li>
+<li>
+<p><strong>Adapter</strong>：<code>src/app/db/repositories/indexer_site_config_repo_adapter.py</code></p>
+</li>
+<li><code>IndexerSiteConfigRepositoryAdapter(IIndexerSiteConfigRepository)</code></li>
+<li>持有 <code>IndexerSiteConfigRepository</code>，对外返回领域对象 / 简单 DTO，兼容旧调用风格。</li>
+</ul>
+<p>业务层（<code>Indexer</code>、<code>SiteService</code>、<code>DownloadPipeline</code>、<code>IndexerService</code>）依赖 <code>IIndexerSiteConfigRepository</code>，由 DI 注入 Adapter 实例。</p>
+<h3 id="2-写入策略">2. 写入策略<a class="headerlink" href="#2-写入策略" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>触发时机</th>
+<th>写入方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>builtin</td>
+<td>启动时一次性迁移</td>
+<td>读取 <code>UserIndexerSites</code>（CONFIG_SITE.ID 列表）→ 映射为站点名 → <code>IndexerSiteConfigRepositoryAdapter.upsert(..., source='builtin', enabled=1/0)</code></td>
+</tr>
+<tr>
+<td>builtin</td>
+<td><code>SiteCache.refresh()</code> 时</td>
+<td>遍历已加载的站点名列表 → <code>upsert(..., source='builtin')</code>；若行已存在则保留其 <code>enabled</code>/<code>download_setting</code>，否则 <code>enabled=1</code></td>
+</tr>
+<tr>
+<td>jackett</td>
+<td><code>IndexerConfigService.save_config()</code> 成功保存后</td>
+<td>调 <code>GET /api/v2.0/indexers?configured=true</code> → 遍历结果 → <code>upsert</code>，<code>public</code> 取自 API 返回的 <code>type == "public"</code></td>
+</tr>
+<tr>
+<td>prowlarr</td>
+<td>同上</td>
+<td>调 <code>GET /api/v1/indexerstats?apikey=</code> → 遍历 <code>indexers</code> → 同上</td>
+</tr>
+</tbody>
+</table>
+<p><strong>去重规则</strong>：<code>site_name UNIQUE</code>。<code>upsert</code> 时 <strong>不覆盖</strong> <code>source</code> 字段：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 伪代码，Repository 层用 SQLAlchemy dialect 无关的 upsert 实现</span>
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">INDEXER_SITE_CONFIG</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">stmt</span><span class="o">.</span><span class="n">on_conflict_do_update</span><span class="p">(</span>
+    <span class="n">index_elements</span><span class="o">=</span><span class="p">[</span><span class="s2">"site_name"</span><span class="p">],</span>
+    <span class="n">set_</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"public"</span><span class="p">:</span> <span class="n">stmt</span><span class="o">.</span><span class="n">excluded</span><span class="o">.</span><span class="n">public</span><span class="p">,</span>
+        <span class="s2">"enabled"</span><span class="p">:</span> <span class="n">stmt</span><span class="o">.</span><span class="n">excluded</span><span class="o">.</span><span class="n">enabled</span><span class="p">,</span>
+        <span class="s2">"download_setting"</span><span class="p">:</span> <span class="n">stmt</span><span class="o">.</span><span class="n">excluded</span><span class="o">.</span><span class="n">download_setting</span><span class="p">,</span>
+        <span class="s2">"updated_at"</span><span class="p">:</span> <span class="n">stmt</span><span class="o">.</span><span class="n">excluded</span><span class="o">.</span><span class="n">updated_at</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span><span class="o">.</span><span class="n">on_conflict_do_nothing</span><span class="p">(</span><span class="n">index_elements</span><span class="o">=</span><span class="p">[</span><span class="s2">"site_name"</span><span class="p">])</span>  <span class="c1"># 首次写入保留 source</span>
+</code></pre></div>
+<p>效果：builtin 先写入的行不会被第三方覆盖；第三方重复写入时只更新 <code>enabled</code>、<code>public</code>、<code>download_setting</code>（如提供）。</p>
+<p><strong>首次写入</strong>：第三方站点 <code>enabled=1</code>（全部开启）。后续用户可在站点列表页逐个开关，走 <code>enabled</code> 列。</p>
+<p><strong>实现提示</strong>：不同 dialect 的 upsert 语法不同，Repository 应封装为 <code>upsert_site(site_name, source, public, enabled, download_setting)</code>，内部根据连接 dialect 选择 SQLAlchemy <code>on_conflict_do_update</code>（PostgreSQL/SQLite 3.24+）或先 <code>SELECT</code> 后 <code>INSERT/UPDATE</code>（兼容性回退）。禁止在业务层写 <code>INSERT OR IGNORE</code> / <code>ON DUPLICATE KEY UPDATE</code> 等方言 SQL。</p>
+<h3 id="21-站点开关替代-userindexersites">2.1 站点开关（替代 <code>UserIndexerSites</code>）<a class="headerlink" href="#21-站点开关替代-userindexersites" title="Permanent link">¶</a></h3>
+<p>内置索引器目前用 <code>SystemConfigKey.UserIndexerSites</code>（JSON 列表）过滤。第三方索引器没有对应机制。</p>
+<p><code>INDEXER_SITE_CONFIG.enabled</code> 统一替代：</p>
+<div class="highlight"><pre><span></span><code>旧方案（仅 builtin）:
+  SystemConfigKey.UserIndexerSites = [1, 2, ...]   # CONFIG_SITE.ID 列表
+  BuiltinIndexer.get_indexers(check=True) 按 ID 过滤
+
+新方案（统一）:
+  INDEXER_SITE_CONFIG
+  site_name  source    enabled  public  download_setting
+  ─────────  ────────  ───────  ──────  ────────────────
+  M-Team     builtin   1        0       1
+  TNode      builtin   0        0       NULL
+  HDArea     jackett   1        0       2
+  TL         jackett   0        0       NULL
+
+  搜索:  WHERE enabled = 1
+  订阅:  WHERE enabled = 1
+</code></pre></div>
+<p>迁移：启动时根据 <code>UserIndexerSites</code> 中的 CONFIG_SITE.ID 列表，找到对应站点名，写入 <code>INDEXER_SITE_CONFIG.enabled=1</code>；未在列表中的 builtin 站点写入 <code>enabled=0</code>。迁移逻辑由 <code>initializer.py</code> 在应用启动时调用 <code>IndexerSiteConfigRepository.migrate_from_user_indexer_sites()</code> 执行一次，并记录是否已迁移，避免重复执行。并行运行稳定后废弃旧字段。</p>
+<h3 id="22-依赖注入">2.2 依赖注入<a class="headerlink" href="#22-依赖注入" title="Permanent link">¶</a></h3>
+<p>新增 <code>IIndexerSiteConfigRepository</code> / <code>IndexerSiteConfigRepositoryAdapter</code> 需在 DI 中显式注册，并注入到以下服务：</p>
+<table>
+<thead>
+<tr>
+<th>消费方</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Indexer</code></td>
+<td><code>_filter_indexers()</code> 中过滤第三方已启用站点</td>
+</tr>
+<tr>
+<td><code>SiteService</code></td>
+<td><code>get_sites()</code> 合并第三方站点（简单/完整模式）</td>
+</tr>
+<tr>
+<td><code>DownloadPipeline</code></td>
+<td><code>_stage_resolve()</code> 中按 <code>media_info.site</code> 回退查询 <code>download_setting</code></td>
+</tr>
+<tr>
+<td><code>IndexerService</code></td>
+<td><code>get_all_user_indexers()</code> / <code>get_third_party_sites()</code></td>
+</tr>
+<tr>
+<td><code>SiteCache</code></td>
+<td><code>refresh()</code> 时同步 builtin 行</td>
+</tr>
+</tbody>
+</table>
+<p>注册方式沿用现有 <code>src/app/di/registry.py</code> + <code>src/app/di/factories.py</code> 显式工厂模式。<code>IndexerSiteConfigRepositoryAdapter</code> 依赖 <code>IndexerSiteConfigRepository</code> 或直接依赖 <code>BaseRepository</code> 的 session 工厂。</p>
+<h3 id="3-多客户端搜索">3. 多客户端搜索<a class="headerlink" href="#3-多客户端搜索" title="Permanent link">¶</a></h3>
+<p><code>Indexer</code> 改为持有<strong>所有已配置</strong>的客户端，但搜索时<strong>不要嵌套 ThreadPoolExecutor</strong>（当前 <code>search_by_keyword</code> 内部已为 builtin 站点启动一个 <code>ThreadPoolExecutor</code>，若再在外层套一个按客户端的 executor，两层 workers 互相等待会导致潜在死锁和线程爆炸）。</p>
+<p>正确做法：把“客户端 × 站点”扁平化为一个工作项列表，用<strong>单层</strong> <code>ThreadPoolExecutor</code> 并发执行。</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Indexer</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">search_pipeline</span><span class="p">:</span> <span class="n">SearchPipeline</span><span class="p">,</span>
+        <span class="n">indexer_helper</span><span class="p">:</span> <span class="n">IndexerHelper</span><span class="p">,</span>
+        <span class="n">site_cache</span><span class="p">:</span> <span class="n">SiteCache</span><span class="p">,</span>
+        <span class="n">site_engine</span><span class="p">:</span> <span class="n">SiteEngine</span><span class="p">,</span>
+        <span class="n">site_config_repo</span><span class="p">:</span> <span class="n">IndexerSiteConfigRepositoryAdapter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">progress_helper</span><span class="p">:</span> <span class="n">ProgressTracker</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">download_repo</span><span class="p">:</span> <span class="n">DownloadRepository</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">system_config</span><span class="p">:</span> <span class="n">SystemConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">progress_helper</span> <span class="ow">or</span> <span class="n">ProgressTracker</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span> <span class="o">=</span> <span class="n">download_repo</span> <span class="ow">or</span> <span class="n">DownloadRepository</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span> <span class="o">=</span> <span class="n">search_pipeline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_system_config</span> <span class="o">=</span> <span class="n">system_config</span> <span class="ow">or</span> <span class="n">SystemConfig</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indexer_helper</span> <span class="o">=</span> <span class="n">indexer_helper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_cache</span> <span class="o">=</span> <span class="n">site_cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span> <span class="o">=</span> <span class="n">site_engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_site_config_repo</span> <span class="o">=</span> <span class="n">site_config_repo</span> <span class="ow">or</span> <span class="n">IndexerSiteConfigRepositoryAdapter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_IIndexClient</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clients_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_clients</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">clients</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_IIndexClient</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">builtin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_class</span><span class="p">(</span><span class="s2">"builtin"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">builtin</span><span class="p">:</span>
+                <span class="n">clients</span><span class="p">[</span><span class="s2">"builtin"</span><span class="p">]</span> <span class="o">=</span> <span class="n">builtin</span>
+            <span class="n">idx_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SystemConfigKey</span><span class="o">.</span><span class="n">IndexerConfig</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">ctype</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"jackett"</span><span class="p">,</span> <span class="s2">"prowlarr"</span><span class="p">):</span>
+                <span class="n">cfg</span> <span class="o">=</span> <span class="n">idx_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ctype</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"host"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_key"</span><span class="p">):</span>
+                    <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_class</span><span class="p">(</span><span class="n">ctype</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">client</span><span class="p">:</span>
+                        <span class="n">clients</span><span class="p">[</span><span class="n">ctype</span><span class="p">]</span> <span class="o">=</span> <span class="n">client</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span> <span class="o">=</span> <span class="n">clients</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__build_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctype</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">ctype_str</span> <span class="o">=</span> <span class="n">ctype</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ctype</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">)</span> <span class="k">else</span> <span class="n">ctype</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">get_all_clients</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">ctype_str</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">ctype_str</span> <span class="o">==</span> <span class="s2">"builtin"</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                            <span class="n">conf</span><span class="p">,</span>
+                            <span class="n">indexer_helper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indexer_helper</span><span class="p">,</span>
+                            <span class="n">site_cache</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_site_cache</span><span class="p">,</span>
+                            <span class="n">site_engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_site_engine</span><span class="p">,</span>
+                            <span class="n">download_repo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="n">download_repo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">ExceptionUtils</span><span class="o">.</span><span class="n">exception_traceback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter_indexers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">filter_args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""获取单个客户端的可用站点，第三方按 enabled 过滤。"""</span>
+        <span class="n">indexers</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_indexers</span><span class="p">(</span><span class="n">check</span><span class="o">=</span><span class="n">check</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">client</span><span class="o">.</span><span class="n">client_id</span> <span class="o">!=</span> <span class="s2">"builtin"</span><span class="p">:</span>
+            <span class="n">enabled_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_site_config_repo</span><span class="o">.</span><span class="n">list_enabled_names</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">client_id</span><span class="p">))</span>
+            <span class="n">indexers</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indexers</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">enabled_names</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">filter_args</span> <span class="ow">and</span> <span class="n">filter_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"site"</span><span class="p">):</span>
+            <span class="n">site_filter</span> <span class="o">=</span> <span class="n">filter_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"site"</span><span class="p">)</span>
+            <span class="n">indexers</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indexers</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">site_filter</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">indexers</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">search_by_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key_word</span><span class="p">,</span> <span class="n">filter_args</span><span class="p">,</span> <span class="n">match_media</span><span class="p">,</span> <span class="n">in_from</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key_word</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_clients</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">progress_key</span> <span class="o">=</span> <span class="n">ProgressKey</span><span class="o">.</span><span class="n">SubscribeSearch</span> <span class="k">if</span> <span class="n">in_from</span> <span class="o">==</span> <span class="n">SearchType</span><span class="o">.</span><span class="n">SUBSCRIBE</span> <span class="k">else</span> <span class="n">ProgressKey</span><span class="o">.</span><span class="n">Search</span>
+
+        <span class="c1"># ---------- 扁平化所有 (client, indexer) 工作项 ----------</span>
+        <span class="n">work_items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">indexers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_indexers</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">filter_args</span><span class="o">=</span><span class="n">filter_args</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">indexer</span> <span class="ow">in</span> <span class="n">indexers</span><span class="p">:</span>
+                <span class="n">order_seq</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">indexer</span><span class="p">,</span> <span class="s2">"pri"</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+                <span class="n">work_items</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">client</span><span class="p">,</span> <span class="n">indexer</span><span class="p">,</span> <span class="n">order_seq</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">work_items</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"没有配置索引器，无法搜索！"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">max_workers</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">work_items</span><span class="p">),</span> <span class="mi">15</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">filter_args</span> <span class="ow">and</span> <span class="n">filter_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"site"</span><span class="p">):</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"开始搜索 %s，站点：%s，并发数：%s ..."</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">key_word</span><span class="p">,</span> <span class="n">filter_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"site"</span><span class="p">),</span> <span class="n">max_workers</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"开始并行搜索 %s，工作项：%s，并发数：%s ..."</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">key_word</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">work_items</span><span class="p">),</span> <span class="n">max_workers</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># ---------- 阶段1：单层并发搜索，收集原始结果 ----------</span>
+        <span class="n">all_raw_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">executor</span> <span class="o">=</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">futures</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">,</span> <span class="n">order_seq</span><span class="p">,</span> <span class="n">indexer</span><span class="p">,</span> <span class="n">key_word</span><span class="p">,</span> <span class="n">filter_args</span><span class="p">,</span> <span class="n">match_media</span><span class="p">,</span> <span class="n">in_from</span>
+                <span class="p">):</span> <span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">indexer</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">client</span><span class="p">,</span> <span class="n">indexer</span><span class="p">,</span> <span class="n">order_seq</span> <span class="ow">in</span> <span class="n">work_items</span>
+            <span class="p">}</span>
+            <span class="n">completed</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">):</span>
+                <span class="n">client</span><span class="p">,</span> <span class="n">indexer</span> <span class="o">=</span> <span class="n">futures</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+                <span class="n">completed</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">pct</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">+</span> <span class="nb">round</span><span class="p">(</span><span class="mi">50</span> <span class="o">*</span> <span class="p">(</span><span class="n">completed</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">ptype</span><span class="o">=</span><span class="n">progress_key</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">pct</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">"站点搜索 </span><span class="si">{</span><span class="n">completed</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)</span><span class="si">}</span><span class="s2"> 完成 (</span><span class="si">{</span><span class="n">pct</span><span class="si">}</span><span class="s2">%)"</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+                        <span class="n">all_raw_results</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[Indexer]</span><span class="si">{</span><span class="n">client</span><span class="o">.</span><span class="n">client_id</span><span class="si">}</span><span class="s2"> 搜索 </span><span class="si">{</span><span class="n">indexer</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> 失败"</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># ---------- 阶段2：去重 + 统一批量识别和过滤 ----------</span>
+        <span class="n">pipeline_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipeline</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+            <span class="n">all_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dedup</span><span class="p">(</span><span class="n">all_raw_results</span><span class="p">),</span>
+            <span class="n">filter_args</span><span class="o">=</span><span class="n">filter_args</span><span class="p">,</span>
+            <span class="n">match_media</span><span class="o">=</span><span class="n">match_media</span><span class="p">,</span>
+            <span class="n">in_from</span><span class="o">=</span><span class="n">in_from</span><span class="p">,</span>
+            <span class="n">progress_key</span><span class="o">=</span><span class="n">progress_key</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"搜索关键词 </span><span class="si">{</span><span class="n">key_word</span><span class="si">}</span><span class="s2"> 所有站点完成，"</span>
+            <span class="sa">f</span><span class="s2">"原始结果 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_raw_results</span><span class="p">)</span><span class="si">}</span><span class="s2"> 条，有效资源数：</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pipeline_result</span><span class="o">.</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">，"</span>
+            <span class="sa">f</span><span class="s2">"总耗时 </span><span class="si">{</span><span class="p">(</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="si">}</span><span class="s2"> 秒"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">ptype</span><span class="o">=</span><span class="n">progress_key</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"搜索关键词 </span><span class="si">{</span><span class="n">key_word</span><span class="si">}</span><span class="s2"> 所有站点完成，"</span>
+                <span class="sa">f</span><span class="s2">"有效资源数：</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pipeline_result</span><span class="o">.</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">，"</span>
+                <span class="sa">f</span><span class="s2">"总耗时 </span><span class="si">{</span><span class="p">(</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="si">}</span><span class="s2"> 秒"</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pipeline_result</span><span class="o">.</span><span class="n">results</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_dedup</span><span class="p">(</span><span class="n">results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="c1"># builtin 来源优先：先按 source 排序，builtin 在前，再按 order_seq 保序</span>
+        <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">results</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"_indexer_source"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"builtin"</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"_indexer_order"</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">deduped</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"size"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">deduped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">deduped</span>
+</code></pre></div>
+<p><strong>去重</strong>：<code>_dedup()</code> 在进 <code>SearchPipeline</code> 前执行。key 为 <code>(title, size)</code> 组合。排序后 builtin 结果排在前面，确保同名站点冲突时保留 builtin 的完整配置。</p>
+<p><strong>超时</strong>：<code>as_completed(..., timeout=120)</code> 控制整体等待上限，单个 <code>future.result()</code> 不再单独设 timeout；异常或超时不阻塞其他索引器。</p>
+<p><strong>进度</strong>：进度条按扁平化工作项计算，单客户端与多客户端行为一致。</p>
+<p><strong>线程安全</strong>：<code>_ensure_clients()</code> 用 <code>Lock</code> 保护，避免多线程重复初始化。</p>
+<p><strong>BuiltinIndexer 站点开关迁移</strong>：<code>BuiltinIndexer.get_indexers(check=True)</code> 在过渡期保留 <code>UserIndexerSites</code> 过滤作为回退；<code>SiteCache.refresh()</code> 同步写入 <code>INDEXER_SITE_CONFIG</code> 后，<code>BuiltinIndexer</code> 改为优先按 <code>INDEXER_SITE_CONFIG.enabled</code> 过滤，旧字段仅作为一次性迁移数据源，不再参与运行时过滤。</p>
+<h3 id="31-get_indexers-语义调整">3.1 <code>get_indexers()</code> 语义调整<a class="headerlink" href="#31-get_indexers-语义调整" title="Permanent link">¶</a></h3>
+<p>多客户端后，保留 <code>SearchIndexer</code> 作为<strong>默认搜索索引器</strong>。<code>Indexer.get_client()</code> / <code>get_client_type()</code> / <code>get_indexers()</code> 保持现有语义：返回默认搜索索引器对应的客户端及其站点，确保旧调用方（如 <code>search_message_service.py</code>、<code>IndexerService.get_client_info()</code>）行为不变。</p>
+<p>新增方法负责多索引器场景：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>返回值</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Indexer.get_indexers(check=True)</code></td>
+<td>默认搜索索引器的站点</td>
+<td>兼容旧调用</td>
+</tr>
+<tr>
+<td><code>Indexer.get_all_search_indexers()</code></td>
+<td>所有已启用客户端的站点</td>
+<td>多索引器搜索</td>
+</tr>
+<tr>
+<td><code>Indexer.get_builtin_indexers(check=True)</code></td>
+<td>仅 builtin 站点</td>
+<td>PT 管理功能</td>
+</tr>
+<tr>
+<td><code>IndexerService.get_user_indexers()</code></td>
+<td>默认搜索索引器的已启用站点</td>
+<td>旧接口兼容</td>
+</tr>
+<tr>
+<td><code>IndexerService.get_all_user_indexers()</code></td>
+<td>所有索引器的已启用站点</td>
+<td>订阅/搜索站点选择器</td>
+</tr>
+</tbody>
+</table>
+<p><code>POST /download/indexers</code> 改调 <code>IndexerService.get_all_user_indexers()</code>。</p>
+<p><strong>索引器统计</strong>：<code>Indexer.get_indexer_statistics()</code> 原按单客户端 <code>client_id</code> 查询。多客户端后改为聚合所有客户端，返回 dict 列表：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_indexer_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_clients</span><span class="p">()</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span><span class="o">.</span><span class="n">get_indexer_statistics</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">get_client_id</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"indexer"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s2">"total"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s2">"fail"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="s2">"success"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                <span class="s2">"avg"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">})</span>
+    <span class="k">return</span> <span class="n">stats</span>
+</code></pre></div>
+<p><code>IndexerService.get_indexer_statistics()</code> 同步调整，将 dict 列表转换为 <code>IndexerStatisticsDTO</code> 列表和图表 dataset。</p>
+<h3 id="32-索引器配置保存行为">3.2 索引器配置保存行为<a class="headerlink" href="#32-索引器配置保存行为" title="Permanent link">¶</a></h3>
+<p>当前 <code>IndexerConfigService.save_config()</code> 无论保存哪种索引器都会把 <code>SystemConfigKey.SearchIndexer</code> 设为当前保存的类型（<code>name</code>）。多索引器模式下，保存 Jackett/Prowlarr 配置<strong>不应</strong>改变当前默认搜索索引器，用户可能希望同时启用多个。</p>
+<p>修改后：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 仅当显式选择“默认搜索索引器”时才写入 SearchIndexer</span>
+<span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"set_default_indexer"</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_system_config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">SystemConfigKey</span><span class="o">.</span><span class="n">SearchIndexer</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</code></pre></div>
+<p>前端索引器配置页需增加“设为默认搜索索引器”开关；保存 Jackett/Prowlarr 配置时默认不勾选，仅更新 <code>IndexerConfig</code>。保存 builtin 配置时保持现有行为（可视为默认就是 builtin）。</p>
+<h3 id="4-搜索结果注入">4. 搜索结果注入<a class="headerlink" href="#4-搜索结果注入" title="Permanent link">¶</a></h3>
+<p>当前 <code>_IIndexClient.search()</code>（<code>src/app/indexer/client/_base.py:107</code>）对所有类型索引器都注入了 <code>_indexer_name = indexer.name</code>。</p>
+<ul>
+<li>builtin 的 <code>indexer.name</code> = JSON 中的 <code>"M-Team"</code>、<code>"TNode"</code> 等</li>
+<li>Jackett 的 <code>indexer.name</code> = API 返回的 <code>name</code> 字段（如 <code>"kickass"</code>, <code>"1337x"</code>）</li>
+<li>Prowlarr 的 <code>indexer.name</code> = API 返回的 <code>indexerName</code> 字段</li>
+</ul>
+<p><strong>不需要额外改动</strong>。<code>_indexer_name</code> 已经正确携带了各索引器的站点名。</p>
+<p>只需追加 <code>_indexer_source</code> 标记来源，但不影响核心流程：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># _base.py:107 追加一行</span>
+<span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_source"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span>
+</code></pre></div>
+<p><code>BuiltinIndexer.search()</code> 重写了父类 <code>search()</code>，因此也要在 <code>src/app/indexer/client/builtin.py:244-246</code> 的注入循环中追加同一字段：</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_array</span><span class="p">:</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">indexer</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_order"</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_seq</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_public"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">indexer</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_source"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span>
+</code></pre></div>
+<p><strong>索引器统计补充</strong>：当前 <code>BuiltinIndexer.search()</code> 会写入 <code>INDEXER_STATISTICS</code>，而 <code>_base.py</code> 默认实现不会。多客户端聚合统计需要第三方来源也有数据，因此在 <code>_base.py</code> 默认 <code>search()</code> 中追加统计写入（与 <code>BuiltinIndexer</code> 相同字段），避免聚合结果只含 builtin。</p>
+<h3 id="5-下载设置解析">5. 下载设置解析<a class="headerlink" href="#5-下载设置解析" title="Permanent link">¶</a></h3>
+<p><code>pipeline._stage_resolve()</code> 中添加对 <code>INDEXER_SITE_CONFIG</code> 的查询。</p>
+<p>当前优先级链（<code>src/app/downloader/pipeline.py:270-279</code>）：</p>
+<div class="highlight"><pre><span></span><code>1. 显式 download_setting 参数        → 直接使用
+2. media_info.site                  → SiteCache.get_site_download_setting(site)
+3. "-2" 特殊值                       → download_attr = {}
+4. 以上都无                          → ClientFactory.default_download_setting_id
+</code></pre></div>
+<p>修改后在第 2 步增加 <code>INDEXER_SITE_CONFIG</code> 回退：</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="ow">not</span> <span class="n">download_setting</span> <span class="ow">and</span> <span class="n">media_info</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+    <span class="c1"># 先查内置 SiteCache（兼容旧行为）</span>
+    <span class="n">download_setting</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sites</span><span class="o">.</span><span class="n">get_site_download_setting</span><span class="p">(</span><span class="n">media_info</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+    <span class="c1"># 查不到再查 INDEXER_SITE_CONFIG</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">download_setting</span><span class="p">:</span>
+        <span class="n">download_setting</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_site_config_repo</span><span class="o">.</span><span class="n">get_download_setting</span><span class="p">(</span><span class="n">media_info</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+</code></pre></div>
+<p><code>IndexerSiteConfigRepositoryAdapter.get_download_setting()</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_download_setting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repo</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">site_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">row</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">download_setting</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">download_setting</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<p>只有当 <code>enabled=1</code> 且 <code>download_setting</code> 不为 NULL 时才返回。</p>
+<h3 id="6-站点列表合并">6. 站点列表合并<a class="headerlink" href="#6-站点列表合并" title="Permanent link">¶</a></h3>
+<p><code>SiteService.get_sites()</code> 在<strong>非 RSS/刷流/统计过滤</strong>时合并第三方站点；<code>basic</code> 参数决定返回格式：</p>
+<ul>
+<li><code>basic=True</code>（搜索站点选择器）：返回 <code>{id, name, source, third_party}</code> 简单列表。</li>
+<li><code>basic=False</code>（站点管理页）：返回完整站点字典，第三方站点用默认值填充 PT 相关字段。</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_sites</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rss</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">brush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">statistic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">basic</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># RSS/刷流/统计场景只返回 builtin 站点</span>
+    <span class="k">if</span> <span class="n">rss</span> <span class="ow">or</span> <span class="n">brush</span> <span class="ow">or</span> <span class="n">statistic</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sites</span><span class="o">.</span><span class="n">get_sites</span><span class="p">(</span><span class="n">rss</span><span class="o">=</span><span class="n">rss</span><span class="p">,</span> <span class="n">brush</span><span class="o">=</span><span class="n">brush</span><span class="p">,</span> <span class="n">statistic</span><span class="o">=</span><span class="n">statistic</span><span class="p">,</span> <span class="n">public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">builtin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sites</span><span class="o">.</span><span class="n">get_sites</span><span class="p">(</span><span class="n">public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">third_party_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indexer_site_repo</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
+        <span class="n">source_ne</span><span class="o">=</span><span class="s2">"builtin"</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">basic</span><span class="p">:</span>
+            <span class="n">merged</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"builtin"</span><span class="p">}</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">builtin</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">third_party_rows</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">site_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merged</span><span class="p">:</span>
+                    <span class="n">merged</span><span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">site_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="s2">"name"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">site_name</span><span class="p">,</span>
+                        <span class="s2">"source"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                        <span class="s2">"third_party"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="p">}</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+
+    <span class="c1"># 完整模式：站点管理页</span>
+    <span class="n">merged</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]:</span> <span class="p">{</span><span class="o">**</span><span class="n">s</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"builtin"</span><span class="p">}</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">builtin</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">third_party_rows</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">site_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merged</span><span class="p">:</span>
+            <span class="n">merged</span><span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">site_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_third_party_site_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_third_party_site_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">site_name</span><span class="p">,</span>
+        <span class="s2">"pri"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">"source"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+        <span class="s2">"third_party"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"download_setting"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">download_setting</span><span class="p">,</span>
+        <span class="s2">"enabled"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">enabled</span><span class="p">),</span>
+        <span class="s2">"public"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">public</span><span class="p">),</span>
+        <span class="c1"># 以下字段内置站点有、第三方站点无，填充默认值保证前端兼容</span>
+        <span class="s2">"rssurl"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"signurl"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"cookie"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="s2">"api_key"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"bearer_token"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"api_key_header"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"headers"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"rule"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"rss_enable"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"brush_enable"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"statistic_enable"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"uses"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s2">"ua"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"parse"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"unread_msg_notify"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"chrome"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"proxy"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"subtitle"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"limit_interval"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"limit_count"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"limit_seconds"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"strict_url"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="s2">"note"</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="p">}</span>
+</code></pre></div>
+<p><strong>内置站点优先</strong>：当 <code>site_name</code> 相同时，builtin 行覆盖第三方行。确保有站点 JSON 定义的站点保留完整功能（数据刷新、签到、做种统计等）。</p>
+<p><strong>注意</strong>：第三方站点的 <code>id</code> 在简单模式下使用 <code>INDEXER_SITE_CONFIG.id</code>，在完整模式下也使用 <code>INDEXER_SITE_CONFIG.id</code>，与 builtin 站点的 <code>CONFIG_SITE.id</code> 不是同一命名空间。前端对第三方站点操作时应以 <code>name</code> 和 <code>source</code> 为标识，不要跨源比较 <code>id</code>。</p>
+<h3 id="7-索引器配置-api-扩展">7. 索引器配置 API 扩展<a class="headerlink" href="#7-索引器配置-api-扩展" title="Permanent link">¶</a></h3>
+<p><code>POST /system/indexers</code>（<code>src/api/routers/system.py:380</code>）需要返回第三方站点列表，供前端展示和管理：</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/indexers"</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_indexers</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="c1"># 现有逻辑：返回 builtin indexer 列表 + config</span>
+    <span class="o">...</span>
+
+    <span class="c1"># 新增：返回 INDEXER_SITE_CONFIG 中所有第三方站点</span>
+    <span class="n">third_party_sites</span> <span class="o">=</span> <span class="n">idx_svc</span><span class="o">.</span><span class="n">get_third_party_sites</span><span class="p">()</span>
+    <span class="c1"># 格式: [{id, site_name, source, download_setting, enabled}, ...]</span>
+
+    <span class="k">return</span> <span class="n">success</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span>
+        <span class="o">...</span><span class="n">现有字段</span><span class="o">...</span><span class="p">,</span>
+        <span class="s2">"third_party_sites"</span><span class="p">:</span> <span class="n">third_party_sites</span><span class="p">,</span>
+    <span class="p">})</span>
+</code></pre></div>
+<h3 id="8-新增-api-端点">8. 新增 API 端点<a class="headerlink" href="#8-新增-api-端点" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>端点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/sites/indexer-config/update</code></td>
+<td>更新单个站点的 <code>enabled</code> / <code>download_setting</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/sites/indexer-config/sync</code></td>
+<td>手动触发指定索引器的站点同步</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/sites/indexer-config/batch</code></td>
+<td>批量更新（索引器配置保存页的"同步站点"按钮）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-订阅搜索站点选择器">9. 订阅搜索站点选择器<a class="headerlink" href="#9-订阅搜索站点选择器" title="Permanent link">¶</a></h3>
+<p>已在 4.1.8 中修复：<code>POST /download/indexers</code> 改为调用 <code>get_user_indexers()</code>，随当前激活索引器返回站点列表。</p>
+<p>多索引器后需要改为<strong>同时返回所有索引器的已启用站点</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># IndexerService 新增方法</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_all_user_indexers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">UserIndexerDTO</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""返回所有已配置索引器的已启用站点，多索引器合并"""</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_site_config_repo</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">UserIndexerDTO</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">site_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+</code></pre></div>
+<p><code>POST /download/indexers</code> 改调此方法。</p>
+<h3 id="10-前端">10. 前端<a class="headerlink" href="#10-前端" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>页面</th>
+<th>改动</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>站点列表</td>
+<td>新增 <code>source</code> 和 <code>third_party</code> 列。<code>third_party=True</code> 时：只显示下载设置下拉 + 开关，隐藏编辑/测试连接/刷新数据/删除按钮</td>
+</tr>
+<tr>
+<td>索引器配置</td>
+<td>保存 Jackett/Prowlarr 后自动调 <code>/sites/indexer-config/sync</code> 同步站点列表</td>
+</tr>
+<tr>
+<td>订阅编辑</td>
+<td>搜索站点下拉调用 <code>get_all_user_indexers()</code>，合并所有索引器的站点</td>
+</tr>
+<tr>
+<td>站点列表（内置）</td>
+<td>页面加载时仍调 <code>POST /sites</code>，含合并后的第三方站点</td>
+</tr>
+</tbody>
+</table>
+<h2 id="备选方案">备选方案<a class="headerlink" href="#备选方案" title="Permanent link">¶</a></h2>
+<h3 id="方案-b-复用-config_site-表">方案 B: 复用 <code>CONFIG_SITE</code> 表<a class="headerlink" href="#方案-b-复用-config_site-表" title="Permanent link">¶</a></h3>
+<p>为第三方站点创建 <code>CONFIG_SITE</code> 行，<code>NOTE</code> 存配置。</p>
+<p><strong>拒绝理由</strong>：
+- <code>SiteEngine._load()</code> 遍历 <code>config/sites/</code> 目录生成 <code>SiteDefinition</code>。<code>CONFIG_SITE</code> 行无对应 JSON → <code>SiteCache._build_site_info()</code> 无法解析 <code>api_key_header</code>/<code>strict_url</code>
+- RSS 签到、做种统计、站点数据刷新等任务会遍历 <code>CONFIG_SITE</code>，对第三方站点执行会失败
+- <code>SITE_STATISTICS_HISTORY</code>、<code>SITE_USER_INFO_STATS</code> 会产生无效数据</p>
+<h3 id="方案-c-第三方站点不在站点列表显示">方案 C: 第三方站点不在站点列表显示<a class="headerlink" href="#方案-c-第三方站点不在站点列表显示" title="Permanent link">¶</a></h3>
+<p>只作为搜索来源，不进入前端管理页。</p>
+<p><strong>拒绝理由</strong>：无法单独开关、无法配下载设置——丧失内置站点已有的能力。</p>
+<h2 id="风险与缓解">风险与缓解<a class="headerlink" href="#风险与缓解" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>站点名不一致（Jackett 用 <code>MTeam</code>，builtin 用 <code>M-Team</code>）</td>
+<td>后续在表中加 <code>aliases</code> 字段，搜索匹配时做模糊查找；初期手动关联</td>
+</tr>
+<tr>
+<td>第三方离线时站点列表变动</td>
+<td>Repository <code>upsert</code> 只更新/插入不删除，离线时不丢失已配置站点</td>
+</tr>
+<tr>
+<td>多索引器并行增加耗时</td>
+<td>单层 <code>ThreadPoolExecutor</code> 扁平化 <code>(client, indexer)</code> 工作项；<code>as_completed(timeout=120)</code>，单索引器失败不阻塞</td>
+</tr>
+<tr>
+<td>去重 key <code>(title, size)</code> 不精确</td>
+<td>排序后 builtin 优先；后续加 <code>info_hash</code> 作为备选 key；误去重比重复更差，松匹配优先</td>
+</tr>
+<tr>
+<td><code>SearchIndexer</code> 单值与多客户端矛盾</td>
+<td>保存 Jackett/Prowlarr 配置时不再默认覆盖 <code>SearchIndexer</code>，新增“设为默认搜索索引器”开关</td>
+</tr>
+<tr>
+<td>嵌套 ThreadPoolExecutor 死锁</td>
+<td>禁止两层 executor；所有搜索任务扁平化到单层线程池</td>
+</tr>
+<tr>
+<td>Prowlarr 站点列表 API 不稳定</td>
+<td><code>indexerstats</code> 接口用于现有实现；若后续返回字段不全，切换到 <code>/api/v1/indexer</code> 并补 <code>X-Api-Key</code> 头</td>
+</tr>
+<tr>
+<td>数据库 upsert 方言差异</td>
+<td>Repository 层封装 dialect 无关 upsert，业务层不写方言 SQL</td>
+</tr>
+</tbody>
+</table>
+<h2 id="实施计划">实施计划<a class="headerlink" href="#实施计划" title="Permanent link">¶</a></h2>
+<h3 id="phase-1-数据库--仓库--adapter">Phase 1: 数据库 + 仓库 + Adapter<a class="headerlink" href="#phase-1-数据库--仓库--adapter" title="Permanent link">¶</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>INDEXER_SITE_CONFIG</code> SQLAlchemy ORM 模型</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>src/app/domain/interfaces/indexer_site_config_repo.py</code> (<code>IIndexerSiteConfigRepository</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>src/app/db/repositories/indexer_site_config_repository.py</code> (原始 ORM 操作)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>src/app/db/repositories/indexer_site_config_repo_adapter.py</code> (适配领域接口)</li>
+</ul>
+<h3 id="phase-2-写入链路">Phase 2: 写入链路<a class="headerlink" href="#phase-2-写入链路" title="Permanent link">¶</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>initializer.py</code> 启动时调用 <code>IndexerSiteConfigRepositoryAdapter.migrate_from_user_indexer_sites()</code> 完成一次性迁移</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>SiteCache.refresh()</code> 中扫描 builtin 站点名 → Adapter <code>upsert</code>（保留现有 enabled/download_setting）</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>IndexerConfigService.save_config()</code> 保存后拉取第三方站点 → 批量 <code>upsert</code>；保存 Jackett/Prowlarr 时不默认覆盖 <code>SearchIndexer</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>IndexerService</code> 新增 <code>get_all_user_indexers()</code>、<code>get_third_party_sites()</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> DI 注册 <code>IIndexerSiteConfigRepository</code> → <code>IndexerSiteConfigRepositoryAdapter</code>，并注入 <code>Indexer</code> / <code>SiteService</code> / <code>DownloadPipeline</code> / <code>SiteCache</code></li>
+</ul>
+<h3 id="phase-3-搜索链路">Phase 3: 搜索链路<a class="headerlink" href="#phase-3-搜索链路" title="Permanent link">¶</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>Indexer._ensure_clients()</code> 改为多客户端 dict + <code>Lock</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>Indexer.search_by_keyword()</code> 扁平化工作项 + 单层 <code>ThreadPoolExecutor</code> + <code>_dedup()</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>Indexer.get_indexers()</code> / <code>get_client()</code> / <code>get_client_type()</code> 保持默认搜索索引器语义</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增 <code>Indexer.get_all_search_indexers()</code> 供多索引器搜索使用</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>IndexerService.get_indexer_statistics()</code> 聚合多客户端统计</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>pipeline._stage_resolve()</code> 增加 <code>INDEXER_SITE_CONFIG</code> 查询回退</li>
+</ul>
+<h4 id="phase-31-jackett--prowlarr-重构">Phase 3.1: Jackett / Prowlarr 重构<a class="headerlink" href="#phase-31-jackett--prowlarr-重构" title="Permanent link">¶</a></h4>
+<p>多客户端模式下需要修复以下问题：</p>
+<p><strong>问题 1: <code>_client_config</code> 类变量 → 实例变量</strong></p>
+<p>jackett.py:11 <code>_client_config = {}</code>，prowlarr.py:11 相同。类变量被所有实例共享，多客户端并发时互相覆盖。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># jackett.py / prowlarr.py: __init__</span>
+<span class="c1"># before</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Jackett</span><span class="p">(</span><span class="n">_IIndexClient</span><span class="p">):</span>
+    <span class="n">_client_config</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># 类变量，多实例共享</span>
+
+<span class="c1"># after</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Jackett</span><span class="p">(</span><span class="n">_IIndexClient</span><span class="p">):</span>
+    <span class="n">_client_config</span><span class="p">:</span> <span class="nb">dict</span>  <span class="c1"># 类型声明，实例变量</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{}</span>  <span class="c1"># 改为实例变量赋值</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># jackett 特有</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refresh</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>问题 2: <code>_password</code> 类变量 → 实例变量</strong></p>
+<p>jackett.py:46 <code>_password = None</code>，同上。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># jackett.py</span>
+<span class="c1"># before</span>
+<span class="n">_password</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_refresh</span><span class="p">()</span>
+
+<span class="c1"># after</span>
+<span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_client_config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_refresh</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>问题 3: 去掉 <code>SystemConfig</code> 兜底</strong></p>
+<p>jackett.py:53-57, prowlarr.py:43-48。构造函数 <code>config</code> 为 None 时兜底读 <code>SystemConfig</code>。多客户端模式下由 <code>Indexer._ensure_clients()</code> 显式传入配置，不再需要兜底。</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># before</span>
+<span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">system_config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_config</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_system_config</span> <span class="o">=</span> <span class="n">system_config</span> <span class="ow">or</span> <span class="n">SystemConfig</span><span class="p">()</span>
+        <span class="n">indexer_config</span> <span class="o">=</span> <span class="n">_system_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SystemConfigKey</span><span class="o">.</span><span class="n">IndexerConfig</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_config</span> <span class="o">=</span> <span class="n">indexer_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"jackett"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+<span class="c1"># after</span>
+<span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_password</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_client_config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_refresh</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>问题 4: 搜索结果注入 <code>_indexer_source</code> 与统计</strong></p>
+<p><code>_base.py:107</code> 已注入 <code>_indexer_name</code>，追加 <code>_indexer_source</code> 标记来源索引器，并补充统计写入：</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># _base.py 注入循环追加</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_array</span><span class="p">:</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">indexer</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_order"</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_seq</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_public"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">indexer</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">item</span><span class="p">[</span><span class="s2">"_indexer_source"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span>  <span class="c1"># "builtin" / "jackett" / "prowlarr"</span>
+
+<span class="c1"># 统计写入（第三方客户端走默认实现）</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">download_repo</span><span class="o">.</span><span class="n">insert_indexer_statistics</span><span class="p">(</span>
+            <span class="n">indexer</span><span class="o">=</span><span class="n">indexer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">itype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
+            <span class="n">seconds</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">_</span><span class="p">),</span>
+            <span class="n">result</span><span class="o">=</span><span class="s2">"success"</span> <span class="k">if</span> <span class="n">result_count</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"fail"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[Indexer]写入统计失败: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>涉及文件</strong>: <code>jackett.py</code>、<code>prowlarr.py</code>、<code>_base.py</code>、<code>builtin.py</code>。</p>
+<h3 id="phase-4-站点列表">Phase 4: 站点列表<a class="headerlink" href="#phase-4-站点列表" title="Permanent link">¶</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>SiteService.get_sites()</code> 合并 builtin + 第三方</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>POST /sites</code> 返回合并列表</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增 <code>/sites/indexer-config/update</code>、<code>/sites/indexer-config/sync</code>、<code>/sites/indexer-config/batch</code></li>
+</ul>
+<h3 id="phase-5-前端">Phase 5: 前端<a class="headerlink" href="#phase-5-前端" title="Permanent link">¶</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 站点列表页增加 <code>source</code> / <code>third_party</code> 列，区分操作（<code>frontend/apps/nexus-media/src/views/site/list/components/SiteCard.vue</code>）</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 站点列表页对第三方站点显示启用开关 + 下载设置下拉，隐藏编辑/测试/删除（<code>SiteCard.vue</code> + <code>index.vue</code>）</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 索引器配置保存后自动同步站点（<code>frontend/apps/nexus-media/src/views/service/indexer/index.vue</code>）</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 索引器配置保存 Jackett/Prowlarr 时增加“设为默认搜索索引器”开关</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增前端 API：<code>updateIndexerSiteConfigApi</code>、<code>syncIndexerSitesApi</code>、<code>batchUpdateIndexerSiteConfigApi</code>（<code>frontend/apps/nexus-media/src/api/modules/site.ts</code>）</li>
+</ul>
+<h2 id="验证标准">验证标准<a class="headerlink" href="#验证标准" title="Permanent link">¶</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>INDEXER_SITE_CONFIG</code> 表创建成功</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 配置 Jackett 后表中出现对应行（<code>source='jackett'</code>）</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>POST /api/sites</code> 返回含 <code>third_party=True</code> + <code>source</code> 字段的站点</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> builtin + Jackett 并发搜索均返回结果</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 同一 PT 站的搜索结果已去重</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 设第三方站点 <code>download_setting</code> 后下载走配置的下载器</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 设第三方站点 <code>enabled=0</code> 后搜索结果不含该站</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>uv run ruff check .</code> 通过</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>uv run pyright src/ tests/</code> 通过</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> <code>uv run pytest tests/ -v</code> 全部通过</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增测试覆盖 <code>IndexerSiteConfigRepository</code> CRUD</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增测试覆盖 <code>SiteService.get_sites()</code> 合并逻辑</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label> 新增测试覆盖 <code>Indexer._dedup()</code> 去重（含 builtin 优先场景）</li>
+</ul>
+<blockquote>
+<p>注：已补充 Repository CRUD、<code>SiteService.get_sites()</code> 合并逻辑和 <code>Indexer._dedup()</code> 单元测试。</p>
+</blockquote>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

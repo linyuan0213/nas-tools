@@ -1,0 +1,2535 @@
+<!DOCTYPE html><html lang="zh" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nexus Media 多功能媒体库管理工具使用文档">
+      
+      
+      
+        <link rel="canonical" href="https://linyuan0213.github.io/nexus-media/decisions/ADR-007-subscription-rss-concept-refactor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-007: 订阅与 RSS 流程概念澄清及架构重构方案 - Nexus Media 文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-007-订阅与-rss-流程概念澄清及架构重构方案" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Nexus Media 文档" class="md-header__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Nexus Media 文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-007: 订阅与 RSS 流程概念澄清及架构重构方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到深色模式" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo" aria-label="切换到浅色模式" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Nexus Media 文档" class="md-nav__button md-logo" aria-label="Nexus Media 文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+
+    </a>
+    Nexus Media 文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/linyuan0213/nexus-media" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    使用指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    基础配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    资源搜索与探索
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    站点配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filter_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    过滤规则
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../download_management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../downloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_servers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体服务器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directory_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    目录同步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../media_organization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    媒体整理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RSS 订阅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    索引器配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    通知渠道配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../message_templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    消息通知模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    服务与调度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储后端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户与权限
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin_development_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发者
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发者
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    本地开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-mvp-detailed-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI 助手设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#当前三条并行的rss流水线" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当前三条并行的"RSS"流水线
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#核心问题" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="核心问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#问题-1rss一词严重过载" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 1："RSS"一词严重过载
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-2用户无法区分rss订阅和订阅搜索" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 2：用户无法区分"RSS订阅"和"订阅搜索"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-3后端前端数据库命名不一致" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 3：后端/前端/数据库命名不一致
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-4重复下载路径无中央协调" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 4：重复下载路径，无中央协调
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题-5状态机对用户完全隐藏" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题 5：状态机对用户完全隐藏
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#目标" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#方案设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方案设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="方案设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#新领域概念" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新领域概念
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#架构重构" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构重构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="架构重构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#重构前" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        重构前
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#重构后" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        重构后
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#目录结构变更" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录结构变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#各模块职责" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        各模块职责
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#数据库表重命名可选长期" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据库表重命名（可选，长期）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#前端变更" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前端变更
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="前端变更">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#菜单重命名" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        菜单重命名
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#订阅状态可视化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        订阅状态可视化
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-路由变更" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API 路由变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#调度任务合并" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        调度任务合并
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#下载协调器防重复下载" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下载协调器（防重复下载）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实施步骤" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施步骤
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1策略拆分与测试不改变外部行为" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1：策略拆分与测试（不改变外部行为）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2统一调度器" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2：统一调度器
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#订阅状态机重构后" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        订阅状态机（重构后）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="订阅状态机（重构后）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#状态定义" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        状态定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#状态转换图" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        状态转换图
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#状态转换表" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        状态转换表
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#状态与策略的映射" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        状态与策略的映射
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#关键设计决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键设计决策
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3命名对齐" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3：命名对齐
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4数据库迁移长期" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4：数据库迁移（长期）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#决策" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#正面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#负面影响" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/linyuan0213/nexus-media/edit/master/docs/decisions/ADR-007-subscription-rss-concept-refactor.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"></path></svg>
+    </a>
+  
+  
+
+
+<h1 id="adr-007-订阅与-rss-流程概念澄清及架构重构方案">ADR-007: 订阅与 RSS 流程概念澄清及架构重构方案<a class="headerlink" href="#adr-007-订阅与-rss-流程概念澄清及架构重构方案" title="Permanent link">¶</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">¶</a></h2>
+<p>Accepted</p>
+<h2 id="date">Date<a class="headerlink" href="#date" title="Permanent link">¶</a></h2>
+<p>2026-05-31</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">¶</a></h2>
+<p>当前系统的"订阅自动下载"功能由两条完全独立的流水线实现，共用"RSS"和"订阅"两个词，导致用户无法区分，开发者维护困难。</p>
+<h3 id="当前三条并行的rss流水线">当前三条并行的"RSS"流水线<a class="headerlink" href="#当前三条并行的rss流水线" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                              用户视角："RSS 订阅"                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. RSS 订阅下载 (rss_core.py)          2. 订阅搜索 (subscribe_search_engine.py) │
+│     ├─ 触发：pt_check_interval (秒)        ├─ 触发：search_rss_interval (小时)    │
+│     ├─ 数据源：站点 RSS Feed               ├─ 数据源：主动搜索索引器              │
+│     ├─ 范围：state="R" 的所有订阅          ├─ 范围：state="R" / "D" 的订阅       │
+│     └─ 前端名称："电影/电视剧订阅"           └─ 前端名称："订阅搜索"              │
+│                                                                             │
+│  3. 自定义 RSS (RssTaskService)                                              │
+│     ├─ 触发：用户自定义 interval/cron                                       │
+│     ├─ 数据源：用户填写的任意 RSS URL                                        │
+│     └─ 前端名称："自定义 RSS"                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="核心问题">核心问题<a class="headerlink" href="#核心问题" title="Permanent link">¶</a></h3>
+<h4 id="问题-1rss一词严重过载">问题 1："RSS"一词严重过载<a class="headerlink" href="#问题-1rss一词严重过载" title="Permanent link">¶</a></h4>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>实际含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rss_core.py</code></td>
+<td>站点 RSS Feed 轮询，为订阅匹配新资源</td>
+</tr>
+<tr>
+<td><code>RssTaskService</code></td>
+<td>用户自定义 RSS 自动化任务（下载/订阅）</td>
+</tr>
+<tr>
+<td><code>RssMovie</code> / <code>RssTv</code> (DB表)</td>
+<td>订阅数据实体，与 RSS 协议无关</td>
+</tr>
+<tr>
+<td><code>/api/rss/*</code> (路由)</td>
+<td>订阅 CRUD API</td>
+</tr>
+<tr>
+<td><code>rss_sites</code> (字段)</td>
+<td>订阅关联的站点范围</td>
+</tr>
+</tbody>
+</table>
+<p>一个新人搜索 "RSS" 会同时命中三条完全不同的业务线。</p>
+<h4 id="问题-2用户无法区分rss订阅和订阅搜索">问题 2：用户无法区分"RSS订阅"和"订阅搜索"<a class="headerlink" href="#问题-2用户无法区分rss订阅和订阅搜索" title="Permanent link">¶</a></h4>
+<p>前端服务面板显示：
+- "电影/电视剧订阅" → 实际做的是 RSS Feed 轮询
+- "订阅搜索" → 实际做的是主动搜索索引器</p>
+<p>两者目标完全一致（自动下载订阅内容），用户不关心数据源是 RSS 还是索引器。当前的拆分让用户困惑："为什么有两个服务做同一件事？"</p>
+<h4 id="问题-3后端前端数据库命名不一致">问题 3：后端/前端/数据库命名不一致<a class="headerlink" href="#问题-3后端前端数据库命名不一致" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>前端菜单    : "RSS 订阅"
+后端模块    : app/services/subscribe/
+后端 API    : /api/rss/*
+数据库表    : RSS_MOVIE, RSS_TV, RSS_HISTORY
+领域实体    : RssMovieEntity, RssTvEntity
+调度任务    : Rss.rssdownload / Subscribe.subscribe_search_all
+</code></pre></div>
+<h4 id="问题-4重复下载路径无中央协调">问题 4：重复下载路径，无中央协调<a class="headerlink" href="#问题-4重复下载路径无中央协调" title="Permanent link">¶</a></h4>
+<p>同一个订阅可以被以下任意流程满足：
+1. <code>Rss.rssdownload()</code> — RSS Feed 轮询
+2. <code>SubscribeSearchEngine.subscribe_search(state="D")</code> — 队列搜索（高频）
+3. <code>SubscribeSearchEngine.subscribe_search_all()</code> — 主动搜索（低频）
+4. <code>RssTaskService</code> — 自定义 RSS（如果 uses="R"）</p>
+<p>各流程之间无协调，虽然分布式锁防止同一实例并发，但多实例仍可能竞争下载同一资源。</p>
+<h4 id="问题-5状态机对用户完全隐藏">问题 5：状态机对用户完全隐藏<a class="headerlink" href="#问题-5状态机对用户完全隐藏" title="Permanent link">¶</a></h4>
+<p>订阅内部状态：
+- <strong>D</strong> (Delayed/Pending)：新添加，需要立即搜索已有资源
+- <strong>S</strong> (Searching)：正在执行搜索
+- <strong>R</strong> (Running)：已被 RSS 轮询和主动搜索监控
+- <strong>C</strong> (Completed)：已完成</p>
+<p>用户在前端看不到这些状态，也无法理解为什么刚添加的订阅没有立刻开始搜索。</p>
+<hr>
+<h2 id="目标">目标<a class="headerlink" href="#目标" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong>统一概念</strong>：将"订阅自动下载"抽象为单一领域概念，无论数据源是 RSS 还是索引器</li>
+<li><strong>消除"RSS"过载</strong>："RSS"只保留给真正的 RSS 协议相关功能（自定义 RSS）</li>
+<li><strong>后端命名对齐</strong>：模块、API、数据库表统一使用"Subscribe/Subscription"</li>
+<li><strong>统一自动下载入口</strong>：所有订阅的自动下载由单一调度器触发，内部按策略选择数据源</li>
+<li><strong>状态机可视化</strong>：前端显示订阅状态，让用户理解当前处于哪个阶段</li>
+<li><strong>可测试性</strong>：拆分策略类，支持独立单元测试</li>
+</ol>
+<hr>
+<h2 id="方案设计">方案设计<a class="headerlink" href="#方案设计" title="Permanent link">¶</a></h2>
+<h3 id="新领域概念">新领域概念<a class="headerlink" href="#新领域概念" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>旧名称</th>
+<th>新名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RSS 订阅</td>
+<td><strong>媒体订阅</strong> (Media Subscription)</td>
+<td>用户订阅某部电影/剧集，系统自动下载</td>
+</tr>
+<tr>
+<td>RSS 订阅下载</td>
+<td><strong>订阅监控</strong> (Subscription Monitor)</td>
+<td>被动轮询 + 主动搜索的统一调度器</td>
+</tr>
+<tr>
+<td>订阅搜索</td>
+<td><strong>(合并入订阅监控)</strong></td>
+<td>不再作为独立服务暴露</td>
+</tr>
+<tr>
+<td>自定义 RSS</td>
+<td><strong>RSS 自动化任务</strong> (RSS Automation)</td>
+<td>保留，与订阅完全分离</td>
+</tr>
+<tr>
+<td>RSS Movie/TV</td>
+<td>Subscribe Movie/TV</td>
+<td>数据库表和实体重命名</td>
+</tr>
+</tbody>
+</table>
+<h3 id="架构重构">架构重构<a class="headerlink" href="#架构重构" title="Permanent link">¶</a></h3>
+<h4 id="重构前">重构前<a class="headerlink" href="#重构前" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>┌─────────────────┐     ┌──────────────────────┐
+│  Rss.rssdownload │     │ SubscribeSearchEngine │
+│  (RSS Feed 轮询) │     │  (主动索引器搜索)      │
+└────────┬────────┘     └──────────┬───────────┘
+         │                         │
+         └──────────┬──────────────┘
+                    ▼
+           ┌─────────────────┐
+           │  SubscribeService │
+           │  (完成/更新状态)   │
+           └─────────────────┘
+</code></pre></div>
+<h4 id="重构后">重构后<a class="headerlink" href="#重构后" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────────────────────────────────┐
+│           SubscriptionMonitor (统一调度器)            │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │ RssFeedStrategy│  │ SearchStrategy│  │ QueueStrategy│ │
+│  │ (RSS Feed轮询) │  │ (主动搜索)     │  │ (队列搜索)    │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬──────┘ │
+│         └─────────────────┼─────────────────┘        │
+│                           ▼                          │
+│              ┌─────────────────────────┐             │
+│              │   DownloadCoordinator   │             │
+│              │  (去重/防重/优先级排序)   │             │
+│              └─────────────────────────┘             │
+└─────────────────────────────────────────────────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │  SubscribeService │
+                  │  (状态管理/完成)   │
+                  └─────────────────┘
+</code></pre></div>
+<h3 id="目录结构变更">目录结构变更<a class="headerlink" href="#目录结构变更" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>重构前                          重构后
+─────────────────────────────────────────────────────────
+app/services/
+├── rss_core.py                 ├── subscribe/
+│   (class Rss)                 │   ├── monitor.py          ← 统一调度器
+│                               │   ├── coordinator.py      ← 下载协调器
+│                               │   ├── matcher.py          ← 订阅匹配器
+│                               │   ├── search_engine.py    ← 手动搜索 facade
+│                               │   ├── strategies/
+│                               │   │   ├── base_search.py  ← 搜索策略基类
+│                               │   │   ├── rss_feed.py     ← RSS 轮询策略
+│                               │   │   ├── indexer_search.py ← 主动搜索策略
+│                               │   │   └── queue_search.py   ← 队列搜索策略
+│                               │   └── management/
+│                               │       ├── add_service.py       ← 添加订阅
+│                               │       ├── update_service.py    ← 更新订阅设置
+│                               │       ├── finish_service.py    ← 完成订阅
+│                               │       ├── query_service.py     ← 查询订阅列表/详情
+│                               │       ├── history_service.py   ← 订阅历史 CRUD
+│                               │       ├── calendar_service.py  ← 订阅日历事件
+│                               │       ├── refresh_service.py   ← 刷新订阅搜索
+│                               │       ├── service.py           ← 订阅管理 facade
+│                               │       └── utils.py             ← 订阅工具方法
+│
+├── rss/                        ├── rss_automation/           ← 原 rss/ (自定义RSS)
+│   ├── task_service.py         │   ├── task_service.py      ← 任务调度管理
+│   ├── _executor.py            │   ├── executor.py          ← RSS 解析执行器
+│   ├── _articles.py            │   └── articles.py          ← 文章过滤/处理
+│   └── parser.py               │
+│                               └── userrss_service.py       ← 原 userrss_service.py
+│                                   (用户自定义RSS的API facade)
+│
+app/api/routers/
+├── rss.py                      ├── subscription.py           ← 订阅 CRUD / 历史
+│                               └── rss_automation.py        ← 自定义RSS任务
+└── userrss.py                  └── (删除，合并到 rss_automation.py)
+</code></pre></div>
+<h3 id="各模块职责">各模块职责<a class="headerlink" href="#各模块职责" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>职责</th>
+<th>与订阅的关系</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>subscribe/monitor.py</code></td>
+<td>统一调度器，按策略分时触发</td>
+<td>核心入口</td>
+</tr>
+<tr>
+<td><code>subscribe/coordinator.py</code></td>
+<td>下载锁、去重、优先级排序</td>
+<td>被 strategies 调用</td>
+</tr>
+<tr>
+<td><code>subscribe/matcher.py</code></td>
+<td>订阅匹配器（判断种子是否命中订阅）</td>
+<td>被 monitor 调用</td>
+</tr>
+<tr>
+<td><code>subscribe/search_engine.py</code></td>
+<td>手动搜索 facade（用户前端触发）</td>
+<td>独立服务，不直接参与自动下载</td>
+</tr>
+<tr>
+<td><code>subscribe/strategies/</code></td>
+<td>RSS 轮询、主动搜索、队列搜索三种策略</td>
+<td>被 monitor 调用</td>
+</tr>
+<tr>
+<td><code>subscribe/management/</code></td>
+<td>订阅的添加、完成、更新、查询、历史、日历</td>
+<td>被 monitor 和 API 调用</td>
+</tr>
+<tr>
+<td><code>rss_automation/</code></td>
+<td>用户自定义 RSS URL 的自动化任务</td>
+<td><strong>完全独立</strong>，与订阅无耦合</td>
+</tr>
+</tbody>
+</table>
+<h3 id="数据库表重命名可选长期">数据库表重命名（可选，长期）<a class="headerlink" href="#数据库表重命名可选长期" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>旧表名</th>
+<th>新表名</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RSS_MOVIE</code></td>
+<td><code>SUBSCRIBE_MOVIE</code></td>
+</tr>
+<tr>
+<td><code>RSS_TV</code></td>
+<td><code>SUBSCRIBE_TV</code></td>
+</tr>
+<tr>
+<td><code>RSS_TV_EPISODE</code></td>
+<td><code>SUBSCRIBE_TV_EPISODE</code></td>
+</tr>
+<tr>
+<td><code>RSS_HISTORY</code></td>
+<td><code>SUBSCRIBE_HISTORY</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>注意</strong>：表重命名需配合 Alembic 迁移，属于长期改造。</p>
+</blockquote>
+<h3 id="前端变更">前端变更<a class="headerlink" href="#前端变更" title="Permanent link">¶</a></h3>
+<h4 id="菜单重命名">菜单重命名<a class="headerlink" href="#菜单重命名" title="Permanent link">¶</a></h4>
+<div class="highlight"><pre><span></span><code>重构前                          重构后
+─────────────────────────────────────────────────────────
+RSS 订阅                         媒体订阅
+├── 电影订阅                      ├── 电影订阅
+├── 剧集订阅                      ├── 剧集订阅
+├── 自定义 RSS    ─────────────▶  ├── 自定义 RSS (RSS自动化)
+└── 订阅历史                      └── 订阅历史
+
+服务面板
+├── 电影/电视剧订阅  ──────────▶  ├── 订阅监控 (被动轮询)
+└── 订阅搜索         ──────────▶  └── (合并，不再独立显示)
+</code></pre></div>
+<h4 id="订阅状态可视化">订阅状态可视化<a class="headerlink" href="#订阅状态可视化" title="Permanent link">¶</a></h4>
+<p>前端订阅列表增加状态列：</p>
+<div class="highlight"><pre><span></span><code>┌──────────┬────────┬────────┬────────┬─────────────────┐
+│ 名称      │ 类型   │ 季/集  │ 状态   │ 操作             │
+├──────────┼────────┼────────┼────────┼─────────────────┤
+│ 石纪元    │ 剧集   │ S04    │ 🟡搜索中│ 编辑 删除          │
+│ 某电影    │ 电影   │ -      │ 🟢监控中│ 编辑 删除 立即搜索 │
+│ 某剧集    │ 剧集   │ S01    │ 🟢监控中│ 编辑 删除 立即搜索 │
+│ 旧订阅    │ 剧集   │ S02    │ 🟡待处理│ 编辑 删除 立即搜索 │
+│ 已完成    │ 电影   │ -      │ 🔵已完成│ 删除             │
+└──────────┴────────┴────────┴────────┴─────────────────┘
+
+状态说明：
+🟡 待处理/搜索中 — 刚添加，正在搜索已有资源
+🟢 监控中 — 已进入自动监控，等待新资源发布
+🔵 已完成 — 所有集已下载
+🔴 错误 — 识别失败或其他错误
+</code></pre></div>
+<h3 id="api-路由变更">API 路由变更<a class="headerlink" href="#api-路由变更" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>重构前                          重构后
+─────────────────────────────────────────────────────────
+/api/rss/movie/list      ───▶   /api/subscription/movie/list
+/api/rss/movie/add       ───▶   /api/subscription/movie/add
+/api/rss/tv/list         ───▶   /api/subscription/tv/list
+/api/rss/tv/add          ───▶   /api/subscription/tv/add
+/api/rss/history         ───▶   /api/subscription/history
+
+/api/userrss/list        ───▶   /api/rss-automation/list
+/api/userrss/add         ───▶   /api/rss-automation/add
+</code></pre></div>
+<h3 id="调度任务合并">调度任务合并<a class="headerlink" href="#调度任务合并" title="Permanent link">¶</a></h3>
+<p>重构前：
+- <code>Rss.rssdownload</code> — <code>pt_check_interval</code> (秒)
+- <code>Subscribe.subscribe_search_all</code> — <code>search_rss_interval</code> (小时)
+- <code>Subscribe.subscribe_search</code> — <code>RSS_CHECK_INTERVAL</code> (秒，队列)</p>
+<p>重构后：统一为 <code>SubscriptionMonitor.run()</code>，内部按策略分时触发：</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SubscriptionMonitor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># 1. 队列搜索（高频）— 处理 state="D" 的订阅</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_strategy</span><span class="p">(</span><span class="n">QueueSearchStrategy</span><span class="p">())</span>
+
+        <span class="c1"># 2. RSS 轮询（中频）— 处理 state="R" 的订阅</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_run_rss</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_strategy</span><span class="p">(</span><span class="n">RssFeedStrategy</span><span class="p">())</span>
+
+        <span class="c1"># 3. 主动搜索（低频）— 处理 state="R" 的订阅</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_run_search</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_strategy</span><span class="p">(</span><span class="n">IndexerSearchStrategy</span><span class="p">())</span>
+</code></pre></div>
+<p>调度配置统一为：
+- <code>subscribe.queue_interval</code> — 队列搜索间隔（秒）
+- <code>subscribe.rss_interval</code> — RSS 轮询间隔（秒）
+- <code>subscribe.search_interval</code> — 主动搜索间隔（小时）</p>
+<h3 id="下载协调器防重复下载">下载协调器（防重复下载）<a class="headerlink" href="#下载协调器防重复下载" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DownloadCoordinator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""防止多条流水线重复下载同一订阅的资源"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_downloading</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># tmdbid + season 指纹</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">try_acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">media_info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""尝试获取下载锁，成功返回 True"""</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">media_info</span><span class="o">.</span><span class="n">tmdb_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">media_info</span><span class="o">.</span><span class="n">get_season_string</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_downloading</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_downloading</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">media_info</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">media_info</span><span class="o">.</span><span class="n">tmdb_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">media_info</span><span class="o">.</span><span class="n">get_season_string</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_downloading</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</code></pre></div>
+<hr>
+<h2 id="实施步骤">实施步骤<a class="headerlink" href="#实施步骤" title="Permanent link">¶</a></h2>
+<h3 id="phase-1策略拆分与测试不改变外部行为">Phase 1：策略拆分与测试（不改变外部行为）<a class="headerlink" href="#phase-1策略拆分与测试不改变外部行为" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>创建 <code>app/services/subscribe/strategies/</code> 包</strong></li>
+<li>从 <code>rss_core.py</code> 提取 <code>RssFeedStrategy</code></li>
+<li>从 <code>subscribe_search_engine.py</code> 提取 <code>IndexerSearchStrategy</code> 和 <code>QueueSearchStrategy</code></li>
+<li>
+<p>从 <code>download_strategies.py</code> 提取拆包下载策略</p>
+</li>
+<li>
+<p><strong>创建 <code>DownloadCoordinator</code></strong></p>
+</li>
+<li>基于 Redis/内存的下载锁</li>
+<li>
+<p>单元测试覆盖竞争场景</p>
+</li>
+<li>
+<p><strong>保持所有旧代码可用</strong></p>
+</li>
+<li>旧类内部调用新策略类</li>
+<li>前端和 API 不变</li>
+</ol>
+<h3 id="phase-2统一调度器">Phase 2：统一调度器<a class="headerlink" href="#phase-2统一调度器" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>创建 <code>SubscriptionMonitor</code></strong></li>
+<li>聚合三种策略</li>
+<li>按配置时间分时触发</li>
+<li>
+<p>通过 <code>DownloadCoordinator</code> 防重</p>
+</li>
+<li>
+<p><strong>替换调度任务</strong></p>
+</li>
+<li>删除 <code>Rss.rssdownload</code> 和 <code>Subscribe.subscribe_search_all</code> 两个独立任务</li>
+<li>
+<p>新增 <code>SubscriptionMonitor.run()</code> 单一任务</p>
+</li>
+<li>
+<p><strong>状态机优化</strong></p>
+</li>
+<li>新增 <code>E</code> (Error) 状态，用于识别失败等异常情况</li>
+</ol>
+<hr>
+<h2 id="订阅状态机重构后">订阅状态机（重构后）<a class="headerlink" href="#订阅状态机重构后" title="Permanent link">¶</a></h2>
+<h3 id="状态定义">状态定义<a class="headerlink" href="#状态定义" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D</strong></td>
+<td>Pending (待处理)</td>
+<td>刚添加，需要立即搜索已有资源</td>
+</tr>
+<tr>
+<td><strong>S</strong></td>
+<td>Searching (搜索中)</td>
+<td>正在被 <code>QueueSearchStrategy</code> 执行首次搜索</td>
+</tr>
+<tr>
+<td><strong>R</strong></td>
+<td>Monitoring (监控中)</td>
+<td>已确认有缺失集或需要继续等待新资源，由 <code>SubscriptionMonitor</code> 统一轮询</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Completed (已完成)</td>
+<td>所有资源已下载入库</td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td>Error (错误)</td>
+<td>识别失败或其他不可恢复错误</td>
+</tr>
+</tbody>
+</table>
+<h3 id="状态转换图">状态转换图<a class="headerlink" href="#状态转换图" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>                          ┌───────────────────────────────────────┐
+                          │                                       │
+                          │   ┌──────────┐   下载完成/已存在      │
+                          │   │          │◄──────────────────────┤
+                          │   │    C     │                        │
+                          │   │ (已完成) │                        │
+                          │   └────▲─────┘                        │
+                          │        │                              │
+                          │        │ 全部资源下载完成               │
+                          │        │                              │
+┌──────────┐  添加订阅   ┌┴───────┐│      ┌──────────┐            │
+│          │────────────▶│        ││      │          │  监控发现   │
+│   初始    │             │   D    ││      │    R     │◄───────────┤
+│          │             │(待处理) ││      │(监控中)  │  新资源发布  │
+└──────────┘             └────┬───┘│      └────┬─────┘            │
+                              │    │           │                 │
+                              │    │           │ 仍有缺失          │
+                              │    │           │                 │
+                              │    │      ┌────┴─────┐            │
+                              │    │      │          │  下载失败    │
+                              │    └─────▶│    S     │────────────┤
+                              │   Monitor │(搜索中)  │             │
+                              │   调度触发│          │             │
+                              │           └────┬─────┘             │
+                              │                │                   │
+                              │                │ 识别失败           │
+                              │                │                   │
+                              │           ┌────┴─────┐             │
+                              │           │          │             │
+                              └──────────▶│    E     │             │
+                               TMDB 无结果 │ (错误)   │             │
+                                          └──────────┘             │
+                                                                     │
+                          └──────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="状态转换表">状态转换表<a class="headerlink" href="#状态转换表" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>当前状态</th>
+<th>触发条件</th>
+<th>目标状态</th>
+<th>执行逻辑</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D</strong> →</td>
+<td>用户添加订阅</td>
+<td><strong>S</strong></td>
+<td>写入数据库，state=D，由 <code>QueueSearchStrategy</code> 立即搜索</td>
+</tr>
+<tr>
+<td><strong>S</strong> →</td>
+<td>搜索命中且全部下载完成</td>
+<td><strong>C</strong></td>
+<td><code>check_exists_medias()</code> 返回无缺失，<code>finish_rss_subscribe()</code></td>
+</tr>
+<tr>
+<td><strong>S</strong> →</td>
+<td>搜索命中但仍有缺失</td>
+<td><strong>R</strong></td>
+<td><code>update_subscribe_tv_lack()</code>，state 设为 R，进入 <code>SubscriptionMonitor</code> 监控</td>
+</tr>
+<tr>
+<td><strong>S</strong> →</td>
+<td>搜索未命中（无资源）</td>
+<td><strong>R</strong></td>
+<td>state 设为 R，等待 RSS 轮询或下次主动搜索</td>
+</tr>
+<tr>
+<td><strong>S</strong> →</td>
+<td>TMDB 识别失败</td>
+<td><strong>E</strong></td>
+<td>标记错误，前端显示"识别失败"，用户可手动修正</td>
+</tr>
+<tr>
+<td><strong>R</strong> →</td>
+<td><code>RssFeedStrategy</code> 轮询命中且下载完成全部缺失</td>
+<td><strong>C</strong></td>
+<td><code>finish_rss_subscribe()</code></td>
+</tr>
+<tr>
+<td><strong>R</strong> →</td>
+<td><code>IndexerSearchStrategy</code> 主动搜索命中且下载完成</td>
+<td><strong>C</strong></td>
+<td><code>finish_rss_subscribe()</code></td>
+</tr>
+<tr>
+<td><strong>R</strong> →</td>
+<td>部分下载完成，仍有缺失</td>
+<td><strong>R</strong></td>
+<td><code>update_subscribe_tv_lack()</code>，继续保持监控</td>
+</tr>
+<tr>
+<td><strong>R</strong> →</td>
+<td>用户手动触发"立即搜索"</td>
+<td><strong>S</strong></td>
+<td>临时进入搜索状态，完成后根据结果转 R 或 C</td>
+</tr>
+<tr>
+<td><strong>E</strong> →</td>
+<td>用户手动修正并重新识别</td>
+<td><strong>S</strong></td>
+<td>重新执行队列搜索</td>
+</tr>
+<tr>
+<td><strong>C</strong> →</td>
+<td>用户重新订阅（洗版）</td>
+<td><strong>S</strong></td>
+<td>洗版模式下重新进入搜索流程</td>
+</tr>
+</tbody>
+</table>
+<h3 id="状态与策略的映射">状态与策略的映射<a class="headerlink" href="#状态与策略的映射" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>哪个策略处理</th>
+<th>调度频率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D</td>
+<td><code>QueueSearchStrategy</code></td>
+<td>高频（由 Monitor 每次 run 都检查）</td>
+</tr>
+<tr>
+<td>S</td>
+<td><code>QueueSearchStrategy</code></td>
+<td>同一时刻只能有一个 S 状态的订阅在搜索（按调度器单线程执行）</td>
+</tr>
+<tr>
+<td>R</td>
+<td><code>RssFeedStrategy</code> + <code>IndexerSearchStrategy</code></td>
+<td>中频/低频（按各自 interval 独立触发）</td>
+</tr>
+<tr>
+<td>C</td>
+<td>无</td>
+<td>不参与任何策略</td>
+</tr>
+<tr>
+<td>E</td>
+<td>无</td>
+<td>不参与任何策略，等待用户干预</td>
+</tr>
+</tbody>
+</table>
+<h3 id="关键设计决策">关键设计决策<a class="headerlink" href="#关键设计决策" title="Permanent link">¶</a></h3>
+<ol>
+<li>
+<p><strong>D → S 是自动的</strong>：用户添加订阅后无需手动触发，Monitor 下一次 run 时会自动发现 D 状态并启动队列搜索。</p>
+</li>
+<li>
+<p><strong>S 状态是瞬态的</strong>：理想情况下 S 只持续一个搜索周期（几秒到几分钟）。如果搜索过程中系统重启，重启后 Monitor 会重新发现 D 状态并再次搜索。</p>
+</li>
+<li>
+<p><strong>R 状态是稳态的</strong>：大部分活跃订阅长期处于 R 状态，等待新资源发布。R 状态的订阅会同时被 <code>RssFeedStrategy</code>（RSS 轮询）和 <code>IndexerSearchStrategy</code>（主动搜索）处理。</p>
+</li>
+<li>
+<p><strong>E 状态需要用户干预</strong>：识别失败不会自动重试，避免无限循环消耗资源。用户在前端看到 E 状态后可以手动修改标题/年份后重新识别。</p>
+</li>
+<li>
+<p><strong>"立即搜索"按钮只在 D/R 状态可用</strong>：S 状态正在执行搜索，不允许重复触发；E 状态需先修正错误；C 状态已完成无需搜索。</p>
+</li>
+<li>
+<p><strong>C → S（洗版）</strong>：洗版不是状态转换，而是创建一个新的"子订阅"，与原订阅并行追踪。洗版完成后原订阅保持 C，新订阅进入 C。</p>
+</li>
+</ol>
+<h3 id="phase-3命名对齐">Phase 3：命名对齐<a class="headerlink" href="#phase-3命名对齐" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>后端模块重命名</strong></li>
+<li><code>rss_core.py</code> → <code>subscribe/monitor.py</code></li>
+<li><code>Rss</code> class → <code>SubscriptionMonitor</code></li>
+<li><code>subscribe/</code> 目录 → <code>subscribe/management/</code></li>
+<li><code>SubscribeSearchEngine</code> 内部方法合并到 <code>subscribe/strategies/</code></li>
+<li><code>SubscribeSearchEngine</code> 保留为 <code>subscribe/search_engine.py</code>（手动搜索 facade）</li>
+<li>
+<p><code>rss_automation/subscription.py</code>（<code>RssSubscriptionService</code>）拆分：</p>
+<ul>
+<li>添加/更新/删除订阅 → <code>subscribe/management/add_service.py</code> / <code>update_service.py</code> / <code>query_service.py</code></li>
+<li>历史 CRUD → <code>subscribe/management/history_service.py</code></li>
+<li>日历事件 → <code>subscribe/management/calendar_service.py</code></li>
+<li>触发监控/刷新 → <code>subscribe/monitor.py</code>（<code>download_rss()</code> / <code>refresh_rss()</code>）</li>
+<li>判断种子命中 → <code>subscribe/matcher.py</code>（独立模块）</li>
+</ul>
+</li>
+<li>
+<p><strong>API 路由迁移</strong></p>
+</li>
+<li>创建 <code>/api/subscription/*</code> 新路由</li>
+<li>
+<p>直接替换旧路由，不保留兼容</p>
+</li>
+<li>
+<p><strong>前端菜单和文案更新</strong></p>
+</li>
+<li>"RSS 订阅" → "媒体订阅"</li>
+<li>服务面板合并 "订阅搜索" 到 "订阅监控"</li>
+<li>增加状态列和状态说明</li>
+</ol>
+<h3 id="phase-4数据库迁移长期">Phase 4：数据库迁移（长期）<a class="headerlink" href="#phase-4数据库迁移长期" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>Alembic 迁移</strong><ul>
+<li>重命名表（可选，视复杂度决定）</li>
+<li>或仅添加视图别名</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="决策">决策<a class="headerlink" href="#决策" title="Permanent link">¶</a></h2>
+<p>等待 review 后按 Phase 逐步实施。</p>
+<hr>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">¶</a></h2>
+<h3 id="正面影响">正面影响<a class="headerlink" href="#正面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>用户理解成本降低</strong>："媒体订阅"一个概念覆盖所有自动下载场景</li>
+<li><strong>开发者维护成本降低</strong>：不再被"RSS"一词误导到三条不同业务线</li>
+<li><strong>可测试性提升</strong>：策略类独立，可单独测试 RSS 轮询、主动搜索、队列搜索</li>
+<li><strong>防重复下载</strong>：<code>DownloadCoordinator</code> 消除多流水线竞争</li>
+<li><strong>状态透明</strong>：用户能看到订阅当前处于"搜索中"还是"监控中"</li>
+</ul>
+<h3 id="负面影响">负面影响<a class="headerlink" href="#负面影响" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong>API 迁移成本</strong>：前端需要同步更新 API 路径</li>
+<li><strong>调度配置变更</strong>：用户已有的 <code>pt_check_interval</code> / <code>search_rss_interval</code> 需要迁移到新配置</li>
+<li><strong>数据库表重命名风险</strong>：若执行，需确保所有查询点同步更新</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.action.edit", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>

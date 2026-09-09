@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "索引器搜索架构",
+    "locale": "zh-CN",
+    "quality_profile": "standard",
+    "viewBox": [
+      1250,
+      980
+    ],
+    "views": [
+      {
+        "id": "main",
+        "label": "搜索链路",
+        "focus": [
+          "entry",
+          "pipeline",
+          "builtin",
+          "agg",
+          "sites",
+          "filter"
+        ],
+        "note": "入口并行分发到站点/聚合器客户端，结果经过滤器收口。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "entry",
+      "type": "backend",
+      "label": "搜索入口",
+      "sublabel": "indexer_service · 订阅/RSS/手动",
+      "pos": [
+        110,
+        80
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "搜索编排",
+      "sublabel": "SearchPipeline · registry 配置",
+      "pos": [
+        110,
+        300
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "builtin",
+      "type": "backend",
+      "label": "内置索引器",
+      "sublabel": "client/builtin · API/HTML",
+      "pos": [
+        470,
+        560
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "agg",
+      "type": "backend",
+      "label": "聚合器客户端",
+      "sublabel": "jackett · prowlarr",
+      "pos": [
+        880,
+        560
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "sites",
+      "type": "backend",
+      "label": "站点引擎",
+      "sublabel": "sites/engine · HtmlSiteSearcher",
+      "pos": [
+        470,
+        780
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "filter",
+      "type": "backend",
+      "label": "结果过滤",
+      "sublabel": "filter_engine · 去重/命中",
+      "pos": [
+        110,
+        560
+      ],
+      "size": [
+        200,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "编排",
+      "wraps": [
+        "entry",
+        "pipeline",
+        "filter"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "检索执行",
+      "wraps": [
+        "builtin",
+        "agg",
+        "sites"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "entry-pipeline",
+      "from": "entry",
+      "to": "pipeline",
+      "label": "发起搜索",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 55
+    },
+    {
+      "id": "pipeline-builtin",
+      "from": "pipeline",
+      "to": "builtin",
+      "label": "分发",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "pipeline-agg",
+      "from": "pipeline",
+      "to": "agg",
+      "label": "分发",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 60
+    },
+    {
+      "id": "pipeline-filter",
+      "from": "pipeline",
+      "to": "filter",
+      "label": "结果收口",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 55
+    },
+    {
+      "id": "builtin-filter",
+      "from": "builtin",
+      "to": "filter",
+      "label": "回传",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "agg-filter",
+      "from": "agg",
+      "to": "filter",
+      "label": "回传",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          980,
+          720
+        ],
+        [
+          210,
+          720
+        ],
+        [
+          210,
+          660
+        ]
+      ],
+      "labelDy": 0
+    },
+    {
+      "id": "builtin-sites",
+      "from": "builtin",
+      "to": "sites",
+      "label": "直连检索",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 55
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "并行检索",
+      "items": [
+        "按索引器配置分发（内置/Jackett/Prowlarr）",
+        "内置 HTML/API 经站点引擎，挑战可降级"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "结果收口",
+      "items": [
+        "filter_engine 统一过滤、去重与命中回写"
+      ]
+    }
+  ]
+}
