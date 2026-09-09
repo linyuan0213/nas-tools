@@ -35,6 +35,8 @@ class WordRepository(BaseRepository):
             whelp: 帮助信息
             note: 备注
         """
+        note = note or ""
+        whelp = whelp or ""
         with self.session() as db:
             db.add(
                 CUSTOMWORDS(
