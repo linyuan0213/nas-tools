@@ -51,11 +51,22 @@ class SiteResolver:
         if is_public:
             start_time = datetime.now()
             proxy_url = get_proxies().get("http") if proxy and get_proxies() else None
+            use_headers = {"User-Agent": ua} if ua else {}
+            cookie_auth = CookieAuth(site_cookie) if site_cookie else None
             res = HttpClient(
                 config=HttpClientConfig(proxy_url=proxy_url),
-            ).get(url=site_url)
+            ).get(url=site_url, headers=use_headers, auth=cookie_auth)
             seconds = round((datetime.now() - start_time).total_seconds(), 3)
             if res and res.status_code == 200:
+                # 公开站以“是否被重定向到登录页”判断登录态，
+                # 页面本身可匿名访问时（如 mikan）不做登录标记强校验
+                final_url = str(getattr(res, "url", "") or "")
+                redirect_to_login = "/login" in final_url
+                has_auth = bool(site_cookie or headers or site_info.get("api_key") or site_info.get("bearer_token"))
+                if redirect_to_login:
+                    if has_auth:
+                        return False, "Cookie失效", seconds
+                    return False, "站点需要登录但未配置认证信息", seconds
                 return True, "连接成功", seconds
             elif res is not None:
                 return False, f"连接失败，状态码：{res.status_code}", seconds
