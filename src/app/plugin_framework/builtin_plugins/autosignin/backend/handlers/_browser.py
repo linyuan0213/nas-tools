@@ -172,13 +172,26 @@ class BrowserSigninHandler(SiteSigninHandler):
 
     @staticmethod
     def _already_signed(text: str) -> bool:
-        return bool(re.search(r"已签|签到已得|今日已签|已签到|签到成功", text, re.IGNORECASE))
+        # 兼容简繁体：签到/簽到、已签/已簽
+        return bool(
+            re.search(
+                r"已签|已簽|签到已得|簽到已得|今日已签|今日已簽|已签到|已簽到|签到成功|簽到成功",
+                text,
+                re.IGNORECASE,
+            )
+        )
 
     def _success(self, text: str) -> bool:
         markers = self._config.get("success_markers", [])
         if markers:
             return any(re.search(m, text, re.IGNORECASE) for m in markers)
-        return bool(re.search(r"已签|签到成功|获得.*积分|签到.*积分", text, re.IGNORECASE))
+        return bool(
+            re.search(
+                r"已签|已簽|签到成功|簽到成功|获得.*积分|獲得.*積分|签到.*积分|簽到.*積分|連續簽到.*魔力|連續簽到.*魔",
+                text,
+                re.IGNORECASE,
+            )
+        )
 
     @staticmethod
     def _two_factor(text: str) -> bool:
