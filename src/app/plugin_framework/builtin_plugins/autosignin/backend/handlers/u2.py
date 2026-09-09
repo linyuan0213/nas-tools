@@ -26,7 +26,8 @@ class U2(SiteSigninHandler):
             return SigninResult.fail(site, SigninResult.COOKIE_EXPIRED)
 
         if datetime.now().hour < 9:
-            return SigninResult.fail(site, "9点前不签到")
+            # 未到开放时间：不判失败，等待 9 点后的调度轮次补签
+            return SigninResult.custom(False, f"[{site}]9点后开放签到，本次跳过")
 
         base_url = StringUtils.get_base_url(ctx.site_url)
         showup_url = base_url + "/showup.php"

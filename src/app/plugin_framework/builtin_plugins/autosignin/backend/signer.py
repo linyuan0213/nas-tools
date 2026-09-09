@@ -176,6 +176,10 @@ class SigninEngine:
         for s in status:
             if not s:
                 continue
+            # 站点未到开放签到时间（如 U2 仅 9 点后）：不统计为失败、不通知、不重试
+            if re.search(r"9点(?:前|后开放)|9:00后", s):
+                self.ctx.debug(f"{s}，跳过本次统计，等待后续调度补签")
+                continue
             if "登录成功" in s:
                 login_success_msg.append(s)
             elif "浏览器签到成功" in s:
@@ -219,6 +223,10 @@ class SigninEngine:
         self.ctx.debug(f"下次签到重试站点 {retry_names}")
 
         today_history = get_history(key=today_str) or {}
+        # 合并历史已签名单：多次调度（0/8/16点）各自只处理重试+未签站点，
+        # 不能只用本次成功项覆盖，否则某一轮无成功项会把已签记录清空导致下轮全站重签
+        prev_sign = set((today_history.get("sign") or []) if isinstance(today_history.get("sign"), list) else [])
+        sign_sites = sorted(set(sign_sites) | prev_sign)
         today_history.update({"sign": sign_sites, "retry": retry_sites, "names": id_to_name})
         update_history(today_str, today_history)
 
